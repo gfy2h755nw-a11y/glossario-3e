@@ -93,6 +93,6 @@ var Poster = (function () {
       '</div>' +
       '</div>';
   }
-  return { html: html };
+  return { html: html, logo: logo };
 })();
 /* ===== POSTER-END ===== */

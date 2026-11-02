@@ -249,7 +249,7 @@ function vistaDocente() {
   if (S.d.codiciAlunni) {
     h += '<details class="card" id="codici"><summary>Codici personali degli alunni (riservato)</summary>' +
       '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
-      '<div class="row" style="margin-bottom:10px"><button class="btn sec" onclick="stampaCodici()">Stampa i codici</button></div>' +
+      '<div class="row" style="margin-bottom:10px"><button class="btn" onclick="stampaSchede()">Schede alunni con QR (A4)</button><button class="btn sec" onclick="stampaCodici()">Stampa i codici (strisce)</button></div>' +
       '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Gruppo</th><th>Codice</th></tr></thead><tbody>' +
       S.d.codiciAlunni.map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(a.gruppo) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></details>';
@@ -436,8 +436,60 @@ function stampaCodici() {
   w.document.close();
 }
 
+/* QR code in SVG (libreria qrcode-generator, MIT) */
+function qrSvg(testo, mm) {
+  var q = qrcode(0, 'M'); q.addData(testo); q.make();
+  var n = q.getModuleCount(), m = 4, d = '';
+  for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m) + '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#15212B"/></svg>';
+}
+/* una pagina A4 per alunno: link, QR con accesso diretto, codice personale */
+function stampaSchede() {
+  var base = location.origin + '/';
+  var imp = S.d.admin && S.d.admin.impostazioni;
+  var logo = Poster.logo(22);
+  var pagine = S.d.codiciAlunni.map(function (a) {
+    var ar = area(a.gruppo) || {};
+    var link = base + '?c=' + encodeURIComponent(a.codice);
+    return '<section class="pg">' +
+      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">Glossario odontotecnico bilingue · Classe 3E · a.s. 2026/27</div></div></header>' +
+      '<div class="nome">' + esc(a.nome) + '</div>' +
+      '<div class="gr" style="border-color:' + esc(ar.colore || '#15212B') + '">Gruppo ' + esc(a.gruppo) + (ar.it ? ' · ' + esc(ar.it) : '') + '</div>' +
+      '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo glossario.</b></p></div>' +
+      '<div class="acc"><div><div class="lb">Indirizzo dell\'app</div><div class="url">' + esc(base.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</div></div>' +
+      '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
+      '<ol><li>Apri l\'app con il QR oppure scrivi l\'indirizzo e inserisci il codice.</li>' +
+      '<li>Per ognuno dei tuoi 5 termini scegli la definizione giusta tra 8: prima in italiano, poi in inglese.</li>' +
+      '<li>Controlla spesso l\'app: trovi voto, scadenze ed eventuali termini ricevuti da un compagno.</li></ol>' +
+      (imp ? '<div class="sca"><div><span>Scadenza italiano</span><b>' + esc(oraIt(imp.scadenzaIt)) + '</b></div><div><span>Scadenza inglese</span><b>' + esc(oraIt(imp.scadenzaEn)) + '</b></div></div>' : '') +
+      '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: chi li ha può rispondere al posto tuo. Chi a una scadenza ha anche un solo termine senza risposta viene escluso con voto 4.</div>' +
+      '<footer>Prof. Danilo Cerrato · Laboratorio odontotecnico &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico</footer>' +
+      '</section>';
+  }).join('');
+  var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.pg{width:210mm;height:297mm;padding:16mm 18mm 14mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
+    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:4mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:15pt}.pr{font-size:10.5pt;color:#5B6976;margin-top:1mm}' +
+    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:30pt;margin-top:9mm;line-height:1.1}.gr{display:inline-block;align-self:flex-start;border-left:3mm solid;padding:1mm 3mm;font-size:13pt;margin-top:2mm;background:#F2F5F7}' +
+    '.qr{display:flex;flex-direction:column;align-items:center;margin-top:8mm}.qr svg{border:1pt solid #C3CED7;border-radius:3mm}.qr p{text-align:center;font-size:12pt;margin:3mm 0 0}' +
+    '.acc{display:grid;grid-template-columns:1.3fr 1fr;gap:5mm;margin-top:7mm}.acc>div{border:1pt solid #C3CED7;border-radius:3mm;padding:3mm 4mm}.lb{font-size:9.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
+    '.url{font-weight:700;font-size:14pt;margin-top:1.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:24pt;letter-spacing:.18em;margin-top:1mm}' +
+    'ol{font-size:11.5pt;line-height:1.45;margin:6mm 0 0;padding-left:6mm}li{margin:1mm 0}' +
+    '.sca{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:5mm}.sca div{background:#15212B;color:#fff;border-radius:3mm;padding:2.5mm 4mm}.sca span{display:block;font-size:9.5pt;opacity:.8}.sca b{font-size:12.5pt}' +
+    '.warn{margin-top:auto;background:#FCEBD9;border-radius:3mm;padding:3mm 4mm;font-size:10.5pt;line-height:1.4}footer{margin-top:4mm;font-size:9.5pt;color:#5B6976;text-align:center}';
+  var w = window.open('', '_blank');
+  if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
+  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Schede alunni Glossario 3E</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">' +
+    '<style>' + css + '</style></head><body>' + pagine +
+    '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}</scr' + 'ipt></body></html>');
+  w.document.close();
+}
+
 /* ---------- avvio ---------- */
 (function () {
+  // accesso diretto dal QR della scheda: ?c=CODICE (il codice viene tolto subito dalla barra degli indirizzi)
+  var qc = null; try { qc = new URLSearchParams(location.search).get('c'); } catch (e) {}
+  if (qc) { memo(KEY_COD, String(qc).trim().toUpperCase()); try { history.replaceState(null, '', location.pathname); } catch (e) {} }
   var c = memo(KEY_COD);
   if (c) { $('app').innerHTML = '<div class="wrap"><div class="card login">Accesso in corso…</div></div>'; entra(c); } else vistaLogin();
 })();

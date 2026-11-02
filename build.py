@@ -16,6 +16,9 @@ html = '''<!DOCTYPE html>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
+''' + r('src/qrcode.js') + '''
+</script>
+<script>
 ''' + r('src/poster.js') + '''
 </script>
 <script>
