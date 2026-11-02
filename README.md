@@ -30,3 +30,14 @@ Laboratorio odontotecnico (prof. Danilo Cerrato) · Inglese tecnico (prof.ssa Fe
 Modalità: ogni alunno sceglie la definizione giusta tra 8 alternative (la corretta + 7 definizioni di termini vicini della stessa area). Le risposte giuste non vengono mai inviate al browser degli alunni.
 
 Date delle tappe, nomi, gruppi e codici si possono modificare direttamente dalla console Firebase: valgono subito.
+
+## Esclusione e riassegnazione
+
+Dopo una scadenza, al primo accesso (login o risposta) la funzione `manutenzione` in `logica.js`:
+1. segna come esclusi gli alunni con termini senza risposta (campo `esclusione` in `alunni`, permanente salvo `riammesso`);
+2. passa i loro termini, azzerati, a un compagno estratto a sorte tra i non esclusi che non hanno già ricevuto termini (`ereditati`);
+3. imposta sui termini `ereditato`, `alunno_orig`, `scad_it` e `scad_en` (giorni da `EREDITA` in `dati.js`, modificabili dall'app).
+
+Chi riceve termini ha voto massimo `votoMaxErede` (10) invece di `votoMax` (8).
+
+Se chi ha ricevuto i termini non risponde entro `scad_it`/`scad_en`, non viene escluso: si registra `tetto` sull'alunno e il voto finale diventa `min(voto calcolato, 6)` (`tettoEredeInRitardo` in `dati.js`). I termini ricevuti si possono completare anche in ritardo, per il cartellone.

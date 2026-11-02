@@ -36,8 +36,9 @@ var Poster = (function () {
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
     var nomi = {};
     (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; });
-    var gruppo = (alunni || []).filter(function (a) { return String(a.gruppo) === String(area.n); })
-      .map(function (a) { return esc(a.nome); });
+    // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), nell'ordine dei termini
+    var visti = {}, gruppo = [];
+    termini.forEach(function (t) { if (t.alunno && !visti[t.alunno]) { visti[t.alunno] = 1; gruppo.push(esc(nomi[t.alunno] || t.alunno)); } });
     var F = "font-family:'Archivo',Arial,sans-serif;";
 
     var righe = termini.map(function (t, i) {

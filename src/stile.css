@@ -100,3 +100,4 @@ details summary{cursor:pointer;font-weight:700;font-family:'Archivo',system-ui,s
 .vl{background:#F6F8FA;border-radius:12px;padding:10px 14px;min-width:140px;flex:1}
 .vl-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:34px;line-height:1.1}
 .vl-n small{font-size:15px;color:var(--muted);font-weight:700}
+.note-ered{background:var(--infobg);border-color:#B9D0EC;color:#0F3560}

@@ -419,7 +419,11 @@ const TAPPE = [
 const SCADENZE = { it: '2026-11-13T23:59:00+01:00', en: '2026-11-27T23:59:00+01:00' };
 
 // Valutazione: voto massimo 8; proposta A = -0,25 per errore, B = -0,50 (scelta dall'area docenti).
-const VALUTAZIONE = { votoMax: 8, votoMin: 4, votoEsclusione: 4, proposta: 'A' };
+// tettoEredeInRitardo: chi non risponde in tempo ai termini ricevuti da un escluso non può superare questo voto
+const VALUTAZIONE = { votoMax: 8, votoMaxErede: 10, votoMin: 4, votoEsclusione: 4, tettoEredeInRitardo: 6, proposta: 'A' };
+
+// Termini degli esclusi: passano a sorte a un compagno, che ha questi giorni (dalla riassegnazione) per rispondere.
+const EREDITA = { giorniIt: 2, giorniEn: 4 };
 
 // Definizioni corrette [italiano, inglese], nello stesso ordine dei termini.
 const DEFINIZIONI = {
@@ -753,4 +757,4 @@ const DEFINIZIONI = {
  ]
 };
 
-module.exports = { AREE, TERMINI, DEFINIZIONI, NOMI_ALUNNI, DOCENTI, TAPPE, SCADENZE, VALUTAZIONE };
+module.exports = { AREE, TERMINI, DEFINIZIONI, NOMI_ALUNNI, DOCENTI, TAPPE, SCADENZE, VALUTAZIONE, EREDITA };

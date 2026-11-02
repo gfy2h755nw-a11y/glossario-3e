@@ -70,6 +70,10 @@ function impostazioni(config) {
     scadenzaEn: sc.en || DATI.SCADENZE.en,
     proposta: PENALITA[config.proposta] ? config.proposta : DATI.VALUTAZIONE.proposta,
     votoMax: DATI.VALUTAZIONE.votoMax,
+    votoMaxErede: DATI.VALUTAZIONE.votoMaxErede,
+    tetto: DATI.VALUTAZIONE.tettoEredeInRitardo,
+    giorniIt: Number(config.giorniIt) > 0 ? Number(config.giorniIt) : DATI.EREDITA.giorniIt,
+    giorniEn: Number(config.giorniEn) > 0 ? Number(config.giorniEn) : DATI.EREDITA.giorniEn,
     votoMin: DATI.VALUTAZIONE.votoMin,
     votoEsclusione: DATI.VALUTAZIONE.votoEsclusione
   };
@@ -83,6 +87,9 @@ function ratio(imp) {
     'Il voto finale è la media dei due, arrotondata al quarto di voto più vicino: per difetto se la parte decimale è sotto la metà, per eccesso dalla metà in su (es. 6,75 e 8 → media 7,375 → 7,5). ' +
     'Il voto finale compare quando ci sono risposte in entrambe le lingue. ' +
     'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito con voto ' + imp.votoEsclusione + '. ' +
+    'I termini dell\'alunno escluso passano automaticamente, a sorte, a un compagno: chi li riceve ha ' + imp.giorniIt + ' giorni per l\'italiano e ' + imp.giorniEn +
+    ' per l\'inglese e il suo voto massimo sale da ' + imp.votoMax + ' a ' + imp.votoMaxErede + ', con le stesse penalità. ' +
+    'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto finale scende a ' + imp.tetto + ' se era ' + imp.tetto + ' o più; se era sotto ' + imp.tetto + ' resta quello. ' +
     'Il voto inserito a mano dal docente sostituisce il voto finale calcolato.';
 }
 /* Stato di un alunno: conteggi, esclusione, voto. now = ms */
@@ -99,30 +106,44 @@ function valuta(stato, a, now) {
       if (campo(t, l, 'stato') === 'approvata') c.approvate++;
     });
   });
-  const scadIt = Date.parse(imp.scadenzaIt), scadEn = Date.parse(imp.scadenzaEn);
   const mancaIt = miei.filter((t) => !(campo(t, 'it', 'tent') > 0)).length;
-  // inglese: contano tutti e 5 i termini, approvati o no in italiano
+  // inglese: contano tutti i termini, approvati o no in italiano
   const mancaEn = miei.filter((t) => !(campo(t, 'en', 'tent') > 0)).length;
-  let motivo = '';
-  if (now > scadIt && mancaIt) motivo = mancaIt + ' termini senza risposta in italiano alla scadenza';
-  else if (now > scadEn && mancaEn) motivo = mancaEn + ' termini senza risposta in inglese alla scadenza';
+  // ogni termine ha la sua scadenza: quella generale, o quella dei termini ereditati
+  // esclusione: solo per i termini propri; per quelli ricevuti il ritardo porta il voto a non più di 6
+  const scaduti = (l) => miei.filter((t) => !t.ereditato && now > scadenzaTermine(t, l, imp) && !(campo(t, l, 'tent') > 0)).length;
+  const ritardiEredita = miei.filter((t) => t.ereditato && ['it', 'en'].some((l) => now > scadenzaTermine(t, l, imp) && !(campo(t, l, 'tent') > 0))).length;
+  const tetto = !!a.tetto || ritardiEredita > 0;
+  const sIt = scaduti('it'), sEn = scaduti('en');
+  let motivo = a.esclusione ? a.esclusione.motivo : '';
+  if (!motivo && sIt) motivo = sIt + ' termini senza risposta in italiano alla scadenza';
+  else if (!motivo && sEn) motivo = sEn + ' termini senza risposta in inglese alla scadenza';
   const escluso = !!motivo && !a.riammesso;
+  const ereditati = miei.filter((t) => t.ereditato).length;
+  const max = ereditati ? imp.votoMaxErede : imp.votoMax;
   // un voto per lingua (solo se ci sono risposte in quella lingua), poi la media arrotondata
-  const votoLingua = (l) => c[l].inviate ? Math.max(imp.votoMin, Math.min(imp.votoMax, imp.votoMax - PENALITA[imp.proposta] * c[l].errate)) : null;
+  const votoLingua = (l) => c[l].inviate ? Math.max(imp.votoMin, Math.min(max, max - PENALITA[imp.proposta] * c[l].errate)) : null;
   const votoIt = votoLingua('it'), votoEn = votoLingua('en');
   const media = votoIt != null && votoEn != null ? (votoIt + votoEn) / 2 : null;
   const calcolato = media != null ? arrot(media) : null;
   const manuale = typeof a.voto_manuale === 'number' ? a.voto_manuale : null;
-  const voto = manuale != null ? manuale : escluso ? imp.votoEsclusione : calcolato;
+  const voto = manuale != null ? manuale : escluso ? imp.votoEsclusione : (tetto && calcolato != null ? Math.min(calcolato, imp.tetto) : calcolato);
   return Object.assign(c, { id: a.id, nome: a.nome, gruppo: String(a.gruppo), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
-    votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn });
+    votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn, votoMax: max, ereditati,
+    riassegnatoA: a.riassegnato_a || null, termini: miei.length, tetto, tettoValore: imp.tetto,
+    motivoTetto: tetto ? (a.tetto ? a.tetto.motivo : ritardiEredita + ' termini ricevuti senza risposta alla scadenza') : '' });
+}
+function scadenzaTermine(t, l, imp) {
+  const own = campo(t, l, 'scad');
+  return Date.parse(own || (l === 'it' ? imp.scadenzaIt : imp.scadenzaEn));
 }
 function messaggioEsclusione() { return 'SEI STATO ESCLUSO DAL COMPITO CAUSA MANCATO RISPETTO DELLA DATA DI CONSEGNA - IL TUO VOTO FINALE SARÀ 4.'; }
 
 /* ---------- cosa vede chi ---------- */
 function campo(t, l, nome) { return t[nome + '_' + l]; }
 function vistaTermine(t, chi) {
-  const base = { id: t.id, area: Number(t.area), it: t.termine_it, en: t.termine_en, alunno: t.alunno_id, agg: t.aggiornato || '' };
+  const base = { id: t.id, area: Number(t.area), it: t.termine_it, en: t.termine_en, alunno: t.alunno_id, agg: t.aggiornato || '',
+    ereditato: !!t.ereditato, alunnoOrig: t.alunno_orig || null, scadIt: t.scad_it || null, scadEn: t.scad_en || null };
   const mio = chi.ruolo === 'alunno' && t.alunno_id === chi.id;
   ['it', 'en'].forEach((l) => {
     const L = l === 'it' ? 'It' : 'En';
@@ -165,7 +186,11 @@ function pacchetto(stato, chi) {
     if (v.escluso) return { utente: { ruolo: 'alunno', nome: chi.nome }, escluso: true, messaggio: messaggioEsclusione() };
   }
   let termini = stato.termini;
-  if (chi.ruolo === 'alunno') termini = termini.filter((t) => String(t.area) === chi.gruppo);
+  if (chi.ruolo === 'alunno') {
+    // la sua area, più le aree dei termini ricevuti da compagni esclusi (per l'anteprima dei cartelloni)
+    const aree = new Set([chi.gruppo].concat(termini.filter((t) => t.alunno_id === chi.id).map((t) => String(t.area))));
+    termini = termini.filter((t) => aree.has(String(t.area)));
+  }
   const out = {
     utente: chi,
     config: { chiusa: !!stato.config.chiusa, tappe: tappe(imp), scadenzaIt: imp.scadenzaIt, scadenzaEn: imp.scadenzaEn,
@@ -178,18 +203,21 @@ function pacchetto(stato, chi) {
   delete out.utente._a;
   if (chi.ruolo === 'alunno') {
     const v = valuta(stato, chi._a || stato.alunni.find((a) => a.id === chi.id), now);
-    out.voto = { voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, manuale: v.manuale != null, escluso: v.escluso,
+    out.voto = { voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, manuale: v.manuale != null, escluso: v.escluso, votoMax: v.votoMax, ereditati: v.ereditati,
+      tetto: v.tetto, tettoValore: v.tettoValore, calcolato: v.calcolato,
       errIt: v.it.errate, errEn: v.en.errate, invIt: v.it.inviate, invEn: v.en.inviate, errate: v.errate, corrette: v.corrette, inviate: v.inviate, ratio: ratio(imp) };
   }
   if (chi.ruolo === 'docente') {
     const val = stato.alunni.map((a) => valuta(stato, a, now));
     // vista condivisa: conteggi per studente
     out.panoramica = val.map((v) => ({ id: v.id, nome: v.nome, gruppo: v.gruppo, inviate: v.inviate, corrette: v.corrette, errate: v.errate,
-      daApprovare: v.daApprovare, approvate: v.approvate, escluso: v.escluso, motivo: v.motivo, mancaIt: v.mancaIt, mancaEn: v.mancaEn }));
+      daApprovare: v.daApprovare, approvate: v.approvate, escluso: v.escluso, motivo: v.motivo, mancaIt: v.mancaIt, mancaEn: v.mancaEn,
+      termini: v.termini, ereditati: v.ereditati, riassegnatoA: v.riassegnatoA }));
     if (chi.admin) {
       out.codiciAlunni = stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), codice: a.codice }));
       out.admin = { impostazioni: imp, penalita: PENALITA, ratio: ratio(imp),
-        voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate,
+        voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate, votoMax: v.votoMax, ereditati: v.ereditati,
+          tetto: v.tetto, motivoTetto: v.motivoTetto,
           calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })) };
     }
   }
@@ -225,8 +253,8 @@ async function scegli(db, { codice, id, lingua: l, lettera }) {
     const idx = opzioni(t, l)[i];
     if ((campo(t, l, 'scartate') || []).indexOf(idx) >= 0) errore('Questa definizione è già stata scartata: scegline un\'altra.');
     if (st === 'inviata' && campo(t, l, 'scelta') === idx) errore('Hai già inviato questa scelta.');
-    const scad = Date.parse(l === 'it' ? imp.scadenzaIt : imp.scadenzaEn);
-    if (now > scad && !(campo(t, l, 'tent') > 0) && !chi._a.riammesso) errore('La scadenza per ' + (l === 'it' ? "l'italiano" : "l'inglese") + ' è passata.');
+    const scad = scadenzaTermine(t, l, imp);
+    if (now > scad && !(campo(t, l, 'tent') > 0) && !chi._a.riammesso && !t.ereditato) errore('La scadenza per ' + (l === 'it' ? "l'italiano" : "l'inglese") + ' è passata.');
     const ok = idx === giusta(t);
     const storia = (campo(t, l, 'storia') || []).concat([{ i: idx, ok, at: adesso() }]);
     const mod = { ['scelta_' + l]: idx, ['stato_' + l]: 'inviata', aggiornato: adesso(),
@@ -283,12 +311,16 @@ async function approvaCorrette(db, { codice, lingua: l, area }) {
 function soloAdmin(chi) { if (chi.ruolo !== 'docente' || !chi.admin) errore('Operazione riservata al prof. Cerrato.'); }
 function isoValida(s) { const t = Date.parse(s); if (!s || isNaN(t)) errore('Data non valida.'); return new Date(t).toISOString(); }
 
-async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta }) {
+async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta, giorniIt, giorniEn }) {
   const stato = await db.leggiTutto();
   soloAdmin(identifica(stato, codice));
   const mod = {};
   if (scadenzaIt || scadenzaEn) mod.scadenze = Object.assign({}, stato.config.scadenze || {}, scadenzaIt ? { it: isoValida(scadenzaIt) } : {}, scadenzaEn ? { en: isoValida(scadenzaEn) } : {});
   if (proposta) { if (!PENALITA[proposta]) errore('Proposta non valida.'); mod.proposta = proposta; }
+  [['giorniIt', giorniIt], ['giorniEn', giorniEn]].forEach(([k, v]) => {
+    if (v === undefined || v === null || v === '') return;
+    const n = Number(v); if (!(n >= 1 && n <= 14)) errore('I giorni per i termini ereditati vanno da 1 a 14.'); mod[k] = n;
+  });
   await db.scriviConfig(mod);
   return impostazioni(Object.assign({}, stato.config, mod));
 }
@@ -313,6 +345,60 @@ async function riammetti(db, { codice, alunno, riammesso }) {
   const a = stato.alunni.find((x) => x.id === alunno); if (!a) errore('Alunno non trovato.');
   await db.scriviAlunno(a.id, { riammesso: !!riammesso });
   return { alunno: a.id, riammesso: !!riammesso };
+}
+
+/* ---------- riassegnazione automatica dei termini degli esclusi ---------- */
+const AZZERA = (l) => ({ ['scelta_' + l]: null, ['stato_' + l]: '', ['commento_' + l]: '', ['tent_' + l]: 0, ['primo_ok_' + l]: null,
+  ['scartate_' + l]: [], ['da_' + l]: '', ['invii_' + l]: 0, ['errori_' + l]: 0, ['storia_' + l]: [] });
+function caso(n) { return require('crypto').randomInt(n); }
+/* Applica le riassegnazioni allo stato in memoria e restituisce le scritture da fare. */
+function pianoRiassegnazione(stato, now, sceltaCasuale) {
+  const imp = impostazioni(stato.config);
+  const wT = {}, wA = {}, eventi = [], senzaErede = new Set();
+  const scriviT = (t, mod) => { Object.assign(t, mod); wT[t.id] = Object.assign(wT[t.id] || {}, mod); };
+  const scriviA = (a, mod) => { Object.assign(a, mod); wA[a.id] = Object.assign(wA[a.id] || {}, mod); };
+  for (let giro = 0; giro < stato.alunni.length; giro++) {
+    const val = stato.alunni.map((a) => ({ a, v: valuta(stato, a, now) }));
+    const daFare = val.filter((x) => x.v.escluso && !x.a.riassegnato && x.v.termini > 0 && !senzaErede.has(x.a.id));
+    if (!daFare.length) break;
+    daFare.forEach(({ a, v }) => {
+      const esclusiOra = new Set(stato.alunni.map((x) => x).filter((x) => x.esclusione || valuta(stato, x, now).escluso).map((x) => x.id));
+      // a sorte tra i compagni non esclusi che non hanno già ricevuto i termini di un altro (al massimo un "carico" a testa)
+      const cand = stato.alunni.filter((x) => x.id !== a.id && !esclusiOra.has(x.id) && !(x.ereditati > 0));
+      if (!a.esclusione) scriviA(a, { esclusione: { motivo: v.motivo, at: new Date(now).toISOString() } });
+      if (!cand.length) { senzaErede.add(a.id); eventi.push({ da: a.id, a: null }); return; } // nessuno disponibile: si riprova al prossimo accesso
+      scriviA(a, { riassegnato: true });
+      const erede = cand[sceltaCasuale(cand.length)];
+      const scadIt = new Date(now + imp.giorniIt * 86400000).toISOString(), scadEn = new Date(now + imp.giorniEn * 86400000).toISOString();
+      stato.termini.filter((t) => t.alunno_id === a.id).forEach((t) => {
+        scriviT(t, Object.assign({ alunno_id: erede.id, alunno_orig: t.alunno_orig || a.id, ereditato: true, scad_it: scadIt, scad_en: scadEn, aggiornato: adesso() }, AZZERA('it'), AZZERA('en')));
+      });
+      scriviA(a, { riassegnato_a: erede.id });
+      scriviA(erede, { ereditati: (erede.ereditati || 0) + 1, eredita_da: (erede.eredita_da || []).concat([a.id]) });
+      eventi.push({ da: a.id, a: erede.id });
+    });
+  }
+  // tetto a 6 per chi non ha risposto in tempo ai termini ricevuti: si registra e resta anche se poi completa
+  stato.alunni.forEach((a) => {
+    if (a.tetto) return;
+    const v = valuta(stato, a, now);
+    if (v.tetto && !v.escluso) { scriviA(a, { tetto: { motivo: v.motivoTetto, at: new Date(now).toISOString() } }); eventi.push({ tetto: a.id }); }
+  });
+  return { wT, wA, eventi };
+}
+async function manutenzione(db, sceltaCasuale) {
+  // prima della scadenza di italiano non può esserci nessun escluso: basta una lettura
+  if (db.leggiConfig) {
+    const cfg = await db.leggiConfig();
+    if (!cfg || Date.now() <= Date.parse(impostazioni(cfg).scadenzaIt)) return [];
+  }
+  return db.transazione(async (tx) => {
+    const stato = await tx.leggiTutto();
+    const piano = pianoRiassegnazione(stato, Date.now(), sceltaCasuale || caso);
+    Object.keys(piano.wT).forEach((id) => tx.scriviTermine(id, piano.wT[id]));
+    Object.keys(piano.wA).forEach((id) => tx.scriviAlunno(id, piano.wA[id]));
+    return piano.eventi;
+  });
 }
 
 async function impostaChiusura(db, { codice, chiusa }) {
@@ -355,4 +441,4 @@ async function setup(db, { chiave }, chiaveAttesa) {
   return { docenti: config.docenti.map((d) => ({ nome: d.nome, codice: d.codice })), alunni: alunni.length, termini: termini.length };
 }
 
-module.exports = { login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };
+module.exports = { manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

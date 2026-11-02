@@ -31,7 +31,9 @@ exports.handler = async (event) => {
   const fn = AZIONI[p.azione];
   if (!fn) return risposta(400, { errore: 'Azione sconosciuta.' });
   try {
-    return risposta(200, { ok: true, dati: await fn(db(), p) });
+    const d = db();
+    if (p.azione === 'login' || p.azione === 'scegli') await logica.manutenzione(d);
+    return risposta(200, { ok: true, dati: await fn(d, p) });
   } catch (e) {
     if (e instanceof logica.ErroreUtente || e.utente) {
       if (/Codice non riconosciuto|Chiave di configurazione/.test(e.message)) await new Promise((r) => setTimeout(r, 800));

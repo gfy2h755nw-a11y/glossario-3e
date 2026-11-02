@@ -84,8 +84,9 @@ function avviaCountdown() {
     document.querySelectorAll('[data-cd]').forEach(function (el) { el.innerHTML = cdHtml(el.getAttribute('data-cd')); });
   }, 1000);
 }
-function bloccoScadenze(miei) {
+function bloccoScadenze(tutti) {
   var c = S.d.config;
+  var miei = tutti.filter(function (t) { return !t.ereditato; }), ered = tutti.filter(function (t) { return t.ereditato; });
   var mancaIt = miei.filter(function (t) { return !t.statoIt || t.statoIt === ''; }).length;
   var mancaEn = miei.filter(function (t) { return !t.statoEn; }).length;
   function riga(lab, iso, manca, nota) {
@@ -94,21 +95,25 @@ function bloccoScadenze(miei) {
       '<div style="font-size:14px">' + (manca ? '<b>' + manca + '</b> ' + (manca === 1 ? 'termine' : 'termini') + ' ancora senza risposta' : nota) + '</div></div>';
   }
   return '<section class="card stack"><h2 style="margin:0;font-size:22px">Scadenze</h2><div class="grid2">' +
-    riga('Italiano', c.scadenzaIt, mancaIt, '✓ Tutti i termini hanno una risposta') +
-    riga('Inglese', c.scadenzaEn, mancaEn, '✓ Tutti i termini hanno una risposta') +
-    '</div><p class="note warn" style="margin:0">Chi alla scadenza ha ancora termini senza risposta viene <b>escluso dal compito</b> con voto 4.</p></section>';
+    (miei.length ? riga('Italiano', c.scadenzaIt, mancaIt, '✓ Tutti i termini hanno una risposta') +
+    riga('Inglese', c.scadenzaEn, mancaEn, '✓ Tutti i termini hanno una risposta') : '') +
+    (ered.length ? riga('Termini ricevuti · italiano', ered[0].scadIt, ered.filter(function (t) { return !t.statoIt; }).length, '✓ Tutti hanno una risposta') +
+      riga('Termini ricevuti · inglese', ered[0].scadEn, ered.filter(function (t) { return !t.statoEn; }).length, '✓ Tutti hanno una risposta') : '') +
+    '</div><p class="note warn" style="margin:0">' + (miei.length ? 'Chi alla scadenza ha ancora <b>termini propri</b> senza risposta viene <b>escluso dal compito</b> con voto 4. ' : '') +
+    (ered.length ? 'Per i <b>termini ricevuti</b>, se non rispondi in tempo, il voto finale scende a 6 (se era più alto).' : '') + '</p></section>';
 }
 function bloccoVoto() {
   var v = S.d.voto; if (!v) return '';
   var mini = function (lab, val, err, inv) {
     return '<div class="vl"><div class="muted disp" style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px">' + lab + '</div>' +
-      '<div class="vl-n">' + fv(val) + '<small>/8</small></div><div class="muted" style="font-size:13px">' + (inv ? (inv === 1 ? '1 risposta' : inv + ' risposte') + ' · ' + (err === 1 ? '1 errata' : err + ' errate') : 'nessuna risposta') + '</div></div>';
+      '<div class="vl-n">' + fv(val) + '<small>/' + (v.votoMax || 8) + '</small></div><div class="muted" style="font-size:13px">' + (inv ? (inv === 1 ? '1 risposta' : inv + ' risposte') + ' · ' + (err === 1 ? '1 errata' : err + ' errate') : 'nessuna risposta') + '</div></div>';
   };
   return '<section class="card stack"><div class="voto-box">' +
     '<div class="vf"><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + (v.manuale ? 'Voto finale assegnato dal docente' : 'Voto finale provvisorio') + '</div>' +
-    '<div class="voto-n">' + fv(v.voto) + '<small>/8</small></div>' +
-    (v.voto == null ? '<div class="muted" style="font-size:14px">Compare quando hai risposto in italiano e in inglese</div>' : v.media != null && !v.manuale ? '<div class="muted" style="font-size:14px">Media di italiano e inglese' + (v.media !== v.voto ? ': ' + fv(Math.round(v.media * 1000) / 1000) + ', arrotondata' : '') + '</div>' : '') + '</div>' +
+    '<div class="voto-n">' + fv(v.voto) + '<small>/' + (v.votoMax || 8) + '</small></div>' +
+    (v.voto == null ? '<div class="muted" style="font-size:14px">Compare quando hai risposto in italiano e in inglese</div>' : v.media != null && !v.manuale && !v.tetto ? '<div class="muted" style="font-size:14px">Media di italiano e inglese' + (v.media !== v.voto ? ': ' + fv(Math.round(v.media * 1000) / 1000) + ', arrotondata' : '') + '</div>' : '') + '</div>' +
     '<div class="vls">' + mini('Italiano', v.votoIt, v.errIt, v.invIt) + mini('Inglese', v.votoEn, v.errEn, v.invEn) + '</div></div>' +
+    (v.tetto && !v.manuale ? '<div class="note warn"><b>Voto finale limitato a ' + v.tettoValore + '</b>: non hai risposto in tempo ai termini ricevuti' + (v.calcolato != null && v.calcolato > v.tettoValore ? ' (il calcolo darebbe ' + fv(v.calcolato) + ')' : '') + '.</div>' : '') +
     '<p class="muted" style="margin:0;font-size:14px">' + esc(v.ratio) + '</p></section>';
 }
 
@@ -132,7 +137,9 @@ function bloccoTappe() {
 /* ---------- cartellone ---------- */
 function bloccoPoster(n) {
   var opts = S.d.aree.map(function (a) { return '<option value="' + a.n + '"' + (a.n == n ? ' selected' : '') + '>Cartellone ' + a.n + ' · ' + esc(a.it) + '</option>'; }).join('');
-  var sel = S.d.utente.ruolo === 'docente' ? '<div><label for="selposter" class="sr">Scegli il cartellone</label><select id="selposter" onchange="disegnaPoster(this.value)">' + opts + '</select></div>' : '';
+  var aree = S.d.utente.ruolo === 'docente' ? S.d.aree : S.d.aree.filter(function (a) { return S.d.termini.some(function (t) { return t.area == a.n && t.alunno === S.d.utente.id; }) || a.n == S.d.utente.gruppo; });
+  opts = aree.map(function (a) { return '<option value="' + a.n + '"' + (a.n == n ? ' selected' : '') + '>Cartellone ' + a.n + ' · ' + esc(a.it) + '</option>'; }).join('');
+  var sel = aree.length > 1 ? '<div><label for="selposter" class="sr">Scegli il cartellone</label><select id="selposter" onchange="disegnaPoster(this.value)">' + opts + '</select></div>' : '';
   return '<section class="card stack"><h2 style="margin:0;font-size:22px">Anteprima del cartellone 70×100</h2>' + sel +
     '<p class="muted" style="margin:0;font-size:15px">Sul cartellone vanno solo le definizioni approvate dai docenti.</p>' +
     '<div class="poster-box" id="pbox"><div class="poster-scale" id="pscale"></div></div></section>';
@@ -154,8 +161,14 @@ function vistaAlunno() {
   var h = testata(u.nome + ' · Gruppo ' + u.gruppo) + '<main class="wrap stack">';
   h += '<section class="card" style="border-top:8px solid ' + a.colore + '"><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">Area ' + a.n + '</div>' +
     '<h1 style="margin:2px 0 0;font-size:30px;line-height:1.1">' + esc(a.it) + '</h1><div class="term-en" style="color:' + a.colore + '">' + esc(a.en) + '</div>' +
-    '<p style="margin:12px 0 0">Ciao <b>' + esc(u.nome) + '</b>. Per ognuno dei tuoi <b>5 termini</b> scegli la definizione giusta tra 8 alternative. Prima in italiano: quando il prof. Cerrato la approva, si sblocca la scelta in inglese, rivista dalla prof.ssa Aliboni.</p>' +
-    '<div class="row" style="margin-top:12px"><span class="chip s-approvata">Italiano ' + n('it') + '/5</span><span class="chip s-approvata">Inglese ' + n('en') + '/5</span></div></section>';
+    '<p style="margin:12px 0 0">Ciao <b>' + esc(u.nome) + '</b>. Per ognuno dei tuoi <b>' + miei.length + ' termini</b> scegli la definizione giusta tra 8 alternative. Prima in italiano: quando il prof. Cerrato la approva, si sblocca la scelta in inglese, rivista dalla prof.ssa Aliboni.</p>' +
+    '<div class="row" style="margin-top:12px"><span class="chip s-approvata">Italiano ' + n('it') + '/' + miei.length + '</span><span class="chip s-approvata">Inglese ' + n('en') + '/' + miei.length + '</span></div></section>';
+  var ered = miei.filter(function (t) { return t.ereditato; });
+  if (ered.length) {
+    var da = ered.map(function (t) { return nomeAlunno(t.alunnoOrig); }).filter(function (x, i, arr) { return arr.indexOf(x) === i; });
+    h += '<section class="card note-ered" role="status"><b>Hai ricevuto ' + ered.length + ' termini in più</b> da ' + esc(da.join(', ')) + ', escluso per mancato rispetto della scadenza. ' +
+      'Il tuo <b>voto massimo sale a ' + (S.d.voto ? S.d.voto.votoMax : 10) + '</b> e il tuo nome andrà sul cartellone al suo posto. Per questi termini hai tempo fino a <b>' + esc(oraIt(ered[0].scadIt)) + '</b> per l\'italiano e <b>' + esc(oraIt(ered[0].scadEn)) + '</b> per l\'inglese. Se non rispondi in tempo a questi termini non vieni escluso, ma il tuo voto finale non potrà superare 6.</section>';
+  }
   if (S.d.config.chiusa) h += '<div class="note warn"><b>L\'app è chiusa.</b> Le scelte non sono più modificabili.</div>';
   h += bloccoVoto() + bloccoScadenze(miei) + bloccoTappe();
   h += miei.map(cardAlunno).join('');
@@ -187,7 +200,7 @@ function cardAlunno(t) {
       '<div class="row" style="margin-top:8px"><button class="btn" onclick="conferma(\'' + t.id + '\',\'' + l + '\',this)">' + (st === 'inviata' ? 'Cambia scelta' : 'Conferma la scelta') + '</button></div>';
     return h + '</div>';
   }
-  return '<article class="card"><div class="term-it">' + esc(t.it) + '</div><div class="term-en" lang="en" style="color:' + col + '">' + esc(t.en) + '</div>' + blocco('it') + blocco('en') + '</article>';
+  return '<article class="card">' + (t.ereditato ? '<div class="chip s-inviata" style="margin-bottom:8px">Ricevuto da ' + esc(nomeAlunno(t.alunnoOrig)) + ' · area ' + t.area + '</div>' : '') + '<div class="term-it">' + esc(t.it) + '</div><div class="term-en" lang="en" style="color:' + col + '">' + esc(t.en) + '</div>' + blocco('it') + blocco('en') + '</article>';
 }
 function segna(inp) { inp.closest('fieldset').querySelectorAll('label.op').forEach(function (lb) { lb.classList.toggle('on', lb.contains(inp)); }); }
 function conferma(id, l, btn) {
@@ -247,7 +260,7 @@ function vistaDocente() {
 function cardDocente(t, l) {
   var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
   var h = '<article class="card" style="border-top:6px solid ' + a.colore + '"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="term-it">' + esc(t.it) + '</div><div class="term-en" lang="en" style="color:' + a.colore + '">' + esc(t.en) + '</div></div>' +
-    '<div class="muted" style="text-align:right;font-size:15px"><b style="color:var(--ink)">' + esc(nomeAlunno(t.alunno)) + '</b><br>Area ' + t.area + (T(t, l, 'tent') ? ' · tentativi: ' + T(t, l, 'tent') : '') + (t.agg ? '<br>' + esc(t.agg) : '') + '</div></div>';
+    '<div class="muted" style="text-align:right;font-size:15px"><b style="color:var(--ink)">' + esc(nomeAlunno(t.alunno)) + '</b>' + (t.ereditato ? '<br>ricevuto da ' + esc(nomeAlunno(t.alunnoOrig)) : '') + '<br>Area ' + t.area + (T(t, l, 'tent') ? ' · tentativi: ' + T(t, l, 'tent') : '') + (t.agg ? '<br>' + esc(t.agg) : '') + '</div></div>';
   if (l === 'en') {
     h += '<div class="lang"><h3>Italiano' + chip(t.statoIt) + '</h3>' + (t.statoIt === 'approvata'
       ? '<div class="fixed-text">' + esc(t.defIt) + '</div><p class="muted" style="margin:6px 0 0;font-size:14px">Approvata da ' + esc(t.daIt) + '</p>'
@@ -287,9 +300,9 @@ function panoramica() {
   var P = S.d.panoramica || [], tot = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0 };
   var righe = P.map(function (r) {
     Object.keys(tot).forEach(function (k) { tot[k] += r[k]; });
-    return '<tr' + (r.escluso ? ' class="riga-esclusa"' : '') + '><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere" title="' + esc(r.motivo) + '">Escluso</span>' : '') + '</td><td class="n">' + r.gruppo + '</td>' +
+    return '<tr' + (r.escluso ? ' class="riga-esclusa"' : '') + '><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere" title="' + esc(r.motivo) + '">Escluso</span>' + (r.riassegnatoA ? ' <span class="muted" style="font-size:13px">termini → ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') : '') + (r.ereditati ? ' <span class="chip s-inviata">+' + (r.termini - 5) + ' ricevuti</span>' : '') + '</td><td class="n">' + r.gruppo + '</td>' +
       '<td class="n">' + r.inviate + '</td><td class="n" style="color:var(--ok)">' + r.corrette + '</td><td class="n" style="color:var(--err)">' + r.errate + '</td>' +
-      '<td class="n">' + (r.daApprovare ? '<span class="chip s-inviata">' + r.daApprovare + '</span>' : '0') + '</td><td class="n">' + r.approvate + '/10</td></tr>';
+      '<td class="n">' + (r.daApprovare ? '<span class="chip s-inviata">' + r.daApprovare + '</span>' : '0') + '</td><td class="n">' + r.approvate + '/' + (r.termini * 2) + '</td></tr>';
   }).join('');
   return '<section class="card stack"><h2 style="margin:0;font-size:22px">Panoramica della classe</h2>' +
     '<div class="grid4 kpi">' + [['Risposte date', tot.inviate, ''], ['Corrette', tot.corrette, 'var(--ok)'], ['Errate', tot.errate, 'var(--err)'], ['Da approvare', tot.daApprovare, 'var(--info)']].map(function (k) {
@@ -304,6 +317,8 @@ function bloccoAdmin() {
   var h = '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Scadenze e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<div class="grid2"><div><label for="scIt">Scadenza italiano</label><input id="scIt" type="datetime-local" value="' + isoLocale(imp.scadenzaIt) + '"></div>' +
     '<div><label for="scEn">Scadenza inglese</label><input id="scEn" type="datetime-local" value="' + isoLocale(imp.scadenzaEn) + '"></div></div>' +
+    '<div class="grid2"><div><label for="gIt">Termini ricevuti da un escluso: giorni per l\'italiano</label><input id="gIt" type="text" inputmode="numeric" value="' + imp.giorniIt + '"></div>' +
+    '<div><label for="gEn">Termini ricevuti da un escluso: giorni per l\'inglese</label><input id="gEn" type="text" inputmode="numeric" value="' + imp.giorniEn + '"></div></div>' +
     '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Penalità per ogni risposta errata</legend>' +
     [['A', '−0,25 per errore: 16 errori per scendere da 8 a 4'], ['B', '−0,50 per errore: 8 errori per scendere da 8 a 4']].map(function (o) {
       return '<label class="op' + (imp.proposta === o[0] ? ' on' : '') + '" for="pr' + o[0] + '"><input type="radio" name="prop" id="pr' + o[0] + '" value="' + o[0] + '"' + (imp.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>';
@@ -313,7 +328,7 @@ function bloccoAdmin() {
   var nomi = {}; (S.d.panoramica || []).forEach(function (r) { nomi[r.id] = r; });
   var row = function (v) {
     var r = nomi[v.id];
-    return '<tr><td>' + esc(r.nome) + '</td><td class="n">' + r.gruppo + '</td>' +
+    return '<tr><td>' + esc(r.nome) + (v.ereditati ? ' <span class="chip s-inviata">max ' + v.votoMax + '</span>' : '') + (v.tetto ? ' <span class="chip s-correggere" title="' + esc(v.motivoTetto || '') + '">tetto 6</span>' : '') + '</td><td class="n">' + r.gruppo + '</td>' +
       '<td class="n">' + fv(v.votoIt) + (v.votoIt != null ? '<br><span class="muted" style="font-weight:400;font-size:13px">' + v.errIt + ' err.</span>' : '') + '</td>' +
       '<td class="n">' + fv(v.votoEn) + (v.votoEn != null ? '<br><span class="muted" style="font-weight:400;font-size:13px">' + v.errEn + ' err.</span>' : '') + '</td>' +
       '<td class="n" style="font-weight:400">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="n">' + fv(v.calcolato) + '</td>' +
@@ -327,7 +342,7 @@ function bloccoAdmin() {
     attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo.</p>';
   if (esclusi.length) {
     h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Voto finale</th><th></th></tr></thead><tbody>' +
-      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
+      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + (r.riassegnatoA ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
   }
   h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><span class="muted" style="font-size:14px">Si apre la stampa: scegli “Salva come PDF”.</span></div></section>';
@@ -337,7 +352,7 @@ function salvaImpostazioni(btn) {
   var it = $('scIt').value, en = $('scEn').value, pr = document.querySelector('input[name="prop"]:checked');
   if (!it || !en) { toast('Inserisci entrambe le scadenze.', true); return; }
   btn.disabled = true;
-  api('impostazioni', { scadenzaIt: new Date(it).toISOString(), scadenzaEn: new Date(en).toISOString(), proposta: pr ? pr.value : null })
+  api('impostazioni', { scadenzaIt: new Date(it).toISOString(), scadenzaEn: new Date(en).toISOString(), proposta: pr ? pr.value : null, giorniIt: $('gIt').value, giorniEn: $('gEn').value })
     .then(function () { return api('login'); }).then(function (d) { S.d = d; toast('Impostazioni salvate'); vistaDocente(); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
@@ -368,12 +383,12 @@ function reportPdf() {
       });
     });
     return '<section class="st"><div class="h"><div><h2>' + esc(r.nome) + '</h2><div class="m">Gruppo ' + r.gruppo + ' · ' + esc(S.d.aree[r.gruppo - 1].it) + '</div></div>' +
-      '<div class="v"><div class="vn">' + fv(v.voto) + '<small>/8</small></div><div class="m">' + (v.escluso ? 'Escluso: ' + esc(v.motivo) : v.manuale != null ? 'Voto manuale (calcolato: ' + fv(v.calcolato) + ')' : 'Voto finale calcolato') + '</div></div></div>' +
+      '<div class="v"><div class="vn">' + fv(v.voto) + '<small>/' + (v.votoMax || 8) + '</small></div><div class="m">' + (v.escluso ? 'Escluso: ' + esc(v.motivo) : v.manuale != null ? 'Voto manuale (calcolato: ' + fv(v.calcolato) + ')' : 'Voto finale calcolato') + '</div></div></div>' +
       '<table class="vt"><tr><th>Voto italiano</th><th>Voto inglese</th><th>Media</th><th>Voto finale</th></tr><tr>' +
       '<td class="c">' + fv(v.votoIt) + (v.votoIt != null ? ' <span class="m">(' + v.errIt + ' errate)</span>' : '') + '</td>' +
       '<td class="c">' + fv(v.votoEn) + (v.votoEn != null ? ' <span class="m">(' + v.errEn + ' errate)</span>' : '') + '</td>' +
       '<td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (esclusione)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr></table>' +
-      '<p class="k">Risposte date <b>' + r.inviate + '</b> · corrette <b>' + r.corrette + '</b> · errate <b>' + r.errate + '</b> · da approvare <b>' + r.daApprovare + '</b> · approvate <b>' + r.approvate + '/10</b></p>' +
+      (v.ereditati ? '<p class="k"><b>Ha ricevuto i termini di un compagno escluso: voto massimo ' + v.votoMax + '.</b>' + (v.tetto ? ' Non ha risposto in tempo ai termini ricevuti: voto finale limitato a 6 (' + esc(v.motivoTetto || '') + ').' : '') + '</p>' : '') + (r.riassegnatoA ? '<p class="k">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '.</p>' : '') + '<p class="k">Risposte date <b>' + r.inviate + '</b> · corrette <b>' + r.corrette + '</b> · errate <b>' + r.errate + '</b> · da approvare <b>' + r.daApprovare + '</b> · approvate <b>' + r.approvate + '/' + (r.termini * 2) + '</b></p>' +
       '<table><thead><tr><th style="width:24%">Termine</th><th style="width:12%">Tentativi</th><th>Risposta attuale</th><th style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table></section>';
   }).join('');
   var sintesi = (S.d.panoramica || []).map(function (r) { var v = voti[r.id]; return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + r.gruppo + '</td><td class="c">' + r.inviate + '</td><td class="c">' + r.corrette + '</td><td class="c">' + r.errate + '</td><td class="c">' + fv(v.votoIt) + '</td><td class="c">' + fv(v.votoEn) + '</td><td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (escluso)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr>'; }).join('');
@@ -383,7 +398,7 @@ function reportPdf() {
     '.vt{width:auto;margin-top:8px}.vt th{background:#EEF2F5;color:#15212B}.vt td,.vt th{padding:4px 14px;font-size:10pt}.vn{font-size:26pt;font-weight:800;text-align:right}.vn small{font-size:11pt;color:#5B6976}.v{text-align:right}.k{margin:8px 0 0}.box{background:#EEF2F5;padding:8px 10px;border-radius:6px;margin-top:8px}';
   var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario 3E</title><style>' + css + '</style></head><body>' +
     '<h1>Glossario odontotecnico bilingue · Report della classe 3E</h1><div class="m">Istituto Barsanti - sede Salvetti, Massa · a.s. 2026/27 · Prof. Danilo Cerrato · Prof.ssa Federica Aliboni · generato il ' + esc(oggi) + '</div>' +
-    '<div class="box"><b>Criterio di assegnazione del punteggio.</b> Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, prima in italiano e poi in inglese (10 risposte in tutto); ogni scelta viene verificata dai docenti. ' + esc(A.ratio) + ' Il voto è espresso in ottavi (massimo 8).</div>' +
+    '<div class="box"><b>Criterio di assegnazione del punteggio.</b> Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, prima in italiano e poi in inglese (10 risposte in tutto); ogni scelta viene verificata dai docenti. ' + esc(A.ratio) + ' Voto massimo 8, oppure 10 per chi ha ricevuto i termini di un compagno escluso.</div>' +
     '<div class="box">Scadenza italiano: ' + esc(oraIt(A.impostazioni.scadenzaIt)) + ' · Scadenza inglese: ' + esc(oraIt(A.impostazioni.scadenzaEn)) + '</div>' +
     '<h2 style="margin-top:12px">Sintesi</h2><table><thead><tr><th>Alunno</th><th class="c">Gr.</th><th class="c">Risposte</th><th class="c">Corrette</th><th class="c">Errate</th><th class="c">Voto IT</th><th class="c">Voto EN</th><th class="c">Media</th><th class="c">Voto finale</th></tr></thead><tbody>' + sintesi + '</tbody></table>' +
     stud + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},300)}</scr' + 'ipt></body></html>';

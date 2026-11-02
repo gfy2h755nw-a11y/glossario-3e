@@ -32,6 +32,7 @@ function db() {
       const [c, a, t] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get()]);
       return compone(c, a, t);
     },
+    async leggiConfig() { const c = await cfgRef.get(); return c.exists ? c.data() : null; },
     async scriviConfig(mod) { await cfgRef.set(mod, { merge: true }); },
     async scriviAlunno(id, mod) { await f.collection(COL.alunni).doc(String(id)).set(mod, { merge: true }); },
     async esisteGlossario() { return (await cfgRef.get()).exists; },
@@ -57,10 +58,11 @@ function db() {
             if (t.exists) st.termini = [Object.assign({ id: t.id }, t.data())];
             return st;
           },
-          scriviTermine(id, mod) { scritture.push([f.collection(COL.termini).doc(id), mod]); }
+          scriviTermine(id, mod) { scritture.push([f.collection(COL.termini).doc(id), mod]); },
+          scriviAlunno(id, mod) { scritture.push([f.collection(COL.alunni).doc(String(id)), mod, true]); }
         };
         const r = await fn(ctx);
-        scritture.forEach(([ref, mod]) => tx.update(ref, mod));
+        scritture.forEach(([ref, mod, unisci]) => (unisci ? tx.set(ref, mod, { merge: true }) : tx.update(ref, mod)));
         return r;
       });
     }
