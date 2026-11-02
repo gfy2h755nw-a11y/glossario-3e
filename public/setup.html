@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Configurazione · Glossario 3E</title>
+<style>
+body{margin:0;background:#EEF2F5;color:#15212B;font-family:system-ui,Arial,sans-serif;font-size:17px;line-height:1.45}
+.card{max-width:520px;margin:8vh auto 0;background:#fff;border:1px solid #D3DCE3;border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:26px}
+label{font-weight:700;font-size:15px}
+input{width:100%;box-sizing:border-box;border:2px solid #D3DCE3;border-radius:12px;padding:10px 12px;font:inherit}
+button{min-height:44px;border-radius:12px;border:0;background:#15212B;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5}
+.err{background:#F8E1E6;color:#6E1328;border-radius:12px;padding:10px 14px}
+.ok{background:#E3F1E4;color:#1D4D20;border-radius:12px;padding:12px 14px}
+.cod{font-family:monospace;font-size:22px;font-weight:700;letter-spacing:.15em}
+@media (max-width:560px){.card{margin:16px}}
+</style>
+</head>
+<body>
+<form class="card" id="f">
+  <h1>Configurazione iniziale</h1>
+  <p style="margin:0">Da usare <b>una sola volta</b>: crea in Firestore i 16 alunni, gli 80 termini e i codici di accesso.</p>
+  <div><label for="k">Chiave di configurazione (SETUP_KEY impostata su Netlify)</label><input id="k" type="password" autocomplete="off" required></div>
+  <button id="b" type="submit">Crea il glossario</button>
+  <div id="out"></div>
+</form>
+<script>
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+document.getElementById('f').onsubmit = function (e) {
+  e.preventDefault();
+  var b = document.getElementById('b'), out = document.getElementById('out');
+  b.disabled = true; b.textContent = 'Creazione…';
+  fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'setup', chiave: document.getElementById('k').value }) })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.ok) throw new Error(j.errore);
+      out.innerHTML = '<div class="ok"><b>Fatto.</b> Creati ' + j.dati.alunni + ' alunni e ' + j.dati.termini + ' termini.<br><br>Codici dei docenti (annotali ora):' +
+        j.dati.docenti.map(function (d) { return '<div style="margin-top:8px">' + esc(d.nome) + '<br><span class="cod">' + esc(d.codice) + '</span></div>'; }).join('') +
+        '<br>I codici degli alunni li trovi nell\'area docenti dell\'app, sezione “Codici personali degli alunni”.<br><br><a href="/">Vai all\'app</a></div>';
+      b.textContent = 'Completato';
+    })
+    .catch(function (err) { out.innerHTML = '<div class="err">' + esc(err.message || 'Errore di connessione') + '</div>'; b.disabled = false; b.textContent = 'Crea il glossario'; });
+};
+</script>
+</body>
+</html>

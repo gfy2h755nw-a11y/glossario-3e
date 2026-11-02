@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossario 3E · Bilingual dental glossary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15212B; --ink2:#3E4C59; --muted:#5B6976; --line:#D3DCE3; --bg:#EEF2F5; --card:#FFFFFF;
+  --a1:#1F5FA8; --a2:#6B4FA0; --a3:#B4511A; --a4:#2E7D32;
+  --ok:#2E7D32; --okbg:#E3F1E4; --warn:#9A4A00; --warnbg:#FCEBD9; --info:#1F5FA8; --infobg:#E2ECF7; --err:#B0304A; --errbg:#F8E1E6;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Atkinson Hyperlegible',system-ui,sans-serif;font-size:17px;line-height:1.45}
+h1,h2,h3,.disp{font-family:'Archivo',system-ui,sans-serif;letter-spacing:-0.01em}
+button,input,textarea,select{font:inherit;color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:16px}
+.top{background:var(--ink);color:#fff}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:12px}
+.top .brand{font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:18px}
+.top .brand small{display:block;font-weight:600;font-size:13px;opacity:.75;letter-spacing:.04em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;border:2px solid var(--ink);background:var(--ink);color:#fff;font-family:'Archivo',system-ui,sans-serif;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--ink)}
+.btn.ok{background:var(--ok);border-color:var(--ok)}
+.btn.warn{background:#fff;color:var(--err);border-color:var(--err)}
+.btn.ghost{background:transparent;border-color:rgba(255,255,255,.5);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.muted{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 12px;font-size:14px;font-weight:700;font-family:'Archivo',system-ui,sans-serif}
+.s-vuota{background:#EEF2F5;color:var(--muted)}
+.s-bozza{background:#FFF6D6;color:#7A5B00}
+.s-inviata{background:var(--infobg);color:var(--info)}
+.s-correggere{background:var(--warnbg);color:var(--warn)}
+.s-approvata{background:var(--okbg);color:var(--ok)}
+label{font-weight:700;font-size:15px}
+input[type=text],input[type=password],textarea,select{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+input:focus,textarea:focus,select:focus,.btn:focus-visible{outline:3px solid #9CC3EE;outline-offset:1px}
+textarea{min-height:104px;resize:vertical}
+.cnt{font-size:14px;color:var(--muted);text-align:right}
+.cnt.over{color:var(--err);font-weight:700}
+.term-it{font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:22px;line-height:1.15}
+.term-en{font-family:'Archivo',system-ui,sans-serif;font-weight:600;font-style:italic;font-size:17px}
+.lang{border-top:1px dashed var(--line);padding-top:14px;margin-top:6px}
+.lang h3{margin:0 0 8px;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.note{border-radius:12px;padding:10px 14px;font-size:15px}
+.note.warn{background:var(--warnbg);color:#5A2D00}
+.note.info{background:var(--infobg);color:#0F3560}
+.note.err{background:var(--errbg);color:#6E1328}
+.fixed-text{background:#F6F8FA;border-radius:12px;padding:10px 14px}
+.bar{height:10px;border-radius:999px;background:#E3E9EE;overflow:hidden}
+.bar>span{display:block;height:100%}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.tappe{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.tappe li{display:grid;grid-template-columns:118px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid #EEF2F5}
+.tappe li.past{color:var(--muted)}
+.tappe li.next{font-weight:700}
+.tappe .d{font-family:'Archivo',system-ui,sans-serif;font-weight:700}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;max-width:92vw;display:none;z-index:50}
+#toast.err{background:var(--err)}
+.login{max-width:440px;margin:7vh auto 0}
+.login h1{font-size:40px;line-height:1;margin:0}
+.poster-box{background:#C9D2DA;border-radius:14px;padding:12px;overflow:hidden}
+.poster-scale{transform-origin:top left}
+details summary{cursor:pointer;font-weight:700;font-family:'Archivo',system-ui,sans-serif}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th,.tbl td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+.tbl td.n{text-align:right;font-family:'Archivo',system-ui,sans-serif;font-weight:700}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:600px){ .term-it{font-size:20px} .tappe li{grid-template-columns:96px 1fr} }
+.ops{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.op{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:400;font-size:16px;line-height:1.4;background:#fff}
+.op:hover{border-color:#9CC3EE}
+.op input{position:absolute;opacity:0;width:1px;height:1px}
+.op .lt{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:14px;color:var(--ink2)}
+.op.on{border-color:var(--a1);background:#F0F6FD}
+.op.on .lt{background:var(--a1);border-color:var(--a1);color:#fff}
+.op:focus-within{outline:3px solid #9CC3EE;outline-offset:1px}
+.op.no{opacity:.55;cursor:not-allowed;text-decoration:line-through}
+.op.no em{text-decoration:none}
+.esito{margin-top:8px;border-radius:10px;padding:8px 12px;font-size:15px}
+.esito.si{background:var(--okbg);color:#1D4D20}
+.esito.no{background:var(--errbg);color:#6E1328}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+/* ===== POSTER-START: modello del cartellone 70×100 cm ===== */
+var Poster = (function () {
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function tinta(hex, a) {
+    var h = hex.replace('#', '');
+    var r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
+    var m = function (c) { return Math.round(255 - (255 - c) * a); };
+    return 'rgb(' + m(r) + ',' + m(g) + ',' + m(b) + ')';
+  }
+  var ICONE = {
+    1: '<path d="M14 6c-5 0-8 4-8 10 0 5 2 8 3 13 1 6 2 13 6 13 3 0 3-7 5-11 1-2 3-2 4 0 2 4 2 11 5 11 4 0 5-7 6-13 1-5 3-8 3-13 0-6-3-10-8-10-4 0-6 2-10 2s-6-2-10-2z"/>',
+    2: '<path d="M6 18c6-8 30-8 36 0M6 30c6 8 30 8 36 0M12 18v4M18 16v6M24 15v7M30 16v6M36 18v4M12 30v-4M18 32v-6M24 33v-7M30 32v-6M36 30v-4"/>',
+    3: '<path d="M18 4h12M20 4v14L8 40c-1 2 0 4 2 4h28c2 0 3-2 2-4L28 18V4M13 30h22"/>',
+    4: '<path d="M24 44c-8 0-13-5-13-12 0-8 7-11 8-20 5 3 7 8 7 12 2-2 3-4 3-7 5 4 8 9 8 15 0 7-5 12-13 12z"/>'
+  };
+
+  /* area: {n,it,en,colore} · termini: [{it,en,defIt,defEn,alunno}] · alunni: [{id,nome,gruppo}] */
+  function html(area, termini, alunni, opz) {
+    opz = opz || {};
+    var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
+    var nomi = {};
+    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; });
+    var gruppo = (alunni || []).filter(function (a) { return String(a.gruppo) === String(area.n); })
+      .map(function (a) { return esc(a.nome); });
+    var F = "font-family:'Archivo',Arial,sans-serif;";
+
+    var righe = termini.map(function (t, i) {
+      function def(testo, lingua) {
+        if (testo && (!opz.soloApprovate || (lingua === 'it' ? t.statoIt : t.statoEn) === 'approvata')) {
+          return '<div style="font-size:6.5mm;line-height:1.25;' + (lingua === 'en' ? 'font-style:italic;' : '') + '">' + esc(testo) + '</div>';
+        }
+        return '<div style="font-size:4.6mm;line-height:1.3;color:#8494A3;font-style:italic;border-bottom:0.5mm dashed #B8C3CC;padding-bottom:3mm">' +
+          (lingua === 'it' ? 'Definizione a cura di ' : 'Definition by ') + esc(nomi[t.alunno] || '…') + '</div>';
+      }
+      return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:13mm 160mm minmax(0,1fr) minmax(0,1fr);column-gap:9mm;align-items:center;padding:0 5mm;' +
+        (i % 2 ? 'background:' + chiaro + ';' : '') + 'border-bottom:0.45mm solid ' + medio + '">' +
+        '<div style="width:12mm;height:12mm;border-radius:50%;background:' + col + ';color:#fff;display:flex;align-items:center;justify-content:center;' + F + 'font-weight:800;font-size:5.4mm">' + (i + 1) + '</div>' +
+        '<div><div style="' + F + 'font-weight:800;font-size:9.8mm;line-height:1.04;color:#15212B">' + esc(t.it) + '</div>' +
+        '<div style="' + F + 'font-weight:600;font-style:italic;font-size:7.2mm;line-height:1.12;color:' + col + ';margin-top:1.8mm">' + esc(t.en) + '</div></div>' +
+        '<div>' + def(t.defIt, 'it') + '</div>' +
+        '<div>' + def(t.defEn, 'en') + '</div>' +
+        '</div>';
+    }).join('');
+
+    var lab = 'font-size:4.6mm;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;';
+    return '' +
+      '<div class="poster-foglio" style="width:700mm;height:1000mm;box-sizing:border-box;background:#fff;color:#15212B;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden">' +
+      /* testata */
+      '<div style="background:' + col + ';color:#fff;padding:26mm 36mm 16mm;display:flex;flex-direction:column;gap:9mm">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;' + F + lab + '">' +
+          '<span>Glossario odontotecnico bilingue · Bilingual dental glossary</span><span>Classe 3E · a.s. 2026/27</span></div>' +
+        '<div style="display:flex;align-items:center;gap:14mm">' +
+          '<div style="' + F + 'font-weight:900;font-size:96mm;line-height:0.8;letter-spacing:-0.04em">0' + area.n + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="' + F + 'font-weight:900;font-size:24mm;line-height:0.98;letter-spacing:-0.02em">' + esc(area.it) + '</div>' +
+            '<div style="' + F + 'font-weight:600;font-style:italic;font-size:12mm;line-height:1.1;margin-top:4mm;opacity:0.92">' + esc(area.en) + '</div>' +
+          '</div>' +
+          '<svg width="58mm" height="58mm" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONE[area.n] + '</svg>' +
+        '</div>' +
+        '<div style="border-top:0.6mm solid rgba(255,255,255,0.55);padding-top:5mm;font-size:6mm;line-height:1.3">' +
+          '<b>A cura di · Edited by:</b> ' + (gruppo.join(' · ') || '—') + '</div>' +
+      '</div>' +
+      /* intestazione tabella */
+      '<div style="padding:9mm 36mm 0;display:flex;flex-direction:column;flex:1;min-height:0">' +
+        '<div style="display:grid;grid-template-columns:13mm 160mm minmax(0,1fr) minmax(0,1fr);column-gap:9mm;padding:0 5mm 3mm;border-bottom:0.9mm solid #15212B;' + F + lab + 'color:#3E4C59">' +
+          '<span></span><span>Termine · Term</span><span>Definizione · Italiano</span><span>Definition · English</span></div>' +
+        '<div style="flex:1;min-height:0;display:flex;flex-direction:column">' + righe + '</div>' +
+      '</div>' +
+      /* piede */
+      '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
+        '<span><b>IIS “L. Barsanti” – Plesso Salvetti, Massa</b><br>Classe 3E · Area ' + area.n + ' di 4</span>' +
+        '<span style="text-align:right">Laboratorio odontotecnico: prof. Danilo Cerrato<br>Inglese tecnico: prof.ssa Federica Aliboni</span>' +
+      '</div>' +
+      '</div>';
+  }
+  return { html: html };
+})();
+/* ===== POSTER-END ===== */
+
+</script>
+<script>
+/* Glossario 3E – app (modalità "scegli la definizione tra 8") */
+var API_URL = '/api';
+var KEY_COD = 'glossario3e_codice';
+var S = { codice: null, d: null, filtro: { area: 'tutte', stato: 'inviata', lingua: 'it' }, poster: null, sel: {} };
+
+/* ---------- utilità ---------- */
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function toast(msg, err) { var t = $('toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(function () { t.style.display = 'none'; }, 3500); }
+function memo(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function api(azione, dati) {
+  var corpo = Object.assign({ azione: azione, codice: S.codice }, dati || {});
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+    .catch(function () { throw new Error('Connessione assente: controlla internet e riprova.'); })
+    .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server (' + r.status + ').' }; }); })
+    .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
+}
+function errMsg(e) { return e && e.message ? e.message : String(e); }
+var STATO_TXT = { '': 'Da scegliere', inviata: 'Inviata', correggere: 'Da rivedere', approvata: 'Approvata' };
+function chip(st) { return '<span class="chip s-' + (st || 'vuota') + '">' + STATO_TXT[st || ''] + '</span>'; }
+function area(n) { return S.d.aree.filter(function (a) { return a.n == n; })[0]; }
+function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id === id; })[0]; return a ? a.nome : id; }
+function T(t, l, campo) { return t[campo + (l === 'it' ? 'It' : 'En')]; }
+function aggiornaTermine(t) { S.d.termini = S.d.termini.map(function (x) { return x.id === t.id ? t : x; }); }
+var MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+var GG = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+function dataIt(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if (!m) return iso; var d = new Date(+m[1], +m[2] - 1, +m[3]); return GG[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()]; }
+function oggiIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function giorniA(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if (!m) return null; var a = new Date(+m[1], +m[2] - 1, +m[3]), o = new Date(); o.setHours(0, 0, 0, 0); return Math.round((a - o) / 86400000); }
+
+/* ---------- accesso ---------- */
+function vistaLogin(msg) {
+  $('app').innerHTML = '<div class="wrap"><form class="card login stack" id="flogin">' +
+    '<div><div class="muted disp" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">Classe 3E · a.s. 2026/27</div>' +
+    '<h1>Glossario odontotecnico</h1><div class="term-en" style="color:var(--a1);margin-top:4px">Bilingual dental glossary</div></div>' +
+    '<p class="muted" style="margin:0">Laboratorio odontotecnico · Inglese tecnico</p>' +
+    (msg ? '<div class="note err">' + esc(msg) + '</div>' : '') +
+    '<div><label for="cod">Il tuo codice personale</label><input id="cod" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;font-family:Archivo,system-ui,sans-serif;font-weight:700;letter-spacing:.2em;font-size:22px" required></div>' +
+    '<button class="btn" type="submit" id="bentra">Entra</button>' +
+    '<p class="muted" style="margin:0;font-size:14px">Il codice te lo consegna il prof. Non darlo a nessuno: chi lo conosce può rispondere al posto tuo.</p></form></div>';
+  $('flogin').onsubmit = function (e) { e.preventDefault(); entra($('cod').value); };
+  $('cod').focus();
+}
+function entra(codice) {
+  var b = $('bentra'); if (b) { b.disabled = true; b.textContent = 'Accesso…'; }
+  S.codice = String(codice || '').trim().toUpperCase();
+  api('login').then(function (d) {
+    S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
+    if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: d.utente.lingua || 'it' };
+    render();
+  }).catch(function (e) { memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e)); });
+}
+function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; vistaLogin(); }
+function ricarica() { api('login').then(function (d) { S.d = d; render(); toast('Dati aggiornati'); }).catch(function (e) { toast(errMsg(e), true); }); }
+function render() { if (!S.d) return vistaLogin(); if (S.d.utente.ruolo === 'alunno') vistaAlunno(); else vistaDocente(); }
+function testata(sotto) {
+  return '<header class="top"><div class="wrap"><div class="brand">Glossario 3E<small>' + esc(sotto) + '</small></div>' +
+    '<div class="row"><button class="btn ghost" onclick="ricarica()">Aggiorna</button><button class="btn ghost" onclick="esci()">Esci</button></div></div></header>';
+}
+
+/* ---------- tappe ---------- */
+function bloccoTappe() {
+  var oggi = oggiIso(), prossima = null;
+  S.d.config.tappe.forEach(function (t) { if (!prossima && t.data >= oggi) prossima = t; });
+  var g = prossima ? giorniA(prossima.data) : null;
+  return '<details class="card"' + (S.d.utente.ruolo === 'alunno' ? ' open' : '') + '><summary>Le tappe</summary>' +
+    (prossima ? '<div class="note info" style="margin-top:12px"><b>Prossima tappa: ' + dataIt(prossima.data) + '</b> (' + (g === 0 ? 'oggi' : g === 1 ? 'domani' : 'tra ' + g + ' giorni') + ') · ' + esc(prossima.testo) + '</div>' : '') +
+    '<ol class="tappe" style="margin-top:10px">' + S.d.config.tappe.map(function (t, i) {
+      return '<li class="' + (t.data < oggi ? 'past' : t === prossima ? 'next' : '') + '"><span class="d">' + (i + 1) + '. ' + dataIt(t.data) + '</span><span>' + esc(t.testo) + '</span></li>';
+    }).join('') + '</ol></details>';
+}
+
+/* ---------- cartellone ---------- */
+function bloccoPoster(n) {
+  var opts = S.d.aree.map(function (a) { return '<option value="' + a.n + '"' + (a.n == n ? ' selected' : '') + '>Cartellone ' + a.n + ' · ' + esc(a.it) + '</option>'; }).join('');
+  var sel = S.d.utente.ruolo === 'docente' ? '<div><label for="selposter" class="sr">Scegli il cartellone</label><select id="selposter" onchange="disegnaPoster(this.value)">' + opts + '</select></div>' : '';
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Anteprima del cartellone 70×100</h2>' + sel +
+    '<p class="muted" style="margin:0;font-size:15px">Sul cartellone vanno solo le definizioni approvate dai docenti.</p>' +
+    '<div class="poster-box" id="pbox"><div class="poster-scale" id="pscale"></div></div></section>';
+}
+function disegnaPoster(n) {
+  S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
+  var ts = S.d.termini.filter(function (t) { return t.area == n; });
+  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true });
+  var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
+  sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
+}
+window.addEventListener('resize', function () { if (S.poster && $('pbox')) disegnaPoster(S.poster); });
+
+/* ---------- alunno ---------- */
+function vistaAlunno() {
+  var u = S.d.utente, a = area(u.gruppo);
+  var miei = S.d.termini.filter(function (t) { return t.alunno === u.id; });
+  var n = function (l) { return miei.filter(function (t) { return T(t, l, 'stato') === 'approvata'; }).length; };
+  var h = testata(u.nome + ' · Gruppo ' + u.gruppo) + '<main class="wrap stack">';
+  h += '<section class="card" style="border-top:8px solid ' + a.colore + '"><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">Area ' + a.n + '</div>' +
+    '<h1 style="margin:2px 0 0;font-size:30px;line-height:1.1">' + esc(a.it) + '</h1><div class="term-en" style="color:' + a.colore + '">' + esc(a.en) + '</div>' +
+    '<p style="margin:12px 0 0">Ciao <b>' + esc(u.nome) + '</b>. Per ognuno dei tuoi <b>5 termini</b> scegli la definizione giusta tra 8 alternative. Prima in italiano: quando il prof. Cerrato la approva, si sblocca la scelta in inglese, rivista dalla prof.ssa Aliboni.</p>' +
+    '<div class="row" style="margin-top:12px"><span class="chip s-approvata">Italiano ' + n('it') + '/5</span><span class="chip s-approvata">Inglese ' + n('en') + '/5</span></div></section>';
+  if (S.d.config.chiusa) h += '<div class="note warn"><b>L\'app è chiusa.</b> Le scelte non sono più modificabili.</div>';
+  h += bloccoTappe();
+  h += miei.map(cardAlunno).join('');
+  h += bloccoPoster(u.gruppo) + '</main>';
+  $('app').innerHTML = h; disegnaPoster(u.gruppo);
+}
+function cardAlunno(t) {
+  var col = area(t.area).colore;
+  function blocco(l) {
+    var st = T(t, l, 'stato'), comm = T(t, l, 'comm'), ops = T(t, l, 'opz'), scelta = T(t, l, 'scelta');
+    var h = '<div class="lang"><h3>' + (l === 'it' ? 'Definizione in italiano' : 'Definition in English') + chip(st) + '</h3>';
+    if (!ops) return h + '<p class="muted" style="margin:0">Si sblocca quando la scelta in italiano è approvata.</p></div>';
+    if (st === 'correggere') h += '<div class="note warn" style="margin-bottom:10px"><b>Da rivedere:</b> ' + esc(comm || 'Non è la definizione giusta: scegline un\'altra.') + '</div>';
+    if (st === 'approvata' || S.d.config.chiusa) {
+      var txt = T(t, l, 'def') || (scelta ? ops.filter(function (o) { return o.l === scelta; })[0].t : '');
+      return h + '<div class="fixed-text"' + (l === 'en' ? ' lang="en" style="font-style:italic"' : '') + '>' + (txt ? esc(txt) : '—') + '</div>' +
+        (st === 'approvata' && comm ? '<p class="muted" style="margin:8px 0 0;font-size:15px">Nota: ' + esc(comm) + '</p>' : '') + '</div>';
+    }
+    var nome = 'op_' + t.id + '_' + l, sel = S.sel[nome] || scelta;
+    h += '<fieldset class="ops"><legend class="sr">Scegli la definizione di ' + esc(l === 'it' ? t.it : t.en) + '</legend>';
+    ops.forEach(function (o) {
+      var id = nome + '_' + o.l;
+      h += '<label class="op' + (sel === o.l ? ' on' : '') + (o.no ? ' no' : '') + '" for="' + id + '">' +
+        '<input type="radio" name="' + nome + '" id="' + id + '" value="' + o.l + '"' + (sel === o.l ? ' checked' : '') + (o.no ? ' disabled' : '') +
+        ' onchange="S.sel[\'' + nome + '\']=\'' + o.l + '\';segna(this)">' +
+        '<span class="lt">' + o.l + '</span><span' + (l === 'en' ? ' lang="en"' : '') + '>' + esc(o.t) + (o.no ? ' <em class="muted">(già scartata)</em>' : '') + '</span></label>';
+    });
+    h += '</fieldset>' + (st === 'inviata' ? '<p class="muted" style="margin:6px 0 0;font-size:15px">Scelta inviata: in attesa del docente. Puoi ancora cambiarla.</p>' : '') +
+      '<div class="row" style="margin-top:8px"><button class="btn" onclick="conferma(\'' + t.id + '\',\'' + l + '\',this)">' + (st === 'inviata' ? 'Cambia scelta' : 'Conferma la scelta') + '</button></div>';
+    return h + '</div>';
+  }
+  return '<article class="card"><div class="term-it">' + esc(t.it) + '</div><div class="term-en" lang="en" style="color:' + col + '">' + esc(t.en) + '</div>' + blocco('it') + blocco('en') + '</article>';
+}
+function segna(inp) { inp.closest('fieldset').querySelectorAll('label.op').forEach(function (lb) { lb.classList.toggle('on', lb.contains(inp)); }); }
+function conferma(id, l, btn) {
+  var nome = 'op_' + id + '_' + l, el = document.querySelector('input[name="' + nome + '"]:checked');
+  if (!el) { toast('Seleziona una delle 8 definizioni.', true); return; }
+  btn.disabled = true;
+  api('scegli', { id: id, lingua: l, lettera: el.value }).then(function (t) {
+    aggiornaTermine(t); delete S.sel[nome]; toast('Scelta inviata'); render();
+  }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+
+/* ---------- docente ---------- */
+function vistaDocente() {
+  var u = S.d.utente, f = S.filtro;
+  var h = testata(u.nome + ' · area docenti') + '<main class="wrap stack">';
+  if (S.d.config.chiusa) h += '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>';
+  h += '<section class="grid4">' + S.d.aree.map(function (a) {
+    var ts = S.d.termini.filter(function (t) { return t.area == a.n; });
+    var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
+    var riv = c('it', 'inviata') + c('en', 'inviata');
+    var pronte = ts.filter(function (t) { return t.statoIt === 'approvata' && t.statoEn === ''; }).length;
+    return '<div class="card" style="border-top:8px solid ' + a.colore + '"><div class="disp" style="font-weight:800;font-size:17px;line-height:1.2">' + a.n + '. ' + esc(a.it) + '</div>' +
+      ['it', 'en'].map(function (l) { var v = c(l, 'approvata'); return '<div style="margin-top:10px;font-size:15px">' + (l === 'it' ? 'Italiano' : 'Inglese') + ' <b>' + v + '/' + ts.length + '</b></div><div class="bar"><span style="width:' + (v / ts.length * 100) + '%;background:' + a.colore + '"></span></div>'; }).join('') +
+      (pronte ? '<div style="margin-top:8px;font-size:14px" class="muted">' + pronte + ' pronte per l\'inglese, non ancora scelte</div>' : '') +
+      '<div style="margin-top:10px">' + (riv ? '<span class="chip s-inviata">' + riv + ' da rivedere</span>' : '<span class="chip s-vuota">Niente da rivedere</span>') + '</div></div>';
+  }).join('') + '</section>';
+
+  var lista = S.d.termini.filter(function (t) {
+    if (f.area !== 'tutte' && t.area != f.area) return false;
+    if (f.stato === 'pronte') return t.statoIt === 'approvata' && t.statoEn !== 'approvata';
+    return f.stato === 'tutti' ? true : T(t, f.lingua, 'stato') === f.stato;
+  });
+  var corrette = lista.filter(function (t) { return T(t, f.lingua, 'stato') === 'inviata' && T(t, f.lingua, 'ok') === true && (f.lingua === 'it' || t.statoIt === 'approvata'); });
+  h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Revisione</h2><div class="grid4">' +
+    '<div><label for="fl">Lingua</label><select id="fl" onchange="S.filtro.lingua=this.value;vistaDocente()">' + [['it', 'Italiano'], ['en', 'Inglese']].map(function (o) { return '<option value="' + o[0] + '"' + (f.lingua === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+    '<div><label for="fs">Stato</label><select id="fs" onchange="S.filtro.stato=this.value;vistaDocente()">' + [['inviata', 'Da rivedere (inviate)'], ['pronte', 'Italiano approvato, inglese da fare'], ['correggere', 'Rimandate all\'alunno'], ['', 'Non ancora scelte'], ['approvata', 'Approvate'], ['tutti', 'Tutti']].map(function (o) { return '<option value="' + o[0] + '"' + (f.stato === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+    '<div><label for="fa">Area</label><select id="fa" onchange="S.filtro.area=this.value;vistaDocente()"><option value="tutte">Tutte le aree</option>' + S.d.aree.map(function (a) { return '<option value="' + a.n + '"' + (f.area == a.n ? ' selected' : '') + '>' + a.n + '. ' + esc(a.it) + '</option>'; }).join('') + '</select></div></div>' +
+    (corrette.length ? '<div class="row"><button class="btn ok" onclick="approvaCorrette(this)">Approva tutte le scelte corrette (' + corrette.length + ')</button><span class="muted" style="font-size:15px">Quelle sbagliate restano da rivedere una per una.</span></div>' : '') +
+    '</section>';
+  h += '<p class="muted" style="margin:0">' + lista.length + ' termini · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') + '</p>';
+  h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
+  h += risultati() + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
+  h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
+    '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
+  h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
+  if (S.d.codiciAlunni) {
+    h += '<details class="card" id="codici"><summary>Codici personali degli alunni (riservato)</summary>' +
+      '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
+      '<div class="row" style="margin-bottom:10px"><button class="btn sec" onclick="stampaCodici()">Stampa i codici</button></div>' +
+      '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Gruppo</th><th>Codice</th></tr></thead><tbody>' +
+      S.d.codiciAlunni.map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(a.gruppo) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
+      '</tbody></table></div></details>';
+  }
+  h += '</main>';
+  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
+}
+function cardDocente(t, l) {
+  var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
+  var h = '<article class="card" style="border-top:6px solid ' + a.colore + '"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="term-it">' + esc(t.it) + '</div><div class="term-en" lang="en" style="color:' + a.colore + '">' + esc(t.en) + '</div></div>' +
+    '<div class="muted" style="text-align:right;font-size:15px"><b style="color:var(--ink)">' + esc(nomeAlunno(t.alunno)) + '</b><br>Area ' + t.area + (T(t, l, 'tent') ? ' · tentativi: ' + T(t, l, 'tent') : '') + (t.agg ? '<br>' + esc(t.agg) : '') + '</div></div>';
+  if (l === 'en') {
+    h += '<div class="lang"><h3>Italiano' + chip(t.statoIt) + '</h3>' + (t.statoIt === 'approvata'
+      ? '<div class="fixed-text">' + esc(t.defIt) + '</div><p class="muted" style="margin:6px 0 0;font-size:14px">Approvata da ' + esc(t.daIt) + '</p>'
+      : '<p class="muted" style="margin:0">Non ancora approvata in italiano.</p>') + '</div>';
+  }
+  h += '<div class="lang"><h3>' + (l === 'it' ? 'Italiano' : 'English') + chip(st) + '</h3>';
+  if (!scelta) {
+    h += '<p class="muted" style="margin:0">' + (l === 'en' && t.statoIt !== 'approvata' ? 'Bloccata finché l\'italiano non è approvato.' : st === 'correggere' ? 'Rimandata all\'alunno' + (comm ? ': “' + esc(comm) + '”' : '') + '. In attesa di una nuova scelta.' : 'L\'alunno non ha ancora scelto.') + '</p>';
+  } else {
+    h += '<div class="fixed-text"' + (l === 'en' ? ' lang="en"' : '') + '>' + esc(scelta) + '</div>' +
+      '<div class="esito ' + (ok ? 'si' : 'no') + '">' + (ok ? '✓ Corrisponde alla definizione corretta' : '✗ Non è la definizione corretta. Quella giusta: <span' + (l === 'en' ? ' lang="en"' : '') + '>“' + esc(T(t, l, 'giusta')) + '”</span>') + '</div>';
+    if (st === 'inviata') {
+      var cid = 'cm_' + t.id + '_' + l;
+      h += '<label for="' + cid + '" style="display:block;margin-top:10px">Commento per l\'alunno (facoltativo)</label><input type="text" id="' + cid + '" maxlength="200" placeholder="' + (ok ? 'Es. Ottimo!' : 'Es. Rileggi bene: dove si trova?') + '">' +
+        '<div class="row" style="margin-top:10px">' + (l === 'en' && t.statoIt !== 'approvata' ? '' : '<button class="btn ok" onclick="decidi(\'' + t.id + '\',\'' + l + '\',\'approvata\',this)">Approva' + (ok ? '' : ' comunque') + '</button>') +
+        '<button class="btn warn" onclick="decidi(\'' + t.id + '\',\'' + l + '\',\'correggere\',this)">Rimanda all\'alunno</button></div>';
+    } else if (st === 'approvata') {
+      h += '<p class="muted" style="margin:8px 0 0;font-size:14px">Approvata da ' + esc(T(t, l, 'da')) + '</p><div class="row" style="margin-top:10px"><button class="btn sec" onclick="decidi(\'' + t.id + '\',\'' + l + '\',\'riapri\',this)">Annulla approvazione</button></div>';
+    }
+  }
+  return h + '</div></article>';
+}
+function decidi(id, l, esito, btn) {
+  var cm = $('cm_' + id + '_' + l); btn.disabled = true;
+  api('revisiona', { id: id, lingua: l, esito: esito, commento: cm ? cm.value : '' }).then(function (t) {
+    aggiornaTermine(t); toast(esito === 'approvata' ? 'Approvata' : esito === 'correggere' ? 'Rimandata all\'alunno' : 'Approvazione annullata'); vistaDocente();
+  }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function approvaCorrette(btn) {
+  btn.disabled = true;
+  api('approvacorrette', { lingua: S.filtro.lingua, area: S.filtro.area }).then(function (r) {
+    return api('login').then(function (d) { S.d = d; toast(r.approvate === 1 ? '1 scelta approvata' : r.approvate + ' scelte approvate'); vistaDocente(); });
+  }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function risultati() {
+  var righe = S.d.alunni.map(function (a) {
+    var ts = S.d.termini.filter(function (t) { return t.alunno === a.id; });
+    var c = function (l) { var fatti = ts.filter(function (t) { return T(t, l, 'primoOk') != null; }); return fatti.length ? ts.filter(function (t) { return T(t, l, 'primoOk') === true; }).length + '/' + fatti.length : '—'; };
+    var ap = ts.filter(function (t) { return t.statoIt === 'approvata' && t.statoEn === 'approvata'; }).length;
+    return '<tr><td>' + esc(a.nome) + '</td><td class="n">' + a.gruppo + '</td><td class="n">' + c('it') + '</td><td class="n">' + c('en') + '</td><td class="n">' + ap + '/' + ts.length + '</td></tr>';
+  }).join('');
+  return '<details class="card"><summary>Risultati per alunno</summary><p class="muted" style="margin:10px 0">“Al 1° tentativo”: scelte giuste già al primo invio, sul numero di termini in cui l\'alunno ha scelto. Utile per la valutazione.</p>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Gr.</th><th style="text-align:right">IT al 1° tentativo</th><th style="text-align:right">EN al 1° tentativo</th><th style="text-align:right">Completati</th></tr></thead><tbody>' + righe + '</tbody></table></div></details>';
+}
+function chiusura(v) {
+  api('chiusura', { chiusa: v }).then(function (r) { S.d.config.chiusa = r.chiusa; vistaDocente(); toast(r.chiusa ? 'App chiusa agli alunni' : 'App riaperta'); }).catch(function (e) { toast(errMsg(e), true); });
+}
+function esporta() {
+  var dati = { generato: new Date().toISOString(), alunni: S.d.alunni, termini: S.d.termini };
+  var url = URL.createObjectURL(new Blob([JSON.stringify(dati, null, 1)], { type: 'application/json' }));
+  var a = document.createElement('a'); a.href = url; a.download = 'glossario-3e-' + oggiIso() + '.json';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  toast('Dati scaricati');
+}
+function stampaCodici() {
+  var righe = S.d.codiciAlunni.map(function (a) {
+    return '<div class="s"><div><b>' + esc(a.nome) + '</b> · Gruppo ' + esc(a.gruppo) + '<br><span>Glossario 3E · ' + esc(location.origin) + '</span></div><div class="c">' + esc(a.codice) + '</div></div>';
+  }).join('');
+  var w = window.open('', '_blank');
+  if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
+  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Codici Glossario 3E</title><style>body{font-family:Arial,sans-serif;margin:12mm}.s{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #888;padding:5mm 2mm;font-size:12pt}.s span{font-size:9pt;color:#555}.c{font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:3pt}</style></head><body>' + righe + '<scr' + 'ipt>window.onload=function(){window.print()}</scr' + 'ipt></body></html>');
+  w.document.close();
+}
+
+/* ---------- avvio ---------- */
+(function () {
+  var c = memo(KEY_COD);
+  if (c) { $('app').innerHTML = '<div class="wrap"><div class="card login">Accesso in corso…</div></div>'; entra(c); } else vistaLogin();
+})();
+
+</script>
+</body>
+</html>

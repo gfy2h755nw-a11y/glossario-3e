@@ -1,0 +1,10 @@
+{
+  "name": "glossario-3e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Glossario odontotecnico bilingue – Classe 3E – IIS L. Barsanti, Massa",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}
