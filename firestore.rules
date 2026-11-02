@@ -1,0 +1,9 @@
+rules_version = '2';
+// Nessun accesso diretto dal browser: i dati passano solo dalla funzione Netlify (firebase-admin).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

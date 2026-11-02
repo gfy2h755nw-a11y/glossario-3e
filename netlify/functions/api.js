@@ -12,6 +12,9 @@ const AZIONI = {
   revisiona: (d, p) => logica.revisiona(d, p),
   approvacorrette: (d, p) => logica.approvaCorrette(d, p),
   chiusura: (d, p) => logica.impostaChiusura(d, p),
+  impostazioni: (d, p) => logica.impostazioniAdmin(d, p),
+  voto: (d, p) => logica.votoManuale(d, p),
+  riammetti: (d, p) => logica.riammetti(d, p),
   setup: (d, p) => logica.setup(d, p, process.env.SETUP_KEY)
 };
 

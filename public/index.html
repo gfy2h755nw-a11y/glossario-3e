@@ -38,7 +38,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .s-correggere{background:var(--warnbg);color:var(--warn)}
 .s-approvata{background:var(--okbg);color:var(--ok)}
 label{font-weight:700;font-size:15px}
-input[type=text],input[type=password],textarea,select{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+input[type=text],input[type=password],input[type=datetime-local],textarea,select{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
 input:focus,textarea:focus,select:focus,.btn:focus-visible{outline:3px solid #9CC3EE;outline-offset:1px}
 textarea{min-height:104px;resize:vertical}
 .cnt{font-size:14px;color:var(--muted);text-align:right}
@@ -85,6 +85,24 @@ details summary{cursor:pointer;font-weight:700;font-family:'Archivo',system-ui,s
 .esito{margin-top:8px;border-radius:10px;padding:8px 12px;font-size:15px}
 .esito.si{background:var(--okbg);color:#1D4D20}
 .esito.no{background:var(--errbg);color:#6E1328}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.cd-box{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.cd-t{font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:18px}
+.cd{display:flex;gap:8px}
+.cd-u{display:flex;flex-direction:column;align-items:center;min-width:54px;background:#EEF2F5;border-radius:10px;padding:6px 4px}
+.cd-u b{font-family:'Archivo',system-ui,sans-serif;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.cd-u small{font-size:12px;color:var(--muted)}
+.cd.urg .cd-u{background:var(--warnbg)}.cd.urg .cd-u b{color:var(--warn)}
+.cd-scaduta{font-weight:700;color:var(--err)}
+.voto-box{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.voto-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:64px;line-height:1}
+.voto-n small{font-size:22px;color:var(--muted);font-weight:700}
+.escluso{border:3px solid var(--err);background:var(--errbg);color:#6E1328}
+.kpi-c{background:#F6F8FA;border-radius:12px;padding:12px 14px}
+.kpi-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:32px;line-height:1.1}
+.riga-esclusa td{background:#FBF0F2}
+.admin{border:2px solid var(--ink)}
 </style>
 </head>
 <body>
@@ -230,7 +248,59 @@ function entra(codice) {
 }
 function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; vistaLogin(); }
 function ricarica() { api('login').then(function (d) { S.d = d; render(); toast('Dati aggiornati'); }).catch(function (e) { toast(errMsg(e), true); }); }
-function render() { if (!S.d) return vistaLogin(); if (S.d.utente.ruolo === 'alunno') vistaAlunno(); else vistaDocente(); }
+function render() {
+  clearInterval(S.timer);
+  if (!S.d) return vistaLogin();
+  if (S.d.escluso) return vistaEscluso();
+  if (S.d.utente.ruolo === 'alunno') vistaAlunno(); else vistaDocente();
+}
+function vistaEscluso() {
+  $('app').innerHTML = testata(S.d.utente.nome) + '<main class="wrap"><section class="card stack escluso" role="alert">' +
+    '<div class="disp" style="font-weight:900;font-size:26px;line-height:1.25">' + esc(S.d.messaggio) + '</div>' +
+    '<p style="margin:0">Per chiarimenti parla con il prof. Cerrato.</p></section></main>';
+}
+/* ---------- scadenze e conto alla rovescia ---------- */
+function fv(v) { return v == null ? '—' : String(v).replace('.', ','); }
+function oraIt(iso) { var d = new Date(iso); return GG[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()] + ' alle ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function residuo(iso) {
+  var ms = new Date(iso) - new Date();
+  if (ms <= 0) return null;
+  var g = Math.floor(ms / 86400000), h = Math.floor(ms / 3600000) % 24, m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60;
+  return { g: g, h: h, m: m, s: sec, urgente: ms < 86400000 * 2 };
+}
+function cdHtml(iso) {
+  var r = residuo(iso);
+  if (!r) return '<span class="cd-scaduta">Scadenza passata</span>';
+  var c = function (n, l) { return '<span class="cd-u"><b>' + n + '</b><small>' + l + '</small></span>'; };
+  return '<span class="cd' + (r.urgente ? ' urg' : '') + '">' + c(r.g, 'giorni') + c(('0' + r.h).slice(-2), 'ore') + c(('0' + r.m).slice(-2), 'min') + c(('0' + r.s).slice(-2), 'sec') + '</span>';
+}
+function avviaCountdown() {
+  clearInterval(S.timer);
+  S.timer = setInterval(function () {
+    document.querySelectorAll('[data-cd]').forEach(function (el) { el.innerHTML = cdHtml(el.getAttribute('data-cd')); });
+  }, 1000);
+}
+function bloccoScadenze(miei) {
+  var c = S.d.config;
+  var mancaIt = miei.filter(function (t) { return !t.statoIt || t.statoIt === ''; }).length;
+  var mancaEn = miei.filter(function (t) { return !t.statoEn; }).length;
+  function riga(lab, iso, manca, nota) {
+    return '<div class="cd-box"><div class="cd-t">' + lab + '</div><div class="muted" style="font-size:14px">' + esc(oraIt(iso)) + '</div>' +
+      '<div data-cd="' + esc(iso) + '">' + cdHtml(iso) + '</div>' +
+      '<div style="font-size:14px">' + (manca ? '<b>' + manca + '</b> ' + (manca === 1 ? 'termine' : 'termini') + ' ancora senza risposta' : nota) + '</div></div>';
+  }
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Scadenze</h2><div class="grid2">' +
+    riga('Italiano', c.scadenzaIt, mancaIt, '✓ Tutti i termini hanno una risposta') +
+    riga('Inglese', c.scadenzaEn, mancaEn, '✓ Tutti i termini hanno una risposta') +
+    '</div><p class="note warn" style="margin:0">Chi alla scadenza ha ancora termini senza risposta viene <b>escluso dal compito</b> con voto 4.</p></section>';
+}
+function bloccoVoto() {
+  var v = S.d.voto; if (!v) return '';
+  return '<section class="card voto-box"><div><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + (v.manuale ? 'Voto assegnato dal docente' : 'Voto provvisorio') + '</div>' +
+    '<div class="voto-n">' + fv(v.voto) + '<small>/8</small></div>' + (v.voto == null ? '<div class="muted" style="font-size:14px">Comparirà alla prima risposta</div>' : '') + '</div>' +
+    '<div style="flex:1;min-width:200px"><div class="row" style="gap:8px"><span class="chip s-approvata">Corrette ' + v.corrette + '</span><span class="chip s-correggere">Errate ' + v.errate + '</span><span class="chip s-vuota">Risposte date ' + v.inviate + '</span></div>' +
+    '<p class="muted" style="margin:10px 0 0;font-size:14px">' + esc(v.ratio) + '</p></div></section>';
+}
 function testata(sotto) {
   return '<header class="top"><div class="wrap"><div class="brand">Glossario 3E<small>' + esc(sotto) + '</small></div>' +
     '<div class="row"><button class="btn ghost" onclick="ricarica()">Aggiorna</button><button class="btn ghost" onclick="esci()">Esci</button></div></div></header>';
@@ -276,10 +346,10 @@ function vistaAlunno() {
     '<p style="margin:12px 0 0">Ciao <b>' + esc(u.nome) + '</b>. Per ognuno dei tuoi <b>5 termini</b> scegli la definizione giusta tra 8 alternative. Prima in italiano: quando il prof. Cerrato la approva, si sblocca la scelta in inglese, rivista dalla prof.ssa Aliboni.</p>' +
     '<div class="row" style="margin-top:12px"><span class="chip s-approvata">Italiano ' + n('it') + '/5</span><span class="chip s-approvata">Inglese ' + n('en') + '/5</span></div></section>';
   if (S.d.config.chiusa) h += '<div class="note warn"><b>L\'app è chiusa.</b> Le scelte non sono più modificabili.</div>';
-  h += bloccoTappe();
+  h += bloccoVoto() + bloccoScadenze(miei) + bloccoTappe();
   h += miei.map(cardAlunno).join('');
   h += bloccoPoster(u.gruppo) + '</main>';
-  $('app').innerHTML = h; disegnaPoster(u.gruppo);
+  $('app').innerHTML = h; disegnaPoster(u.gruppo); avviaCountdown();
 }
 function cardAlunno(t) {
   var col = area(t.area).colore;
@@ -348,7 +418,7 @@ function vistaDocente() {
     '</section>';
   h += '<p class="muted" style="margin:0">' + lista.length + ' termini · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') + '</p>';
   h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
-  h += risultati() + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
+  h += panoramica() + (S.d.admin ? bloccoAdmin() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
     '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
@@ -400,6 +470,108 @@ function approvaCorrette(btn) {
   api('approvacorrette', { lingua: S.filtro.lingua, area: S.filtro.area }).then(function (r) {
     return api('login').then(function (d) { S.d = d; toast(r.approvate === 1 ? '1 scelta approvata' : r.approvate + ' scelte approvate'); vistaDocente(); });
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+/* ---------- panoramica condivisa (prof. Cerrato e prof.ssa Aliboni) ---------- */
+function panoramica() {
+  var P = S.d.panoramica || [], tot = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0 };
+  var righe = P.map(function (r) {
+    Object.keys(tot).forEach(function (k) { tot[k] += r[k]; });
+    return '<tr' + (r.escluso ? ' class="riga-esclusa"' : '') + '><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere" title="' + esc(r.motivo) + '">Escluso</span>' : '') + '</td><td class="n">' + r.gruppo + '</td>' +
+      '<td class="n">' + r.inviate + '</td><td class="n" style="color:var(--ok)">' + r.corrette + '</td><td class="n" style="color:var(--err)">' + r.errate + '</td>' +
+      '<td class="n">' + (r.daApprovare ? '<span class="chip s-inviata">' + r.daApprovare + '</span>' : '0') + '</td><td class="n">' + r.approvate + '/10</td></tr>';
+  }).join('');
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Panoramica della classe</h2>' +
+    '<div class="grid4 kpi">' + [['Risposte date', tot.inviate, ''], ['Corrette', tot.corrette, 'var(--ok)'], ['Errate', tot.errate, 'var(--err)'], ['Da approvare', tot.daApprovare, 'var(--info)']].map(function (k) {
+      return '<div class="kpi-c"><div class="kpi-n" style="color:' + (k[2] || 'var(--ink)') + '">' + k[1] + '</div><div class="muted">' + k[0] + '</div></div>'; }).join('') + '</div>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Gr.</th><th style="text-align:right">Risposte date</th><th style="text-align:right">Corrette</th><th style="text-align:right">Errate</th><th style="text-align:right">Da approvare</th><th style="text-align:right">Approvate</th></tr></thead><tbody>' + righe + '</tbody></table></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Risposte date = tutti gli invii, comprese le correzioni. Approvate: su 10 (5 in italiano + 5 in inglese).</p></section>';
+}
+/* ---------- solo prof. Cerrato: scadenze, voti, report ---------- */
+function isoLocale(iso) { var d = new Date(iso); var p = function (n) { return ('0' + n).slice(-2); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+function bloccoAdmin() {
+  var A = S.d.admin, imp = A.impostazioni;
+  var h = '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Scadenze e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+    '<div class="grid2"><div><label for="scIt">Scadenza italiano</label><input id="scIt" type="datetime-local" value="' + isoLocale(imp.scadenzaIt) + '"></div>' +
+    '<div><label for="scEn">Scadenza inglese</label><input id="scEn" type="datetime-local" value="' + isoLocale(imp.scadenzaEn) + '"></div></div>' +
+    '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Penalità per ogni risposta errata</legend>' +
+    [['A', '−0,25 per errore: 16 errori per scendere da 8 a 4'], ['B', '−0,50 per errore: 8 errori per scendere da 8 a 4']].map(function (o) {
+      return '<label class="op' + (imp.proposta === o[0] ? ' on' : '') + '" for="pr' + o[0] + '"><input type="radio" name="prop" id="pr' + o[0] + '" value="' + o[0] + '"' + (imp.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>';
+    }).join('') + '</fieldset>' +
+    '<div class="row"><button class="btn" onclick="salvaImpostazioni(this)">Salva scadenze e penalità</button></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">' + esc(A.ratio) + '</p></section>';
+  var nomi = {}; (S.d.panoramica || []).forEach(function (r) { nomi[r.id] = r; });
+  var row = function (v) {
+    var r = nomi[v.id];
+    return '<tr><td>' + esc(r.nome) + '</td><td class="n">' + r.gruppo + '</td><td class="n">' + r.errate + '</td><td class="n">' + fv(v.calcolato) + '</td>' +
+      '<td><div class="row" style="gap:6px;flex-wrap:nowrap"><label for="vm_' + v.id + '" class="sr">Voto manuale ' + esc(r.nome) + '</label><input id="vm_' + v.id + '" type="text" inputmode="decimal" style="width:80px;padding:6px 8px" value="' + (v.manuale != null ? String(v.manuale).replace('.', ',') : '') + '" placeholder="—">' +
+      '<button class="btn sec" style="min-height:38px;padding:0 10px" onclick="salvaVoto(\'' + v.id + '\',this)">Salva</button></div></td>' +
+      '<td class="n"><b style="font-size:18px">' + fv(v.voto) + '</b></td></tr>';
+  };
+  var attivi = A.voti.filter(function (v) { return !v.escluso; }), esclusi = A.voti.filter(function (v) { return v.escluso || v.riammesso; });
+  h += '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Tabellone dei voti</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Gr.</th><th style="text-align:right">Errate</th><th style="text-align:right">Calcolato</th><th>Voto manuale</th><th style="text-align:right">Voto</th></tr></thead><tbody>' +
+    attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo.</p>';
+  if (esclusi.length) {
+    h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Voto</th><th></th></tr></thead><tbody>' +
+      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
+        '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
+  }
+  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><span class="muted" style="font-size:14px">Si apre la stampa: scegli “Salva come PDF”.</span></div></section>';
+  return h;
+}
+function salvaImpostazioni(btn) {
+  var it = $('scIt').value, en = $('scEn').value, pr = document.querySelector('input[name="prop"]:checked');
+  if (!it || !en) { toast('Inserisci entrambe le scadenze.', true); return; }
+  btn.disabled = true;
+  api('impostazioni', { scadenzaIt: new Date(it).toISOString(), scadenzaEn: new Date(en).toISOString(), proposta: pr ? pr.value : null })
+    .then(function () { return api('login'); }).then(function (d) { S.d = d; toast('Impostazioni salvate'); vistaDocente(); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function salvaVoto(id, btn) {
+  btn.disabled = true;
+  var v = $('vm_' + id).value.trim();
+  api('voto', { alunno: id, voto: v === '' ? null : v }).then(function () { return api('login'); }).then(function (d) { S.d = d; toast(v === '' ? 'Torna al voto calcolato' : 'Voto salvato'); vistaDocente(); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function riammetti(id, val, btn) {
+  btn.disabled = true;
+  api('riammetti', { alunno: id, riammesso: val }).then(function () { return api('login'); }).then(function (d) { S.d = d; toast(val ? 'Alunno riammesso' : 'Riammissione annullata'); vistaDocente(); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function reportPdf() {
+  var A = S.d.admin, voti = {}; A.voti.forEach(function (v) { voti[v.id] = v; });
+  var oggi = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+  var stud = (S.d.panoramica || []).map(function (r) {
+    var v = voti[r.id], ts = S.d.termini.filter(function (t) { return t.alunno === r.id; });
+    var righe = '';
+    ts.forEach(function (t) {
+      ['it', 'en'].forEach(function (l) {
+        var st = T(t, l, 'storia') || [], fin = T(t, l, 'scelta');
+        righe += '<tr><td><b>' + esc(l === 'it' ? t.it : t.en) + '</b><br><span class="m">' + (l === 'it' ? 'Italiano' : 'Inglese') + '</span></td>' +
+          '<td class="c">' + (st.length ? st.map(function (x) { return x.ok ? '<span class="ok">✓</span>' : '<span class="no">✗</span>'; }).join(' ') : '<span class="m">—</span>') + '</td>' +
+          '<td>' + (fin ? esc(fin) : (st.length ? '<span class="m">(rimandata, in attesa di nuova scelta)</span>' : '<span class="m">nessuna risposta</span>')) + '</td>' +
+          '<td class="c">' + esc(STATO_TXT[T(t, l, 'stato') || '']) + '</td></tr>';
+      });
+    });
+    return '<section class="st"><div class="h"><div><h2>' + esc(r.nome) + '</h2><div class="m">Gruppo ' + r.gruppo + ' · ' + esc(S.d.aree[r.gruppo - 1].it) + '</div></div>' +
+      '<div class="v"><div class="vn">' + fv(v.voto) + '<small>/8</small></div><div class="m">' + (v.escluso ? 'Escluso: ' + esc(v.motivo) : v.manuale != null ? 'Voto manuale (calcolato: ' + fv(v.calcolato) + ')' : 'Voto calcolato') + '</div></div></div>' +
+      '<p class="k">Risposte date <b>' + r.inviate + '</b> · corrette <b>' + r.corrette + '</b> · errate <b>' + r.errate + '</b> · da approvare <b>' + r.daApprovare + '</b> · approvate <b>' + r.approvate + '/10</b></p>' +
+      '<table><thead><tr><th style="width:24%">Termine</th><th style="width:12%">Tentativi</th><th>Risposta attuale</th><th style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table></section>';
+  }).join('');
+  var sintesi = (S.d.panoramica || []).map(function (r) { var v = voti[r.id]; return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + r.gruppo + '</td><td class="c">' + r.inviate + '</td><td class="c">' + r.corrette + '</td><td class="c">' + r.errate + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (escluso)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr>'; }).join('');
+  var css = '@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#15212B;font-size:10pt;margin:0}h1{font-size:18pt;margin:0}h2{font-size:13pt;margin:0}.m{color:#5B6976;font-size:9pt}' +
+    'table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border:1px solid #C3CED7;padding:4px 6px;text-align:left;vertical-align:top;font-size:9pt}th{background:#15212B;color:#fff}.c{text-align:center}' +
+    '.ok{color:#1B6E20;font-weight:700}.no{color:#B0304A;font-weight:700}.st{break-before:page}.h{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #15212B;padding-bottom:6px}' +
+    '.vn{font-size:26pt;font-weight:800;text-align:right}.vn small{font-size:11pt;color:#5B6976}.v{text-align:right}.k{margin:8px 0 0}.box{background:#EEF2F5;padding:8px 10px;border-radius:6px;margin-top:8px}';
+  var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario 3E</title><style>' + css + '</style></head><body>' +
+    '<h1>Glossario odontotecnico bilingue · Report della classe 3E</h1><div class="m">IIS “L. Barsanti” – Plesso Salvetti, Massa · a.s. 2026/27 · generato il ' + esc(oggi) + '</div>' +
+    '<div class="box"><b>Criterio di assegnazione del punteggio.</b> ' + esc(A.ratio) + ' Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, in italiano e in inglese (10 risposte in tutto).</div>' +
+    '<div class="box">Scadenza italiano: ' + esc(oraIt(A.impostazioni.scadenzaIt)) + ' · Scadenza inglese: ' + esc(oraIt(A.impostazioni.scadenzaEn)) + '</div>' +
+    '<h2 style="margin-top:12px">Sintesi</h2><table><thead><tr><th>Alunno</th><th class="c">Gr.</th><th class="c">Risposte date</th><th class="c">Corrette</th><th class="c">Errate</th><th class="c">Voto</th></tr></thead><tbody>' + sintesi + '</tbody></table>' +
+    stud + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},300)}</scr' + 'ipt></body></html>';
+  var w = window.open('', '_blank');
+  if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
+  w.document.write(html); w.document.close();
 }
 function risultati() {
   var righe = S.d.alunni.map(function (a) {

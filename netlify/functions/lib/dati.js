@@ -377,36 +377,49 @@ const NOMI_ALUNNI = [
 ];
 
 const DOCENTI = [
-  { nome: 'prof. Danilo Cerrato', lingua: 'it' },
+  { nome: 'prof. Danilo Cerrato', lingua: 'it', admin: true },
   { nome: 'prof.ssa Federica Aliboni', lingua: 'en' }
 ];
 
+// Tappe: quelle con "chiave" prendono la data dalle scadenze impostate dal prof. Cerrato nell'app.
 const TAPPE = [
   {
     "data": "2026-11-03",
-    "testo": "Presentazione del progetto, gruppi e codici"
+    "testo": "Presentazione del progetto, gruppi e codici personali"
   },
   {
     "data": "2026-11-13",
-    "testo": "Scelte in italiano inviate"
+    "chiave": "it",
+    "testo": "Scadenza italiano: risposta a tutti e 5 i termini"
   },
   {
     "data": "2026-11-20",
-    "testo": "Italiano rivisto e approvato"
+    "testo": "Italiano corretto e approvato dal prof. Cerrato"
   },
   {
     "data": "2026-11-27",
-    "testo": "Scelte in inglese inviate"
+    "chiave": "en",
+    "testo": "Scadenza inglese: risposta a tutti e 5 i termini"
   },
   {
-    "data": "2026-12-01",
-    "testo": "Inglese approvato: chiusura dell'app"
+    "data": "2026-12-03",
+    "testo": "Inglese corretto e approvato dalla prof.ssa Aliboni: l'app si chiude"
   },
   {
-    "data": "2026-12-04",
+    "data": "2026-12-07",
+    "testo": "Cartelloni definitivi in tipografia"
+  },
+  {
+    "data": "2026-12-11",
     "testo": "Consegna e presentazione dei cartelloni"
   }
 ];
+
+// Scadenze iniziali (modificabili dall'area docenti, solo prof. Cerrato). Ora italiana.
+const SCADENZE = { it: '2026-11-13T23:59:00+01:00', en: '2026-11-27T23:59:00+01:00' };
+
+// Valutazione: voto massimo 8; proposta A = -0,25 per errore, B = -0,50 (scelta dall'area docenti).
+const VALUTAZIONE = { votoMax: 8, votoMin: 4, votoEsclusione: 4, proposta: 'A' };
 
 // Definizioni corrette [italiano, inglese], nello stesso ordine dei termini.
 const DEFINIZIONI = {
@@ -740,4 +753,4 @@ const DEFINIZIONI = {
  ]
 };
 
-module.exports = { AREE, TERMINI, DEFINIZIONI, NOMI_ALUNNI, DOCENTI, TAPPE };
+module.exports = { AREE, TERMINI, DEFINIZIONI, NOMI_ALUNNI, DOCENTI, TAPPE, SCADENZE, VALUTAZIONE };

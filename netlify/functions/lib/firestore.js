@@ -33,6 +33,7 @@ function db() {
       return compone(c, a, t);
     },
     async scriviConfig(mod) { await cfgRef.set(mod, { merge: true }); },
+    async scriviAlunno(id, mod) { await f.collection(COL.alunni).doc(String(id)).set(mod, { merge: true }); },
     async esisteGlossario() { return (await cfgRef.get()).exists; },
     async creaGlossario(config, alunni, termini) {
       const batch = f.batch();
