@@ -95,3 +95,8 @@ details summary{cursor:pointer;font-weight:700;font-family:'Archivo',system-ui,s
 .kpi-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:32px;line-height:1.1}
 .riga-esclusa td{background:#FBF0F2}
 .admin{border:2px solid var(--ink)}
+.vf{min-width:200px}
+.vls{display:flex;gap:12px;flex-wrap:wrap;flex:1}
+.vl{background:#F6F8FA;border-radius:12px;padding:10px 14px;min-width:140px;flex:1}
+.vl-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:34px;line-height:1.1}
+.vl-n small{font-size:15px;color:var(--muted);font-weight:700}

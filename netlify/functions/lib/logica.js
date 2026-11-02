@@ -74,23 +74,27 @@ function impostazioni(config) {
     votoEsclusione: DATI.VALUTAZIONE.votoEsclusione
   };
 }
-function arrot(x) { return Math.round(x * 4) / 4; }
+// arrotondamento al quarto di voto più vicino: sotto la metà per difetto, dalla metà in su per eccesso (7,375 → 7,5; 7,3 → 7,25)
+function arrot(x) { return Math.floor(x * 4 + 0.5 + 1e-9) / 4; }
 function ratio(imp) {
-  const p = PENALITA[imp.proposta];
-  return 'Voto massimo ' + imp.votoMax + '. Ogni risposta errata: −' + String(p).replace('.', ',') + ' (proposta ' + imp.proposta + '). ' +
-    'Voto minimo ' + imp.votoMin + '. Arrotondamento al quarto di voto. ' +
-    'Termini non risposti entro la scadenza: esclusione dal compito e voto ' + imp.votoEsclusione + '. ' +
-    'Il voto inserito a mano dal docente sostituisce il calcolo.';
+  const p = String(PENALITA[imp.proposta]).replace('.', ',');
+  return 'Il voto di italiano e quello di inglese si calcolano separatamente: si parte da ' + imp.votoMax + ' e si tolgono ' + p +
+    ' punti per ogni risposta errata (proposta ' + imp.proposta + '), senza scendere sotto ' + imp.votoMin + '. ' +
+    'Il voto finale è la media dei due, arrotondata al quarto di voto più vicino: per difetto se la parte decimale è sotto la metà, per eccesso dalla metà in su (es. 6,75 e 8 → media 7,375 → 7,5). ' +
+    'Il voto finale compare quando ci sono risposte in entrambe le lingue. ' +
+    'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito con voto ' + imp.votoEsclusione + '. ' +
+    'Il voto inserito a mano dal docente sostituisce il voto finale calcolato.';
 }
 /* Stato di un alunno: conteggi, esclusione, voto. now = ms */
 function valuta(stato, a, now) {
   const imp = impostazioni(stato.config);
   const miei = stato.termini.filter((t) => t.alunno_id === a.id);
-  const c = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0, mancanti: 0 };
+  const c = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0, mancanti: 0, it: { inviate: 0, errate: 0 }, en: { inviate: 0, errate: 0 } };
   ['it', 'en'].forEach((l) => {
     miei.forEach((t) => {
       const inv = campo(t, l, 'invii') || 0, err = campo(t, l, 'errori') || 0;
       c.inviate += inv; c.errate += err; c.corrette += inv - err;
+      c[l].inviate += inv; c[l].errate += err;
       if (campo(t, l, 'stato') === 'inviata') c.daApprovare++;
       if (campo(t, l, 'stato') === 'approvata') c.approvate++;
     });
@@ -103,12 +107,15 @@ function valuta(stato, a, now) {
   if (now > scadIt && mancaIt) motivo = mancaIt + ' termini senza risposta in italiano alla scadenza';
   else if (now > scadEn && mancaEn) motivo = mancaEn + ' termini senza risposta in inglese alla scadenza';
   const escluso = !!motivo && !a.riammesso;
-  const calcolato = Math.max(imp.votoMin, Math.min(imp.votoMax, arrot(imp.votoMax - PENALITA[imp.proposta] * c.errate)));
+  // un voto per lingua (solo se ci sono risposte in quella lingua), poi la media arrotondata
+  const votoLingua = (l) => c[l].inviate ? Math.max(imp.votoMin, Math.min(imp.votoMax, imp.votoMax - PENALITA[imp.proposta] * c[l].errate)) : null;
+  const votoIt = votoLingua('it'), votoEn = votoLingua('en');
+  const media = votoIt != null && votoEn != null ? (votoIt + votoEn) / 2 : null;
+  const calcolato = media != null ? arrot(media) : null;
   const manuale = typeof a.voto_manuale === 'number' ? a.voto_manuale : null;
-  // nessuna risposta ancora: niente voto (non si parte da 8 a vuoto)
-  const voto = manuale != null ? manuale : escluso ? imp.votoEsclusione : c.inviate ? calcolato : null;
+  const voto = manuale != null ? manuale : escluso ? imp.votoEsclusione : calcolato;
   return Object.assign(c, { id: a.id, nome: a.nome, gruppo: String(a.gruppo), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
-    calcolato, manuale, voto, mancaIt, mancaEn });
+    votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn });
 }
 function messaggioEsclusione() { return 'SEI STATO ESCLUSO DAL COMPITO CAUSA MANCATO RISPETTO DELLA DATA DI CONSEGNA - IL TUO VOTO FINALE SARÀ 4.'; }
 
@@ -171,7 +178,8 @@ function pacchetto(stato, chi) {
   delete out.utente._a;
   if (chi.ruolo === 'alunno') {
     const v = valuta(stato, chi._a || stato.alunni.find((a) => a.id === chi.id), now);
-    out.voto = { voto: v.voto, manuale: v.manuale != null, errate: v.errate, corrette: v.corrette, inviate: v.inviate, ratio: ratio(imp) };
+    out.voto = { voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, manuale: v.manuale != null, escluso: v.escluso,
+      errIt: v.it.errate, errEn: v.en.errate, invIt: v.it.inviate, invEn: v.en.inviate, errate: v.errate, corrette: v.corrette, inviate: v.inviate, ratio: ratio(imp) };
   }
   if (chi.ruolo === 'docente') {
     const val = stato.alunni.map((a) => valuta(stato, a, now));
@@ -181,7 +189,8 @@ function pacchetto(stato, chi) {
     if (chi.admin) {
       out.codiciAlunni = stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), codice: a.codice }));
       out.admin = { impostazioni: imp, penalita: PENALITA, ratio: ratio(imp),
-        voti: val.map((v) => ({ id: v.id, voto: v.voto, calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })) };
+        voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate,
+          calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })) };
     }
   }
   return out;

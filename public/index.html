@@ -103,6 +103,11 @@ details summary{cursor:pointer;font-weight:700;font-family:'Archivo',system-ui,s
 .kpi-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:32px;line-height:1.1}
 .riga-esclusa td{background:#FBF0F2}
 .admin{border:2px solid var(--ink)}
+.vf{min-width:200px}
+.vls{display:flex;gap:12px;flex-wrap:wrap;flex:1}
+.vl{background:#F6F8FA;border-radius:12px;padding:10px 14px;min-width:140px;flex:1}
+.vl-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:34px;line-height:1.1}
+.vl-n small{font-size:15px;color:var(--muted);font-weight:700}
 </style>
 </head>
 <body>
@@ -311,11 +316,18 @@ function bloccoScadenze(miei) {
 }
 function bloccoVoto() {
   var v = S.d.voto; if (!v) return '';
-  return '<section class="card voto-box"><div><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + (v.manuale ? 'Voto assegnato dal docente' : 'Voto provvisorio') + '</div>' +
-    '<div class="voto-n">' + fv(v.voto) + '<small>/8</small></div>' + (v.voto == null ? '<div class="muted" style="font-size:14px">Comparirà alla prima risposta</div>' : '') + '</div>' +
-    '<div style="flex:1;min-width:200px"><div class="row" style="gap:8px"><span class="chip s-approvata">Corrette ' + v.corrette + '</span><span class="chip s-correggere">Errate ' + v.errate + '</span><span class="chip s-vuota">Risposte date ' + v.inviate + '</span></div>' +
-    '<p class="muted" style="margin:10px 0 0;font-size:14px">' + esc(v.ratio) + '</p></div></section>';
+  var mini = function (lab, val, err, inv) {
+    return '<div class="vl"><div class="muted disp" style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px">' + lab + '</div>' +
+      '<div class="vl-n">' + fv(val) + '<small>/8</small></div><div class="muted" style="font-size:13px">' + (inv ? (inv === 1 ? '1 risposta' : inv + ' risposte') + ' · ' + (err === 1 ? '1 errata' : err + ' errate') : 'nessuna risposta') + '</div></div>';
+  };
+  return '<section class="card stack"><div class="voto-box">' +
+    '<div class="vf"><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + (v.manuale ? 'Voto finale assegnato dal docente' : 'Voto finale provvisorio') + '</div>' +
+    '<div class="voto-n">' + fv(v.voto) + '<small>/8</small></div>' +
+    (v.voto == null ? '<div class="muted" style="font-size:14px">Compare quando hai risposto in italiano e in inglese</div>' : v.media != null && !v.manuale ? '<div class="muted" style="font-size:14px">Media di italiano e inglese' + (v.media !== v.voto ? ': ' + fv(Math.round(v.media * 1000) / 1000) + ', arrotondata' : '') + '</div>' : '') + '</div>' +
+    '<div class="vls">' + mini('Italiano', v.votoIt, v.errIt, v.invIt) + mini('Inglese', v.votoEn, v.errEn, v.invEn) + '</div></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">' + esc(v.ratio) + '</p></section>';
 }
+
 function testata(sotto) {
   return '<header class="top"><div class="wrap"><div class="brand">Glossario 3E<small>' + esc(sotto) + '</small></div>' +
     '<div class="row"><button class="btn ghost" onclick="ricarica()">Aggiorna</button><button class="btn ghost" onclick="esci()">Esci</button></div></div></header>';
@@ -517,17 +529,20 @@ function bloccoAdmin() {
   var nomi = {}; (S.d.panoramica || []).forEach(function (r) { nomi[r.id] = r; });
   var row = function (v) {
     var r = nomi[v.id];
-    return '<tr><td>' + esc(r.nome) + '</td><td class="n">' + r.gruppo + '</td><td class="n">' + r.errate + '</td><td class="n">' + fv(v.calcolato) + '</td>' +
+    return '<tr><td>' + esc(r.nome) + '</td><td class="n">' + r.gruppo + '</td>' +
+      '<td class="n">' + fv(v.votoIt) + (v.votoIt != null ? '<br><span class="muted" style="font-weight:400;font-size:13px">' + v.errIt + ' err.</span>' : '') + '</td>' +
+      '<td class="n">' + fv(v.votoEn) + (v.votoEn != null ? '<br><span class="muted" style="font-weight:400;font-size:13px">' + v.errEn + ' err.</span>' : '') + '</td>' +
+      '<td class="n" style="font-weight:400">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="n">' + fv(v.calcolato) + '</td>' +
       '<td><div class="row" style="gap:6px;flex-wrap:nowrap"><label for="vm_' + v.id + '" class="sr">Voto manuale ' + esc(r.nome) + '</label><input id="vm_' + v.id + '" type="text" inputmode="decimal" style="width:80px;padding:6px 8px" value="' + (v.manuale != null ? String(v.manuale).replace('.', ',') : '') + '" placeholder="—">' +
       '<button class="btn sec" style="min-height:38px;padding:0 10px" onclick="salvaVoto(\'' + v.id + '\',this)">Salva</button></div></td>' +
       '<td class="n"><b style="font-size:18px">' + fv(v.voto) + '</b></td></tr>';
   };
   var attivi = A.voti.filter(function (v) { return !v.escluso; }), esclusi = A.voti.filter(function (v) { return v.escluso || v.riammesso; });
   h += '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Tabellone dei voti</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
-    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Gr.</th><th style="text-align:right">Errate</th><th style="text-align:right">Calcolato</th><th>Voto manuale</th><th style="text-align:right">Voto</th></tr></thead><tbody>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Gr.</th><th style="text-align:right">Voto IT</th><th style="text-align:right">Voto EN</th><th style="text-align:right">Media</th><th style="text-align:right">Finale calcolato</th><th>Voto manuale</th><th style="text-align:right">Voto finale</th></tr></thead><tbody>' +
     attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo.</p>';
   if (esclusi.length) {
-    h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Voto</th><th></th></tr></thead><tbody>' +
+    h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Voto finale</th><th></th></tr></thead><tbody>' +
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
   }
@@ -569,20 +584,24 @@ function reportPdf() {
       });
     });
     return '<section class="st"><div class="h"><div><h2>' + esc(r.nome) + '</h2><div class="m">Gruppo ' + r.gruppo + ' · ' + esc(S.d.aree[r.gruppo - 1].it) + '</div></div>' +
-      '<div class="v"><div class="vn">' + fv(v.voto) + '<small>/8</small></div><div class="m">' + (v.escluso ? 'Escluso: ' + esc(v.motivo) : v.manuale != null ? 'Voto manuale (calcolato: ' + fv(v.calcolato) + ')' : 'Voto calcolato') + '</div></div></div>' +
+      '<div class="v"><div class="vn">' + fv(v.voto) + '<small>/8</small></div><div class="m">' + (v.escluso ? 'Escluso: ' + esc(v.motivo) : v.manuale != null ? 'Voto manuale (calcolato: ' + fv(v.calcolato) + ')' : 'Voto finale calcolato') + '</div></div></div>' +
+      '<table class="vt"><tr><th>Voto italiano</th><th>Voto inglese</th><th>Media</th><th>Voto finale</th></tr><tr>' +
+      '<td class="c">' + fv(v.votoIt) + (v.votoIt != null ? ' <span class="m">(' + v.errIt + ' errate)</span>' : '') + '</td>' +
+      '<td class="c">' + fv(v.votoEn) + (v.votoEn != null ? ' <span class="m">(' + v.errEn + ' errate)</span>' : '') + '</td>' +
+      '<td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (esclusione)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr></table>' +
       '<p class="k">Risposte date <b>' + r.inviate + '</b> · corrette <b>' + r.corrette + '</b> · errate <b>' + r.errate + '</b> · da approvare <b>' + r.daApprovare + '</b> · approvate <b>' + r.approvate + '/10</b></p>' +
       '<table><thead><tr><th style="width:24%">Termine</th><th style="width:12%">Tentativi</th><th>Risposta attuale</th><th style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table></section>';
   }).join('');
-  var sintesi = (S.d.panoramica || []).map(function (r) { var v = voti[r.id]; return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + r.gruppo + '</td><td class="c">' + r.inviate + '</td><td class="c">' + r.corrette + '</td><td class="c">' + r.errate + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (escluso)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr>'; }).join('');
+  var sintesi = (S.d.panoramica || []).map(function (r) { var v = voti[r.id]; return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + r.gruppo + '</td><td class="c">' + r.inviate + '</td><td class="c">' + r.corrette + '</td><td class="c">' + r.errate + '</td><td class="c">' + fv(v.votoIt) + '</td><td class="c">' + fv(v.votoEn) + '</td><td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (escluso)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr>'; }).join('');
   var css = '@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#15212B;font-size:10pt;margin:0}h1{font-size:18pt;margin:0}h2{font-size:13pt;margin:0}.m{color:#5B6976;font-size:9pt}' +
     'table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border:1px solid #C3CED7;padding:4px 6px;text-align:left;vertical-align:top;font-size:9pt}th{background:#15212B;color:#fff}.c{text-align:center}' +
     '.ok{color:#1B6E20;font-weight:700}.no{color:#B0304A;font-weight:700}.st{break-before:page}.h{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #15212B;padding-bottom:6px}' +
-    '.vn{font-size:26pt;font-weight:800;text-align:right}.vn small{font-size:11pt;color:#5B6976}.v{text-align:right}.k{margin:8px 0 0}.box{background:#EEF2F5;padding:8px 10px;border-radius:6px;margin-top:8px}';
+    '.vt{width:auto;margin-top:8px}.vt th{background:#EEF2F5;color:#15212B}.vt td,.vt th{padding:4px 14px;font-size:10pt}.vn{font-size:26pt;font-weight:800;text-align:right}.vn small{font-size:11pt;color:#5B6976}.v{text-align:right}.k{margin:8px 0 0}.box{background:#EEF2F5;padding:8px 10px;border-radius:6px;margin-top:8px}';
   var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario 3E</title><style>' + css + '</style></head><body>' +
-    '<h1>Glossario odontotecnico bilingue · Report della classe 3E</h1><div class="m">IIS “L. Barsanti” – Plesso Salvetti, Massa · a.s. 2026/27 · generato il ' + esc(oggi) + '</div>' +
-    '<div class="box"><b>Criterio di assegnazione del punteggio.</b> ' + esc(A.ratio) + ' Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, in italiano e in inglese (10 risposte in tutto).</div>' +
+    '<h1>Glossario odontotecnico bilingue · Report della classe 3E</h1><div class="m">Istituto Barsanti - sede Salvetti, Massa · a.s. 2026/27 · Prof. Danilo Cerrato · Prof.ssa Federica Aliboni · generato il ' + esc(oggi) + '</div>' +
+    '<div class="box"><b>Criterio di assegnazione del punteggio.</b> Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, prima in italiano e poi in inglese (10 risposte in tutto); ogni scelta viene verificata dai docenti. ' + esc(A.ratio) + ' Il voto è espresso in ottavi (massimo 8).</div>' +
     '<div class="box">Scadenza italiano: ' + esc(oraIt(A.impostazioni.scadenzaIt)) + ' · Scadenza inglese: ' + esc(oraIt(A.impostazioni.scadenzaEn)) + '</div>' +
-    '<h2 style="margin-top:12px">Sintesi</h2><table><thead><tr><th>Alunno</th><th class="c">Gr.</th><th class="c">Risposte date</th><th class="c">Corrette</th><th class="c">Errate</th><th class="c">Voto</th></tr></thead><tbody>' + sintesi + '</tbody></table>' +
+    '<h2 style="margin-top:12px">Sintesi</h2><table><thead><tr><th>Alunno</th><th class="c">Gr.</th><th class="c">Risposte</th><th class="c">Corrette</th><th class="c">Errate</th><th class="c">Voto IT</th><th class="c">Voto EN</th><th class="c">Media</th><th class="c">Voto finale</th></tr></thead><tbody>' + sintesi + '</tbody></table>' +
     stud + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},300)}</scr' + 'ipt></body></html>';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
