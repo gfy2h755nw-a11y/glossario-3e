@@ -55,6 +55,6 @@ Se chi ha ricevuto i termini non risponde entro `scad_it`/`scad_en`, non viene e
 
 L'app manda un segnale al minuto mentre è aperta e in primo piano sul dispositivo di un alunno (`presenza`), oltre a login e risposte: una pausa di più di 10 minuti chiude la sessione. Il tempo indicato è quindi il tempo con l'app aperta, non necessariamente di lavoro effettivo.
 
-Ogni sera (`schedule` in `netlify.toml`, orario UTC) la funzione `report-automatico` carica nella cartella dell'app su Dropbox:
+Ogni giorno alle 23:59 (`schedule` in `netlify.toml`, orario UTC) la funzione `report-automatico` carica nella cartella dell'app su Dropbox:
 - `Backup/glossario-3e_backup_AAAA-MM-GG_HHMM.json`: copia completa del database, ripristinabile dall'app (area admin › Ripristina da backup);
 - `Report/Report_Glossario_3E_AAAA-MM-GG_HHMM.pdf` e `Report_ULTIMO.pdf`: sintesi della classe, situazioni da tenere d'occhio, una pagina per alunno con voti, termini, tentativi e sessioni.

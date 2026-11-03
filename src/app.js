@@ -471,7 +471,7 @@ function bloccoBackup() {
   var D = S.d.admin.dropbox || {};
   var stato = !D.configurato ? '<b>Dropbox non ancora configurato.</b> Servono le variabili DROPBOX_APP_KEY e DROPBOX_APP_SECRET su Netlify (vedi la guida).' :
     !D.collegato ? '<b>Dropbox non collegato.</b> Premi “Collega Dropbox” e autorizza l\'app con il tuo account.' :
-    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni sera alle 21:00 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo e il report PDF.' +
+    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo e il report PDF.' +
     '<br>Ultimo invio: ' + (D.ultimoInvio ? esc(quando(D.ultimoInvio)) + ' — ' + (D.esito === 'ok' ? '<span style="color:#1B6E20;font-weight:700">riuscito</span>' : '<span style="color:#B0304A;font-weight:700">' + esc(D.esito) + '</span>') : 'nessuno');
   return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Backup e report automatici</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">' + stato + '</p>' +

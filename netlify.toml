@@ -6,9 +6,9 @@
   node_bundler = "esbuild"
   external_node_modules = ["firebase-admin", "pdfkit", "pptxgenjs"]
 
-# ogni sera alle 21:00 (ora italiana d'inverno; 22:00 con l'ora legale): backup + report su Dropbox
+# ogni giorno alle 23:59 ora italiana (orario in UTC: 22:59 = 23:59 con l ora solare, valida fino a fine marzo): backup + report su Dropbox
 [functions."report-automatico"]
-  schedule = "0 20 * * *"
+  schedule = "59 22 * * *"
 
 [[redirects]]
   from = "/dropbox"
