@@ -15,7 +15,8 @@ function firestore() {
   return fs;
 }
 
-const COL = { config: 'config', alunni: 'alunni', termini: 'termini' };
+const COL = { config: 'config', alunni: 'alunni', termini: 'termini', attivita: 'attivita', segreti: 'segreti' };
+const docs = (snap) => snap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
 
 function compone(cfgSnap, aluSnap, terSnap) {
   if (!cfgSnap.exists) throw Object.assign(new Error('Glossario non ancora configurato: apri la pagina /setup.html.'), { utente: true });
@@ -41,6 +42,35 @@ function db() {
       batch.set(cfgRef, config);
       alunni.forEach((a) => { const { id, ...r } = a; batch.set(f.collection(COL.alunni).doc(id), r); });
       termini.forEach((t) => { const { id, ...r } = t; batch.set(f.collection(COL.termini).doc(id), r); });
+      await batch.commit();
+    },
+    /* ---- registro attività ---- */
+    async alunnoDaCodice(codice) {
+      const q = await f.collection(COL.alunni).where('codice', '==', String(codice || '').trim().toUpperCase()).limit(1).get();
+      return q.docs.length ? Object.assign({ id: q.docs[0].id }, q.docs[0].data()) : null;
+    },
+    async registraAttivita(id, aggiorna) {
+      const ref = f.collection(COL.attivita).doc(String(id));
+      await f.runTransaction(async (tx) => { const s = await tx.get(ref); tx.set(ref, aggiorna(s.exists ? s.data() : null)); });
+    },
+    async leggiAttivita() {
+      const out = {}; docs(await f.collection(COL.attivita).get()).forEach((d) => { const { id, ...r } = d; out[id] = r; }); return out;
+    },
+    /* ---- segreti (token Dropbox): mai inviati al browser ---- */
+    async leggiSegreto(nome) { const s = await f.collection(COL.segreti).doc(nome).get(); return s.exists ? s.data() : null; },
+    async scriviSegreto(nome, mod) { await f.collection(COL.segreti).doc(nome).set(mod, { merge: true }); },
+    async cancellaSegreto(nome) { await f.collection(COL.segreti).doc(nome).delete(); },
+    /* ---- backup completo e ripristino ---- */
+    async backupGrezzo() {
+      const [c, a, t, at] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get(), f.collection(COL.attivita).get()]);
+      return { config: c.exists ? c.data() : null, alunni: docs(a), termini: docs(t), attivita: docs(at) };
+    },
+    async ripristina(b) {
+      const batch = f.batch();
+      batch.set(cfgRef, b.config);
+      b.alunni.forEach((x) => { const { id, ...r } = x; batch.set(f.collection(COL.alunni).doc(id), r); });
+      b.termini.forEach((x) => { const { id, ...r } = x; batch.set(f.collection(COL.termini).doc(id), r); });
+      (b.attivita || []).forEach((x) => { const { id, ...r } = x; batch.set(f.collection(COL.attivita).doc(id), r); });
       await batch.commit();
     },
     async transazione(fn) {

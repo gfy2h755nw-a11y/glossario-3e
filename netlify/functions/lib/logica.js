@@ -5,6 +5,8 @@
  * creaGlossario(config, alunni, termini), transazione(fn) con ctx.leggiTutto() / ctx.scriviTermine(id, mod).
  */
 const DATI = require('./dati');
+const ATT = require('./attivita');
+const DBX = require('./dropbox');
 
 const N_OPZIONI = 8;
 const LETTERE = 'ABCDEFGH';
@@ -218,7 +220,9 @@ function pacchetto(stato, chi) {
       out.admin = { impostazioni: imp, penalita: PENALITA, ratio: ratio(imp),
         voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate, votoMax: v.votoMax, ereditati: v.ereditati,
           tetto: v.tetto, motivoTetto: v.motivoTetto,
-          calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })) };
+          calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })),
+        attivita: stato.attivita ? Object.fromEntries(stato.alunni.map((a) => [a.id, ATT.riepilogo(stato.attivita[a.id], now)])) : null,
+        dropbox: stato.dropbox || null };
     }
   }
   return out;
@@ -231,7 +235,19 @@ function soloDocente(chi) { if (chi.ruolo !== 'docente') errore('Operazione rise
 /* ---------- azioni ---------- */
 async function login(db, { codice }) {
   const stato = await db.leggiTutto();
-  return pacchetto(stato, identifica(stato, codice));
+  const chi = identifica(stato, codice);
+  if (chi.ruolo === 'docente' && chi.admin && db.leggiAttivita) {
+    [stato.attivita, stato.dropbox] = await Promise.all([db.leggiAttivita(), DBX.statoPubblico(db)]);
+  }
+  return pacchetto(stato, chi);
+}
+/* controllo leggero (solo config) per le azioni del prof. Cerrato */
+async function verificaAdmin(db, codice) {
+  const config = await db.leggiConfig();
+  if (!config) errore('Glossario non ancora configurato.');
+  const chi = identifica({ config, alunni: [] }, codice);
+  soloAdmin(chi);
+  return chi;
 }
 
 async function scegli(db, { codice, id, lingua: l, lettera }) {
@@ -441,4 +457,4 @@ async function setup(db, { chiave }, chiaveAttesa) {
   return { docenti: config.docenti.map((d) => ({ nome: d.nome, codice: d.codice })), alunni: alunni.length, termini: termini.length };
 }
 
-module.exports = { manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };
+module.exports = { impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

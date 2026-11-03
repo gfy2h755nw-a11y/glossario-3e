@@ -37,7 +37,8 @@ function vistaLogin(msg) {
     (msg ? '<div class="note err">' + esc(msg) + '</div>' : '') +
     '<div><label for="cod">Il tuo codice personale</label><input id="cod" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;font-family:Archivo,system-ui,sans-serif;font-weight:700;letter-spacing:.2em;font-size:22px" required></div>' +
     '<button class="btn" type="submit" id="bentra">Entra</button>' +
-    '<p class="muted" style="margin:0;font-size:14px">Il codice te lo consegna il prof. Non darlo a nessuno: chi lo conosce può rispondere al posto tuo.</p></form></div>';
+    '<p class="muted" style="margin:0;font-size:14px">Il codice te lo consegna il prof. Non darlo a nessuno: chi lo conosce può rispondere al posto tuo.</p>' +
+    '<p class="muted" style="margin:0;font-size:13px">Per i docenti l\'app registra quando entri, le risposte che dai e per quanto tempo resta aperta.</p></form></div>';
   $('flogin').onsubmit = function (e) { e.preventDefault(); entra($('cod').value); };
   $('cod').focus();
 }
@@ -242,7 +243,7 @@ function vistaDocente() {
     '</section>';
   h += '<p class="muted" style="margin:0">' + lista.length + ' termini · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') + '</p>';
   h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
-  h += panoramica() + (S.d.admin ? bloccoAdmin() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
+  h += panoramica() + (S.d.admin ? bloccoAdmin() + bloccoAttivita() + bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
     '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
@@ -388,10 +389,11 @@ function reportPdf() {
       '<td class="c">' + fv(v.votoIt) + (v.votoIt != null ? ' <span class="m">(' + v.errIt + ' errate)</span>' : '') + '</td>' +
       '<td class="c">' + fv(v.votoEn) + (v.votoEn != null ? ' <span class="m">(' + v.errEn + ' errate)</span>' : '') + '</td>' +
       '<td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (esclusione)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr></table>' +
+      (S.d.admin.attivita ? (function (r) { r = r || {}; return '<p class="k">Accessi <b>' + (r.accessi || 0) + '</b> · giorni attivi <b>' + (r.giorni || 0) + '</b> · tempo con l\'app aperta <b>' + (r.ultimo ? durata(r.minuti) : '—') + '</b> · primo accesso <b>' + esc(quando(r.primo)) + '</b> · ultimo accesso <b>' + esc(quando(r.ultimo)) + '</b></p>'; })(S.d.admin.attivita[r.id]) : '') +
       (v.ereditati ? '<p class="k"><b>Ha ricevuto i termini di un compagno escluso: voto massimo ' + v.votoMax + '.</b>' + (v.tetto ? ' Non ha risposto in tempo ai termini ricevuti: voto finale limitato a 6 (' + esc(v.motivoTetto || '') + ').' : '') + '</p>' : '') + (r.riassegnatoA ? '<p class="k">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '.</p>' : '') + '<p class="k">Risposte date <b>' + r.inviate + '</b> · corrette <b>' + r.corrette + '</b> · errate <b>' + r.errate + '</b> · da approvare <b>' + r.daApprovare + '</b> · approvate <b>' + r.approvate + '/' + (r.termini * 2) + '</b></p>' +
       '<table><thead><tr><th style="width:24%">Termine</th><th style="width:12%">Tentativi</th><th>Risposta attuale</th><th style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table></section>';
   }).join('');
-  var sintesi = (S.d.panoramica || []).map(function (r) { var v = voti[r.id]; return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + r.gruppo + '</td><td class="c">' + r.inviate + '</td><td class="c">' + r.corrette + '</td><td class="c">' + r.errate + '</td><td class="c">' + fv(v.votoIt) + '</td><td class="c">' + fv(v.votoEn) + '</td><td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (escluso)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr>'; }).join('');
+  var sintesi = (S.d.panoramica || []).map(function (r) { var v = voti[r.id]; return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + r.gruppo + '</td><td class="c">' + r.inviate + '</td><td class="c">' + r.corrette + '</td><td class="c">' + r.errate + '</td><td class="c">' + fv(v.votoIt) + '</td><td class="c">' + fv(v.votoEn) + '</td><td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (escluso)' : v.manuale != null ? ' (manuale)' : '') + '</td>' + (function (x) { x = (A.attivita || {})[r.id] || {}; return '<td class="c">' + (x.accessi || 0) + '</td><td class="c">' + (x.ultimo ? durata(x.minuti) : '—') + '</td><td>' + esc(quando(x.ultimo)) + '</td>'; })() + '</tr>'; }).join('');
   var css = '@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#15212B;font-size:10pt;margin:0}h1{font-size:18pt;margin:0}h2{font-size:13pt;margin:0}.m{color:#5B6976;font-size:9pt}' +
     'table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border:1px solid #C3CED7;padding:4px 6px;text-align:left;vertical-align:top;font-size:9pt}th{background:#15212B;color:#fff}.c{text-align:center}' +
     '.ok{color:#1B6E20;font-weight:700}.no{color:#B0304A;font-weight:700}.st{break-before:page}.h{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #15212B;padding-bottom:6px}' +
@@ -400,7 +402,7 @@ function reportPdf() {
     '<h1>Glossario odontotecnico bilingue · Report della classe 3E</h1><div class="m">Istituto Barsanti - sede Salvetti, Massa · a.s. 2026/27 · Prof. Danilo Cerrato · Prof.ssa Federica Aliboni · generato il ' + esc(oggi) + '</div>' +
     '<div class="box"><b>Criterio di assegnazione del punteggio.</b> Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, prima in italiano e poi in inglese (10 risposte in tutto); ogni scelta viene verificata dai docenti. ' + esc(A.ratio) + ' Voto massimo 8, oppure 10 per chi ha ricevuto i termini di un compagno escluso.</div>' +
     '<div class="box">Scadenza italiano: ' + esc(oraIt(A.impostazioni.scadenzaIt)) + ' · Scadenza inglese: ' + esc(oraIt(A.impostazioni.scadenzaEn)) + '</div>' +
-    '<h2 style="margin-top:12px">Sintesi</h2><table><thead><tr><th>Alunno</th><th class="c">Gr.</th><th class="c">Risposte</th><th class="c">Corrette</th><th class="c">Errate</th><th class="c">Voto IT</th><th class="c">Voto EN</th><th class="c">Media</th><th class="c">Voto finale</th></tr></thead><tbody>' + sintesi + '</tbody></table>' +
+    '<h2 style="margin-top:12px">Sintesi</h2><table><thead><tr><th>Alunno</th><th class="c">Gr.</th><th class="c">Risposte</th><th class="c">Corrette</th><th class="c">Errate</th><th class="c">Voto IT</th><th class="c">Voto EN</th><th class="c">Media</th><th class="c">Voto finale</th><th class="c">Accessi</th><th class="c">Tempo</th><th>Ultimo accesso</th></tr></thead><tbody>' + sintesi + '</tbody></table>' +
     stud + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},300)}</scr' + 'ipt></body></html>';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
@@ -434,6 +436,82 @@ function stampaCodici() {
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Codici Glossario 3E</title><style>body{font-family:Arial,sans-serif;margin:12mm}.s{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #888;padding:5mm 2mm;font-size:12pt}.s span{font-size:9pt;color:#555}.c{font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:3pt}</style></head><body>' + righe + '<scr' + 'ipt>window.onload=function(){window.print()}</scr' + 'ipt></body></html>');
   w.document.close();
+}
+
+/* ---------- solo prof. Cerrato: attività degli alunni ---------- */
+function durata(min) { if (min == null) return '—'; if (min < 1) return '< 1 min'; var h = Math.floor(min / 60), m = min % 60; return h ? h + ' h' + (m ? ' ' + m + ' min' : '') : m + ' min'; }
+function quando(iso) { if (!iso) return 'mai'; var d = new Date(iso), p = function (n) { return ('0' + n).slice(-2); }; return GG[d.getDay()] + ' ' + d.getDate() + '/' + p(d.getMonth() + 1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+function bloccoAttivita() {
+  var A = S.d.admin.attivita; if (!A) return '';
+  var righe = S.d.alunni.map(function (a) {
+    var r = A[a.id] || {}, vecchio = !r.ultimo || r.giorniDaUltimo >= 3;
+    var disp = Object.keys(r.dispositivi || {}).join(', ') || '—';
+    var ses = (r.sessioni || []).slice(0, 8).map(function (x) { return quando(x.inizio) + ' · ' + durata(x.minuti) + (x.disp ? ' · ' + x.disp : ''); }).join('<br>');
+    return '<tr><td>' + esc(a.nome) + '</td><td class="n">' + (r.accessi || 0) + '</td><td class="n">' + (r.giorni || 0) + '</td><td class="n">' + (r.ultimo ? durata(r.minuti) : '—') + '</td>' +
+      '<td' + (vecchio ? ' style="color:var(--rosso,#B0304A);font-weight:700"' : '') + '>' + esc(quando(r.ultimo)) + (r.ultimo && r.giorniDaUltimo >= 1 ? ' <span class="muted" style="font-weight:400">(' + r.giorniDaUltimo + ' g fa)</span>' : '') + '</td>' +
+      '<td>' + esc(disp) + '</td><td>' + (ses ? '<details><summary class="muted" style="font-size:13px">ultime sessioni</summary><div style="font-size:13px;margin-top:4px">' + ses + '</div></details>' : '—') + '</td></tr>';
+  }).join('');
+  return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Attività degli alunni</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Accessi</th><th style="text-align:right">Giorni</th><th style="text-align:right">Tempo con l\'app aperta</th><th>Ultimo accesso</th><th>Dispositivi</th><th>Sessioni</th></tr></thead><tbody>' + righe + '</tbody></table></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Il tempo conta i minuti in cui l\'app è aperta e in primo piano sul dispositivo dell\'alunno; una pausa di oltre 10 minuti chiude la sessione. In rosso chi non entra da 3 giorni o non è mai entrato.</p></section>';
+}
+/* ---------- solo prof. Cerrato: backup, report automatico su Dropbox, ripristino ---------- */
+function bloccoBackup() {
+  var D = S.d.admin.dropbox || {};
+  var stato = !D.configurato ? '<b>Dropbox non ancora configurato.</b> Servono le variabili DROPBOX_APP_KEY e DROPBOX_APP_SECRET su Netlify (vedi la guida).' :
+    !D.collegato ? '<b>Dropbox non collegato.</b> Premi “Collega Dropbox” e autorizza l\'app con il tuo account.' :
+    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni sera alle 21:00 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo e il report PDF.' +
+    '<br>Ultimo invio: ' + (D.ultimoInvio ? esc(quando(D.ultimoInvio)) + ' — ' + (D.esito === 'ok' ? '<span style="color:#1B6E20;font-weight:700">riuscito</span>' : '<span style="color:#B0304A;font-weight:700">' + esc(D.esito) + '</span>') : 'nessuno');
+  return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Backup e report automatici</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+    '<p style="margin:0">' + stato + '</p>' +
+    '<div class="row">' +
+    (D.configurato && !D.collegato ? '<button class="btn" onclick="dropboxCollega(this)">Collega Dropbox</button>' : '') +
+    (D.collegato ? '<button class="btn" onclick="dropboxInvia(this)">Invia ora backup e report</button><button class="btn sec" onclick="dropboxScollega(this)">Scollega Dropbox</button>' : '') +
+    '</div><hr style="border:0;border-top:1px solid #DDE4EA;width:100%;margin:4px 0">' +
+    '<div class="row"><button class="btn sec" onclick="scaricaBackup(this)">Scarica backup completo (.json)</button>' +
+    '<button class="btn warn" onclick="$(\'filebk\').click()">Ripristina da backup…</button><input type="file" id="filebk" accept=".json,application/json" style="display:none" onchange="ripristina(this)"></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Il ripristino riporta risposte, voti, codici e registro accessi al momento del backup scelto. Prima di ripristinare l\'app scarica da sola una copia dello stato attuale.</p></section>';
+}
+function salvaFile(nome, testo) {
+  var url = URL.createObjectURL(new Blob([testo], { type: 'application/json' }));
+  var a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+}
+function timbroFile() { var d = new Date(), p = function (n) { return ('0' + n).slice(-2); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()); }
+function scaricaBackup(btn) {
+  if (btn) btn.disabled = true;
+  return api('backup').then(function (b) { salvaFile('glossario-3e_backup_' + timbroFile() + '.json', JSON.stringify(b, null, 1)); toast('Backup scaricato'); if (btn) btn.disabled = false; return b; })
+    .catch(function (e) { if (btn) btn.disabled = false; toast(errMsg(e), true); throw e; });
+}
+function ricarica(msg) { return api('login').then(function (d) { S.d = d; vistaDocente(); if (msg) toast(msg); }); }
+function ripristina(inp) {
+  var f = inp.files && inp.files[0]; inp.value = '';
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function () {
+    var b; try { b = JSON.parse(r.result); } catch (e) { toast('Il file non è un JSON valido.', true); return; }
+    if (!b || b.formato !== 'glossario3e-backup') { toast('Non è un backup completo del Glossario 3E.', true); return; }
+    var conf = prompt('Ripristino del backup del ' + quando(b.creato) + '.\nTutti i dati attuali verranno sostituiti (prima ne scarico una copia).\n\nPer confermare scrivi RIPRISTINA');
+    if (conf === null) return;
+    if (String(conf).trim().toUpperCase() !== 'RIPRISTINA') { toast('Ripristino annullato.', true); return; }
+    scaricaBackup().then(function () { return api('ripristina', { backup: b }); })
+      .then(function (x) { return ricarica('Ripristinato il backup del ' + quando(x.creato)); })
+      .catch(function (e) { toast(errMsg(e), true); });
+  };
+  r.readAsText(f);
+}
+function dropboxCollega(btn) {
+  btn.disabled = true;
+  api('dropboxcollega').then(function (x) { location.href = x.url; }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function dropboxInvia(btn) {
+  btn.disabled = true; btn.textContent = 'Invio in corso…';
+  api('dropboxinvia').then(function () { return ricarica('Backup e report caricati su Dropbox'); }).catch(function (e) { btn.disabled = false; btn.textContent = 'Invia ora backup e report'; toast(errMsg(e), true); });
+}
+function dropboxScollega(btn) {
+  if (!confirm('Scollegare Dropbox? I file già caricati restano nel tuo Dropbox.')) return;
+  btn.disabled = true;
+  api('dropboxscollega').then(function () { return ricarica('Dropbox scollegato'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 
 /* QR code in SVG (libreria qrcode-generator, MIT) */
@@ -484,6 +562,11 @@ function stampaSchede() {
     '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}</scr' + 'ipt></body></html>');
   w.document.close();
 }
+
+/* ---------- registro attività: un segnale al minuto mentre l'app è aperta e in primo piano (solo alunni) ---------- */
+function presenza() { if (S.codice && S.d && S.d.utente && S.d.utente.ruolo === 'alunno' && document.visibilityState === 'visible') api('presenza').catch(function () {}); }
+setInterval(presenza, 60000);
+document.addEventListener('visibilitychange', presenza);
 
 /* ---------- avvio ---------- */
 (function () {

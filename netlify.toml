@@ -4,7 +4,17 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["firebase-admin"]
+  external_node_modules = ["firebase-admin", "pdfkit"]
+
+# ogni sera alle 21:00 (ora italiana d'inverno; 22:00 con l'ora legale): backup + report su Dropbox
+[functions."report-automatico"]
+  schedule = "0 20 * * *"
+
+[[redirects]]
+  from = "/dropbox"
+  to = "/.netlify/functions/dropbox"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/api"
