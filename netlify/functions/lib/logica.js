@@ -94,6 +94,7 @@ function ratio(imp) {
     'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto finale scende a ' + imp.tetto + ' se era ' + imp.tetto + ' o più; se era sotto ' + imp.tetto + ' resta quello. ' +
     'Il voto inserito a mano dal docente sostituisce il voto finale calcolato.';
 }
+const nTer = (n) => n === 1 ? '1 termine' : n + ' termini';
 /* Stato di un alunno: conteggi, esclusione, voto. now = ms */
 function valuta(stato, a, now) {
   const imp = impostazioni(stato.config);
@@ -118,8 +119,8 @@ function valuta(stato, a, now) {
   const tetto = !!a.tetto || ritardiEredita > 0;
   const sIt = scaduti('it'), sEn = scaduti('en');
   let motivo = a.esclusione ? a.esclusione.motivo : '';
-  if (!motivo && sIt) motivo = sIt + ' termini senza risposta in italiano alla scadenza';
-  else if (!motivo && sEn) motivo = sEn + ' termini senza risposta in inglese alla scadenza';
+  if (!motivo && sIt) motivo = nTer(sIt) + ' senza risposta in italiano alla scadenza';
+  else if (!motivo && sEn) motivo = nTer(sEn) + ' senza risposta in inglese alla scadenza';
   const escluso = !!motivo && !a.riammesso;
   const ereditati = miei.filter((t) => t.ereditato).length;
   const max = ereditati ? imp.votoMaxErede : imp.votoMax;
@@ -133,7 +134,7 @@ function valuta(stato, a, now) {
   return Object.assign(c, { id: a.id, nome: a.nome, gruppo: String(a.gruppo), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
     votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn, votoMax: max, ereditati,
     riassegnatoA: a.riassegnato_a || null, termini: miei.length, tetto, tettoValore: imp.tetto,
-    motivoTetto: tetto ? (a.tetto ? a.tetto.motivo : ritardiEredita + ' termini ricevuti senza risposta alla scadenza') : '' });
+    motivoTetto: tetto ? (a.tetto ? a.tetto.motivo : (ritardiEredita === 1 ? '1 termine ricevuto' : ritardiEredita + ' termini ricevuti') + ' senza risposta alla scadenza') : '' });
 }
 function scadenzaTermine(t, l, imp) {
   const own = campo(t, l, 'scad');

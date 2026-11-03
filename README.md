@@ -16,6 +16,7 @@ Laboratorio odontotecnico (prof. Danilo Cerrato) · Inglese tecnico (prof.ssa Fe
 | `netlify/functions/lib/firestore.js` | Collegamento a Firebase Firestore |
 | `netlify/functions/lib/attivita.js` | Registro accessi e sessioni degli alunni |
 | `netlify/functions/lib/report.js` | Report PDF generato sul server (pdfkit) |
+| `netlify/functions/lib/presentazione.js` | Presentazione PowerPoint di riepilogo con grafici nativi (pptxgenjs), solo admin |
 | `netlify/functions/lib/dropbox.js`, `lib/automatico.js` | Collegamento Dropbox, backup e invio del report |
 | `netlify/functions/report-automatico.js` | Funzione programmata: ogni sera backup + report su Dropbox (orario in `netlify.toml`) |
 | `netlify/functions/dropbox.js` | Ritorno da Dropbox dopo l'autorizzazione (`/dropbox`) |

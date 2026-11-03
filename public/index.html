@@ -2864,8 +2864,19 @@ function bloccoAdmin() {
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + (r.riassegnatoA ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><span class="muted" style="font-size:14px">Si apre la stampa: scegli “Salva come PDF”.</span></div></section>';
+  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
+}
+function presentazione(btn) {
+  var t = btn.textContent; btn.disabled = true; btn.textContent = 'Preparo la presentazione…';
+  api('presentazione').then(function (x) {
+    var bin = atob(x.base64), u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([u8], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }));
+    var a = document.createElement('a'); a.href = url; a.download = x.nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    btn.disabled = false; btn.textContent = t; toast('Presentazione scaricata');
+  }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
 }
 function salvaImpostazioni(btn) {
   var it = $('scIt').value, en = $('scEn').value, pr = document.querySelector('input[name="prop"]:checked');

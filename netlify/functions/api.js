@@ -29,6 +29,13 @@ const AZIONI = {
     await d.ripristina(b);
     return { alunni: b.alunni.length, termini: b.termini.length, attivita: (b.attivita || []).length, creato: b.creato };
   },
+  // presentazione PowerPoint di riepilogo (grafici nativi)
+  presentazione: async (d, p) => {
+    await logica.verificaAdmin(d, p.codice);
+    const { stato, attivita } = auto.statoDa(await d.backupGrezzo());
+    const buf = await require('./lib/presentazione').creaPresentazione(stato, attivita, Date.now());
+    return { nome: 'Glossario_3E_report_attivita_' + new Date().toISOString().slice(0, 10) + '.pptx', base64: buf.toString('base64') };
+  },
   dropboxcollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); return { url: await DBX.linkCollegamento(d) }; },
   dropboxscollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); await d.cancellaSegreto('dropbox'); return { scollegato: true }; },
   dropboxinvia: async (d, p) => {
