@@ -56,7 +56,7 @@ function avvisi(righe, now, imp) {
     if (x.v.escluso) { out.push([ROSSO, n + ': escluso (' + x.v.motivo + ').']); return; }
     if (!x.r.ultimo) mai.push(n);
     else if (x.r.giorniDaUltimo >= 3 && (x.v.mancaIt || x.v.mancaEn)) out.push([ARANCIO, n + ': ultimo accesso ' + x.r.giorniDaUltimo + ' giorni fa, mancano ancora ' + (x.v.mancaIt + x.v.mancaEn) + ' risposte.']);
-    [['it', 'italiano'], ['en', 'inglese']].forEach(([l, nome]) => {
+    [['it', 'italiano'], ['en', 'inglese']].filter(([l]) => imp.lingue.indexOf(l) >= 0).forEach(([l, nome]) => {
       x.miei.forEach((t) => {
         if (campo(t, l, 'tent') > 0) return;
         const sc = campo(t, l, 'scad') || (l === 'it' ? imp.scadenzaIt : imp.scadenzaEn), h = tra(sc);
@@ -115,20 +115,29 @@ function creaReport(stato, attivita, now) {
   attivita = attivita || {};
   const imp = logica.impostazioni(stato.config);
   const righe = righeAlunni(stato, attivita, now);
+  const EN = imp.lingue.indexOf('en') >= 0;
+  const CL = logica.nomeClassi(stato), CLS = CL.indexOf(' e ') > 0 ? 'Classi ' + CL : 'Classe ' + CL;
   const pg = parti(now), generato = GG[new Date(new Date(now).toLocaleString('en-US', { timeZone: TZ })).getDay()] + ' ' + pg.day + '/' + pg.month + '/' + pg.year + ' alle ' + pg.hour + ':' + pg.minute;
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 36, bufferPages: true,
-    info: { Title: 'Report Glossario 3E', Author: 'Prof. Danilo Cerrato', Subject: 'Glossario odontotecnico bilingue - Classe 3E' } });
+    info: { Title: 'Report Glossario ' + CL, Author: 'Prof. Danilo Cerrato', Subject: 'Glossario odontotecnico' + (EN ? ' bilingue' : '') + ' - ' + CLS } });
   const pezzi = []; doc.on('data', (b) => pezzi.push(b));
   const fine = new Promise((ok) => doc.on('end', () => ok(Buffer.concat(pezzi))));
-  const sotto = 'Istituto Barsanti - sede Salvetti · a.s. 2026/27 · Prof. Danilo Cerrato · Prof.ssa Federica Aliboni · generato ' + generato;
+  const sotto = 'Istituto Barsanti - sede Salvetti · a.s. 2026/27 · Prof. Danilo Cerrato' + (EN ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato ' + generato;
 
   /* --- pagina 1: sintesi --- */
-  let y = testata(doc, 'Glossario odontotecnico bilingue · Report della classe 3E', sotto);
+  let y = testata(doc, 'Glossario odontotecnico' + (EN ? ' bilingue' : '') + ' · Report · ' + CLS, sotto);
   const W = doc.page.width - 72;
   const totT = stato.termini.length;
   const appr = (l) => stato.termini.filter((t) => campo(t, l, 'stato') === 'approvata').length;
   const daAppr = (l) => stato.termini.filter((t) => campo(t, l, 'stato') === 'inviata').length;
-  const box = [
+  const box = !EN ? [
+    ['Scadenza', quando(imp.scadenzaIt)],
+    ['Termini', String(totT) + ' (' + DATI.TERMINI_PER_ALUNNO + ' a testa)'],
+    ['Approvate', appr('it') + '/' + totT],
+    ['Da approvare', String(daAppr('it'))],
+    ['Esclusi', String(righe.filter((x) => x.v.escluso).length)],
+    ['Penalità', 'Proposta ' + imp.proposta + ' (-' + String(imp.proposta === 'A' ? '0,25' : '0,50') + ' per errore)']
+  ] : [
     ['Scadenza italiano', quando(imp.scadenzaIt)],
     ['Scadenza inglese', quando(imp.scadenzaEn)],
     ['Approvate IT / EN', appr('it') + '/' + totT + '  ·  ' + appr('en') + '/' + totT],
@@ -143,14 +152,23 @@ function creaReport(stato, attivita, now) {
     doc.font('Helvetica-Bold').fontSize(10).fillColor(SCURO).text(b[1], 42 + i * bw, y + 18, { width: bw - 18 });
   });
   y += 46;
-  const col = [
+  const col = !EN ? [
+    { t: 'Alunno', w: 140 }, { t: 'Gr.', w: 24, a: 'center' }, { t: 'Risposte', w: 52, a: 'center' }, { t: 'Approvate', w: 52, a: 'center' },
+    { t: 'Errori', w: 42, a: 'center' }, { t: 'Voto finale', w: 50, a: 'center' },
+    { t: 'Stato', w: 100 }, { t: 'Accessi', w: 44, a: 'center' }, { t: 'Giorni attivi', w: 44, a: 'center' }, { t: 'Tempo con l\'app aperta', w: 66, a: 'center' }, { t: 'Ultimo accesso', w: 92 }
+  ] : [
     { t: 'Alunno', w: 128 }, { t: 'Gr.', w: 24, a: 'center' }, { t: 'IT risposte / approvate', w: 62, a: 'center' }, { t: 'EN risposte / approvate', w: 62, a: 'center' },
     { t: 'Errori IT / EN', w: 50, a: 'center' }, { t: 'Voto IT', w: 40, a: 'center' }, { t: 'Voto EN', w: 40, a: 'center' }, { t: 'Voto finale', w: 44, a: 'center' },
     { t: 'Stato', w: 90 }, { t: 'Accessi', w: 42, a: 'center' }, { t: 'Giorni attivi', w: 42, a: 'center' }, { t: 'Tempo con l\'app aperta', w: 62, a: 'center' }, { t: 'Ultimo accesso', w: 84 }
   ];
   const sc = W / col.reduce((s, c) => s + c.w, 0); col.forEach((c) => { c.w *= sc; });
-  y = tabella(doc, 36, y, col, righe.map((x) => [
-    { t: x.a.nome, b: true }, x.a.gruppo, x.it.risposte + '/' + x.miei.length + '  ·  ' + x.it.approvate, x.en.risposte + '/' + x.miei.length + '  ·  ' + x.en.approvate,
+  const ultimo = (x) => ({ t: x.r.ultimo ? quando(x.r.ultimo) + (x.r.giorniDaUltimo >= 1 ? ' (' + x.r.giorniDaUltimo + ' g fa)' : '') : 'mai', c: !x.r.ultimo || x.r.giorniDaUltimo >= 3 ? ARANCIO : SCURO });
+  y = tabella(doc, 36, y, col, righe.map((x) => !EN ? [
+    { t: x.a.nome, b: true }, logica.etichettaAl(x.a), x.it.risposte + '/' + x.miei.length, x.it.approvate + '/' + x.miei.length, x.it.errori,
+    { t: fv(x.v.voto) + (x.v.manuale != null ? ' (man.)' : ''), b: true },
+    { t: x.stato, c: x.colore, b: x.colore !== SCURO }, x.r.accessi, x.r.giorni, durata(x.r.ultimo ? x.r.minuti : null), ultimo(x)
+  ] : [
+    { t: x.a.nome, b: true }, logica.etichettaAl(x.a), x.it.risposte + '/' + x.miei.length + '  ·  ' + x.it.approvate, x.en.risposte + '/' + x.miei.length + '  ·  ' + x.en.approvate,
     x.it.errori + ' / ' + x.en.errori, fv(x.v.votoIt), fv(x.v.votoEn), { t: fv(x.v.voto) + (x.v.manuale != null ? ' (man.)' : ''), b: true },
     { t: x.stato, c: x.colore, b: x.colore !== SCURO }, x.r.accessi, x.r.giorni, durata(x.r.ultimo ? x.r.minuti : null),
     { t: x.r.ultimo ? quando(x.r.ultimo) + (x.r.giorniDaUltimo >= 1 ? ' (' + x.r.giorniDaUltimo + ' g fa)' : '') : 'mai', c: !x.r.ultimo || x.r.giorniDaUltimo >= 3 ? ARANCIO : SCURO }
@@ -175,10 +193,11 @@ function creaReport(stato, attivita, now) {
     doc.addPage({ size: 'A4', layout: 'portrait', margin: 36 });
     const Wp = doc.page.width - 72;
     const area = DATI.AREE.find((a) => String(a.n) === String(x.a.gruppo)) || {};
-    let yy = testata(doc, x.a.nome, 'Gruppo ' + x.a.gruppo + ' · ' + (area.it || '') + ' · ' + sotto);
+    let yy = testata(doc, x.a.nome, 'Classe ' + logica.classeDi(x.a) + (area.it ? ' · Gruppo ' + x.a.gruppo + ' · ' + area.it : ' · termini di tutte le aree') + ' · ' + sotto);
     // voti
-    const vb = [['Voto italiano', fv(x.v.votoIt), x.it.errori + ' errori'], ['Voto inglese', fv(x.v.votoEn), x.en.errori + ' errori'],
-      ['Media', x.v.media != null ? fv(x.v.media) : '-', ''], ['Voto finale', x.v.voto != null ? fv(x.v.voto) + '/' + x.v.votoMax : '-', x.v.manuale != null ? 'manuale' : x.v.escluso ? 'esclusione' : x.v.tetto ? 'tetto 6' : 'calcolato']];
+    const vb = !EN ? [['Risposte', x.it.risposte + '/' + x.miei.length, ''], ['Approvate', x.it.approvate + '/' + x.miei.length, x.it.daApprovare ? x.it.daApprovare + ' da approvare' : ''],
+      ['Errori', String(x.it.errori), 'penalità ' + (imp.proposta === 'A' ? '0,25' : '0,50') + ' ciascuno'], ['Voto finale', x.v.voto != null ? fv(x.v.voto) + '/' + fv(x.v.votoMax) : '-', x.v.manuale != null ? 'manuale' : x.v.escluso ? 'esclusione' : x.v.tetto ? 'tetto 6' : 'calcolato']] : [['Voto italiano', fv(x.v.votoIt), x.it.errori + ' errori'], ['Voto inglese', fv(x.v.votoEn), x.en.errori + ' errori'],
+      ['Media', x.v.media != null ? fv(x.v.media) : '-', ''], ['Voto finale', x.v.voto != null ? fv(x.v.voto) + '/' + fv(x.v.votoMax) : '-', x.v.manuale != null ? 'manuale' : x.v.escluso ? 'esclusione' : x.v.tetto ? 'tetto 6' : 'calcolato']];
     const w4 = Wp / 4;
     vb.forEach((b, i) => {
       doc.rect(36 + i * w4, yy, w4 - 6, 44).fill(i === 3 ? SCURO : CHIARO);
@@ -191,7 +210,7 @@ function creaReport(stato, attivita, now) {
     const note = [];
     if (x.v.escluso) note.push('Escluso: ' + x.v.motivo + '.');
     if (x.v.riassegnatoA) { const e = stato.alunni.find((a) => a.id === x.v.riassegnatoA); note.push('I suoi termini sono passati a ' + (e ? e.nome : x.v.riassegnatoA) + '.'); }
-    if (x.v.ereditati) note.push('Ha ricevuto i termini di un compagno escluso: voto massimo ' + x.v.votoMax + '.');
+    if (x.v.ereditati) note.push('Ha ricevuto i termini di un compagno escluso: voto massimo ' + fv(x.v.votoMax) + '.');
     if (x.v.tetto) note.push('Voto finale limitato a 6: ' + x.v.motivoTetto + '.');
     if (note.length) { doc.font('Helvetica-Bold').fontSize(9).fillColor(x.colore).text(note.join(' '), 36, yy, { width: Wp }); yy = doc.y + 6; }
 
@@ -213,7 +232,7 @@ function creaReport(stato, attivita, now) {
     const STT = { '': 'Da scegliere', inviata: 'Da approvare', correggere: 'Rimandata', approvata: 'Approvata' };
     const rt = [];
     x.miei.forEach((t) => {
-      ['it', 'en'].forEach((l) => {
+      imp.lingue.forEach((l) => {
         const st = campo(t, l, 'storia') || [], stv = campo(t, l, 'stato') || '';
         rt.push([{ t: (l === 'it' ? t.termine_it : t.termine_en) + (t.ereditato && l === 'it' ? '  (ricevuto)' : ''), b: l === 'it' }, l.toUpperCase(),
           { t: STT[stv] || stv, c: stv === 'approvata' ? VERDE : stv === 'correggere' ? ARANCIO : !st.length ? GRIGIO : SCURO },
@@ -222,7 +241,8 @@ function creaReport(stato, attivita, now) {
           campo(t, l, 'scad') ? quando(campo(t, l, 'scad')) : '']);
       });
     });
-    const ct = [{ t: 'Termine', w: 150 }, { t: 'Lingua', w: 34, a: 'center' }, { t: 'Stato', w: 62 }, { t: 'Tentativi', w: 96 }, { t: 'Prima risposta', w: 70 }, { t: 'Ultima risposta', w: 70 }, { t: 'Scadenza propria', w: 41 }];
+    if (!EN) rt.forEach((r) => r.splice(1, 1));
+    const ct = !EN ? [{ t: 'Termine', w: 170 }, { t: 'Stato', w: 66 }, { t: 'Tentativi', w: 100 }, { t: 'Prima risposta', w: 72 }, { t: 'Ultima risposta', w: 72 }, { t: 'Scadenza propria', w: 43 }] : [{ t: 'Termine', w: 150 }, { t: 'Lingua', w: 34, a: 'center' }, { t: 'Stato', w: 62 }, { t: 'Tentativi', w: 96 }, { t: 'Prima risposta', w: 70 }, { t: 'Ultima risposta', w: 70 }, { t: 'Scadenza propria', w: 41 }];
     const s2 = Wp / ct.reduce((s, c) => s + c.w, 0); ct.forEach((c) => { c.w *= s2; });
     yy = rt.length ? tabella(doc, 36, yy, ct, rt, { fs: 7.5 }) : (doc.font('Helvetica').fontSize(9).fillColor(GRIGIO).text('Nessun termine assegnato.', 36, yy), doc.y);
 
@@ -242,14 +262,14 @@ function creaReport(stato, attivita, now) {
   /* --- criterio --- */
   doc.addPage({ size: 'A4', layout: 'portrait', margin: 36 });
   let yc = testata(doc, 'Criterio di assegnazione del punteggio', sotto);
-  doc.font('Helvetica').fontSize(10).fillColor(SCURO).text('Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, prima in italiano e poi in inglese (10 risposte in tutto); ogni scelta viene verificata dai docenti. ' + logica.ratio(imp), 36, yc, { width: doc.page.width - 72, lineGap: 2 });
+  doc.font('Helvetica').fontSize(10).fillColor(SCURO).text((EN ? 'Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, prima in italiano e poi in inglese (10 risposte in tutto); ogni scelta viene verificata dai docenti. ' : 'Ogni alunno ha ' + DATI.TERMINI_PER_ALUNNO + ' termini e per ciascuno sceglie la definizione corretta tra 8 alternative, in italiano; ogni scelta viene verificata dal docente. ') + logica.ratio(imp), 36, yc, { width: doc.page.width - 72, lineGap: 2 });
 
   // numeri di pagina
   const range = doc.bufferedPageRange();
   for (let i = range.start; i < range.start + range.count; i++) {
     doc.switchToPage(i);
     const b = doc.page.margins.bottom; doc.page.margins.bottom = 0;
-    doc.font('Helvetica').fontSize(7).fillColor(GRIGIO).text('Glossario 3E · report di ' + generato + ' · pagina ' + (i + 1) + ' di ' + range.count, 36, doc.page.height - 24, { width: doc.page.width - 72, align: 'right' });
+    doc.font('Helvetica').fontSize(7).fillColor(GRIGIO).text('Glossario ' + CL + ' · report di ' + generato + ' · pagina ' + (i + 1) + ' di ' + range.count, 36, doc.page.height - 24, { width: doc.page.width - 72, align: 'right' });
     doc.page.margins.bottom = b;
   }
   doc.end();

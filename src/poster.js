@@ -35,13 +35,42 @@ var Poster = (function () {
     opz = opz || {};
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
     var nomi = {};
-    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; });
-    // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), nell'ordine dei termini
-    var visti = {}, gruppo = [];
-    termini.forEach(function (t) { if (t.alunno && !visti[t.alunno]) { visti[t.alunno] = 1; gruppo.push(esc(nomi[t.alunno] || t.alunno)); } });
+    var clDi = {};
+    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; clDi[a.id] = a.classe || '3E'; });
+    // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
+    var visti = {}, perCl = {}, ordineCl = [];
+    termini.forEach(function (t) {
+      if (!t.alunno || visti[t.alunno]) return; visti[t.alunno] = 1;
+      var c = clDi[t.alunno] || '3E'; if (!perCl[c]) { perCl[c] = []; ordineCl.push(c); }
+      perCl[c].push(esc(nomi[t.alunno] || t.alunno));
+    });
+    var classi = (opz.classi || ordineCl.slice().sort()).filter(function (c) { return perCl[c]; });
+    if (!classi.length) classi = ['3E'];
+    var gruppo = classi.length > 1 ? classi.map(function (c) { return '<b style="font-weight:800">' + c + ':</b> ' + perCl[c].join(' · '); }) : (perCl[classi[0]] || []);
+    var sepAut = classi.length > 1 ? ' &nbsp;&nbsp;|&nbsp;&nbsp; ' : ' · ';
     var F = "font-family:'Archivo',Arial,sans-serif;";
 
-    var righe = termini.map(function (t, i) {
+    var IT = !!opz.soloIt;
+    // solo italiano: due colonne fino a 44 termini, tre colonne oltre (65 per area con 3E + 3F)
+    var nCol = termini.length > 44 ? 3 : 2, TRE = nCol === 3;
+    var meta = Math.ceil(termini.length / nCol);
+    var M = TRE ? { c: 10.5, cf: 4.8, g: 4.5, p: '1mm 3.5mm', t: 8.8, d: 6, dl: 1.18, dv: 4.8, mt: 1 } : { c: 13, cf: 5.6, g: 6, p: '1.5mm 5mm', t: 10, d: 6.8, dl: 1.22, dv: 5.6, mt: 1.5 };
+    function voceIt(t, i) {
+      var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata');
+      return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:' + M.c + 'mm minmax(0,1fr);column-gap:' + M.g + 'mm;align-items:center;padding:' + M.p + ';' +
+        (i % 2 ? 'background:' + chiaro + ';' : '') + 'border-bottom:0.4mm solid ' + medio + '">' +
+        '<div style="width:' + M.c + 'mm;height:' + M.c + 'mm;border-radius:50%;background:' + col + ';color:#fff;display:flex;align-items:center;justify-content:center;' + F + 'font-weight:800;font-size:' + M.cf + 'mm">' + (i + 1) + '</div>' +
+        '<div style="min-width:0"><div style="' + F + 'font-weight:800;font-size:' + M.t + 'mm;line-height:1.05;color:#15212B">' + esc(t.it) + '</div>' +
+        (ok ? '<div style="font-size:' + M.d + 'mm;line-height:' + M.dl + ';margin-top:' + M.mt + 'mm">' + esc(t.defIt) + '</div>'
+          : '<div style="font-size:' + M.dv + 'mm;line-height:1.25;color:#8494A3;font-style:italic;margin-top:' + M.mt + 'mm">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</div>') +
+        '</div></div>';
+    }
+    var liste = [];
+    for (var k = 0; k < nCol; k++) liste.push(termini.slice(k * meta, (k + 1) * meta));
+    var colonne = IT ? liste.map(function (lista, c) {
+      return '<div style="display:flex;flex-direction:column;min-height:0;min-width:0">' + lista.map(function (t, i) { return voceIt(t, c * meta + i); }).join('') + '</div>';
+    }).join('') : '';
+    var righe = IT ? '' : termini.map(function (t, i) {
       function def(testo, lingua) {
         if (testo && (!opz.soloApprovate || (lingua === 'it' ? t.statoIt : t.statoEn) === 'approvata')) {
           return '<div style="font-size:6.5mm;line-height:1.25;' + (lingua === 'en' ? 'font-style:italic;' : '') + '">' + esc(testo) + '</div>';
@@ -67,29 +96,34 @@ var Poster = (function () {
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:10mm">' +
           '<div style="display:flex;align-items:center;gap:7mm"><div style="background:#fff;padding:1.6mm;border-radius:1.5mm;line-height:0">' + logo(30) + '</div>' +
             '<div style="' + F + 'font-weight:800;font-size:11mm;line-height:1.05">Istituto Barsanti - sede Salvetti</div></div>' +
-          '<div style="text-align:right;' + F + lab + 'line-height:1.7"><div>Glossario odontotecnico bilingue · Bilingual dental glossary</div><div>Classe 3E · a.s. 2026/27</div></div></div>' +
+          '<div style="text-align:right;' + F + lab + 'line-height:1.7"><div>' + (IT ? 'Glossario odontotecnico' : 'Glossario odontotecnico bilingue · Bilingual dental glossary') + '</div><div>Classe ' + classi.join(' e ') + ' · a.s. 2026/27</div></div></div>' +
         '<div style="display:flex;align-items:center;gap:14mm">' +
           '<div style="' + F + 'font-weight:900;font-size:96mm;line-height:0.8;letter-spacing:-0.04em">0' + area.n + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="' + F + 'font-weight:900;font-size:24mm;line-height:0.98;letter-spacing:-0.02em">' + esc(area.it) + '</div>' +
-            '<div style="' + F + 'font-weight:600;font-style:italic;font-size:12mm;line-height:1.1;margin-top:4mm;opacity:0.92">' + esc(area.en) + '</div>' +
+            (IT ? '' : '<div style="' + F + 'font-weight:600;font-style:italic;font-size:12mm;line-height:1.1;margin-top:4mm;opacity:0.92">' + esc(area.en) + '</div>') +
           '</div>' +
           '<svg width="58mm" height="58mm" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONE[area.n] + '</svg>' +
         '</div>' +
         '<div style="border-top:0.6mm solid rgba(255,255,255,0.55);padding-top:5mm;display:flex;flex-direction:column;gap:2.5mm;font-size:6mm;line-height:1.3">' +
-          '<div><b>A cura di · Edited by:</b> ' + (gruppo.join(' · ') || '—') + '</div>' +
-          '<div><b>Docenti · Teachers:</b> Prof. Danilo Cerrato <span style="opacity:.85">(Laboratorio odontotecnico)</span> · Prof.ssa Federica Aliboni <span style="opacity:.85">(Inglese tecnico)</span></div></div>' +
+          '<div><b>' + (IT ? 'A cura di:' : 'A cura di · Edited by:') + '</b> ' + (gruppo.join(sepAut) || '—') + '</div>' +
+          (IT ? '<div><b>Docente:</b> Prof. Danilo Cerrato <span style="opacity:.85">(Laboratorio odontotecnico)</span></div></div>'
+            : '<div><b>Docenti · Teachers:</b> Prof. Danilo Cerrato <span style="opacity:.85">(Laboratorio odontotecnico)</span> · Prof.ssa Federica Aliboni <span style="opacity:.85">(Inglese tecnico)</span></div></div>') +
       '</div>' +
       /* intestazione tabella */
+      (IT ? '<div style="padding:8mm ' + (TRE ? 24 : 30) + 'mm 0;display:flex;flex-direction:column;flex:1;min-height:0">' +
+        '<div style="' + F + lab + 'color:#3E4C59;padding:0 4mm 3mm;border-bottom:0.9mm solid #15212B">Termine e definizione</div>' +
+        '<div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(' + nCol + ',minmax(0,1fr));column-gap:' + (TRE ? 6 : 10) + 'mm">' + colonne + '</div>' +
+      '</div>' :
       '<div style="padding:9mm 36mm 0;display:flex;flex-direction:column;flex:1;min-height:0">' +
         '<div style="display:grid;grid-template-columns:13mm 160mm minmax(0,1fr) minmax(0,1fr);column-gap:9mm;padding:0 5mm 3mm;border-bottom:0.9mm solid #15212B;' + F + lab + 'color:#3E4C59">' +
           '<span></span><span>Termine · Term</span><span>Definizione · Italiano</span><span>Definition · English</span></div>' +
         '<div style="flex:1;min-height:0;display:flex;flex-direction:column">' + righe + '</div>' +
-      '</div>' +
+      '</div>') +
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
-        '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe 3E · Area ' + area.n + ' di 4</span>' +
-        '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b><br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b></span>' +
+        '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + classi.join(' e ') + ' · Area ' + area.n + ' di 4</span>' +
+        '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>' +
       '</div>' +
       '</div>';
   }

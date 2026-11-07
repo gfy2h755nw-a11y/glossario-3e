@@ -383,47 +383,38 @@ const DOCENTI = [
 
 // Tappe: quelle con "chiave" prendono la data dalle scadenze impostate dal prof. Cerrato nell'app.
 const TAPPE = [
-  {
-    "data": "2026-11-03",
-    "testo": "Presentazione del progetto, gruppi e codici personali"
-  },
-  {
-    "data": "2026-11-13",
-    "chiave": "it",
-    "testo": "Scadenza italiano: risposta a tutti e 5 i termini"
-  },
-  {
-    "data": "2026-11-20",
-    "testo": "Italiano corretto e approvato dal prof. Cerrato"
-  },
-  {
-    "data": "2026-11-27",
-    "chiave": "en",
-    "testo": "Scadenza inglese: risposta a tutti e 5 i termini"
-  },
-  {
-    "data": "2026-12-03",
-    "testo": "Inglese corretto e approvato dalla prof.ssa Aliboni: l'app si chiude"
-  },
-  {
-    "data": "2026-12-07",
-    "testo": "Cartelloni definitivi in tipografia"
-  },
-  {
-    "data": "2026-12-11",
-    "testo": "Consegna e presentazione dei cartelloni"
-  }
+  { "data": "2026-11-09", "chiave": "partenza", "testo": "Partenza: si apre l'app per 3E e 3F" },
+  { "data": "2026-11-13", "lingua": "en", "chiave": "it", "testo": "Scadenza italiano: risposta a tutti i termini" },
+  { "data": "2026-11-20", "soloIt": true, "chiave": "it", "testo": "Scadenza: risposta a tutti e 10 i termini" },
+  { "data": "2026-11-20", "lingua": "en", "testo": "Italiano corretto e approvato dal prof. Cerrato" },
+  { "data": "2026-11-27", "soloIt": true, "testo": "Definizioni corrette e approvate dal prof. Cerrato: l'app si chiude" },
+  { "data": "2026-11-27", "lingua": "en", "chiave": "en", "testo": "Scadenza inglese: risposta a tutti i termini" },
+  { "data": "2026-12-03", "lingua": "en", "testo": "Inglese corretto e approvato dalla prof.ssa Aliboni: l'app si chiude" },
+  { "data": "2026-12-07", "testo": "Cartelloni definitivi in tipografia" },
+  { "data": "2026-12-11", "testo": "Consegna e presentazione dei cartelloni" }
 ];
 
 // Scadenze iniziali (modificabili dall'area docenti, solo prof. Cerrato). Ora italiana.
-const SCADENZE = { it: '2026-11-13T23:59:00+01:00', en: '2026-11-27T23:59:00+01:00' };
+const SCADENZE = { it: '2026-11-20T23:59:00+01:00', en: '2026-11-27T23:59:00+01:00' };
+
+// Lingue attive: ['it'] = solo italiano (dal 5/11/2026); ['it', 'en'] riattiva l'inglese (servono le definizioni EN dei termini 21-40).
+const LINGUE = ['it'];
+// Termini per alunno: 5 della prima fase + 5 nuovi (aree da 40 termini).
+const TERMINI_PER_ALUNNO = 10;
+
+// Classi: la 3E (16 alunni, gruppi per area) e la 3F (10 alunni, termini di tutte le aree).
+const CLASSI = ['3E', '3F'];
+const NOMI_3F = ["Balleri Christian", "Bonuccelli Martina", "Chiorescu Vlada", "Corradini Helena", "Dadà Matteo", "Dieng Ibrahima", "Domenichelli Alessio", "Fazzi Matilda", "Ferrara Lucia", "Taddei Nicole"];
+// Partenza del compito: la imposta il prof. Cerrato dall'app (prima di quel momento gli alunni non vedono i termini).
+const PARTENZA = null;
 
 // Valutazione: voto massimo 8; proposta A = -0,25 per errore, B = -0,50 (scelta dall'area docenti).
 // tettoEredeInRitardo: chi non risponde in tempo ai termini ricevuti da un escluso non può superare questo voto
-const VALUTAZIONE = { votoMax: 8, votoMaxErede: 10, votoMin: 4, votoEsclusione: 4, tettoEredeInRitardo: 6, proposta: 'A' };
+// dal 7/11/2026 (lavoro a casa): voto massimo 7,5, 9,5 per chi riceve i termini di un escluso, proposta B (−0,50) di default
+const VALUTAZIONE = { votoMax: 7.5, votoMaxErede: 9.5, votoMin: 4, votoEsclusione: 4, tettoEredeInRitardo: 6, proposta: 'B' };
 
 // Termini degli esclusi: passano a sorte a un compagno, che ha questi giorni (dalla riassegnazione) per rispondere.
-const EREDITA = { giorniIt: 2, giorniEn: 4 };
+const EREDITA = { giorniIt: 3, giorniEn: 4 };
 
 // Definizioni corrette [italiano, inglese], nello stesso ordine dei termini.
 const DEFINIZIONI = {
@@ -757,4 +748,754 @@ const DEFINIZIONI = {
  ]
 };
 
-module.exports = { AREE, TERMINI, DEFINIZIONI, NOMI_ALUNNI, DOCENTI, TAPPE, SCADENZE, VALUTAZIONE, EREDITA };
+
+// Seconda fase (approvati dal prof. Cerrato il 4/11/2026): 20 termini in più per area, solo in italiano.
+// Diventano i termini 21-40 di ogni area (T121-T140, T221-T240, ...).
+const NUOVI = {
+ "1": [
+  [
+   "Camera pulpare",
+   "Cavità interna della corona che contiene la polpa e prosegue nei canali radicolari."
+  ],
+  [
+   "Canale radicolare",
+   "Canale sottile che attraversa la radice e porta vasi e nervi dalla punta della radice alla polpa."
+  ],
+  [
+   "Forame apicale",
+   "Piccola apertura all'apice della radice da cui entrano ed escono vasi e nervi della polpa."
+  ],
+  [
+   "Legamento parodontale",
+   "Fibre connettivali che uniscono il cemento radicolare all'osso alveolare e ammortizzano i carichi masticatori."
+  ],
+  [
+   "Gengiva",
+   "Mucosa che riveste i processi alveolari e circonda il colletto dei denti, proteggendo i tessuti sottostanti."
+  ],
+  [
+   "Osso alveolare",
+   "Porzione dei mascellari che forma gli alveoli e sostiene le radici; dopo l'estrazione si riassorbe."
+  ],
+  [
+   "Parodonto",
+   "Insieme dei tessuti di sostegno del dente: gengiva, legamento parodontale, cemento radicolare e osso alveolare."
+  ],
+  [
+   "Dente deciduo",
+   "Dente da latte del bambino, destinato a cadere e a essere sostituito da un dente permanente."
+  ],
+  [
+   "Dente permanente",
+   "Dente della seconda dentizione: 32 elementi nell'adulto, terzi molari compresi; non viene più sostituito."
+  ],
+  [
+   "Formula dentaria",
+   "Modo sintetico di scrivere quanti incisivi, canini, premolari e molari ci sono in metà arcata."
+  ],
+  [
+   "Incisivo",
+   "Dente anteriore a corona appiattita con margine tagliente, destinato a tagliare il cibo; 8 nella dentatura permanente."
+  ],
+  [
+   "Canino",
+   "Dente con una sola cuspide appuntita e la radice più lunga dell'arcata; guida i movimenti di lateralità."
+  ],
+  [
+   "Premolare",
+   "Dente posteriore tra canino e molari, di solito con due cuspidi (vestibolare e linguale); inizia la triturazione."
+  ],
+  [
+   "Molare",
+   "Dente posteriore con ampia faccia occlusale a più cuspidi e due o tre radici, destinato a macinare il cibo."
+  ],
+  [
+   "Tubercolo di Carabelli",
+   "Cuspide accessoria sulla faccia palatale della cuspide mesio-palatale del primo molare superiore."
+  ],
+  [
+   "Cresta obliqua",
+   "Rilievo di smalto che attraversa la faccia occlusale dei molari superiori unendo la cuspide disto-vestibolare alla mesio-palatale."
+  ],
+  [
+   "Area di contatto",
+   "Zona in cui la faccia prossimale di un dente tocca quella del vicino; protegge la papilla e stabilizza l'arcata."
+  ],
+  [
+   "Furcazione",
+   "Punto in cui le radici di un molare si separano l'una dall'altra."
+  ],
+  [
+   "Corona clinica",
+   "Parte del dente visibile in bocca, sopra il margine gengivale; può differire dalla corona anatomica."
+  ],
+  [
+   "Diastema",
+   "Spazio tra due denti contigui, frequente tra gli incisivi centrali superiori."
+  ]
+ ],
+ "2": [
+  [
+   "Classe I di Angle",
+   "Rapporto in cui la cuspide mesio-vestibolare del primo molare superiore occlude nel solco vestibolare del primo molare inferiore."
+  ],
+  [
+   "Classe II di Angle",
+   "Malocclusione in cui il primo molare inferiore è distale rispetto al superiore: mandibola arretrata."
+  ],
+  [
+   "Classe III di Angle",
+   "Malocclusione in cui il primo molare inferiore è mesiale rispetto al superiore: mandibola avanzata."
+  ],
+  [
+   "Morso aperto",
+   "Mancanza di contatto tra denti superiori e inferiori in una zona dell'arcata, con gli altri denti in occlusione."
+  ],
+  [
+   "Morso crociato",
+   "Rapporto trasversale invertito: uno o più denti superiori occludono all'interno degli antagonisti inferiori."
+  ],
+  [
+   "Linea mediana",
+   "Linea al centro del viso e delle arcate, tra i due incisivi centrali."
+  ],
+  [
+   "Spazio libero",
+   "Piccolo spazio che resta tra i denti quando la bocca è rilassata e chiusa senza stringere."
+  ],
+  [
+   "Contatto prematuro",
+   "Contatto tra due denti che avviene prima degli altri in chiusura e impedisce la massima intercuspidazione."
+  ],
+  [
+   "Interferenza occlusale",
+   "Contatto indesiderato che ostacola i movimenti mandibolari di lateralità o di protrusione."
+  ],
+  [
+   "Lato lavorante",
+   "Lato verso cui si sposta la mandibola durante un movimento di lateralità."
+  ],
+  [
+   "Lato bilanciante",
+   "Lato opposto a quello verso cui si muove la mandibola in lateralità; detto anche lato non lavorante."
+  ],
+  [
+   "Funzione di gruppo",
+   "Nel movimento laterale più denti dello stesso lato si toccano insieme, invece del solo canino."
+  ],
+  [
+   "Occlusione bilanciata",
+   "Contatti simultanei sul lato lavorante e su quello bilanciante durante i movimenti; ricercata nelle protesi totali."
+  ],
+  [
+   "Muscolo massetere",
+   "Muscolo masticatorio elevatore che va dall'arcata zigomatica all'angolo della mandibola; il più potente in chiusura."
+  ],
+  [
+   "Disco articolare",
+   "Lamina fibrocartilaginea interposta tra condilo e fossa glenoidea nell'articolazione temporo-mandibolare."
+  ],
+  [
+   "Movimento di Bennett",
+   "Spostamento laterale del condilo del lato lavorante durante la lateralità della mandibola."
+  ],
+  [
+   "Piano di Camper",
+   "Linea di riferimento dal naso all'orecchio, usata per orientare i denti nelle protesi."
+  ],
+  [
+   "Triangolo di Bonwill",
+   "Triangolo immaginario tra i due condili e il centro degli incisivi inferiori, con lati di circa 10 cm."
+  ],
+  [
+   "Tavolo incisale",
+   "Piastrina dell'articolatore su cui scorre l'asta anteriore e che simula la guida degli incisivi."
+  ],
+  [
+   "Registrazione occlusale",
+   "Registrazione in cera, silicone o resina dei rapporti tra le arcate, per montare i modelli in articolatore."
+  ]
+ ],
+ "3": [
+  [
+   "Lega non nobile",
+   "Lega con meno del 25% di metalli nobili, come cromo-cobalto e nichel-cromo; economica e molto rigida."
+  ],
+  [
+   "Titanio",
+   "Metallo leggero e molto biocompatibile, resistente alla corrosione grazie allo strato di ossido; usato per impianti e strutture."
+  ],
+  [
+   "Resistenza alla corrosione",
+   "Capacità di un metallo di non arrugginire né rovinarsi a contatto con la saliva."
+  ],
+  [
+   "Coefficiente di dilatazione termica",
+   "Variazione di dimensione di un materiale per grado di temperatura; lega e ceramica devono averlo compatibile."
+  ],
+  [
+   "Durezza",
+   "Resistenza di un materiale alla penetrazione e alla scalfittura superficiale; si misura con prove Vickers o Knoop."
+  ],
+  [
+   "Modulo elastico",
+   "Valore che misura quanto un materiale è rigido, cioè quanto poco si piega sotto carico."
+  ],
+  [
+   "Contrazione di polimerizzazione",
+   "Riduzione di volume di una resina durante l'indurimento, dovuta all'avvicinamento delle molecole che si legano."
+  ],
+  [
+   "Resina autopolimerizzante",
+   "Resina acrilica che indurisce a temperatura ambiente grazie a un attivatore chimico; usata per riparazioni e cucchiai."
+  ],
+  [
+   "Resina termopolimerizzante",
+   "Resina che indurisce in acqua calda o in forno, usata per le basi delle dentiere."
+  ],
+  [
+   "Resina fotopolimerizzante",
+   "Resina che indurisce quando una lampada a luce blu attiva il fotoiniziatore contenuto nel materiale."
+  ],
+  [
+   "Composito",
+   "Materiale di matrice resinosa e riempitivo inorganico legati da un silano; usato per faccette e rivestimenti."
+  ],
+  [
+   "Disilicato di litio",
+   "Vetroceramica ad alta resistenza, lavorata per pressatura o fresatura, adatta a corone singole estetiche."
+  ],
+  [
+   "Ceramica feldspatica",
+   "Ceramica a base di feldspato, quarzo e caolino, molto estetica ma fragile; si stratifica su metallo o ossido."
+  ],
+  [
+   "Opaco",
+   "Primo strato di ceramica sulla struttura metallica: ne copre il colore e crea il legame con la ceramica."
+  ],
+  [
+   "Cera collante",
+   "Cera dura e appiccicosa da fusa, usata per unire temporaneamente parti prima di saldatura o riparazione."
+  ],
+  [
+   "Rivestimento fosfatico",
+   "Rivestimento con legante fosfatico (fosfato di ammonio e ossido di magnesio) che regge alte temperature; per leghe non nobili e ceramiche pressate."
+  ],
+  [
+   "Ossido di alluminio",
+   "Sabbia dura usata nella sabbiatrice per pulire e irruvidire i metalli."
+  ],
+  [
+   "Abrasivo",
+   "Materiale più duro della superficie da lavorare, usato in grane decrescenti per asportare e levigare."
+  ],
+  [
+   "Polietere",
+   "Materiale da impronta elastomerico, rigido, preciso e idrofilo, adatto alle impronte per protesi fissa."
+  ],
+  [
+   "Idrocolloide",
+   "Materiale da impronta che contiene molta acqua e si deforma se si aspetta troppo a colare il gesso."
+  ]
+ ],
+ "4": [
+  [
+   "Cucchiaio individuale",
+   "Portaimpronta in resina costruito sul modello di studio del paziente, per un'impronta di precisione."
+  ],
+  [
+   "Placca base",
+   "Base rigida su cui si mettono la cera e i denti per provare la dentiera."
+  ],
+  [
+   "Vallo in cera",
+   "Rilievo in cera sulla placca base che indica altezza, piano occlusale e linea mediana per il montaggio dei denti."
+  ],
+  [
+   "Montaggio dei denti",
+   "Posizionamento dei denti artificiali sul vallo in cera secondo regole estetiche e occlusali."
+  ],
+  [
+   "Muffola",
+   "Contenitore metallico in due parti in cui la protesi in cera viene messa in gesso per sostituire la cera con resina."
+  ],
+  [
+   "Polimerizzatrice",
+   "Apparecchio che fa indurire le resine con calore, pressione o luce, secondo il tipo di materiale."
+  ],
+  [
+   "Scheletrato",
+   "Protesi parziale rimovibile con struttura in cromo-cobalto fusa, ganci e selle in resina con i denti."
+  ],
+  [
+   "Corona protesica",
+   "Restauro fisso che ricopre tutta la parte coronale di un dente preparato, ripristinandone forma e funzione."
+  ],
+  [
+   "Ponte",
+   "Protesi fissa che sostituisce uno o più denti mancanti appoggiandosi a denti pilastro preparati."
+  ],
+  [
+   "Elemento intermedio",
+   "Dente artificiale del ponte che sostituisce il dente mancante tra i pilastri; detto anche pontic."
+  ],
+  [
+   "Margine di preparazione",
+   "Linea sul dente limato dove deve finire esattamente la corona."
+  ],
+  [
+   "Lacca spaziatrice",
+   "Vernice stesa sul moncone in strati controllati per creare lo spazio del cemento sotto la corona."
+  ],
+  [
+   "Parallelometro",
+   "Strumento che individua l'asse di inserzione comune e i sottosquadri sul modello, per scheletrati e protesi combinata."
+  ],
+  [
+   "Forno per ceramica",
+   "Forno con vuoto e programmi di cottura controllati, in cui si cuociono gli strati di ceramica."
+  ],
+  [
+   "Scanner da laboratorio",
+   "Apparecchio che rileva in 3D modelli e impronte, creando il file digitale da progettare al CAD."
+  ],
+  [
+   "CAD/CAM",
+   "Flusso digitale di progettazione (CAD) e fabbricazione assistita (CAM) dei manufatti protesici."
+  ],
+  [
+   "Fresatore CNC",
+   "Macchina comandata dal computer che scolpisce la protesi da un blocco di materiale."
+  ],
+  [
+   "Pulitrice",
+   "Motore a banco con mandrini su cui si montano spazzole e feltri per lucidare le protesi."
+  ],
+  [
+   "Vaporizzatrice",
+   "Apparecchio che produce vapore in pressione per pulire modelli, fusioni e manufatti prima della consegna."
+  ],
+  [
+   "Saldatrice laser",
+   "Apparecchio che unisce parti metalliche con un raggio laser, con poco calore e precisione puntuale."
+  ]
+ ]
+};
+Object.keys(NUOVI).forEach((n) => NUOVI[n].forEach(([it, def]) => { TERMINI[n].push([it, '']); DEFINIZIONI[n].push([def, '']); }));
+
+
+// Terza fase (approvati dal prof. Cerrato il 7/11/2026): 25 termini per area per la 3F, diversi da quelli della 3E.
+// Diventano i termini 41-65 di ogni area (T141-T165, ...).
+const NUOVI_3F = {
+ "1": [
+  [
+   "Giunzione amelo-cementizia",
+   "Linea al colletto in cui lo smalto della corona incontra il cemento della radice."
+  ],
+  [
+   "Giunzione amelo-dentinale",
+   "Superficie di contatto tra smalto e dentina all'interno della corona."
+  ],
+  [
+   "Prisma dello smalto",
+   "Unità strutturale dello smalto: bastoncello di cristalli di idrossiapatite che va dalla dentina alla superficie."
+  ],
+  [
+   "Odontoblasto",
+   "Cellula della polpa che costruisce la dentina."
+  ],
+  [
+   "Dentina secondaria",
+   "Dentina deposta dopo la formazione della radice, che riduce lentamente la camera pulpare con l'età."
+  ],
+  [
+   "Mammelloni",
+   "Tre piccoli rilievi sul margine incisale degli incisivi appena erotti, che si consumano con l'uso."
+  ],
+  [
+   "Cresta triangolare",
+   "Rilievo che scende dall'apice di una cuspide verso il centro della faccia occlusale."
+  ],
+  [
+   "Cresta trasversale",
+   "Unione di due creste triangolari che attraversa la faccia occlusale da vestibolare a linguale."
+  ],
+  [
+   "Convessità vestibolare",
+   "Zona di massima sporgenza della faccia vestibolare, che protegge la gengiva durante la masticazione."
+  ],
+  [
+   "Arcata dentaria",
+   "Insieme dei denti di un mascellare disposti a ferro di cavallo: superiore o inferiore."
+  ],
+  [
+   "Quadrante",
+   "Ciascuna delle quattro parti in cui la linea mediana e il piano occlusale dividono la dentatura; nella FDI va da 1 a 4."
+  ],
+  [
+   "Dentatura mista",
+   "Fase tra i 6 e i 12 anni circa in cui in bocca sono presenti insieme denti decidui e permanenti."
+  ],
+  [
+   "Eruzione dentaria",
+   "Movimento con cui il dente si sposta dall'osso fino a raggiungere la sua posizione in arcata."
+  ],
+  [
+   "Germe dentario",
+   "Abbozzo del dente all'interno dell'osso, da cui si sviluppano smalto, dentina, polpa e tessuti di sostegno."
+  ],
+  [
+   "Terzo molare",
+   "Ultimo dente dell'arcata permanente, detto dente del giudizio; spesso erompe tardi o resta incluso."
+  ],
+  [
+   "Papilla interdentale",
+   "Porzione di gengiva che riempie lo spazio tra due denti vicini, sotto l'area di contatto."
+  ],
+  [
+   "Solco gengivale",
+   "Piccolo spazio tra la superficie del dente e il bordo libero della gengiva; in salute è profondo 1-3 mm."
+  ],
+  [
+   "Recessione gengivale",
+   "Ritiro del margine gengivale verso l'apice, che scopre la radice e allunga la corona clinica."
+  ],
+  [
+   "Abrasione dentale",
+   "Usura dei denti causata da agenti esterni, come uno spazzolamento troppo energico."
+  ],
+  [
+   "Placca batterica",
+   "Pellicola morbida di batteri che si forma sui denti; è la causa principale di carie e gengivite."
+  ],
+  [
+   "Tartaro",
+   "Placca batterica mineralizzata e indurita, che si rimuove solo con la pulizia professionale."
+  ],
+  [
+   "Carie dentale",
+   "Malattia che distrugge i tessuti duri del dente per gli acidi prodotti dai batteri della placca."
+  ],
+  [
+   "Palato duro",
+   "Parte anteriore e ossea del tetto della bocca, rivestita di mucosa; è la zona d'appoggio principale della protesi totale superiore."
+  ],
+  [
+   "Tuberosità mascellare",
+   "Rilievo osseo dietro l'ultimo molare superiore; nella protesi totale aiuta stabilità e ritenzione."
+  ],
+  [
+   "Frenulo labiale",
+   "Piega di mucosa che unisce il labbro alla gengiva sulla linea mediana; la protesi deve lasciargli spazio."
+  ]
+ ],
+ "2": [
+  [
+   "Muscolo temporale",
+   "Muscolo masticatorio a ventaglio sul lato del cranio; eleva e retrude la mandibola."
+  ],
+  [
+   "Muscolo pterigoideo laterale",
+   "Muscolo che porta in avanti il condilo: agisce nell'apertura, nella protrusione e nella lateralità."
+  ],
+  [
+   "Muscolo pterigoideo mediale",
+   "Muscolo elevatore che lavora insieme al massetere sul lato interno dell'angolo della mandibola."
+  ],
+  [
+   "Fossa glenoidea",
+   "Cavità dell'osso temporale in cui si appoggia il condilo della mandibola."
+  ],
+  [
+   "Asse cerniera",
+   "Asse immaginario passante per i due condili, attorno al quale la mandibola ruota nella prima fase di apertura."
+  ],
+  [
+   "Angolo di Bennett",
+   "Angolo formato dal percorso del condilo bilanciante con il piano sagittale nei movimenti di lateralità."
+  ],
+  [
+   "Piano di Francoforte",
+   "Piano passante per il margine inferiore dell'orbita e il margine superiore del condotto uditivo; riferimento in cefalometria."
+  ],
+  [
+   "Cuspidi di supporto",
+   "Cuspidi che occludono nelle fosse degli antagonisti e mantengono la dimensione verticale: palatine superiori e vestibolari inferiori."
+  ],
+  [
+   "Cuspidi di guida",
+   "Cuspidi non di supporto (vestibolari superiori e linguali inferiori) che guidano i movimenti e proteggono guance e lingua."
+  ],
+  [
+   "Stop occlusale",
+   "Punto di contatto stabile tra una cuspide di supporto e la superficie antagonista in massima intercuspidazione."
+  ],
+  [
+   "Tripodismo",
+   "Contatto di una cuspide su tre punti dei versanti della fossa antagonista, che ne garantisce la stabilità."
+  ],
+  [
+   "Morso profondo",
+   "Sovrapposizione verticale eccessiva: gli incisivi superiori coprono troppo quelli inferiori."
+  ],
+  [
+   "Morso inverso",
+   "Malocclusione in cui gli incisivi inferiori chiudono davanti a quelli superiori."
+  ],
+  [
+   "Affollamento dentario",
+   "Mancanza di spazio in arcata che costringe i denti a disporsi ruotati o sovrapposti."
+  ],
+  [
+   "Masticazione",
+   "Insieme dei movimenti ritmici di mandibola, lingua e guance che riducono il cibo e lo mescolano alla saliva."
+  ],
+  [
+   "Deglutizione",
+   "Atto con cui il bolo passa dalla bocca alla faringe e all'esofago; durante la deglutizione i denti vanno a contatto."
+  ],
+  [
+   "Bruxismo",
+   "Digrignamento involontario dei denti, spesso notturno, che causa usura e sovraccarico di muscoli e articolazioni."
+  ],
+  [
+   "Click articolare",
+   "Rumore secco dell'articolazione temporo-mandibolare in apertura o chiusura, spesso legato a uno spostamento del disco."
+  ],
+  [
+   "Disfunzione temporo-mandibolare",
+   "Insieme di disturbi di articolazione temporo-mandibolare e muscoli masticatori: dolore, rumori, apertura limitata."
+  ],
+  [
+   "Placca occlusale",
+   "Dispositivo in resina che copre l'arcata, detto bite, usato per proteggere i denti e rilassare la muscolatura."
+  ],
+  [
+   "Malocclusione",
+   "Qualsiasi rapporto anomalo tra i denti delle due arcate o tra le arcate e i mascellari."
+  ],
+  [
+   "Retrusione",
+   "Movimento con cui la mandibola si sposta all'indietro, opposto alla protrusione."
+  ],
+  [
+   "Muscolo digastrico",
+   "Muscolo sotto la mandibola che contribuisce ad abbassarla nell'apertura della bocca."
+  ],
+  [
+   "Movimento di apertura",
+   "Abbassamento della mandibola: prima rotazione dei condili, poi traslazione in avanti sull'eminenza."
+  ],
+  [
+   "Apparecchio ortodontico",
+   "Dispositivo fisso o mobile che applica forze controllate per spostare i denti o guidare la crescita delle ossa."
+  ]
+ ],
+ "3": [
+  [
+   "Cera in lastra",
+   "Cera rosa in fogli, rammollita al calore, usata per valli, placche base e prove di montaggio."
+  ],
+  [
+   "Resina calcinabile",
+   "Resina che brucia senza lasciare residui nel cilindro; usata per parti da fondere al posto della cera."
+  ],
+  [
+   "Silicone per condensazione",
+   "Elastomero da impronta che indurisce liberando alcol: più economico ma meno stabile del silicone per addizione."
+  ],
+  [
+   "Condizionatore tessutale",
+   "Materiale morbido e temporaneo applicato sotto una protesi per far guarire i tessuti irritati."
+  ],
+  [
+   "Resina per ribasatura",
+   "Resina usata per aggiungere materiale alla base di una protesi e adattarla di nuovo ai tessuti."
+  ],
+  [
+   "Cemento vetroionomerico",
+   "Cemento a base di vetro e acido poliacrilico che si lega al dente e rilascia fluoro."
+  ],
+  [
+   "Cemento composito",
+   "Cemento resinoso usato con adesivi per fissare restauri in ceramica e composito."
+  ],
+  [
+   "Silano",
+   "Agente di accoppiamento che lega chimicamente le ceramiche vetrose alla resina del cemento."
+  ],
+  [
+   "Mordenzatura",
+   "Trattamento con acido (ortofosforico sul dente, fluoridrico sulla vetroceramica) che crea microritenzioni per l'adesione."
+  ],
+  [
+   "Glasura",
+   "Strato vetroso finale cotto sulla ceramica che la rende lucida, liscia e meno abrasiva."
+  ],
+  [
+   "Supercolori",
+   "Pigmenti ceramici applicati in superficie per caratterizzare il colore: macchie, fessure, zone cervicali."
+  ],
+  [
+   "Sinterizzazione",
+   "Cottura ad alta temperatura che compatta le particelle di polvere, come nella zirconia fresata, con forte ritiro."
+  ],
+  [
+   "Ossidazione della lega",
+   "Cottura della struttura metallica che forma lo strato di ossidi necessario al legame con la ceramica."
+  ],
+  [
+   "Ritiro di fusione",
+   "Contrazione della lega durante il raffreddamento da liquida a solida, compensata dall'espansione del rivestimento."
+  ],
+  [
+   "Resistenza alla flessione",
+   "Sollecitazione massima che un materiale sopporta quando viene piegato prima di rompersi; si misura in MPa."
+  ],
+  [
+   "Monomero residuo",
+   "Quota di monomero non polimerizzato che resta nella resina; può irritare i tessuti e ridurre la resistenza."
+  ],
+  [
+   "Scala colori",
+   "Campionario di denti di riferimento usato per scegliere e comunicare il colore del restauro."
+  ],
+  [
+   "Lega nichel-cromo",
+   "Lega non nobile rigida ed economica per strutture metallo-ceramiche; il nichel può causare allergie."
+  ],
+  [
+   "Oro",
+   "Metallo nobile duttile e resistente alla corrosione, base delle leghe nobili in odontotecnica."
+  ],
+  [
+   "Gesso ortodontico",
+   "Gesso bianco tipo III, liscio e resistente, usato per i modelli di studio e ortodontici."
+  ],
+  [
+   "Indurente per monconi",
+   "Liquido che penetra nel gesso del moncone e ne aumenta durezza e resistenza all'abrasione."
+  ],
+  [
+   "Silicone da laboratorio",
+   "Silicone denso, tipo putty, usato per mascherine, chiavi e muffole in laboratorio."
+  ],
+  [
+   "Resina per stampa 3D",
+   "Resina liquida fotopolimerizzabile che la stampante indurisce strato per strato con luce UV."
+  ],
+  [
+   "Viscosità",
+   "Resistenza di un materiale fluido a scorrere; condiziona l'uso di impronte, resine e gessi."
+  ],
+  [
+   "Elastomero",
+   "Materiale da impronta gommoso ed elastico dopo l'indurimento, come siliconi e polieteri; torna alla forma originale dopo la deformazione."
+  ]
+ ],
+ "4": [
+  [
+   "Protesi totale",
+   "Protesi rimovibile che sostituisce tutti i denti di un'arcata, sostenuta dalla mucosa e dall'osso."
+  ],
+  [
+   "Classificazione di Kennedy",
+   "Classificazione delle arcate parzialmente edentule in quattro classi, in base alla posizione delle zone senza denti."
+  ],
+  [
+   "Barra linguale",
+   "Connettore maggiore dello scheletrato inferiore che passa dietro i denti anteriori e unisce le due parti."
+  ],
+  [
+   "Sella",
+   "Parte della protesi rimovibile che poggia sulla cresta edentula e porta i denti artificiali."
+  ],
+  [
+   "Attacco di precisione",
+   "Dispositivo a due parti che collega una protesi rimovibile a una protesi fissa senza ganci visibili."
+  ],
+  [
+   "Ribasatura",
+   "Procedura che rifà la superficie interna di una protesi rimovibile per adattarla di nuovo ai tessuti cambiati."
+  ],
+  [
+   "Faccetta",
+   "Sottile restauro in ceramica o composito incollato sulla faccia vestibolare di un dente anteriore."
+  ],
+  [
+   "Intarsio",
+   "Restauro parziale costruito in laboratorio e cementato in una cavità del dente; inlay, onlay o overlay."
+  ],
+  [
+   "Corona metallo-ceramica",
+   "Corona con struttura in lega metallica rivestita di ceramica per l'estetica."
+  ],
+  [
+   "Stratificazione ceramica",
+   "Tecnica di applicazione della ceramica a strati successivi (opaco, dentina, smalto) con più cotture."
+  ],
+  [
+   "Pressatura",
+   "Tecnica in cui una pastiglia di vetroceramica viene fusa e iniettata in uno stampo ricavato dalla ceratura."
+  ],
+  [
+   "Provvisorio",
+   "Restauro temporaneo in resina che protegge i monconi in attesa della protesi definitiva."
+  ],
+  [
+   "Mascherina in silicone",
+   "Chiave in silicone presa sulla ceratura o sul modello, usata come guida per riprodurre forme e volumi."
+  ],
+  [
+   "Duplicazione del modello",
+   "Copia del modello originale con gel o silicone, per lavorare senza rovinare il master."
+  ],
+  [
+   "Impianto",
+   "Vite in titanio inserita nell'osso che sostituisce la radice di un dente mancante."
+  ],
+  [
+   "Moncone implantare",
+   "Elemento avvitato sull'impianto che sostiene la corona protesica."
+  ],
+  [
+   "Analogo da laboratorio",
+   "Replica dell'impianto inserita nel modello in gesso per riprodurne posizione e connessione."
+  ],
+  [
+   "Disinfezione dell'impronta",
+   "Trattamento dell'impronta con disinfettante appena arriva dallo studio, prima di colarla."
+  ],
+  [
+   "Aspiratore",
+   "Impianto che cattura polveri e trucioli durante la rifinitura per proteggere chi lavora."
+  ],
+  [
+   "Dispositivi di protezione individuale",
+   "Occhiali, mascherina, guanti e camice che proteggono l'operatore da polveri, schegge e sostanze chimiche."
+  ],
+  [
+   "Stampante 3D",
+   "Apparecchio che costruisce modelli, provvisori o mascherine strato per strato da un file digitale."
+  ],
+  [
+   "Bagno a ultrasuoni",
+   "Vasca con liquido in cui le onde ultrasoniche staccano lo sporco da manufatti e strumenti."
+  ],
+  [
+   "Prescrizione protesica",
+   "Documento scritto del dentista che indica tipo di protesi, materiali, colore e caratteristiche del lavoro."
+  ],
+  [
+   "Dichiarazione di conformità",
+   "Documento con cui il laboratorio attesta che il dispositivo su misura rispetta il regolamento europeo sui dispositivi medici."
+  ],
+  [
+   "Becco Bunsen",
+   "Bruciatore a gas usato in laboratorio per scaldare spatole, cere e strumenti."
+  ]
+ ]
+};
+Object.keys(NUOVI_3F).forEach((n) => NUOVI_3F[n].forEach(([it, def]) => { TERMINI[n].push([it, '']); DEFINIZIONI[n].push([def, '']); }));
+
+module.exports = { AREE, TERMINI, DEFINIZIONI, NOMI_ALUNNI, DOCENTI, TAPPE, SCADENZE, VALUTAZIONE, EREDITA, LINGUE, TERMINI_PER_ALUNNO, CLASSI, NOMI_3F, PARTENZA };

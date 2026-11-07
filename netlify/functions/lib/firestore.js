@@ -36,6 +36,18 @@ function db() {
     async leggiConfig() { const c = await cfgRef.get(); return c.exists ? c.data() : null; },
     async scriviConfig(mod) { await cfgRef.set(mod, { merge: true }); },
     async scriviAlunno(id, mod) { await f.collection(COL.alunni).doc(String(id)).set(mod, { merge: true }); },
+    async aggiungiAlunni(alunni) {
+      const batch = f.batch();
+      alunni.forEach((a) => { const { id, ...r } = a; batch.set(f.collection(COL.alunni).doc(id), r, { merge: true }); });
+      await batch.commit();
+    },
+    async aggiungiTermini(termini) {
+      for (let i = 0; i < termini.length; i += 400) {
+        const batch = f.batch();
+        termini.slice(i, i + 400).forEach((t) => { const { id, ...r } = t; batch.set(f.collection(COL.termini).doc(id), r); });
+        await batch.commit();
+      }
+    },
     async esisteGlossario() { return (await cfgRef.get()).exists; },
     async creaGlossario(config, alunni, termini) {
       const batch = f.batch();
