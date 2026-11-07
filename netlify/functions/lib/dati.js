@@ -376,9 +376,9 @@ const NOMI_ALUNNI = [
   "Venè Ludovica"
 ];
 
+// dal 7/11/2026 l'app è solo del prof. Cerrato: niente inglese, niente altri docenti
 const DOCENTI = [
-  { nome: 'prof. Danilo Cerrato', lingua: 'it', admin: true },
-  { nome: 'prof.ssa Federica Aliboni', lingua: 'en' }
+  { nome: 'prof. Danilo Cerrato', lingua: 'it', admin: true }
 ];
 
 // Tappe: quelle con "chiave" prendono la data dalle scadenze impostate dal prof. Cerrato nell'app.

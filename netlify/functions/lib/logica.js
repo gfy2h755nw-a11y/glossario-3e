@@ -78,7 +78,7 @@ function impostazioni(config) {
     giorniEn: Number(config.giorniEn) > 0 ? Number(config.giorniEn) : DATI.EREDITA.giorniEn,
     votoMin: DATI.VALUTAZIONE.votoMin,
     votoEsclusione: DATI.VALUTAZIONE.votoEsclusione,
-    lingue: Array.isArray(config.lingue) && config.lingue.length ? config.lingue.filter((l) => l === 'it' || l === 'en') : DATI.LINGUE,
+    lingue: Array.isArray(config.lingue) && config.lingue.length ? (config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0).length ? config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0) : DATI.LINGUE.slice()) : DATI.LINGUE,
     partenza: config.partenza !== undefined ? config.partenza : DATI.PARTENZA,
     classi: Array.isArray(config.classi) && config.classi.length ? config.classi : DATI.CLASSI
   };
@@ -499,9 +499,15 @@ async function migra(db) {
   const cfg = await db.leggiConfig();
   if (!cfg) return 0;
   const v = cfg.versioneDati || 1;
-  if (v >= 3) { migrato = true; return 0; }
+  if (v >= 4) { migrato = true; return 0; }
   const stato = await db.leggiTutto();
-  const mod = { versioneDati: 3 };
+  const mod = { versioneDati: 4 };
+  let nAggiunti = 0;
+  // quarta fase: l'app è solo del docente admin, solo italiano
+  const docenti = (cfg.docenti || []).filter((d) => d.admin || DATI.DOCENTI.some((x) => x.nome === d.nome));
+  if (docenti.length !== (cfg.docenti || []).length) mod.docenti = docenti;
+  mod.lingue = DATI.LINGUE.slice();
+  if (v >= 3) { await db.scriviConfig(mod); migrato = true; return 0; }
   if (v < 2) { // seconda fase: solo italiano, 10 termini a testa, scadenza 20/11
     if (!Array.isArray(cfg.lingue)) mod.lingue = DATI.LINGUE.slice();
     const sc = cfg.scadenze || {};
@@ -516,12 +522,13 @@ async function migra(db) {
   const esistenti = new Set(stato.termini.map((t) => t.id));
   const nuovi = terminiIniziali().filter((t) => !esistenti.has(t.id));
   if (nuovi.length) await db.aggiungiTermini(nuovi);
+  nAggiunti = nuovi.length;
   if (cfg.partenza === undefined) mod.partenza = DATI.PARTENZA;
   mod.classi = DATI.CLASSI.slice();
   mod.proposta = DATI.VALUTAZIONE.proposta;
   await db.scriviConfig(mod);
   migrato = true;
-  return nuovi.length;
+  return nAggiunti;
 }
 
 async function setup(db, { chiave }, chiaveAttesa) {
@@ -537,7 +544,7 @@ async function setup(db, { chiave }, chiaveAttesa) {
     lingue: DATI.LINGUE.slice(),
     classi: DATI.CLASSI.slice(),
     partenza: DATI.PARTENZA,
-    versioneDati: 3
+    versioneDati: 4
   };
   const alunni = alunniIniziali(usati);
   const termini = terminiIniziali();

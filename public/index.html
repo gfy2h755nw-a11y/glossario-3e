@@ -2584,6 +2584,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
+var VERSIONE = '7/11/2026';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -2912,7 +2913,7 @@ function isoLocale(iso) { var d = new Date(iso); var p = function (n) { return (
 function bloccoAdmin() {
   var A = S.d.admin, imp = A.impostazioni;
   var errFino4 = function (p) { return Math.ceil((imp.votoMax - imp.votoMin) / p - 1e-9); };
-  var h = '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+  var h = '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato · app ' + VERSIONE + '</span></div>' +
     '<div class="grid2"><div><label for="pa">Partenza (uguale per ' + (CLASSI().length > 1 ? CLASSI().join(' e ') : 'la classe') + ')</label><input id="pa" type="datetime-local" value="' + (imp.partenza ? isoLocale(imp.partenza) : '') + '"></div>' +
     '<div class="muted" style="align-self:end;font-size:14px">' + (imp.partenza ? (Date.parse(imp.partenza) <= Date.now() ? '<b style="color:var(--ok)">Partito</b> ' + esc(oraIt(imp.partenza)) : 'Gli alunni vedono il conto alla rovescia fino a ' + esc(oraIt(imp.partenza))) : '<b>Partenza non fissata:</b> gli alunni entrano ma non vedono ancora i termini.') + '</div></div>' +
     '<div class="grid2"><div><label for="scIt">' + (EN() ? 'Scadenza italiano' : 'Scadenza per tutti i termini') + '</label><input id="scIt" type="datetime-local" value="' + isoLocale(imp.scadenzaIt) + '"></div>' +
