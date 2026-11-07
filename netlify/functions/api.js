@@ -37,6 +37,16 @@ const AZIONI = {
     const buf = await require('./lib/presentazione').creaPresentazione(stato, tutto.attivita, Date.now());
     return { nome: 'Glossario_' + logica.nomeClassi(stato).replace(/ e /g, '-') + '_report_attivita_' + new Date().toISOString().slice(0, 10) + '.pptx', base64: buf.toString('base64') };
   },
+  // presentazione per gli studenti di una classe, con partenza e scadenza prese dalle impostazioni
+  presentazionestudenti: async (d, p) => {
+    await logica.verificaAdmin(d, p.codice);
+    const { stato } = auto.statoDa(await d.backupGrezzo());
+    const imp = logica.impostazioni(stato.config);
+    const classe = String(p.classe || '');
+    if (imp.classi.indexOf(classe) < 0) throw Object.assign(new Error('Classe non valida.'), { utente: true });
+    const buf = await require('./lib/deck-studenti').creaDeckStudenti(classe, imp, Date.now());
+    return { nome: 'Presentazione_Studenti_Glossario_' + classe + '.pptx', base64: buf.toString('base64') };
+  },
   dropboxcollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); return { url: await DBX.linkCollegamento(d) }; },
   dropboxscollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); await d.cancellaSegreto('dropbox'); return { scollegato: true }; },
   dropboxinvia: async (d, p) => {

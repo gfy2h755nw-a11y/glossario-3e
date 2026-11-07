@@ -17,6 +17,7 @@ Laboratorio odontotecnico (prof. Danilo Cerrato) · Inglese tecnico (prof.ssa Fe
 | `netlify/functions/lib/attivita.js` | Registro accessi e sessioni degli alunni |
 | `netlify/functions/lib/report.js` | Report PDF generato sul server (pdfkit) |
 | `netlify/functions/lib/presentazione.js` | Presentazione PowerPoint di riepilogo con grafici nativi (pptxgenjs), solo admin |
+| `netlify/functions/lib/deck-studenti.js`, `lib/deck-assets.js` | Presentazione per gli studenti di una classe (22 slide), generata dall'area admin con partenza, scadenza e regole delle impostazioni; icone e immagini incorporate (rigenerabili con `deck2/assets.js`) |
 | `netlify/functions/lib/dropbox.js`, `lib/automatico.js` | Collegamento Dropbox, backup e invio del report |
 | `netlify/functions/report-automatico.js` | Funzione programmata: ogni sera backup + report su Dropbox (orario in `netlify.toml`) |
 | `netlify/functions/dropbox.js` | Ritorno da Dropbox dopo l'autorizzazione (`/dropbox`) |
@@ -45,7 +46,7 @@ Date delle tappe, nomi, gruppi e codici si possono modificare direttamente dalla
 - Partenza unica per 3E e 3F, fissata dal docente admin in «Partenza, scadenza e valutazione»; finché è vuota o futura gli alunni vedono il conto alla rovescia e non possono rispondere.
 - Scadenza unica (20 novembre 23:59), 10 termini a testa, voto massimo 7,5 (erede 9,5), proposta B (−0,50) per default.
 - Nell'area docenti un filtro «Classe» vale per revisione, panoramica, tabellone, attività, codici, report e presentazione PowerPoint.
-- Schede A4 con QR per classe (area admin › Codici personali): una pagina per alunno con link, codice, partenza, scadenza e i suoi 10 termini.
+- Schede A4 con QR per classe (area admin › Codici personali): una pagina per alunno con link, codice, partenza e scadenza (i termini non vengono stampati).
 - Cartelloni: 65 termini per area su tre colonne, autori divisi per classe.
 - Aggiornamento automatico: al primo accesso dopo il caricamento (`migra` in `logica.js`) un database "solo 3E" riceve la classe sugli alunni, i 10 alunni della 3F con codici nuovi, i 100 termini nuovi, proposta B e partenza vuota. Risposte e codici esistenti restano.
 
