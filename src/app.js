@@ -24,7 +24,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '7/11/2026';
+var VERSIONE = '9/11/2026';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -428,41 +428,171 @@ function riammetti(id, val, btn) {
 function reportPdf() {
   var A = S.d.admin, voti = {}; A.voti.forEach(function (v) { voti[v.id] = v; });
   var oggi = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+  var imp = A.impostazioni, att = A.attivita || {};
   var PAN = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); });
-  var stud = PAN.map(function (r) {
-    var v = voti[r.id], ts = S.d.termini.filter(function (t) { return t.alunno === r.id; });
-    var righe = '';
-    ts.forEach(function (t) {
-      LINGUE().forEach(function (l) {
-        var st = T(t, l, 'storia') || [], fin = T(t, l, 'scelta');
-        righe += '<tr><td><b>' + esc(l === 'it' ? t.it : t.en) + '</b>' + (EN() ? '<br><span class="m">' + (l === 'it' ? 'Italiano' : 'Inglese') + '</span>' : '') + '</td>' +
-          '<td class="c">' + (st.length ? st.map(function (x) { return x.ok ? '<span class="ok">✓</span>' : '<span class="no">✗</span>'; }).join(' ') : '<span class="m">—</span>') + '</td>' +
-          '<td>' + (fin ? esc(fin) : (st.length ? '<span class="m">(rimandata, in attesa di nuova scelta)</span>' : '<span class="m">nessuna risposta</span>')) + '</td>' +
-          '<td class="c">' + esc(STATO_TXT[T(t, l, 'stato') || '']) + '</td></tr>';
+  var classi = CLASSI().filter(function (c) { return PAN.some(function (r) { return (r.classe || '3E') === c; }); });
+  var titoloCl = classi.length > 1 ? 'Classi ' + classi.join(' e ') : 'Classe ' + (classi[0] || '3E');
+  var COL = { '3E': '#1F5FA8', '3F': '#B4511A' }, colCl = function (c) { return COL[c] || '#15212B'; };
+  var ST = [['approvata', 'Approvate', '#2E7D32'], ['inviata', 'Da approvare', '#7A9CC6'], ['correggere', 'Da rivedere', '#C77700'], ['', 'Senza risposta', '#C3CED7']];
+  var termDi = function (id) { return S.d.termini.filter(function (t) { return t.alunno === id; }); };
+  var TT = S.d.termini.filter(function (t) { return inClasse(t.alunno); });
+  var perc = function (a, b) { return b ? Math.round(a / b * 100) : 0; };
+  var media = function (xs) { xs = xs.filter(function (x) { return x != null; }); return xs.length ? Math.round(xs.reduce(function (a, b) { return a + b; }, 0) / xs.length * 100) / 100 : null; };
+  var primo = function (ts) { var f = ts.filter(function (t) { return T(t, 'it', 'primoOk') != null; }); return { ok: f.filter(function (t) { return T(t, 'it', 'primoOk') === true; }).length, n: f.length }; };
+  var conta = function (ts, st) { return ts.filter(function (t) { return (T(t, 'it', 'stato') || '') === st; }).length; };
+  var logo = function (mm) { return Poster.logo(mm); };
+  // da chi ha ricevuto i termini (alunni esclusi)
+  var donatori = function (id) { var o = []; termDi(id).forEach(function (t) { if (t.ereditato && t.alunnoOrig && o.indexOf(t.alunnoOrig) < 0) o.push(t.alunnoOrig); }); return o; };
+  var cognome = function (id) { return nomeAlunno(id).split(' ')[0]; };
+  var PEN = imp.proposta === 'A' ? 0.25 : 0.5, punti = function (n) { return n ? '−' + (n * PEN).toFixed(2).replace('.', ',') : '0'; };
+
+  /* --- grafici SVG (statici, per la stampa) --- */
+  var F = 'font-family:Arial,sans-serif';
+  function txt(x, y, s, o) { o = o || {}; return '<text x="' + x + '" y="' + y + '" font-size="' + (o.fs || 9) + '" fill="' + (o.c || '#15212B') + '"' + (o.a ? ' text-anchor="' + o.a + '"' : '') + (o.b ? ' font-weight="700"' : '') + ' style="' + F + '">' + esc(String(s)) + '</text>'; }
+  function legenda(voci) { return '<div class="lg">' + voci.map(function (v) { return '<span><i style="background:' + v[1] + '"></i>' + esc(v[0]) + '</span>'; }).join('') + '</div>'; }
+  // istogramma dei voti per classe (colonne affiancate)
+  function graficoVoti() {
+    var fasce = [['4', 4, 4.4], ['4,5–5,5', 4.5, 5.9], ['6–6,5', 6, 6.9], ['7–7,5', 7, 7.9], ['8–9,5', 8, 10]];
+    var dati = classi.map(function (c) { return fasce.map(function (f) { return PAN.filter(function (r) { var v = voti[r.id]; return (r.classe || '3E') === c && v && v.voto != null && v.voto >= f[1] && v.voto <= f[2]; }).length; }); });
+    var max = Math.max(1, Math.max.apply(null, dati.map(function (d) { return Math.max.apply(null, d); })));
+    var W = 330, H = 150, x0 = 26, y0 = 14, h = H - 38, gw = (W - x0 - 6) / fasce.length, bw = Math.min(22, (gw - 12) / classi.length);
+    var s = '';
+    for (var k = 0; k <= 4; k++) { var v = Math.round(max * k / 4), y = y0 + h - h * (v / max); s += '<line x1="' + x0 + '" x2="' + W + '" y1="' + y + '" y2="' + y + '" stroke="#E3E9EE" stroke-width="0.6"/>' + txt(x0 - 5, y + 3, v, { a: 'end', fs: 7.5, c: '#5B6976' }); }
+    fasce.forEach(function (f, i) {
+      var gx = x0 + i * gw + (gw - bw * classi.length - 2 * (classi.length - 1)) / 2;
+      classi.forEach(function (c, j) {
+        var n = dati[j][i], bh = h * n / max, x = gx + j * (bw + 2);
+        if (n) s += '<path d="M' + x + ',' + (y0 + h) + 'V' + (y0 + h - bh + 3) + 'q0,-3 3,-3h' + (bw - 6) + 'q3,0 3,3V' + (y0 + h) + 'Z" fill="' + colCl(c) + '"/>' + txt(x + bw / 2, y0 + h - bh - 3, n, { a: 'middle', fs: 8, b: true });
+      });
+      s += txt(x0 + i * gw + gw / 2, H - 12, f[0], { a: 'middle', fs: 8.5 });
+    });
+    s += '<line x1="' + x0 + '" x2="' + W + '" y1="' + (y0 + h) + '" y2="' + (y0 + h) + '" stroke="#5B6976" stroke-width="0.8"/>' + txt(W / 2 + 10, H - 1, 'fascia di voto · numero di alunni', { a: 'middle', fs: 7.5, c: '#5B6976' });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%">' + s + '</svg>' + (classi.length > 1 ? legenda(classi.map(function (c) { return [c, colCl(c)]; })) : '');
+  }
+  // avanzamento dei termini (barra 100% per classe)
+  function graficoStati() {
+    var righe = classi.map(function (c) { return { c: c, ts: TT.filter(function (t) { return classeAl(t.alunno) === c; }) }; });
+    var W = 330, rh = 26, x0 = 30, bw = W - x0 - 4, H = righe.length * (rh + 10) + 6, s = '';
+    righe.forEach(function (r, i) {
+      var y = 4 + i * (rh + 10), x = x0, n = r.ts.length || 1;
+      s += txt(0, y + rh / 2 + 4, r.c, { fs: 10, b: true });
+      ST.forEach(function (st) {
+        var k = conta(r.ts, st[0]), w = bw * k / n; if (!k) return;
+        s += '<rect x="' + x + '" y="' + y + '" width="' + Math.max(0, w - 2) + '" height="' + rh + '" rx="3" fill="' + st[2] + '"/>';
+        if (w > 26) s += txt(x + (w - 2) / 2, y + rh / 2 + 3.5, perc(k, n) + '%', { a: 'middle', fs: 8.5, b: true, c: st[0] === '' ? '#15212B' : '#fff' });
+        x += w;
       });
     });
-    return '<section class="st"><div class="h"><div><h2>' + esc(r.nome) + '</h2><div class="m">Classe ' + esc(r.classe || '3E') + (S.d.aree[r.gruppo - 1] ? ' · Gruppo ' + r.gruppo + ' · ' + esc(S.d.aree[r.gruppo - 1].it) : ' · termini di tutte le aree') + '</div></div>' +
-      '<div class="v"><div class="vn">' + fv(v.voto) + '<small>/' + fv(v.votoMax || 8) + '</small></div><div class="m">' + (v.escluso ? 'Escluso: ' + esc(v.motivo) : v.manuale != null ? 'Voto manuale (calcolato: ' + fv(v.calcolato) + ')' : 'Voto finale calcolato') + '</div></div></div>' +
-      (!EN() ? '<table class="vt"><tr><th>Risposte</th><th>Errate</th><th>Voto finale</th></tr><tr><td class="c">' + r.inviate + '</td><td class="c">' + r.errate + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (esclusione)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr></table>' :
-      '<table class="vt"><tr><th>Voto italiano</th><th>Voto inglese</th><th>Media</th><th>Voto finale</th></tr><tr>' +
-      '<td class="c">' + fv(v.votoIt) + (v.votoIt != null ? ' <span class="m">(' + v.errIt + ' errate)</span>' : '') + '</td>' +
-      '<td class="c">' + fv(v.votoEn) + (v.votoEn != null ? ' <span class="m">(' + v.errEn + ' errate)</span>' : '') + '</td>' +
-      '<td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (esclusione)' : v.manuale != null ? ' (manuale)' : '') + '</td></tr></table>') +
-      (S.d.admin.attivita ? (function (r) { r = r || {}; return '<p class="k">Accessi <b>' + (r.accessi || 0) + '</b> · giorni attivi <b>' + (r.giorni || 0) + '</b> · tempo con l\'app aperta <b>' + (r.ultimo ? durata(r.minuti) : '—') + '</b> · primo accesso <b>' + esc(quando(r.primo)) + '</b> · ultimo accesso <b>' + esc(quando(r.ultimo)) + '</b></p>'; })(S.d.admin.attivita[r.id]) : '') +
-      (v.ereditati ? '<p class="k"><b>Ha ricevuto i termini di un compagno escluso: voto massimo ' + fv(v.votoMax) + '.</b>' + (v.tetto ? ' Non ha risposto in tempo ai termini ricevuti: voto finale limitato a 6 (' + esc(v.motivoTetto || '') + ').' : '') + '</p>' : '') + (r.riassegnatoA ? '<p class="k">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '.</p>' : '') + '<p class="k">Risposte date <b>' + r.inviate + '</b> · corrette <b>' + r.corrette + '</b> · errate <b>' + r.errate + '</b> · da approvare <b>' + r.daApprovare + '</b> · approvate <b>' + r.approvate + '/' + (r.termini * LINGUE().length) + '</b></p>' +
-      '<table><thead><tr><th style="width:24%">Termine</th><th style="width:12%">Tentativi</th><th>Risposta attuale</th><th style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table></section>';
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%">' + s + '</svg>' + legenda(ST.map(function (s) { return [s[1], s[2]]; }));
+  }
+  // esattezza al primo tentativo per area (barre orizzontali, una per classe)
+  function graficoAree() {
+    var W = 680, x0 = 190, bw = W - x0 - 40, rh = 10, s = '', y = 2;
+    S.d.aree.forEach(function (a) {
+      s += txt(0, y + rh * classi.length / 2 + 4, a.n + '. ' + a.it, { fs: 9.5 });
+      classi.forEach(function (c) {
+        var p = primo(TT.filter(function (t) { return t.area == a.n && classeAl(t.alunno) === c; })), v = perc(p.ok, p.n), w = bw * v / 100;
+        s += '<rect x="' + x0 + '" y="' + y + '" width="' + bw + '" height="' + rh + '" rx="2" fill="#EEF2F5"/>' + (w > 0 ? '<rect x="' + x0 + '" y="' + y + '" width="' + Math.max(w, 4) + '" height="' + rh + '" rx="2" fill="' + colCl(c) + '"/>' : '') +
+          txt(x0 + bw + 6, y + rh - 1.5, p.n ? v + '%' : '—', { fs: 9, b: true });
+        y += rh + 2;
+      });
+      y += 9;
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + y + '" width="100%">' + s + '</svg>' + (classi.length > 1 ? legenda(classi.map(function (c) { return [c, colCl(c)]; })) : '');
+  }
+  function barraVoto(v, c) {
+    if (v == null) return '<span class="m">—</span>';
+    var w = Math.max(2, (v - 0) / 10 * 100);
+    return '<div class="bv"><i style="width:' + w + '%;background:' + colCl(c) + '"></i></div>';
+  }
+
+  /* --- pagina 1: sintesi --- */
+  var tutteV = PAN.map(function (r) { return voti[r.id] && voti[r.id].voto; });
+  var p1 = primo(TT), esclusi = PAN.filter(function (r) { return voti[r.id] && voti[r.id].escluso; }).length;
+  var kpi = [[PAN.length, 'alunni'], [TT.length, 'termini'], [PAN.reduce(function (a, r) { return a + r.inviate; }, 0), 'risposte inviate'],
+    [p1.n ? perc(p1.ok, p1.n) + '%' : '—', 'esatte al 1° tentativo'], [conta(TT, 'approvata') + '/' + TT.length, 'definizioni approvate'], [media(tutteV) != null ? fv(media(tutteV)) : '—', 'voto medio']];
+  var perClasse = classi.length > 1 ? '<table class="mini"><thead><tr><th>Classe</th><th class="c">Alunni</th><th class="c">Voto medio</th><th class="c">Esatte al 1°</th><th class="c">Approvate</th><th class="c">Esclusi</th></tr></thead><tbody>' + classi.map(function (c) {
+    var rr = PAN.filter(function (r) { return (r.classe || '3E') === c; }), ts = TT.filter(function (t) { return classeAl(t.alunno) === c; }), p = primo(ts);
+    return '<tr><td><i class="dot" style="background:' + colCl(c) + '"></i><b>' + c + '</b></td><td class="c">' + rr.length + '</td><td class="c"><b>' + (media(rr.map(function (r) { return voti[r.id] && voti[r.id].voto; })) != null ? fv(media(rr.map(function (r) { return voti[r.id] && voti[r.id].voto; }))) : '—') + '</b></td><td class="c">' + (p.n ? perc(p.ok, p.n) + '%' : '—') + '</td><td class="c">' + conta(ts, 'approvata') + '/' + ts.length + '</td><td class="c">' + rr.filter(function (r) { return voti[r.id] && voti[r.id].escluso; }).length + '</td></tr>';
+  }).join('') + '</tbody></table>' : '';
+
+  function testata(sotto) {
+    return '<header><div class="lg0">' + logo(17) + '<div><b>Istituto Barsanti - sede Salvetti</b><span>Massa · Laboratorio odontotecnico · a.s. 2026/27</span></div></div>' +
+      '<div class="dx"><b>Glossario odontotecnico</b><span>' + esc(sotto) + '</span></div></header>';
+  }
+  var npag = 0, totPag = 2 + PAN.length;
+  function piede() { npag++; return '<footer><span>Report del glossario · ' + esc(titoloCl) + ' · generato il ' + esc(oggi) + ' · Prof. Danilo Cerrato</span><span>' + npag + ' / ' + totPag + '</span></footer>'; }
+
+  var pag1 = '<section class="pg">' + testata(titoloCl) +
+    '<h1>Report del lavoro · ' + esc(titoloCl) + '</h1><p class="sub">' + (imp.partenza ? 'Partenza ' + esc(oraIt(imp.partenza)) + ' · ' : '') + 'Scadenza ' + esc(oraIt(imp.scadenzaIt)) + ' · situazione al ' + esc(oggi) + '</p>' +
+    '<div class="kpi">' + kpi.map(function (k) { return '<div><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
+    perClasse +
+    '<div class="g2"><div class="gr"><h3>Distribuzione dei voti</h3>' + graficoVoti() + '</div><div class="gr"><h3>Avanzamento dei termini</h3>' + graficoStati() + '</div></div>' +
+    '<div class="gr"><h3>Risposte esatte al primo tentativo, per area</h3>' + graficoAree() + '</div>' +
+    '<div class="box"><b>Criterio di valutazione.</b> Ogni alunno ha ' + TPA() + ' termini e per ciascuno sceglie la definizione corretta tra 8 alternative; ogni scelta è verificata dal docente. ' + esc(A.ratio) + (esclusi ? ' Alunni esclusi per mancato rispetto della scadenza: ' + esclusi + '.' : '') + '</div>' +
+    piede() + '</section>';
+
+  /* --- pagina 2: tabellone --- */
+  var righeTab = classi.map(function (c) {
+    var rr = PAN.filter(function (r) { return (r.classe || '3E') === c; });
+    return '<tr class="sez"><td colspan="10"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + c + ' · ' + rr.length + ' alunni</td></tr>' + rr.map(function (r) {
+      var v = voti[r.id] || {}, p = primo(termDi(r.id)), x = att[r.id] || {};
+      return '<tr><td>' + esc(r.nome) + (v.ereditati ? ' <span class="tag">erede di ' + esc(donatori(r.id).map(cognome).join(', ') || '—') + '</span>' : '') + (v.escluso ? ' <span class="tag no">escluso</span>' : '') + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c">' + r.inviate + '</td><td class="c">' + (p.n ? p.ok + '/' + p.n : '—') + '</td><td class="c">' + r.errate + '</td><td class="c">' + r.approvate + '/' + r.termini + '</td><td class="c">' + (x.accessi || 0) + '</td><td class="c"><b>' + (x.ultimo ? durata(x.minuti) : '—') + '</b></td>' +
+        '<td class="vb">' + barraVoto(v.voto, c) + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.manuale != null ? '<span class="m"> man.</span>' : '') + '</td></tr>';
+    }).join('');
   }).join('');
-  var sintesi = PAN.map(function (r) { var v = voti[r.id]; return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c">' + r.inviate + '</td><td class="c">' + r.corrette + '</td><td class="c">' + r.errate + '</td>' + (EN() ? '<td class="c">' + fv(v.votoIt) + '</td><td class="c">' + fv(v.votoEn) + '</td><td class="c">' + (v.media != null ? fv(Math.round(v.media * 1000) / 1000) : '—') + '</td>' : '') + '<td class="c"><b>' + fv(v.voto) + '</b>' + (v.escluso ? ' (escluso)' : v.manuale != null ? ' (manuale)' : '') + '</td>' + (function (x) { x = (A.attivita || {})[r.id] || {}; return '<td class="c">' + (x.accessi || 0) + '</td><td class="c">' + (x.ultimo ? durata(x.minuti) : '—') + '</td><td>' + esc(quando(x.ultimo)) + '</td>'; })() + '</tr>'; }).join('');
-  var css = '@page{size:A4;margin:14mm}body{font-family:Arial,sans-serif;color:#15212B;font-size:10pt;margin:0}h1{font-size:18pt;margin:0}h2{font-size:13pt;margin:0}.m{color:#5B6976;font-size:9pt}' +
-    'table{width:100%;border-collapse:collapse;margin-top:6px}th,td{border:1px solid #C3CED7;padding:4px 6px;text-align:left;vertical-align:top;font-size:9pt}th{background:#15212B;color:#fff}.c{text-align:center}' +
-    '.ok{color:#1B6E20;font-weight:700}.no{color:#B0304A;font-weight:700}.st{break-before:page}.h{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #15212B;padding-bottom:6px}' +
-    '.vt{width:auto;margin-top:8px}.vt th{background:#EEF2F5;color:#15212B}.vt td,.vt th{padding:4px 14px;font-size:10pt}.vn{font-size:26pt;font-weight:800;text-align:right}.vn small{font-size:11pt;color:#5B6976}.v{text-align:right}.k{margin:8px 0 0}.box{background:#EEF2F5;padding:8px 10px;border-radius:6px;margin-top:8px}';
-  var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario</title><style>' + css + '</style></head><body>' +
-    '<h1>Glossario odontotecnico' + (EN() ? ' bilingue' : '') + ' · Report · ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'Classe ' + esc(S.filtro.classe) : CLASSI().length > 1 ? 'Classi ' + CLASSI().join(' e ') : 'Classe 3E') + '</h1><div class="m">Istituto Barsanti - sede Salvetti, Massa · a.s. 2026/27 · Prof. Danilo Cerrato' + (EN() ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato il ' + esc(oggi) + '</div>' +
-    '<div class="box"><b>Criterio di assegnazione del punteggio.</b> ' + (EN() ? 'Ogni alunno ha 5 termini e per ciascuno sceglie la definizione corretta tra 8 alternative, prima in italiano e poi in inglese (10 risposte in tutto); ogni scelta viene verificata dai docenti. ' : 'Ogni alunno ha ' + TPA() + ' termini e per ciascuno sceglie la definizione corretta tra 8 alternative, in italiano; ogni scelta viene verificata dal docente. ') + esc(A.ratio) + ' Voto massimo 8, oppure 10 per chi ha ricevuto i termini di un compagno escluso.</div>' +
-    '<div class="box">' + (EN() ? 'Scadenza italiano: ' + esc(oraIt(A.impostazioni.scadenzaIt)) + ' · Scadenza inglese: ' + esc(oraIt(A.impostazioni.scadenzaEn)) : 'Scadenza: ' + esc(oraIt(A.impostazioni.scadenzaIt))) + '</div>' +
-    '<h2 style="margin-top:12px">Sintesi</h2><table><thead><tr><th>Alunno</th><th class="c">Gr.</th><th class="c">Risposte</th><th class="c">Corrette</th><th class="c">Errate</th>' + (EN() ? '<th class="c">Voto IT</th><th class="c">Voto EN</th><th class="c">Media</th>' : '') + '<th class="c">Voto finale</th><th class="c">Accessi</th><th class="c">Tempo</th><th>Ultimo accesso</th></tr></thead><tbody>' + sintesi + '</tbody></table>' +
-    stud + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},300)}</scr' + 'ipt></body></html>';
+  var pag2 = '<section class="pg">' + testata(titoloCl) + '<h1>Tabellone degli alunni</h1><p class="sub">Esatte al 1°: scelte giuste al primo invio sui termini in cui l\'alunno ha risposto. Tempo in app: tempo totale con l\'app aperta, sommando tutti gli accessi.</p>' +
+    '<table class="tab comp"><thead><tr><th>Alunno</th><th class="c">Classe</th><th class="c">Risposte</th><th class="c">Esatte al 1°</th><th class="c">Errate</th><th class="c">Approvate</th><th class="c">Accessi</th><th class="c">Tempo in app</th><th style="width:15%">Voto (scala 0–10)</th><th class="c">Voto</th></tr></thead><tbody>' + righeTab + '</tbody></table>' +
+    piede() + '</section>';
+
+  /* --- una pagina per alunno --- */
+  var stud = PAN.map(function (r) {
+    var v = voti[r.id] || {}, ts = termDi(r.id), x = att[r.id] || {}, c = r.classe || '3E', p = primo(ts), lungo = ts.length > 12;
+    var stati = '<div class="sb">' + ST.map(function (st) { var k = conta(ts, st[0]); return k ? '<i style="flex:' + k + ';background:' + st[2] + '" title="' + st[1] + '"></i>' : ''; }).join('') + '</div>' +
+      legenda(ST.map(function (st) { return [st[1] + ' ' + conta(ts, st[0]), st[2]]; }));
+    ts = ts.filter(function (t) { return !t.ereditato; }).concat(ts.filter(function (t) { return t.ereditato; }));
+    var righe = ts.map(function (t, i) {
+      var st = T(t, 'it', 'storia') || [], fin = T(t, 'it', 'scelta'), z = area(t.area) || {};
+      var sep = t.ereditato && (i === 0 || !ts[i - 1].ereditato || ts[i - 1].alunnoOrig !== t.alunnoOrig) ? '<tr class="sez"><td colspan="6">Termini ricevuti da ' + esc(nomeAlunno(t.alunnoOrig)) + ' (escluso)</td></tr>' : '';
+      return sep + '<tr><td class="c m">' + (i + 1) + '</td><td><i class="dot" style="background:' + esc(z.colore || '#15212B') + '"></i><b>' + esc(t.it) + '</b></td><td class="c">' + (st.length ? st.map(function (q) { return q.ok ? '<span class="ok">✓</span>' : '<span class="no">✗</span>'; }).join(' ') : '<span class="m">—</span>') + '</td>' +
+        '<td class="c">' + (function () { var e = st.filter(function (q) { return !q.ok; }).length; return !st.length ? '<span class="m">—</span>' : e ? '<span class="no">' + punti(e) + '</span>' : '<span class="ok">0</span>'; })() + '</td>' +
+        '<td>' + (fin ? esc(fin) : (st.length ? '<span class="m">rimandata, in attesa di nuova scelta</span>' : '<span class="m">nessuna risposta</span>')) + '</td><td class="c"><span class="st s' + (T(t, 'it', 'stato') || 'v') + '">' + esc(STATO_TXT[T(t, 'it', 'stato') || '']) + '</span></td></tr>';
+    }).join('');
+    return '<section class="pg' + (lungo ? ' lungo' : '') + '">' + testata(titoloCl) +
+      '<div class="ah"><div><h1>' + esc(r.nome) + '</h1><p class="sub"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + esc(c) + (S.d.aree[r.gruppo - 1] ? ' · Gruppo ' + r.gruppo + ' · ' + esc(S.d.aree[r.gruppo - 1].it) : ' · termini di tutte le aree') + '</p></div>' +
+      '<div class="voto" style="border-color:' + colCl(c) + '"><b>' + fv(v.voto) + '</b><span>su ' + fv(v.votoMax || imp.votoMax) + '</span><em>' + (v.escluso ? 'escluso' : v.manuale != null ? 'voto del docente' : 'voto calcolato') + '</em></div></div>' +
+      '<div class="kpi k6">' + [[r.inviate, 'risposte inviate'], [p.n ? perc(p.ok, p.n) + '%' : '—', 'esatte al 1° tentativo'], [r.errate, 'risposte errate'], [r.approvate + '/' + r.termini, 'approvate'], [x.ultimo ? durata(x.minuti) : '—', 'tempo totale in app'], [x.accessi || 0, 'accessi']].map(function (k) { return '<div><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
+      '<div class="gr"><h3>Stato dei ' + ts.length + ' termini</h3>' + stati + '</div>' +
+      (v.escluso ? '<div class="box no">Escluso dal compito: ' + esc(v.motivo || '') + (r.riassegnatoA ? ' I termini sono passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '.' : '') + '</div>' : '') +
+      (v.ereditati ? '<div class="box">' + donatori(r.id).map(function (d) { var n = ts.filter(function (t) { return t.alunnoOrig === d && t.ereditato; }), sc = n[0] && n[0].scadIt; return 'Ha ricevuto <b>' + n.length + ' termini da ' + esc(nomeAlunno(d)) + '</b> (classe ' + esc(classeAl(d)) + '), escluso per la scadenza' + (sc ? '; scadenza per questi termini: ' + esc(oraIt(sc)) : '') + '.'; }).join('<br>') +
+        ' Voto massimo ' + fv(v.votoMax) + '.' + (v.tetto ? ' Non ha risposto in tempo ai termini ricevuti: voto finale limitato a 6.' : '') + '</div>' : '') +
+      (v.manuale != null ? '<div class="box">Voto inserito dal docente; voto calcolato dall\'app: ' + fv(v.calcolato) + '.</div>' : '') +
+      '<table class="tab' + (lungo ? ' fitto' : '') + '"><thead><tr><th class="c" style="width:5%">N.</th><th style="width:24%">Termine</th><th class="c" style="width:10%">Tentativi</th><th class="c" style="width:8%">Punti</th><th>Definizione scelta</th><th class="c" style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table>' +
+      '<p style="margin:2mm 0 0;font-size:8.5pt">Punti persi: <b>' + punti(r.errate) + '</b> (' + r.errate + ' risposte errate × ' + fv(PEN) + ') · si parte da ' + fv(v.votoMax || imp.votoMax) + ', voto minimo ' + fv(imp.votoMin) + '.</p>' +
+      '<p class="m" style="margin-top:1mm">Tempo totale in app ' + (x.ultimo ? durata(x.minuti) : '—') + ' · primo accesso ' + esc(quando(x.primo)) + ' · ultimo accesso ' + esc(quando(x.ultimo)) + ' · giorni attivi ' + (x.giorni || 0) + '</p>' +
+      piede() + '</section>';
+  }).join('');
+
+  var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#15212B;font-size:9pt;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.pg{width:210mm;min-height:297mm;padding:11mm 12mm 16mm;position:relative;break-after:page;page-break-after:always}.pg:last-of-type{break-after:auto}' +
+    'header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3mm;margin-bottom:5mm}.lg0{display:flex;align-items:center;gap:3mm}.lg0 b,.dx b{display:block;font-size:10.5pt}.lg0 span,.dx span{display:block;font-size:8pt;color:#5B6976}.dx{text-align:right}' +
+    'footer{position:absolute;left:12mm;right:12mm;bottom:7mm;display:flex;justify-content:space-between;font-size:7.5pt;color:#5B6976;border-top:0.6pt solid #C3CED7;padding-top:1.5mm}' +
+    'h1{font-size:17pt;margin:0;line-height:1.15}h3{font-size:9.5pt;margin:0 0 2mm;text-transform:uppercase;letter-spacing:.06em;color:#2C3A47}.sub{margin:1mm 0 4mm;color:#5B6976;font-size:9pt}.m{color:#5B6976}' +
+    '.kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:2.5mm;margin-bottom:4mm}.kpi.k5{grid-template-columns:repeat(5,1fr)}.kpi.k6{grid-template-columns:repeat(6,1fr)}.kpi div{background:#EEF2F5;border-radius:2mm;padding:2.5mm 3mm}.kpi b{display:block;font-size:15pt;line-height:1.1}.kpi span{font-size:7.5pt;color:#5B6976}' +
+    '.g2{display:grid;grid-template-columns:1fr 1fr;gap:5mm}.gr{border:0.6pt solid #D3DCE3;border-radius:2mm;padding:3mm 3.5mm;margin-bottom:4mm;break-inside:avoid}' +
+    '.lg{display:flex;flex-wrap:wrap;gap:2mm 4mm;margin-top:1.5mm;font-size:7.5pt;color:#2C3A47}.lg i{display:inline-block;width:2.6mm;height:2.6mm;border-radius:.6mm;margin-right:1.2mm;vertical-align:-.3mm}' +
+    '.dot{display:inline-block;width:2.4mm;height:2.4mm;border-radius:50%;margin-right:1.5mm;vertical-align:.1mm}' +
+    'table{width:100%;border-collapse:collapse}.tab th,.mini th{background:#15212B;color:#fff;font-size:8pt;padding:1.6mm 2mm;text-align:left}.tab td,.mini td{border-bottom:0.5pt solid #D3DCE3;padding:1.4mm 2mm;font-size:8.5pt;vertical-align:top}.tab.comp td{padding:1mm 2mm;font-size:8.2pt;vertical-align:middle;white-space:nowrap}.tab.comp td:first-child{white-space:normal}.c{text-align:center!important}' +
+    '.mini{margin-bottom:4mm}.tab tr.sez td{background:#EEF2F5;font-weight:700;font-size:8.5pt}.tab.fitto td{font-size:7.2pt;padding:.7mm 1.6mm;line-height:1.25}.lungo header{margin-bottom:3mm}.lungo .ah{margin-bottom:2.5mm}.lungo .kpi{margin-bottom:2.5mm}.lungo .kpi div{padding:1.6mm 2.5mm}.lungo .kpi b{font-size:13pt}.lungo .gr{margin-bottom:2.5mm;padding:2mm 3mm}.lungo .box{margin-bottom:2mm;padding:1.8mm 3mm}' +
+    '.vb{vertical-align:middle!important}.bv{height:3mm;background:#EEF2F5;border-radius:1mm;overflow:hidden}.bv i{display:block;height:100%;border-radius:1mm}' +
+    '.tag{font-size:6.8pt;background:#E2ECF7;color:#1F5FA8;border-radius:1mm;padding:.2mm 1.2mm;font-weight:700}.tag.no{background:#F8E1E6;color:#B0304A}' +
+    '.ok{color:#1B6E20;font-weight:700}.no{color:#B0304A;font-weight:700}' +
+    '.ah{display:flex;justify-content:space-between;align-items:flex-start;gap:6mm;margin-bottom:4mm}.voto{border:1.4pt solid;border-radius:2.5mm;padding:2mm 4mm;text-align:center;min-width:30mm}.voto b{display:block;font-size:24pt;line-height:1}.voto span{display:block;font-size:8pt;color:#5B6976}.voto em{display:block;font-size:7.5pt;font-style:normal;color:#2C3A47;margin-top:.5mm}' +
+    '.sb{display:flex;gap:2px;height:5mm}.sb i{border-radius:1mm}.st{font-size:7.5pt;font-weight:700;border-radius:1mm;padding:.3mm 1.5mm;white-space:nowrap}.sapprovata{background:#E3F1E4;color:#1B6E20}.sinviata{background:#E2ECF7;color:#1F5FA8}.scorreggere{background:#FCEBD9;color:#9A4A00}.sv{color:#5B6976}' +
+    '.box{background:#EEF2F5;padding:2.5mm 3.5mm;border-radius:2mm;margin-bottom:3mm;font-size:8.5pt;line-height:1.35}.box.no{background:#F8E1E6;color:#7A1F31;font-weight:400}' +
+    '@media screen{body{background:#C9D2DA}.pg{background:#fff;margin:6mm auto;box-shadow:0 1mm 4mm rgba(0,0,0,.2)}}';
+  var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario ' + esc(titoloCl) + '</title><style>' + css + '</style></head><body>' + pag1 + pag2 + stud +
+    '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}</scr' + 'ipt></body></html>';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
   w.document.write(html); w.document.close();
