@@ -24,7 +24,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '11/11/2026 · 14';
+var VERSIONE = '11/11/2026 · 15';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -179,7 +179,7 @@ function bloccoPoster(n) {
 function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
-  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, denti: 3, qr: location.origin + '/glossario' });
+  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, denti: 3, icone: 2, qr: location.origin + '/glossario' });
   var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
   sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
 }
