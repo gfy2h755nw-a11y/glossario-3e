@@ -61,6 +61,89 @@ var Poster = (function () {
     });
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
   }
+
+  /* versione 2 dei denti (in prova): corone in veduta vestibolare, gengiva con papille */
+  function dente2(tipo, w, h) {
+    var X = function (k) { return (k * w).toFixed(2); }, Y = function (k) { return (k * h).toFixed(2); };
+    if (tipo === 'I') return 'M' + X(-0.36) + ',0 C' + X(-0.46) + ',' + Y(0.3) + ' ' + X(-0.5) + ',' + Y(0.66) + ' ' + X(-0.47) + ',' + Y(0.9) + ' Q' + X(-0.45) + ',' + Y(1) + ' ' + X(-0.33) + ',' + Y(1) +
+      ' L' + X(0.33) + ',' + Y(1) + ' Q' + X(0.45) + ',' + Y(1) + ' ' + X(0.47) + ',' + Y(0.9) + ' C' + X(0.5) + ',' + Y(0.66) + ' ' + X(0.46) + ',' + Y(0.3) + ' ' + X(0.36) + ',0 Z';
+    if (tipo === 'L') return 'M' + X(-0.34) + ',0 C' + X(-0.45) + ',' + Y(0.3) + ' ' + X(-0.5) + ',' + Y(0.62) + ' ' + X(-0.44) + ',' + Y(0.86) + ' Q' + X(-0.38) + ',' + Y(1) + ' ' + X(-0.22) + ',' + Y(1) +
+      ' L' + X(0.2) + ',' + Y(1) + ' Q' + X(0.42) + ',' + Y(1) + ' ' + X(0.46) + ',' + Y(0.8) + ' C' + X(0.5) + ',' + Y(0.6) + ' ' + X(0.45) + ',' + Y(0.3) + ' ' + X(0.34) + ',0 Z';
+    if (tipo === 'C' || tipo === 'P') {
+      var t = tipo === 'C' ? 0.05 : 0.1, sp = tipo === 'C' ? 0.78 : 0.82;
+      return 'M' + X(-0.36) + ',0 C' + X(-0.47) + ',' + Y(0.3) + ' ' + X(-0.5) + ',' + Y(0.58) + ' ' + X(-0.43) + ',' + Y(sp) + ' L' + X(-t) + ',' + Y(0.99) + ' Q0,' + Y(1.03) + ' ' + X(t) + ',' + Y(0.99) +
+        ' L' + X(0.44) + ',' + Y(sp - 0.06) + ' C' + X(0.5) + ',' + Y(0.55) + ' ' + X(0.47) + ',' + Y(0.3) + ' ' + X(0.36) + ',0 Z';
+    }
+    // molare: due cuspidi vestibolari e solco
+    return 'M' + X(-0.4) + ',0 C' + X(-0.5) + ',' + Y(0.25) + ' ' + X(-0.53) + ',' + Y(0.6) + ' ' + X(-0.46) + ',' + Y(0.84) + ' Q' + X(-0.38) + ',' + Y(1.02) + ' ' + X(-0.22) + ',' + Y(1) +
+      ' Q' + X(-0.06) + ',' + Y(1) + ' 0,' + Y(0.955) + ' Q' + X(0.06) + ',' + Y(1) + ' ' + X(0.22) + ',' + Y(1) + ' Q' + X(0.38) + ',' + Y(1.02) + ' ' + X(0.46) + ',' + Y(0.84) +
+      ' C' + X(0.53) + ',' + Y(0.6) + ' ' + X(0.5) + ',' + Y(0.25) + ' ' + X(0.4) + ',0 Z';
+  }
+  function arcata2(n, col, chiaroCol) {
+    n = Number(n); var W = 628, H = 48, A = 8, sup = n <= 2, q = QUAD[n], s = sup ? 1 : -1; // s: verso occlusale
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : u === 2 ? 'L' : 'I'; };
+    var dim = { M: [1.22, 0.78], P: [0.86, 1.0], C: [0.9, 1.18], L: [0.74, 1.05], I: [0.9, 1.16] }; // larghezza, altezza/larghezza
+    var gx0 = (n === 2 || n === 4) ? W : 0;
+    var curva = function (x) { var t = (gx0 + x - W) / W; return A * (1 - t * t); };
+    var yy = function (x) { return sup ? 10 + curva(x) : H - 10 - curva(x); }; // linea del colletto
+    var U = 31, tot = q.reduce(function (a, f) { return a + dim[tipo(f)][0] * U; }, 0), gap = (W - 30 - tot) / 8, x = 15 + gap / 2;
+    var denti = q.map(function (f) { var t = tipo(f), w = dim[t][0] * U, d = { f: f, t: t, w: w, x0: x, cx: x + w / 2, h: w * dim[t][1] }; x += w + gap; return d; });
+    // bordo gengivale: papille tra un dente e l'altro
+    // festoni: sul dente il margine sale a arco (colletto scoperto al centro), tra i denti la gengiva resta piena
+    var P = 4.6, marg = function (xx) { for (var k = 0; k < denti.length; k++) { var d = denti[k], a = d.x0 - 1.2, b = d.x0 + d.w + 1.2; if (xx >= a && xx <= b) return P * (1 - Math.sin(Math.PI * (xx - a) / (b - a))); } return P; };
+    var top = [], bot = [];
+    for (var xi = 0; xi <= W; xi += 2) { top.push(xi + ',' + (yy(xi) - s * 7.5).toFixed(2)); bot.push(xi + ',' + (yy(xi) + s * marg(xi)).toFixed(2)); }
+    var svg = denti.map(function (d) {
+      var cy = yy(d.cx), ang = Math.atan((yy(d.cx + 1) - yy(d.cx - 1)) / 2) * 180 / Math.PI;
+      return '<g transform="translate(' + d.cx.toFixed(2) + ',' + (cy - s * 1.2).toFixed(2) + ') rotate(' + ang.toFixed(2) + ')' + (sup ? '' : ' scale(1,-1)') + '">' +
+        '<path d="' + dente2(d.t, d.w, d.h) + '" fill="#fff" stroke="' + col + '" stroke-width="0.75" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<path d="M' + (-d.w * 0.22).toFixed(2) + ',' + (d.h * 0.3).toFixed(2) + ' Q' + (-d.w * 0.27).toFixed(2) + ',' + (d.h * 0.55).toFixed(2) + ' ' + (-d.w * 0.2).toFixed(2) + ',' + (d.h * 0.74).toFixed(2) + '" fill="none" stroke="' + col + '" stroke-width="0.45" stroke-opacity="0.35" stroke-linecap="round"/></g>';
+    }).join('');
+    svg += '<path d="M' + top.join(' L') + ' L' + bot.reverse().join(' L') + ' Z" fill="' + chiaroCol + '" stroke="' + col + '" stroke-width="0.6" stroke-linejoin="round"/>';
+    svg += denti.map(function (d) { return '<text x="' + d.cx.toFixed(2) + '" y="' + (yy(d.cx) - s * 2.2 + (sup ? 0 : 1.2)).toFixed(2) + '" text-anchor="middle" font-size="3.3" fill="' + col + '" font-family="Arial,sans-serif" font-weight="700">' + d.f + '</text>'; }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
+  }
+
+  /* versione 3 (in prova): denti con volume — smalto sfumato, riflessi, ombre, gengiva rosa */
+  function arcata3(n, col) {
+    n = Number(n); var W = 628, H = 49, A = 7, sup = n <= 2, q = QUAD[n], s = sup ? 1 : -1, id = 'a3n' + n;
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : u === 2 ? 'L' : 'I'; };
+    var dim = { M: [1.22, 0.78], P: [0.86, 1.0], C: [0.9, 1.18], L: [0.74, 1.05], I: [0.9, 1.16] };
+    var gx0 = (n === 2 || n === 4) ? W : 0;
+    var curva = function (x) { var t = (gx0 + x - W) / W; return A * (1 - t * t); };
+    var yy = function (x) { return sup ? 11 + curva(x) : H - 11 - curva(x); };
+    var U = 30, tot = q.reduce(function (a, f) { return a + dim[tipo(f)][0] * U; }, 0), gap = (W - 30 - tot) / 8, x = 15 + gap / 2;
+    var denti = q.map(function (f) { var t = tipo(f), w = dim[t][0] * U, d = { f: f, t: t, w: w, x0: x, cx: x + w / 2, h: w * dim[t][1] }; x += w + gap; return d; });
+    var P = 5, marg = function (xx) { for (var k = 0; k < denti.length; k++) { var d = denti[k], a = d.x0 - 1.4, b = d.x0 + d.w + 1.4; if (xx >= a && xx <= b) return P * (1 - Math.sin(Math.PI * (xx - a) / (b - a))); } return P; };
+    var defs = '<defs>' +
+      // smalto: luce dall'alto a sinistra, bordi più scuri
+      '<radialGradient id="' + id + 'sm" cx="0.38" cy="' + (sup ? 0.42 : 0.58) + '" r="0.75"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.45" stop-color="#F7F2E4"/><stop offset="0.8" stop-color="#E4D9BF"/><stop offset="1" stop-color="#C9BB98"/></radialGradient>' +
+      // bordo incisale più traslucido
+      '<linearGradient id="' + id + 'in" x1="0" y1="' + (sup ? 0 : 1) + '" x2="0" y2="' + (sup ? 1 : 0) + '"><stop offset="0.72" stop-color="#C9D6E0" stop-opacity="0"/><stop offset="1" stop-color="#B9CBD8" stop-opacity="0.55"/></linearGradient>' +
+      // gengiva: rosa con volume
+      '<linearGradient id="' + id + 'gg" x1="0" y1="' + (sup ? 0 : 1) + '" x2="0" y2="' + (sup ? 1 : 0) + '"><stop offset="0" stop-color="#B9606B"/><stop offset="0.55" stop-color="#E08C93"/><stop offset="1" stop-color="#F0B3B6"/></linearGradient>' +
+      '<filter id="' + id + 'om" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.1"/><feOffset dx="0.9" dy="' + (sup ? 1.3 : -1.3) + '" result="o"/><feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+      '</defs>';
+    var top = [], bot = [];
+    for (var xi = 0; xi <= W; xi += 2) { top.push(xi + ',' + (yy(xi) - s * 9).toFixed(2)); bot.push(xi + ',' + (yy(xi) + s * marg(xi)).toFixed(2)); }
+    var svg = defs + denti.map(function (d) {
+      var cy = yy(d.cx), ang = Math.atan((yy(d.cx + 1) - yy(d.cx - 1)) / 2) * 180 / Math.PI, path = dente2(d.t, d.w, d.h);
+      return '<g filter="url(#' + id + 'om)" transform="translate(' + d.cx.toFixed(2) + ',' + (cy - s * 1.5).toFixed(2) + ') rotate(' + ang.toFixed(2) + ')' + (sup ? '' : ' scale(1,-1)') + '">' +
+        '<path d="' + path + '" fill="url(#' + id + 'sm)" stroke="#A8977A" stroke-width="0.35" stroke-linejoin="round"/>' +
+        '<path d="' + path + '" fill="url(#' + id + 'in)" stroke="none"/>' +
+        // riflesso dello smalto
+        '<ellipse cx="' + (-d.w * 0.16).toFixed(2) + '" cy="' + (d.h * 0.42).toFixed(2) + '" rx="' + (d.w * 0.09).toFixed(2) + '" ry="' + (d.h * 0.2).toFixed(2) + '" fill="#FFFFFF" opacity="0.85"/>' +
+        '<ellipse cx="' + (d.w * 0.2).toFixed(2) + '" cy="' + (d.h * 0.5).toFixed(2) + '" rx="' + (d.w * 0.05).toFixed(2) + '" ry="' + (d.h * 0.12).toFixed(2) + '" fill="#FFFFFF" opacity="0.4"/>' +
+        // ombra al colletto
+        '<path d="M' + (-d.w * 0.36).toFixed(2) + ',0.6 Q0,' + (d.h * 0.16).toFixed(2) + ' ' + (d.w * 0.36).toFixed(2) + ',0.6" fill="none" stroke="#B9A57E" stroke-width="1.2" stroke-opacity="0.45" stroke-linecap="round"/></g>';
+    }).join('');
+    svg += '<path d="M' + top.join(' L') + ' L' + bot.reverse().join(' L') + ' Z" fill="url(#' + id + 'gg)" stroke="#A9505C" stroke-width="0.35" stroke-linejoin="round"/>';
+    // riflesso lungo la gengiva
+    var luce = []; for (var xj = 4; xj <= W - 4; xj += 3) luce.push(xj + ',' + (yy(xj) - s * 6.2).toFixed(2));
+    svg += '<polyline points="' + luce.join(' ') + '" fill="none" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="1.1" stroke-linecap="round"/>';
+    svg += denti.map(function (d) { return '<text x="' + d.cx.toFixed(2) + '" y="' + (yy(d.cx) - s * 3.4 + (sup ? 0 : 1.2)).toFixed(2) + '" text-anchor="middle" font-size="3.4" fill="#FFFFFF" font-family="Arial,sans-serif" font-weight="700">' + d.f + '</text>'; }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
+  }
   function qrPoster(testo, mm) {
     if (typeof qrcode !== 'function') return '';
     var q = qrcode(0, 'M'); q.addData(testo); q.make();
@@ -92,7 +175,7 @@ var Poster = (function () {
     var nCol = termini.length > 44 ? 3 : 2, TRE = nCol === 3;
     var meta = Math.ceil(termini.length / nCol);
     var M = TRE ? { c: 10.5, cf: 4.8, g: 4.5, p: '1mm 3.5mm', t: 8.6, d: 5.8, dl: 1.16, dv: 4.8, mt: 1 } : { c: 13, cf: 5.6, g: 6, p: '1.5mm 5mm', t: 10, d: 6.8, dl: 1.22, dv: 5.6, mt: 1.5 };
-    if (TRE && (opz.arcata || opz.firme)) { M.t = 8.2; M.d = 5.3; M.dl = 1.13; M.mt = 0.8; }
+    if (TRE && (opz.arcata || opz.firme)) { M.t = 8.2; M.d = 5.2; M.dl = 1.13; M.mt = 0.8; }
     function voceIt(t, i) {
       var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata');
       return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:' + M.c + 'mm minmax(0,1fr);column-gap:' + M.g + 'mm;align-items:center;padding:' + M.p + ';' +
@@ -160,10 +243,10 @@ var Poster = (function () {
         '<div style="flex:1;min-height:0;display:flex;flex-direction:column">' + righe + '</div>' +
       '</div>') +
       /* firme a mano degli autori (spazio vuoto con righe) e arcata dentale continua */
-      (IT && opz.firme ? '<div style="margin:6mm 36mm 0;border:0.7mm solid ' + col + ';background:' + chiaro + ';border-radius:3mm;position:relative;padding:5mm 5mm 3mm">' +
+      (IT && opz.firme ? '<div style="margin:5mm 36mm 0;border:0.7mm solid ' + col + ';background:' + chiaro + ';border-radius:3mm;position:relative;padding:5mm 5mm 3mm">' +
         '<div style="position:absolute;left:6mm;top:-3.6mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;font-size:4.2mm;' + F + 'font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div>' +
         '<div style="height:24mm"></div></div>' : '') +
-      (IT && opz.arcata ? '<div style="margin:4mm 36mm 0;display:flex;justify-content:center">' + arcata(area.n, col) + '</div>' : '') +
+      (IT && opz.arcata ? '<div style="margin:' + (Number(area.n) >= 3 ? 5 : 2.5) + 'mm 36mm 0;display:flex;justify-content:center">' + (opz.denti === 3 ? arcata3(area.n, col) : opz.denti === 2 ? arcata2(area.n, col, chiaro) : arcata(area.n, col)) + '</div>' : '') +
       /* motto: una parola per cartellone, da leggere sui quattro affiancati */
       (IT ? (function () {
         var MOTTO = ['Nomina', 'sunt', 'consequentia', 'rerum'], w = MOTTO[Number(area.n) - 1], ALTO = opz.arcata || opz.firme ? 30 : 46;

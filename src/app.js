@@ -24,7 +24,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '11/11/2026 · 12';
+var VERSIONE = '11/11/2026 · 14';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -179,7 +179,7 @@ function bloccoPoster(n) {
 function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
-  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, qr: location.origin + '/glossario' });
+  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, denti: 3, qr: location.origin + '/glossario' });
   var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
   sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
 }
@@ -586,11 +586,12 @@ function reportPdf() {
   /* --- pagina 1: sintesi --- */
   var tutteV = PAN.map(function (r) { return voti[r.id] && voti[r.id].voto; });
   var p1 = primo(TT), esclusi = PAN.filter(function (r) { return voti[r.id] && voti[r.id].escluso; }).length;
+  var tempo = function (rr) { return Math.round(rr.reduce(function (a, r) { return a + ((att[r.id] || {}).minuti || 0); }, 0)); };
   var kpi = [[PAN.length, 'alunni'], [TT.length, 'termini'], [PAN.reduce(function (a, r) { return a + r.inviate; }, 0), 'risposte inviate'],
-    [p1.n ? perc(p1.ok, p1.n) + '%' : '—', 'esatte al 1° tentativo'], [conta(TT, 'approvata') + '/' + TT.length, 'definizioni approvate'], [media(tutteV) != null ? fv(media(tutteV)) : '—', 'voto medio']];
-  var perClasse = classi.length > 1 ? '<table class="mini"><thead><tr><th>Classe</th><th class="c">Alunni</th><th class="c">Voto medio</th><th class="c">Esatte al 1°</th><th class="c">Approvate</th><th class="c">Esclusi</th></tr></thead><tbody>' + classi.map(function (c) {
+    [p1.n ? perc(p1.ok, p1.n) + '%' : '—', 'esatte al 1° tentativo'], [conta(TT, 'approvata') + '/' + TT.length, 'definizioni approvate'], [media(tutteV) != null ? fv(media(tutteV)) : '—', 'voto medio'], [durata(tempo(PAN)), 'tempo totale in app']];
+  var perClasse = classi.length > 1 ? '<table class="mini"><thead><tr><th>Classe</th><th class="c">Alunni</th><th class="c">Voto medio</th><th class="c">Esatte al 1°</th><th class="c">Approvate</th><th class="c">Esclusi</th><th class="c">Tempo totale</th><th class="c">Media per alunno</th></tr></thead><tbody>' + classi.map(function (c) {
     var rr = PAN.filter(function (r) { return (r.classe || '3E') === c; }), ts = TT.filter(function (t) { return classeAl(t.alunno) === c; }), p = primo(ts);
-    return '<tr><td><i class="dot" style="background:' + colCl(c) + '"></i><b>' + c + '</b></td><td class="c">' + rr.length + '</td><td class="c"><b>' + (media(rr.map(function (r) { return voti[r.id] && voti[r.id].voto; })) != null ? fv(media(rr.map(function (r) { return voti[r.id] && voti[r.id].voto; }))) : '—') + '</b></td><td class="c">' + (p.n ? perc(p.ok, p.n) + '%' : '—') + '</td><td class="c">' + conta(ts, 'approvata') + '/' + ts.length + '</td><td class="c">' + rr.filter(function (r) { return voti[r.id] && voti[r.id].escluso; }).length + '</td></tr>';
+    return '<tr><td><i class="dot" style="background:' + colCl(c) + '"></i><b>' + c + '</b></td><td class="c">' + rr.length + '</td><td class="c"><b>' + (media(rr.map(function (r) { return voti[r.id] && voti[r.id].voto; })) != null ? fv(media(rr.map(function (r) { return voti[r.id] && voti[r.id].voto; }))) : '—') + '</b></td><td class="c">' + (p.n ? perc(p.ok, p.n) + '%' : '—') + '</td><td class="c">' + conta(ts, 'approvata') + '/' + ts.length + '</td><td class="c">' + rr.filter(function (r) { return voti[r.id] && voti[r.id].escluso; }).length + '</td><td class="c"><b>' + durata(tempo(rr)) + '</b></td><td class="c">' + (rr.length ? durata(Math.round(tempo(rr) / rr.length)) : '—') + '</td></tr>';
   }).join('') + '</tbody></table>' : '';
 
   function testata(sotto) {
@@ -602,7 +603,7 @@ function reportPdf() {
 
   var pag1 = '<section class="pg">' + testata(titoloCl) +
     '<h1>Report del lavoro · ' + esc(titoloCl) + '</h1><p class="sub">' + (imp.partenza ? 'Partenza ' + esc(oraIt(imp.partenza)) + ' · ' : '') + 'Scadenza ' + esc(oraIt(imp.scadenzaIt)) + ' · situazione al ' + esc(oggi) + '</p>' +
-    '<div class="kpi">' + kpi.map(function (k) { return '<div><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
+    '<div class="kpi k7">' + kpi.map(function (k) { return '<div><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
     perClasse +
     '<div class="g2"><div class="gr"><h3>Distribuzione dei voti</h3>' + graficoVoti() + '</div><div class="gr"><h3>Avanzamento dei termini</h3>' + graficoStati() + '</div></div>' +
     '<div class="gr"><h3>Risposte esatte al primo tentativo, per area</h3>' + graficoAree() + '</div>' +
@@ -612,7 +613,7 @@ function reportPdf() {
   /* --- pagina 2: tabellone --- */
   var righeTab = classi.map(function (c) {
     var rr = PAN.filter(function (r) { return (r.classe || '3E') === c; });
-    return '<tr class="sez"><td colspan="10"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + c + ' · ' + rr.length + ' alunni</td></tr>' + rr.map(function (r) {
+    return '<tr class="sez"><td colspan="10"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + c + ' · ' + rr.length + ' alunni · tempo totale in app ' + durata(tempo(rr)) + '</td></tr>' + rr.map(function (r) {
       var v = voti[r.id] || {}, p = primo(termDi(r.id)), x = att[r.id] || {};
       return '<tr><td>' + esc(r.nome) + (v.ereditati ? ' <span class="tag">erede di ' + esc(donatori(r.id).map(cognome).join(', ') || '—') + '</span>' : '') + (v.escluso ? ' <span class="tag no">escluso</span>' : '') + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c">' + r.inviate + '</td><td class="c">' + (p.n ? p.ok + '/' + p.n : '—') + '</td><td class="c">' + r.errate + '</td><td class="c">' + r.approvate + '/' + r.termini + '</td><td class="c">' + (x.accessi || 0) + '</td><td class="c"><b>' + (x.ultimo ? durata(x.minuti) : '—') + '</b></td>' +
         '<td class="vb">' + barraVoto(v.voto, c) + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.manuale != null ? '<span class="m"> man.</span>' : '') + '</td></tr>';
@@ -655,7 +656,7 @@ function reportPdf() {
     'header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3mm;margin-bottom:5mm}.lg0{display:flex;align-items:center;gap:3mm}.lg0 b,.dx b{display:block;font-size:10.5pt}.lg0 span,.dx span{display:block;font-size:8pt;color:#5B6976}.dx{text-align:right}' +
     'footer{position:absolute;left:12mm;right:12mm;bottom:7mm;display:flex;justify-content:space-between;font-size:7.5pt;color:#5B6976;border-top:0.6pt solid #C3CED7;padding-top:1.5mm}' +
     'h1{font-size:17pt;margin:0;line-height:1.15}h3{font-size:9.5pt;margin:0 0 2mm;text-transform:uppercase;letter-spacing:.06em;color:#2C3A47}.sub{margin:1mm 0 4mm;color:#5B6976;font-size:9pt}.m{color:#5B6976}' +
-    '.kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:2.5mm;margin-bottom:4mm}.kpi.k5{grid-template-columns:repeat(5,1fr)}.kpi.k6{grid-template-columns:repeat(6,1fr)}.kpi div{background:#EEF2F5;border-radius:2mm;padding:2.5mm 3mm}.kpi b{display:block;font-size:15pt;line-height:1.1}.kpi span{font-size:7.5pt;color:#5B6976}' +
+    '.kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:2.5mm;margin-bottom:4mm}.kpi.k5{grid-template-columns:repeat(5,1fr)}.kpi.k6{grid-template-columns:repeat(6,1fr)}.kpi.k7{grid-template-columns:repeat(7,1fr);gap:2mm}.kpi.k7 b{font-size:13.5pt}.kpi div{background:#EEF2F5;border-radius:2mm;padding:2.5mm 3mm}.kpi b{display:block;font-size:15pt;line-height:1.1}.kpi span{font-size:7.5pt;color:#5B6976}' +
     '.g2{display:grid;grid-template-columns:1fr 1fr;gap:5mm}.gr{border:0.6pt solid #D3DCE3;border-radius:2mm;padding:3mm 3.5mm;margin-bottom:4mm;break-inside:avoid}' +
     '.lg{display:flex;flex-wrap:wrap;gap:2mm 4mm;margin-top:1.5mm;font-size:7.5pt;color:#2C3A47}.lg i{display:inline-block;width:2.6mm;height:2.6mm;border-radius:.6mm;margin-right:1.2mm;vertical-align:-.3mm}' +
     '.dot{display:inline-block;width:2.4mm;height:2.4mm;border-radius:50%;margin-right:1.5mm;vertical-align:.1mm}' +
