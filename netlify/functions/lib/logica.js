@@ -553,6 +553,35 @@ async function setup(db, { chiave }, chiaveAttesa) {
 }
 
 function riprovaMigrazione() { migrato = false; } // solo per i test
+/* nome pubblico: nome per esteso e cognome puntato ("Bertelà Linda" → "Linda B.", "Dalle Luche Grace" → "Grace D.L.") */
+const PARTICELLE = ['da', 'dal', 'dalla', 'dalle', 'de', 'dei', 'del', 'della', 'delle', 'di', 'la', 'lo', 'li', 'van', 'von', 'mc', 'mac'];
+const NOMI_PUBBLICI = { 'Giannarelli Rigel Francesca Lina': 'Francesca G.' }; // nome d'uso scelto dal docente
+function nomePubblico(completo) {
+  if (NOMI_PUBBLICI[String(completo || '').trim()]) return NOMI_PUBBLICI[String(completo).trim()];
+  const p = String(completo || '').trim().split(/\s+/).filter(Boolean);
+  if (p.length < 2) return p.join(' ');
+  let n = 1; while (n < p.length - 1 && PARTICELLE.indexOf(p[n - 1].toLowerCase()) >= 0) n++;
+  return p.slice(n).join(' ') + ' ' + p.slice(0, n).map((x) => x.charAt(0).toUpperCase() + '.').join('');
+}
+
+/* pagina pubblica di consultazione: solo termini e definizioni approvate, nessun dato riservato */
+async function pubblico(db) {
+  const stato = await db.leggiTutto();
+  if (!stato.config) return { aree: [], classi: {} };
+  const imp = impostazioni(stato.config);
+  const nomi = {}; stato.alunni.forEach((a) => { nomi[a.id] = nomePubblico(a.nome); });
+  const classi = {};
+  imp.classi.forEach((c) => { classi[c] = stato.alunni.filter((a) => classeDi(a) === c).sort((x, y) => x.nome.localeCompare(y.nome, 'it')).map((a) => nomePubblico(a.nome)); });
+  const aree = DATI.AREE.map((a) => {
+    const ts = stato.termini.filter((t) => String(t.area) === String(a.n)).sort((x, y) => Number(String(x.id).slice(2)) - Number(String(y.id).slice(2)));
+    return { n: a.n, it: a.it, colore: a.colore, termini: ts.map((t) => {
+      const ok = t.stato_it === 'approvata' && t.scelta_it != null;
+      return { n: Number(String(t.id).slice(2)), termine: t.termine_it, def: ok ? testoDef(t.area, t.scelta_it, 'it') : '', autore: ok ? (nomi[t.alunno_id] || '') : '' };
+    }) };
+  });
+  return { docente: 'Prof. Danilo Cerrato', materia: 'Laboratorio odontotecnico', scuola: 'Istituto Barsanti - sede Salvetti, Massa', anno: '2026/27', classi, aree, aggiornato: new Date().toISOString() };
+}
+
 /* filtro per classe (report e presentazione) */
 function statoClasse(stato, classe) {
   if (!classe || classe === 'tutte') return stato;
@@ -561,4 +590,4 @@ function statoClasse(stato, classe) {
 }
 function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k = classeDi(a); if (c.indexOf(k) < 0) c.push(k); }); return (c.length ? c.sort() : ['3E']).join(' e '); }
 function etichettaAl(a) { return classeDi(a) === '3E' ? '3E·' + a.gruppo : classeDi(a); }
-module.exports = { statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };
+module.exports = { nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

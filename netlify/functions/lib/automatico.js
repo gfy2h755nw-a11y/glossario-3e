@@ -4,6 +4,7 @@
  */
 const { creaReport } = require('./report');
 const dbx = require('./dropbox');
+const { creaWord, NOME_DROPBOX } = require('./word');
 
 const FORMATO = 'glossario3e-backup';
 
@@ -37,6 +38,9 @@ async function esegui(db, motivo) {
     await dbx.carica(token, file[0], json);
     await dbx.carica(token, file[1], pdf);
     await dbx.carica(token, file[2], pdf);
+    // Word delle definizioni approvate: sempre lo stesso file, sovrascritto
+    await dbx.carica(token, NOME_DROPBOX, await creaWord(stato, now));
+    file.push(NOME_DROPBOX);
     await db.scriviSegreto('dropbox', { ultimoInvio: new Date(now).toISOString(), esito: 'ok', motivo: motivo || '', file });
     return { ok: true, file, kb: Math.round((pdf.length + json.length) / 1024) };
   } catch (e) {

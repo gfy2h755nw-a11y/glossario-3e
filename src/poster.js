@@ -31,6 +31,43 @@ var Poster = (function () {
   };
 
   /* area: {n,it,en,colore} · termini: [{it,en,defIt,defEn,alunno}] · alunni: [{id,nome,gruppo}] */
+
+  /* arcata dentale che attraversa i 4 cartelloni (notazione FDI): 1 e 2 arcata superiore, 3 e 4 inferiore */
+  var QUAD = { 1: [18, 17, 16, 15, 14, 13, 12, 11], 2: [21, 22, 23, 24, 25, 26, 27, 28], 3: [48, 47, 46, 45, 44, 43, 42, 41], 4: [31, 32, 33, 34, 35, 36, 37, 38] };
+  function dente(tipo, w, h) {
+    // corona disegnata con il colletto in y=0 e il bordo occlusale in y=h
+    var c = w * 0.36, o = w / 2, k = tipo === 'M' ? 3 : tipo === 'P' ? 2 : 0, d = 'M' + (-c) + ',0 L' + c + ',0 C' + (o * 0.95) + ',' + (h * 0.15) + ' ' + o + ',' + (h * 0.55) + ' ' + (o * 0.92) + ',' + (h * 0.88);
+    if (tipo === 'C') d += ' L0,' + (h * 1.08) + ' L' + (-o * 0.92) + ',' + (h * 0.88);
+    else if (!k) d += ' L' + (-o * 0.92) + ',' + (h * 0.95);
+    else { var x0 = o * 0.92, step = 2 * x0 / k; for (var j = 0; j < k; j++) { var xa = x0 - j * step, xb = xa - step; d += ' Q' + ((xa + xb) / 2) + ',' + (h * 1.06) + ' ' + xb + ',' + (h * 0.93); } }
+    return d + ' C' + (-o) + ',' + (h * 0.55) + ' ' + (-o * 0.95) + ',' + (h * 0.15) + ' ' + (-c) + ',0 Z';
+  }
+  function arcata(n, col) {
+    n = Number(n); var W = 628, H = 38, A = 7, sup = n <= 2, q = QUAD[n];
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : 'I'; };
+    var larg = { M: 1.25, P: 0.9, C: 0.88, I: 0.82 };
+    var gx0 = (n === 2 || n === 4) ? W : 0; // posizione nel tratto di due cartelloni
+    var y = function (x) { var X = gx0 + x, t = (X - W) / W; return 6 + A * (1 - t * t) + (sup ? 0 : 0); };
+    var yy = function (x) { return sup ? y(x) : H - 2 - (y(x) - 6); };
+    var U = 29, tot = q.reduce(function (s, f) { return s + larg[tipo(f)] * U; }, 0), gap = (W - 20 - tot) / 8, x = 10 + gap / 2, svg = '';
+    var pts = []; for (var xi = 0; xi <= W; xi += 8) pts.push(xi + ',' + yy(xi).toFixed(2));
+    svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="0.9" stroke-linecap="round"/>';
+    q.forEach(function (f) {
+      var t = tipo(f), w = larg[t] * U, cx = x + w / 2, cy = yy(cx);
+      var dy = (yy(cx + 1) - yy(cx - 1)) / 2, ang = Math.atan(dy) * 180 / Math.PI, h = w * (t === 'M' ? 0.72 : t === 'P' ? 0.95 : t === 'C' ? 1.12 : 1.1);
+      svg += '<g transform="translate(' + cx.toFixed(2) + ',' + cy.toFixed(2) + ') rotate(' + ang.toFixed(2) + ')' + (sup ? '' : ' scale(1,-1)') + '"><path d="' + dente(t, w, h) + '" fill="#fff" stroke="' + col + '" stroke-width="0.8" stroke-linejoin="round"/></g>';
+      svg += '<text x="' + cx.toFixed(2) + '" y="' + (sup ? cy - 2 : cy + 4.6).toFixed(2) + '" text-anchor="middle" font-size="3.6" fill="#8494A3" font-family="Arial,sans-serif">' + f + '</text>';
+      x += w + gap;
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
+  }
+  function qrPoster(testo, mm) {
+    if (typeof qrcode !== 'function') return '';
+    var q = qrcode(0, 'M'); q.addData(testo); q.make();
+    var n = q.getModuleCount(), m = 1, d = '';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m) + '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#15212B"/></svg>';
+  }
   function html(area, termini, alunni, opz) {
     opz = opz || {};
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
@@ -54,14 +91,16 @@ var Poster = (function () {
     // solo italiano: due colonne fino a 44 termini, tre colonne oltre (65 per area con 3E + 3F)
     var nCol = termini.length > 44 ? 3 : 2, TRE = nCol === 3;
     var meta = Math.ceil(termini.length / nCol);
-    var M = TRE ? { c: 10.5, cf: 4.8, g: 4.5, p: '1mm 3.5mm', t: 8.8, d: 6, dl: 1.18, dv: 4.8, mt: 1 } : { c: 13, cf: 5.6, g: 6, p: '1.5mm 5mm', t: 10, d: 6.8, dl: 1.22, dv: 5.6, mt: 1.5 };
+    var M = TRE ? { c: 10.5, cf: 4.8, g: 4.5, p: '1mm 3.5mm', t: 8.6, d: 5.8, dl: 1.16, dv: 4.8, mt: 1 } : { c: 13, cf: 5.6, g: 6, p: '1.5mm 5mm', t: 10, d: 6.8, dl: 1.22, dv: 5.6, mt: 1.5 };
+    if (TRE && (opz.arcata || opz.firme)) { M.t = 8.2; M.d = 5.3; M.dl = 1.13; M.mt = 0.8; }
     function voceIt(t, i) {
       var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata');
       return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:' + M.c + 'mm minmax(0,1fr);column-gap:' + M.g + 'mm;align-items:center;padding:' + M.p + ';' +
         (opz.evidenzia && t.alunno === opz.evidenzia ? 'background:#FFE98A;box-shadow:inset 1.6mm 0 0 #15212B;' : i % 2 ? 'background:' + chiaro + ';' : '') + 'border-bottom:0.4mm solid ' + medio + '">' +
         '<div style="width:' + M.c + 'mm;height:' + M.c + 'mm;border-radius:50%;background:' + col + ';color:#fff;display:flex;align-items:center;justify-content:center;' + F + 'font-weight:800;font-size:' + M.cf + 'mm">' + (i + 1) + '</div>' +
         '<div style="min-width:0"><div style="' + F + 'font-weight:800;font-size:' + M.t + 'mm;line-height:1.05;color:#15212B">' + esc(t.it) + '</div>' +
-        (ok ? '<div style="font-size:' + M.d + 'mm;line-height:' + M.dl + ';margin-top:' + M.mt + 'mm">' + esc(t.defIt) + '</div>'
+        (ok ? '<div style="font-size:' + M.d + 'mm;line-height:' + M.dl + ';margin-top:' + M.mt + 'mm">' + esc(t.defIt) +
+            (nomi[t.alunno] ? ' <span style="font-size:' + (M.dv * 0.92).toFixed(2) + 'mm;font-style:italic;color:#5B6976;white-space:nowrap">— ' + esc(nomi[t.alunno]) + '</span>' : '') + '</div>'
           : '<div style="font-size:' + M.dv + 'mm;line-height:1.25;color:#8494A3;font-style:italic;margin-top:' + M.mt + 'mm">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</div>') +
         '</div></div>';
     }
@@ -120,10 +159,25 @@ var Poster = (function () {
           '<span></span><span>Termine · Term</span><span>Definizione · Italiano</span><span>Definition · English</span></div>' +
         '<div style="flex:1;min-height:0;display:flex;flex-direction:column">' + righe + '</div>' +
       '</div>') +
+      /* firme a mano degli autori (spazio vuoto con righe) e arcata dentale continua */
+      (IT && opz.firme ? '<div style="margin:6mm 36mm 0;border:0.7mm solid ' + col + ';background:' + chiaro + ';border-radius:3mm;position:relative;padding:5mm 5mm 3mm">' +
+        '<div style="position:absolute;left:6mm;top:-3.6mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;font-size:4.2mm;' + F + 'font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div>' +
+        '<div style="height:24mm"></div></div>' : '') +
+      (IT && opz.arcata ? '<div style="margin:4mm 36mm 0;display:flex;justify-content:center">' + arcata(area.n, col) + '</div>' : '') +
+      /* motto: una parola per cartellone, da leggere sui quattro affiancati */
+      (IT ? (function () {
+        var MOTTO = ['Nomina', 'sunt', 'consequentia', 'rerum'], w = MOTTO[Number(area.n) - 1], ALTO = opz.arcata || opz.firme ? 30 : 46;
+        if (!w) return '';
+        var ultimo = Number(area.n) === 4;
+        return '<div style="margin:' + (opz.arcata ? 0 : 5) + 'mm 36mm 0;height:' + ALTO + 'mm;display:flex;flex-direction:column;align-items:center;justify-content:center' + (opz.arcata ? '' : ';border-top:0.4mm solid ' + medio) + '">' +
+          '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-style:italic;font-weight:600;font-size:' + (opz.arcata || opz.firme ? 33 : 36) + 'mm;line-height:1;color:' + col + ';letter-spacing:0.5mm">' + esc(w) + (ultimo ? '.' : '…') + '</div>' +
+          '</div>';
+      })() : '') +
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
         '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + classi.join(' e ') + ' · Area ' + area.n + ' di 4</span>' +
         '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
+        (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
         '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>' +
       '</div>' +
       '</div>';

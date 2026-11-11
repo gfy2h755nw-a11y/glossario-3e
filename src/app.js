@@ -24,7 +24,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '11/11/2026';
+var VERSIONE = '11/11/2026 · 12';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -179,7 +179,7 @@ function bloccoPoster(n) {
 function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
-  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null });
+  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, qr: location.origin + '/glossario' });
   var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
   sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
 }
@@ -253,6 +253,7 @@ function vistaDocente() {
   if (!EN()) { f.lingua = 'it'; if (f.stato === 'pronte') f.stato = 'inviata'; }
   var h = testata(u.nome + ' · area docenti') + '<main class="wrap stack">';
   if (S.d.config.chiusa) h += '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>';
+  h += bloccoAnello();
   h += '<section class="grid4">' + S.d.aree.map(function (a) {
     var ts = S.d.termini.filter(function (t) { return t.area == a.n && inClasse(t.alunno); });
     var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
@@ -279,7 +280,7 @@ function vistaDocente() {
     '</section>';
   h += '<p class="muted" style="margin:0">' + lista.length + ' termini' + (EN() ? ' · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') : '') + '</p>';
   h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
-  h += panoramica() + (S.d.admin ? bloccoAdmin() + bloccoAttivita() + bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
+  h += panoramica() + bloccoSituazione() + (S.d.admin ? bloccoAdmin() + bloccoAttivita() + bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
     '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
@@ -294,7 +295,7 @@ function vistaDocente() {
       '</tbody></table></div></details>';
   }
   h += '</main>';
-  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
+  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)); selSituazione(); disegnaSituazione();
 }
 function cardDocente(t, l) {
   var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
@@ -335,6 +336,69 @@ function approvaCorrette(btn) {
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 /* ---------- panoramica condivisa (prof. Cerrato e prof.ssa Aliboni) ---------- */
+/* anello in cima: quante risposte sono state date sul totale dei termini */
+function bloccoAnello() {
+  var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); }), n = ts.length || 1;
+  var app = ts.filter(function (t) { return t.statoIt === 'approvata'; }).length,
+    att = ts.filter(function (t) { return t.statoIt === 'inviata'; }).length,
+    rim = ts.filter(function (t) { return t.statoIt === 'correggere'; }).length,
+    mai = ts.length - app - att - rim, date = app + att;
+  var seg = [['Approvate', app, '#2E7D32'], ['Date, in attesa di approvazione', att, '#1F5FA8'], ['Rimandate', rim, '#C77700'], ['Mai date', mai, '#C3CED7']];
+  var R = 70, C = 2 * Math.PI * R, off = 0, gap = 2;
+  var archi = seg.map(function (sg) {
+    var l = C * sg[1] / n; if (!sg[1]) return '';
+    var d = '<circle cx="90" cy="90" r="' + R + '" fill="none" stroke="' + sg[2] + '" stroke-width="26" stroke-dasharray="' + Math.max(l - gap, 1) + ' ' + C + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 90 90)"><title>' + sg[0] + ': ' + sg[1] + '</title></circle>';
+    off += l; return d;
+  }).join('');
+  var cl = S.filtro && S.filtro.classe && S.filtro.classe !== 'tutte' ? 'della ' + S.filtro.classe : CLASSI().length > 1 ? 'di ' + CLASSI().join(' e ') : '';
+  return '<section class="card" style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">' +
+    '<svg viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="Risposte date: ' + date + ' su ' + ts.length + '"><circle cx="90" cy="90" r="' + R + '" fill="none" stroke="#EEF2F5" stroke-width="26"/>' + archi +
+    '<text x="90" y="86" text-anchor="middle" font-size="30" font-weight="800" fill="#15212B" style="font-family:inherit">' + date + '</text>' +
+    '<text x="90" y="108" text-anchor="middle" font-size="13" fill="#5B6976" style="font-family:inherit">su ' + ts.length + ' · ' + Math.round(date / n * 100) + '%</text></svg>' +
+    '<div class="stack" style="gap:8px;flex:1;min-width:240px"><h2 style="margin:0;font-size:22px">Risposte date: ' + date + ' su ' + ts.length + '</h2>' +
+    '<p class="muted" style="margin:0;font-size:15px">Termini ' + cl + ' con una risposta valida (approvata o in attesa della tua approvazione). Le rimandate contano tra quelle da dare.</p>' +
+    seg.map(function (sg) { return '<div class="row" style="gap:10px;font-size:15px"><i style="width:14px;height:14px;border-radius:3px;background:' + sg[2] + ';display:inline-block"></i><span style="flex:1">' + sg[0] + '</span><b>' + sg[1] + '</b></div>'; }).join('') +
+    '</div></section>';
+}
+/* situazione di un singolo studente: approvate e rimanenti, con l'elenco dei termini */
+function bloccoSituazione() {
+  S.sit = S.sit || { classe: CLASSI()[0], id: '' };
+  if (S.filtro && S.filtro.classe && S.filtro.classe !== 'tutte' && S.sit.classe !== S.filtro.classe) { S.sit.classe = S.filtro.classe; S.sit.id = ''; }
+  var cl = CLASSI().map(function (c) { return '<option value="' + c + '"' + (S.sit.classe === c ? ' selected' : '') + '>' + c + '</option>'; }).join('');
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Situazione dello studente</h2>' +
+    '<div class="grid2"><div><label for="sitc">Classe</label><select id="sitc" onchange="S.sit.classe=this.value;S.sit.id=\'\';selSituazione();disegnaSituazione()">' + cl + '</select></div>' +
+    '<div><label for="sits">Studente</label><select id="sits" onchange="S.sit.id=this.value;disegnaSituazione()"></select></div></div>' +
+    '<div id="sitbox"></div></section>';
+}
+function selSituazione() {
+  var al = S.d.alunni.filter(function (a) { return (a.classe || '3E') === S.sit.classe; }).sort(function (a, b) { return a.nome.localeCompare(b.nome, 'it'); });
+  if (!S.sit.id || !al.some(function (a) { return a.id === S.sit.id; })) S.sit.id = al[0] ? al[0].id : '';
+  var el = $('sits'); if (!el) return;
+  el.innerHTML = al.map(function (a) { return '<option value="' + a.id + '"' + (a.id === S.sit.id ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('');
+}
+function disegnaSituazione() {
+  var box = $('sitbox'); if (!box) return;
+  var id = S.sit.id, ts = S.d.termini.filter(function (t) { return t.alunno === id; });
+  var pan = (S.d.panoramica || []).filter(function (r) { return r.id === id; })[0] || {};
+  if (!ts.length) { box.innerHTML = '<p class="muted" style="margin:0">' + (pan.escluso ? 'Studente escluso: i suoi termini sono passati a ' + esc(nomeAlunno(pan.riassegnatoA)) + '.' : 'Nessun termine assegnato.') + '</p>'; return; }
+  var app = ts.filter(function (t) { return t.statoIt === 'approvata'; }),
+    att = ts.filter(function (t) { return t.statoIt === 'inviata'; }),
+    rim = ts.filter(function (t) { return t.statoIt === 'correggere'; }),
+    mai = ts.filter(function (t) { return !t.statoIt; });
+  var barre = [['Approvate', app.length, '#2E7D32'], ['Da dare', rim.length + mai.length, '#C77700']];
+  if (att.length) barre.splice(1, 0, ['Inviate, in attesa della tua approvazione', att.length, '#1F5FA8']);
+  var max = ts.length;
+  var graf = '<div class="stack" style="gap:10px">' + barre.map(function (b) {
+    return '<div><div class="row" style="justify-content:space-between;font-size:15px"><span>' + b[0] + (b[0] === 'Da dare' ? ' <span class="muted">(rimandate ' + rim.length + ' + mai date ' + mai.length + ')</span>' : '') + '</span><b>' + b[1] + ' su ' + max + '</b></div>' +
+      '<div style="height:26px;background:#EEF2F5;border-radius:6px;margin-top:4px;overflow:hidden"><div style="height:100%;width:' + (b[1] / max * 100) + '%;min-width:' + (b[1] ? 6 : 0) + 'px;background:' + b[2] + ';border-radius:6px"></div></div></div>';
+  }).join('') + '</div>';
+  var voce = function (t, nota) { var z = area(t.area) || {}; return '<li style="margin:4px 0"><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(z.colore || '#15212B') + ';margin-right:8px"></i><b>' + esc(t.it) + '</b>' + (nota ? ' <span class="muted" style="font-size:14px">· ' + nota + '</span>' : '') + (t.ereditato ? ' <span class="muted" style="font-size:14px">· ricevuto da ' + esc(nomeAlunno(t.alunnoOrig)) + '</span>' : '') + '</li>'; };
+  var date = app.map(function (t) { return voce(t, 'approvata'); }).concat(att.map(function (t) { return voce(t, 'in attesa di approvazione'); }));
+  var dare = rim.map(function (t) { return voce(t, 'rimandata'); }).concat(mai.map(function (t) { return voce(t, 'mai data'); }));
+  box.innerHTML = graf + '<div class="grid2" style="margin-top:6px">' +
+    '<div><h3 style="margin:0 0 6px;font-size:17px;color:#2E7D32">Ha dato (' + date.length + ')</h3>' + (date.length ? '<ul style="list-style:none;padding:0;margin:0">' + date.join('') + '</ul>' : '<p class="muted" style="margin:0">Nessuna risposta ancora.</p>') + '</div>' +
+    '<div><h3 style="margin:0 0 6px;font-size:17px;color:#9A4A00">Deve ancora dare (' + dare.length + ')</h3>' + (dare.length ? '<ul style="list-style:none;padding:0;margin:0">' + dare.join('') + '</ul>' : '<p class="muted" style="margin:0">Niente: ha risposto a tutti i termini.</p>') + '</div></div>';
+}
 function panoramica() {
   var P = S.d.panoramica || [], tot = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0 };
   var righe = P.filter(function (r) { return inClasse(r.id); }).map(function (r) {
@@ -392,7 +456,7 @@ function bloccoAdmin() {
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + (r.riassegnatoA ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
+  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
 }
 function presentazione(btn, azione, dati) {
@@ -404,6 +468,18 @@ function presentazione(btn, azione, dati) {
     var a = document.createElement('a'); a.href = url; a.download = x.nome; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
     btn.disabled = false; btn.textContent = t; toast('Presentazione scaricata');
+  }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
+}
+function esportaWord(btn) {
+  var t = btn.textContent; btn.disabled = true; btn.textContent = 'Preparo il Word…';
+  api('word').then(function (x) {
+    var bin = atob(x.base64), u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([u8], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
+    var a = document.createElement('a'); a.href = url; a.download = x.nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    btn.disabled = false; btn.textContent = t;
+    toast(x.dropbox === 'ok' ? 'Word scaricato e salvato su Dropbox (' + x.percorso + ')' : x.dropbox === 'non collegato' ? 'Word scaricato. Dropbox non è collegato: collegalo per il salvataggio automatico.' : 'Word scaricato, ma Dropbox ha dato errore: ' + x.dropbox, x.dropbox !== 'ok' && x.dropbox !== 'non collegato');
   }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
 }
 function salvaImpostazioni(btn) {
@@ -650,7 +726,7 @@ function bloccoBackup() {
   var D = S.d.admin.dropbox || {};
   var stato = !D.configurato ? '<b>Dropbox non ancora configurato.</b> Servono le variabili DROPBOX_APP_KEY e DROPBOX_APP_SECRET su Netlify (vedi la guida).' :
     !D.collegato ? '<b>Dropbox non collegato.</b> Premi “Collega Dropbox” e autorizza l\'app con il tuo account.' :
-    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo e il report PDF.' +
+    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo, il report PDF e il Word <b>Glossario_definizioni_approvate.docx</b> (sempre lo stesso file, sovrascritto).' +
     '<br>Ultimo invio: ' + (D.ultimoInvio ? esc(quando(D.ultimoInvio)) + ' — ' + (D.esito === 'ok' ? '<span style="color:#1B6E20;font-weight:700">riuscito</span>' : '<span style="color:#B0304A;font-weight:700">' + esc(D.esito) + '</span>') : 'nessuno');
   return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Backup e report automatici</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">' + stato + '</p>' +

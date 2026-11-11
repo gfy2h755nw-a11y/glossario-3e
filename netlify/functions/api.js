@@ -21,6 +21,8 @@ const AZIONI = {
   setup: (d, p) => logica.setup(d, p, process.env.SETUP_KEY),
   // segnale di presenza (ogni minuto, app aperta in primo piano): serve solo al registro attività
   presenza: async () => ({}),
+  // pagina pubblica /glossario: nessun codice richiesto, solo definizioni approvate
+  pubblico: (d) => logica.pubblico(d),
   // solo prof. Cerrato: backup, ripristino, Dropbox
   backup: async (d, p) => { await logica.verificaAdmin(d, p.codice); return auto.backupDa(await d.backupGrezzo(), Date.now()); },
   ripristina: async (d, p) => {
@@ -49,6 +51,20 @@ const AZIONI = {
   },
   dropboxcollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); return { url: await DBX.linkCollegamento(d) }; },
   dropboxscollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); await d.cancellaSegreto('dropbox'); return { scollegato: true }; },
+  // Word con termini e definizioni approvate: si scarica e, se Dropbox è collegato, si salva lì sovrascrivendo
+  word: async (d, p) => {
+    await logica.verificaAdmin(d, p.codice);
+    const now = Date.now();
+    const { stato } = auto.statoDa(await d.backupGrezzo());
+    const { creaWord, NOME_DROPBOX } = require('./lib/word');
+    const buf = await creaWord(stato, now);
+    let dropbox = 'non collegato';
+    const segreto = await d.leggiSegreto('dropbox');
+    if (DBX.configurato() && segreto && segreto.refresh) {
+      try { await DBX.carica(await DBX.tokenAccesso(segreto), NOME_DROPBOX, buf); dropbox = 'ok'; } catch (e) { dropbox = 'errore: ' + String(e.message || e).slice(0, 200); }
+    }
+    return { nome: 'Glossario_definizioni_approvate.docx', base64: buf.toString('base64'), dropbox, percorso: NOME_DROPBOX };
+  },
   dropboxinvia: async (d, p) => {
     await logica.verificaAdmin(d, p.codice);
     const r = await auto.esegui(d, 'manuale');

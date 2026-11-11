@@ -4,7 +4,7 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["firebase-admin", "pdfkit", "pptxgenjs"]
+  external_node_modules = ["firebase-admin", "pdfkit", "pptxgenjs", "docx"]
 
 # ogni giorno alle 23:59 ora italiana (orario in UTC: 22:59 = 23:59 con l ora solare, valida fino a fine marzo): backup + report su Dropbox
 [functions."report-automatico"]
@@ -13,6 +13,12 @@
 [[redirects]]
   from = "/dropbox"
   to = "/.netlify/functions/dropbox"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/glossario"
+  to = "/glossario.html"
   status = 200
   force = true
 

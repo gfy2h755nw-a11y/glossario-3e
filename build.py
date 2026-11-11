@@ -17,7 +17,7 @@ html = '''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="Glossario">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,600&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>''' + r('src/stile.css') + '''</style>
 </head>
 <body>
@@ -37,3 +37,8 @@ html = '''<!DOCTYPE html>
 '''
 open(os.path.join(B, 'public/index.html'), 'w', encoding='utf-8').write(html)
 print('public/index.html', len(html))
+
+# pagina pubblica di consultazione (/glossario): logo dal modello del cartellone
+con = r('src/consulta.html').replace('/*POSTER*/', r('src/poster.js'))
+open(os.path.join(B, 'public/glossario.html'), 'w', encoding='utf-8').write(con)
+print('public/glossario.html', len(con))

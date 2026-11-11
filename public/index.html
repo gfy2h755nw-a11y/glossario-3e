@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Glossario">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,600&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#15212B; --ink2:#3E4C59; --muted:#5B6976; --line:#D3DCE3; --bg:#EEF2F5; --card:#FFFFFF;
@@ -2456,6 +2456,43 @@ var Poster = (function () {
   };
 
   /* area: {n,it,en,colore} · termini: [{it,en,defIt,defEn,alunno}] · alunni: [{id,nome,gruppo}] */
+
+  /* arcata dentale che attraversa i 4 cartelloni (notazione FDI): 1 e 2 arcata superiore, 3 e 4 inferiore */
+  var QUAD = { 1: [18, 17, 16, 15, 14, 13, 12, 11], 2: [21, 22, 23, 24, 25, 26, 27, 28], 3: [48, 47, 46, 45, 44, 43, 42, 41], 4: [31, 32, 33, 34, 35, 36, 37, 38] };
+  function dente(tipo, w, h) {
+    // corona disegnata con il colletto in y=0 e il bordo occlusale in y=h
+    var c = w * 0.36, o = w / 2, k = tipo === 'M' ? 3 : tipo === 'P' ? 2 : 0, d = 'M' + (-c) + ',0 L' + c + ',0 C' + (o * 0.95) + ',' + (h * 0.15) + ' ' + o + ',' + (h * 0.55) + ' ' + (o * 0.92) + ',' + (h * 0.88);
+    if (tipo === 'C') d += ' L0,' + (h * 1.08) + ' L' + (-o * 0.92) + ',' + (h * 0.88);
+    else if (!k) d += ' L' + (-o * 0.92) + ',' + (h * 0.95);
+    else { var x0 = o * 0.92, step = 2 * x0 / k; for (var j = 0; j < k; j++) { var xa = x0 - j * step, xb = xa - step; d += ' Q' + ((xa + xb) / 2) + ',' + (h * 1.06) + ' ' + xb + ',' + (h * 0.93); } }
+    return d + ' C' + (-o) + ',' + (h * 0.55) + ' ' + (-o * 0.95) + ',' + (h * 0.15) + ' ' + (-c) + ',0 Z';
+  }
+  function arcata(n, col) {
+    n = Number(n); var W = 628, H = 38, A = 7, sup = n <= 2, q = QUAD[n];
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : 'I'; };
+    var larg = { M: 1.25, P: 0.9, C: 0.88, I: 0.82 };
+    var gx0 = (n === 2 || n === 4) ? W : 0; // posizione nel tratto di due cartelloni
+    var y = function (x) { var X = gx0 + x, t = (X - W) / W; return 6 + A * (1 - t * t) + (sup ? 0 : 0); };
+    var yy = function (x) { return sup ? y(x) : H - 2 - (y(x) - 6); };
+    var U = 29, tot = q.reduce(function (s, f) { return s + larg[tipo(f)] * U; }, 0), gap = (W - 20 - tot) / 8, x = 10 + gap / 2, svg = '';
+    var pts = []; for (var xi = 0; xi <= W; xi += 8) pts.push(xi + ',' + yy(xi).toFixed(2));
+    svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="0.9" stroke-linecap="round"/>';
+    q.forEach(function (f) {
+      var t = tipo(f), w = larg[t] * U, cx = x + w / 2, cy = yy(cx);
+      var dy = (yy(cx + 1) - yy(cx - 1)) / 2, ang = Math.atan(dy) * 180 / Math.PI, h = w * (t === 'M' ? 0.72 : t === 'P' ? 0.95 : t === 'C' ? 1.12 : 1.1);
+      svg += '<g transform="translate(' + cx.toFixed(2) + ',' + cy.toFixed(2) + ') rotate(' + ang.toFixed(2) + ')' + (sup ? '' : ' scale(1,-1)') + '"><path d="' + dente(t, w, h) + '" fill="#fff" stroke="' + col + '" stroke-width="0.8" stroke-linejoin="round"/></g>';
+      svg += '<text x="' + cx.toFixed(2) + '" y="' + (sup ? cy - 2 : cy + 4.6).toFixed(2) + '" text-anchor="middle" font-size="3.6" fill="#8494A3" font-family="Arial,sans-serif">' + f + '</text>';
+      x += w + gap;
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
+  }
+  function qrPoster(testo, mm) {
+    if (typeof qrcode !== 'function') return '';
+    var q = qrcode(0, 'M'); q.addData(testo); q.make();
+    var n = q.getModuleCount(), m = 1, d = '';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m) + '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#15212B"/></svg>';
+  }
   function html(area, termini, alunni, opz) {
     opz = opz || {};
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
@@ -2479,14 +2516,16 @@ var Poster = (function () {
     // solo italiano: due colonne fino a 44 termini, tre colonne oltre (65 per area con 3E + 3F)
     var nCol = termini.length > 44 ? 3 : 2, TRE = nCol === 3;
     var meta = Math.ceil(termini.length / nCol);
-    var M = TRE ? { c: 10.5, cf: 4.8, g: 4.5, p: '1mm 3.5mm', t: 8.8, d: 6, dl: 1.18, dv: 4.8, mt: 1 } : { c: 13, cf: 5.6, g: 6, p: '1.5mm 5mm', t: 10, d: 6.8, dl: 1.22, dv: 5.6, mt: 1.5 };
+    var M = TRE ? { c: 10.5, cf: 4.8, g: 4.5, p: '1mm 3.5mm', t: 8.6, d: 5.8, dl: 1.16, dv: 4.8, mt: 1 } : { c: 13, cf: 5.6, g: 6, p: '1.5mm 5mm', t: 10, d: 6.8, dl: 1.22, dv: 5.6, mt: 1.5 };
+    if (TRE && (opz.arcata || opz.firme)) { M.t = 8.2; M.d = 5.3; M.dl = 1.13; M.mt = 0.8; }
     function voceIt(t, i) {
       var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata');
       return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:' + M.c + 'mm minmax(0,1fr);column-gap:' + M.g + 'mm;align-items:center;padding:' + M.p + ';' +
         (opz.evidenzia && t.alunno === opz.evidenzia ? 'background:#FFE98A;box-shadow:inset 1.6mm 0 0 #15212B;' : i % 2 ? 'background:' + chiaro + ';' : '') + 'border-bottom:0.4mm solid ' + medio + '">' +
         '<div style="width:' + M.c + 'mm;height:' + M.c + 'mm;border-radius:50%;background:' + col + ';color:#fff;display:flex;align-items:center;justify-content:center;' + F + 'font-weight:800;font-size:' + M.cf + 'mm">' + (i + 1) + '</div>' +
         '<div style="min-width:0"><div style="' + F + 'font-weight:800;font-size:' + M.t + 'mm;line-height:1.05;color:#15212B">' + esc(t.it) + '</div>' +
-        (ok ? '<div style="font-size:' + M.d + 'mm;line-height:' + M.dl + ';margin-top:' + M.mt + 'mm">' + esc(t.defIt) + '</div>'
+        (ok ? '<div style="font-size:' + M.d + 'mm;line-height:' + M.dl + ';margin-top:' + M.mt + 'mm">' + esc(t.defIt) +
+            (nomi[t.alunno] ? ' <span style="font-size:' + (M.dv * 0.92).toFixed(2) + 'mm;font-style:italic;color:#5B6976;white-space:nowrap">— ' + esc(nomi[t.alunno]) + '</span>' : '') + '</div>'
           : '<div style="font-size:' + M.dv + 'mm;line-height:1.25;color:#8494A3;font-style:italic;margin-top:' + M.mt + 'mm">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</div>') +
         '</div></div>';
     }
@@ -2545,10 +2584,25 @@ var Poster = (function () {
           '<span></span><span>Termine · Term</span><span>Definizione · Italiano</span><span>Definition · English</span></div>' +
         '<div style="flex:1;min-height:0;display:flex;flex-direction:column">' + righe + '</div>' +
       '</div>') +
+      /* firme a mano degli autori (spazio vuoto con righe) e arcata dentale continua */
+      (IT && opz.firme ? '<div style="margin:6mm 36mm 0;border:0.7mm solid ' + col + ';background:' + chiaro + ';border-radius:3mm;position:relative;padding:5mm 5mm 3mm">' +
+        '<div style="position:absolute;left:6mm;top:-3.6mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;font-size:4.2mm;' + F + 'font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div>' +
+        '<div style="height:24mm"></div></div>' : '') +
+      (IT && opz.arcata ? '<div style="margin:4mm 36mm 0;display:flex;justify-content:center">' + arcata(area.n, col) + '</div>' : '') +
+      /* motto: una parola per cartellone, da leggere sui quattro affiancati */
+      (IT ? (function () {
+        var MOTTO = ['Nomina', 'sunt', 'consequentia', 'rerum'], w = MOTTO[Number(area.n) - 1], ALTO = opz.arcata || opz.firme ? 30 : 46;
+        if (!w) return '';
+        var ultimo = Number(area.n) === 4;
+        return '<div style="margin:' + (opz.arcata ? 0 : 5) + 'mm 36mm 0;height:' + ALTO + 'mm;display:flex;flex-direction:column;align-items:center;justify-content:center' + (opz.arcata ? '' : ';border-top:0.4mm solid ' + medio) + '">' +
+          '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-style:italic;font-weight:600;font-size:' + (opz.arcata || opz.firme ? 33 : 36) + 'mm;line-height:1;color:' + col + ';letter-spacing:0.5mm">' + esc(w) + (ultimo ? '.' : '…') + '</div>' +
+          '</div>';
+      })() : '') +
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
         '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + classi.join(' e ') + ' · Area ' + area.n + ' di 4</span>' +
         '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
+        (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
         '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>' +
       '</div>' +
       '</div>';
@@ -2585,7 +2639,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '11/11/2026';
+var VERSIONE = '11/11/2026 · 12';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -2740,7 +2794,7 @@ function bloccoPoster(n) {
 function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
-  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null });
+  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, qr: location.origin + '/glossario' });
   var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
   sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
 }
@@ -2814,6 +2868,7 @@ function vistaDocente() {
   if (!EN()) { f.lingua = 'it'; if (f.stato === 'pronte') f.stato = 'inviata'; }
   var h = testata(u.nome + ' · area docenti') + '<main class="wrap stack">';
   if (S.d.config.chiusa) h += '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>';
+  h += bloccoAnello();
   h += '<section class="grid4">' + S.d.aree.map(function (a) {
     var ts = S.d.termini.filter(function (t) { return t.area == a.n && inClasse(t.alunno); });
     var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
@@ -2840,7 +2895,7 @@ function vistaDocente() {
     '</section>';
   h += '<p class="muted" style="margin:0">' + lista.length + ' termini' + (EN() ? ' · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') : '') + '</p>';
   h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
-  h += panoramica() + (S.d.admin ? bloccoAdmin() + bloccoAttivita() + bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
+  h += panoramica() + bloccoSituazione() + (S.d.admin ? bloccoAdmin() + bloccoAttivita() + bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
     '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
   h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
@@ -2855,7 +2910,7 @@ function vistaDocente() {
       '</tbody></table></div></details>';
   }
   h += '</main>';
-  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
+  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)); selSituazione(); disegnaSituazione();
 }
 function cardDocente(t, l) {
   var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
@@ -2896,6 +2951,69 @@ function approvaCorrette(btn) {
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 /* ---------- panoramica condivisa (prof. Cerrato e prof.ssa Aliboni) ---------- */
+/* anello in cima: quante risposte sono state date sul totale dei termini */
+function bloccoAnello() {
+  var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); }), n = ts.length || 1;
+  var app = ts.filter(function (t) { return t.statoIt === 'approvata'; }).length,
+    att = ts.filter(function (t) { return t.statoIt === 'inviata'; }).length,
+    rim = ts.filter(function (t) { return t.statoIt === 'correggere'; }).length,
+    mai = ts.length - app - att - rim, date = app + att;
+  var seg = [['Approvate', app, '#2E7D32'], ['Date, in attesa di approvazione', att, '#1F5FA8'], ['Rimandate', rim, '#C77700'], ['Mai date', mai, '#C3CED7']];
+  var R = 70, C = 2 * Math.PI * R, off = 0, gap = 2;
+  var archi = seg.map(function (sg) {
+    var l = C * sg[1] / n; if (!sg[1]) return '';
+    var d = '<circle cx="90" cy="90" r="' + R + '" fill="none" stroke="' + sg[2] + '" stroke-width="26" stroke-dasharray="' + Math.max(l - gap, 1) + ' ' + C + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 90 90)"><title>' + sg[0] + ': ' + sg[1] + '</title></circle>';
+    off += l; return d;
+  }).join('');
+  var cl = S.filtro && S.filtro.classe && S.filtro.classe !== 'tutte' ? 'della ' + S.filtro.classe : CLASSI().length > 1 ? 'di ' + CLASSI().join(' e ') : '';
+  return '<section class="card" style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">' +
+    '<svg viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="Risposte date: ' + date + ' su ' + ts.length + '"><circle cx="90" cy="90" r="' + R + '" fill="none" stroke="#EEF2F5" stroke-width="26"/>' + archi +
+    '<text x="90" y="86" text-anchor="middle" font-size="30" font-weight="800" fill="#15212B" style="font-family:inherit">' + date + '</text>' +
+    '<text x="90" y="108" text-anchor="middle" font-size="13" fill="#5B6976" style="font-family:inherit">su ' + ts.length + ' · ' + Math.round(date / n * 100) + '%</text></svg>' +
+    '<div class="stack" style="gap:8px;flex:1;min-width:240px"><h2 style="margin:0;font-size:22px">Risposte date: ' + date + ' su ' + ts.length + '</h2>' +
+    '<p class="muted" style="margin:0;font-size:15px">Termini ' + cl + ' con una risposta valida (approvata o in attesa della tua approvazione). Le rimandate contano tra quelle da dare.</p>' +
+    seg.map(function (sg) { return '<div class="row" style="gap:10px;font-size:15px"><i style="width:14px;height:14px;border-radius:3px;background:' + sg[2] + ';display:inline-block"></i><span style="flex:1">' + sg[0] + '</span><b>' + sg[1] + '</b></div>'; }).join('') +
+    '</div></section>';
+}
+/* situazione di un singolo studente: approvate e rimanenti, con l'elenco dei termini */
+function bloccoSituazione() {
+  S.sit = S.sit || { classe: CLASSI()[0], id: '' };
+  if (S.filtro && S.filtro.classe && S.filtro.classe !== 'tutte' && S.sit.classe !== S.filtro.classe) { S.sit.classe = S.filtro.classe; S.sit.id = ''; }
+  var cl = CLASSI().map(function (c) { return '<option value="' + c + '"' + (S.sit.classe === c ? ' selected' : '') + '>' + c + '</option>'; }).join('');
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Situazione dello studente</h2>' +
+    '<div class="grid2"><div><label for="sitc">Classe</label><select id="sitc" onchange="S.sit.classe=this.value;S.sit.id=\'\';selSituazione();disegnaSituazione()">' + cl + '</select></div>' +
+    '<div><label for="sits">Studente</label><select id="sits" onchange="S.sit.id=this.value;disegnaSituazione()"></select></div></div>' +
+    '<div id="sitbox"></div></section>';
+}
+function selSituazione() {
+  var al = S.d.alunni.filter(function (a) { return (a.classe || '3E') === S.sit.classe; }).sort(function (a, b) { return a.nome.localeCompare(b.nome, 'it'); });
+  if (!S.sit.id || !al.some(function (a) { return a.id === S.sit.id; })) S.sit.id = al[0] ? al[0].id : '';
+  var el = $('sits'); if (!el) return;
+  el.innerHTML = al.map(function (a) { return '<option value="' + a.id + '"' + (a.id === S.sit.id ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('');
+}
+function disegnaSituazione() {
+  var box = $('sitbox'); if (!box) return;
+  var id = S.sit.id, ts = S.d.termini.filter(function (t) { return t.alunno === id; });
+  var pan = (S.d.panoramica || []).filter(function (r) { return r.id === id; })[0] || {};
+  if (!ts.length) { box.innerHTML = '<p class="muted" style="margin:0">' + (pan.escluso ? 'Studente escluso: i suoi termini sono passati a ' + esc(nomeAlunno(pan.riassegnatoA)) + '.' : 'Nessun termine assegnato.') + '</p>'; return; }
+  var app = ts.filter(function (t) { return t.statoIt === 'approvata'; }),
+    att = ts.filter(function (t) { return t.statoIt === 'inviata'; }),
+    rim = ts.filter(function (t) { return t.statoIt === 'correggere'; }),
+    mai = ts.filter(function (t) { return !t.statoIt; });
+  var barre = [['Approvate', app.length, '#2E7D32'], ['Da dare', rim.length + mai.length, '#C77700']];
+  if (att.length) barre.splice(1, 0, ['Inviate, in attesa della tua approvazione', att.length, '#1F5FA8']);
+  var max = ts.length;
+  var graf = '<div class="stack" style="gap:10px">' + barre.map(function (b) {
+    return '<div><div class="row" style="justify-content:space-between;font-size:15px"><span>' + b[0] + (b[0] === 'Da dare' ? ' <span class="muted">(rimandate ' + rim.length + ' + mai date ' + mai.length + ')</span>' : '') + '</span><b>' + b[1] + ' su ' + max + '</b></div>' +
+      '<div style="height:26px;background:#EEF2F5;border-radius:6px;margin-top:4px;overflow:hidden"><div style="height:100%;width:' + (b[1] / max * 100) + '%;min-width:' + (b[1] ? 6 : 0) + 'px;background:' + b[2] + ';border-radius:6px"></div></div></div>';
+  }).join('') + '</div>';
+  var voce = function (t, nota) { var z = area(t.area) || {}; return '<li style="margin:4px 0"><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(z.colore || '#15212B') + ';margin-right:8px"></i><b>' + esc(t.it) + '</b>' + (nota ? ' <span class="muted" style="font-size:14px">· ' + nota + '</span>' : '') + (t.ereditato ? ' <span class="muted" style="font-size:14px">· ricevuto da ' + esc(nomeAlunno(t.alunnoOrig)) + '</span>' : '') + '</li>'; };
+  var date = app.map(function (t) { return voce(t, 'approvata'); }).concat(att.map(function (t) { return voce(t, 'in attesa di approvazione'); }));
+  var dare = rim.map(function (t) { return voce(t, 'rimandata'); }).concat(mai.map(function (t) { return voce(t, 'mai data'); }));
+  box.innerHTML = graf + '<div class="grid2" style="margin-top:6px">' +
+    '<div><h3 style="margin:0 0 6px;font-size:17px;color:#2E7D32">Ha dato (' + date.length + ')</h3>' + (date.length ? '<ul style="list-style:none;padding:0;margin:0">' + date.join('') + '</ul>' : '<p class="muted" style="margin:0">Nessuna risposta ancora.</p>') + '</div>' +
+    '<div><h3 style="margin:0 0 6px;font-size:17px;color:#9A4A00">Deve ancora dare (' + dare.length + ')</h3>' + (dare.length ? '<ul style="list-style:none;padding:0;margin:0">' + dare.join('') + '</ul>' : '<p class="muted" style="margin:0">Niente: ha risposto a tutti i termini.</p>') + '</div></div>';
+}
 function panoramica() {
   var P = S.d.panoramica || [], tot = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0 };
   var righe = P.filter(function (r) { return inClasse(r.id); }).map(function (r) {
@@ -2953,7 +3071,7 @@ function bloccoAdmin() {
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + (r.riassegnatoA ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
+  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
 }
 function presentazione(btn, azione, dati) {
@@ -2965,6 +3083,18 @@ function presentazione(btn, azione, dati) {
     var a = document.createElement('a'); a.href = url; a.download = x.nome; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
     btn.disabled = false; btn.textContent = t; toast('Presentazione scaricata');
+  }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
+}
+function esportaWord(btn) {
+  var t = btn.textContent; btn.disabled = true; btn.textContent = 'Preparo il Word…';
+  api('word').then(function (x) {
+    var bin = atob(x.base64), u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([u8], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
+    var a = document.createElement('a'); a.href = url; a.download = x.nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    btn.disabled = false; btn.textContent = t;
+    toast(x.dropbox === 'ok' ? 'Word scaricato e salvato su Dropbox (' + x.percorso + ')' : x.dropbox === 'non collegato' ? 'Word scaricato. Dropbox non è collegato: collegalo per il salvataggio automatico.' : 'Word scaricato, ma Dropbox ha dato errore: ' + x.dropbox, x.dropbox !== 'ok' && x.dropbox !== 'non collegato');
   }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
 }
 function salvaImpostazioni(btn) {
@@ -3211,7 +3341,7 @@ function bloccoBackup() {
   var D = S.d.admin.dropbox || {};
   var stato = !D.configurato ? '<b>Dropbox non ancora configurato.</b> Servono le variabili DROPBOX_APP_KEY e DROPBOX_APP_SECRET su Netlify (vedi la guida).' :
     !D.collegato ? '<b>Dropbox non collegato.</b> Premi “Collega Dropbox” e autorizza l\'app con il tuo account.' :
-    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo e il report PDF.' +
+    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo, il report PDF e il Word <b>Glossario_definizioni_approvate.docx</b> (sempre lo stesso file, sovrascritto).' +
     '<br>Ultimo invio: ' + (D.ultimoInvio ? esc(quando(D.ultimoInvio)) + ' — ' + (D.esito === 'ok' ? '<span style="color:#1B6E20;font-weight:700">riuscito</span>' : '<span style="color:#B0304A;font-weight:700">' + esc(D.esito) + '</span>') : 'nessuno');
   return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Backup e report automatici</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">' + stato + '</p>' +
