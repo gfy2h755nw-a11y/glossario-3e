@@ -42,8 +42,10 @@ body{margin:0;background:var(--fondo);color:var(--ink);font-family:'Atkinson Hyp
 h2{font-family:Archivo,Arial,sans-serif;font-size:24px;margin:26px 0 4px;display:flex;align-items:center;gap:10px}
 h2 .num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;color:#fff;font-size:19px}
 .sub{margin:0 0 12px;color:var(--muto);font-size:14.5px}
-.voce{background:var(--carta);border-radius:12px;border-left:6px solid var(--c);padding:12px 16px;margin:8px 0;display:grid;grid-template-columns:42px 1fr;gap:4px 12px}
-.voce .n{grid-row:span 3;width:34px;height:34px;border-radius:50%;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;font:800 14px Archivo,Arial,sans-serif;margin-top:2px}
+.voce{background:var(--carta);border-radius:12px;border-left:6px solid var(--c);padding:12px 16px;margin:8px 0;display:grid;gap:4px}
+.let{display:flex;align-items:baseline;gap:10px;margin:18px 0 2px}
+.let b{font:italic 600 34px/0.9 'Cormorant Garamond',Georgia,serif;color:var(--c)}
+.let i{flex:1;height:1px;background:var(--c);opacity:.35}
 .voce h3{margin:0;font-family:Archivo,Arial,sans-serif;font-size:19px}
 .voce p{margin:0}
 .voce .a{font-size:13.5px;color:var(--muto);font-style:italic}
@@ -52,7 +54,7 @@ mark{background:#FFE98A;color:inherit;border-radius:3px;padding:0 1px}
 .nulla{text-align:center;color:var(--muto);padding:40px 0}
 footer{margin:40px 0 0;padding:26px 0 40px;text-align:center;color:var(--muto);font-size:14px;border-top:1px solid var(--linea)}
 footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:30px;color:var(--ink);margin-bottom:4px}
-@media (max-width:640px){.top .dx{display:none}.voce{grid-template-columns:34px 1fr;padding:10px 12px}.voce .n{width:28px;height:28px;font-size:12px}h2{font-size:20px}}
+@media (max-width:640px){.top .dx{display:none}.voce{padding:10px 12px}h2{font-size:20px}}
 @media print{.top,.cmd{position:static}.voce{break-inside:avoid}}
 </style>
 </head>
@@ -115,14 +117,17 @@ function lista() {
   G.aree.forEach(function (a) {
     tot += a.termini.length; app += a.termini.filter(function (t) { return t.def; }).length;
     if (AREA !== 'tutte' && String(AREA) !== String(a.n)) return;
-    var ts = a.termini.filter(function (t) { return !Q || norm(t.termine + ' ' + t.def).indexOf(norm(Q)) >= 0; });
+    var ts = a.termini.filter(function (t) { return !Q || norm(t.termine + ' ' + t.def).indexOf(norm(Q)) >= 0; })
+      .slice().sort(function (x, y) { return String(x.termine).localeCompare(String(y.termine), 'it', { sensitivity: 'base' }); });
+    var ult = '';
     if (!ts.length) return;
     vis += ts.length;
     var ok = a.termini.filter(function (t) { return t.def; }).length;
     h += '<section id="area' + a.n + '" style="--c:' + esc(a.colore) + '"><h2><span class="num" style="background:' + esc(a.colore) + '">0' + a.n + '</span>' + esc(a.it) + '</h2>' +
-      '<p class="sub">' + a.termini.length + ' termini · ' + ok + ' definizioni approvate</p>' +
+      '<p class="sub">' + a.termini.length + ' termini dalla A alla Z · ' + ok + ' definizioni approvate</p>' +
       ts.map(function (t) {
-        return '<article class="voce' + (t.def ? '' : ' vuota') + '"><span class="n">' + t.n + '</span><h3>' + evid(t.termine) + '</h3>' +
+        var l = norm(t.termine).charAt(0).toUpperCase(), let = l !== ult ? '<div class="let" style="--c:' + esc(a.colore) + '"><b>' + esc(l) + '</b><i></i></div>' : ''; ult = l;
+        return let + '<article class="voce' + (t.def ? '' : ' vuota') + '"><h3>' + evid(t.termine) + '</h3>' +
           (t.def ? '<p>' + evid(t.def) + '</p><p class="a">— ' + esc(t.autore) + '</p>' : '<p>Definizione in preparazione.</p>') + '</article>';
       }).join('') + '</section>';
   });

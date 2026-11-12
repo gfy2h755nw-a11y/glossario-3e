@@ -2601,6 +2601,85 @@ var Poster = (function () {
     svg += denti.map(function (d) { return '<text x="' + d.cx.toFixed(2) + '" y="' + (yy(d.cx) - s * 3.4 + (sup ? 0 : 1.2)).toFixed(2) + '" text-anchor="middle" font-size="3.4" fill="#FFFFFF" font-family="Arial,sans-serif" font-weight="700">' + d.f + '</text>'; }).join('');
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
   }
+
+  /* decorazioni alternative (in prova), continue sui quattro cartelloni */
+  // A · ortopantomografia stilizzata: 16 denti per arcata distribuiti sui 4 cartelloni
+  function decoOPT(n) {
+    n = Number(n); var W = 628, H = 50, id = 'opt' + n;
+    var ord = { 1: [[18, 17, 16, 15], [48, 47, 46, 45]], 2: [[14, 13, 12, 11], [44, 43, 42, 41]], 3: [[21, 22, 23, 24], [31, 32, 33, 34]], 4: [[25, 26, 27, 28], [35, 36, 37, 38]] }[n];
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : u === 2 ? 'L' : 'I'; };
+    var larg = { M: 1.3, P: 0.95, C: 0.95, L: 0.8, I: 0.95 };
+    var G = 4 * W, piano = function (gx) { var t = (gx - G / 2) / (G / 2); return 25 + 3.5 * t * t; };
+    var x0 = (n - 1) * W, r0 = n === 1 ? 10 : 0, r1 = n === 4 ? 10 : 0;
+    var defs = '<defs><linearGradient id="' + id + 'bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E1820"/><stop offset="0.5" stop-color="#22323F"/><stop offset="1" stop-color="#0E1820"/></linearGradient>' +
+      '<linearGradient id="' + id + 'de" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9D3DA"/><stop offset="0.5" stop-color="#F4F7F9"/><stop offset="1" stop-color="#C9D3DA"/></linearGradient>' +
+      '<radialGradient id="' + id + 'vg" cx="0.5" cy="0.5" r="0.7"><stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.45"/></radialGradient></defs>';
+    var svg = defs + '<path d="M' + r0 + ',0H' + (W - r1) + (r1 ? 'Q' + W + ',0 ' + W + ',' + r1 : '') + 'V' + (H - r1) + (r1 ? 'Q' + W + ',' + H + ' ' + (W - r1) + ',' + H : '') + 'H' + r0 + (r0 ? 'Q0,' + H + ' 0,' + (H - r0) : '') + 'V' + r0 + (r0 ? 'Q0,0 ' + r0 + ',0' : '') + 'Z" fill="url(#' + id + 'bg)"/>';
+    // osso mascellare e mandibolare: velature
+    var curvaSu = [], curvaGiu = [];
+    for (var xi = 0; xi <= W; xi += 4) { var gx = x0 + xi; curvaSu.push(xi + ',' + (piano(gx) - 22).toFixed(2)); curvaGiu.push(xi + ',' + (piano(gx) + 22).toFixed(2)); }
+    svg += '<path d="M0,0 L' + curvaSu.join(' L') + ' L' + W + ',0Z" fill="#fff" fill-opacity="0.05"/>';
+    svg += '<path d="M0,' + H + ' L' + curvaGiu.join(' L') + ' L' + W + ',' + H + 'Z" fill="#fff" fill-opacity="0.05"/>';
+    [0, 1].forEach(function (riga) {
+      var q = ord[riga], sup = riga === 0, U = 30, tot = q.reduce(function (a, f) { return a + larg[tipo(f)] * U; }, 0), gap = (W - tot) / 4, x = gap / 2;
+      q.forEach(function (f) {
+        var t = tipo(f), w = larg[t] * U, cx = x + w / 2, py = piano(x0 + cx), hc = w * (t === 'M' ? 0.62 : 0.8), hr = t === 'M' ? 13 : t === 'C' ? 17 : 15;
+        // dente intero: corona verso il piano occlusale, radici verso l'osso
+        var k = sup ? -1 : 1, yc = py + k * 1.2;
+        var d = 'M' + (cx - w * 0.42) + ',' + yc + ' C' + (cx - w * 0.5) + ',' + (yc + k * hc * 0.5) + ' ' + (cx - w * 0.44) + ',' + (yc + k * hc) + ' ' + (cx - w * 0.33) + ',' + (yc + k * hc) +
+          (t === 'M' ? ' L' + (cx - w * 0.3) + ',' + (yc + k * (hc + hr)) + ' Q' + (cx - w * 0.2) + ',' + (yc + k * (hc + hr + 1.5)) + ' ' + (cx - w * 0.1) + ',' + (yc + k * (hc + hr * 0.92)) + ' L' + (cx - w * 0.02) + ',' + (yc + k * (hc + 2)) +
+            ' L' + (cx + w * 0.02) + ',' + (yc + k * (hc + 2)) + ' L' + (cx + w * 0.1) + ',' + (yc + k * (hc + hr * 0.92)) + ' Q' + (cx + w * 0.2) + ',' + (yc + k * (hc + hr + 1.5)) + ' ' + (cx + w * 0.3) + ',' + (yc + k * (hc + hr))
+           : ' Q' + (cx - w * 0.2) + ',' + (yc + k * (hc + hr * 0.6)) + ' ' + cx + ',' + (yc + k * (hc + hr)) + ' Q' + (cx + w * 0.2) + ',' + (yc + k * (hc + hr * 0.6)) + ' ' + (cx + w * 0.33) + ',' + (yc + k * hc)) +
+          (t === 'M' ? ' L' + (cx + w * 0.33) + ',' + (yc + k * hc) : '') + ' C' + (cx + w * 0.44) + ',' + (yc + k * hc) + ' ' + (cx + w * 0.5) + ',' + (yc + k * hc * 0.5) + ' ' + (cx + w * 0.42) + ',' + yc + ' Z';
+        svg += '<path d="' + d + '" fill="url(#' + id + 'de)" fill-opacity="0.92" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="0.3"/>';
+        // smalto più radiopaco
+        svg += '<path d="M' + (cx - w * 0.42) + ',' + yc + ' C' + (cx - w * 0.5) + ',' + (yc + k * hc * 0.4) + ' ' + (cx - w * 0.46) + ',' + (yc + k * hc * 0.62) + ' ' + (cx - w * 0.36) + ',' + (yc + k * hc * 0.62) + ' L' + (cx + w * 0.36) + ',' + (yc + k * hc * 0.62) + ' C' + (cx + w * 0.46) + ',' + (yc + k * hc * 0.62) + ' ' + (cx + w * 0.5) + ',' + (yc + k * hc * 0.4) + ' ' + (cx + w * 0.42) + ',' + yc + 'Z" fill="#fff" fill-opacity="0.85"/>';
+        // camera pulpare
+        svg += '<path d="M' + (cx - w * 0.14) + ',' + (yc + k * hc * 0.68) + ' Q' + cx + ',' + (yc + k * hc * 0.55) + ' ' + (cx + w * 0.14) + ',' + (yc + k * hc * 0.68) + ' L' + cx + ',' + (yc + k * (hc + hr * 0.8)) + ' Z" fill="#22323F" fill-opacity="0.55"/>';
+        x += w + gap;
+      });
+    });
+    svg += '<rect width="' + W + '" height="' + H + '" fill="url(#' + id + 'vg)" />';
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block">' + svg + '</svg>';
+  }
+  // C · nastro di colore: un'onda che attraversa i 4 cartelloni sfumando dal blu al verde (colori delle aree)
+  function decoNastro(n) {
+    n = Number(n); var W = 700, H = 48, G = 4 * W, x0 = (n - 1) * W, id = 'ns' + n;
+    var COL = ['#1F5FA8', '#6A4FA0', '#B4511A', '#2E7D32'];
+    var stop = COL.map(function (c, k) { return '<stop offset="' + (k / 3).toFixed(3) + '" stop-color="' + c + '"/>'; }).join('');
+    var defs = '<defs><linearGradient id="' + id + 'g" gradientUnits="userSpaceOnUse" x1="' + (-x0 + W * 0.5) + '" y1="0" x2="' + (G - x0 - W * 0.5) + '" y2="0">' + stop + '</linearGradient>' +
+      '<linearGradient id="' + id + 'l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.18"/></linearGradient></defs>';
+    var svg = defs;
+    // tre nastri sovrapposti, con fase e spessore diversi
+    [[0, 11, 0.95, 1], [1.7, 6, 0.6, 0.8], [3.4, 3.5, 0.4, 1.25]].forEach(function (r) {
+      var su = [], giu = [];
+      for (var xi = 0; xi <= W; xi += 3) {
+        var gx = x0 + xi, f = 2 * Math.PI * gx / G * 3 * r[3] + r[0];
+        var c = 24 + 10 * Math.sin(f), sp = r[1] * (0.55 + 0.45 * Math.cos(f * 0.5 + 1));
+        su.push(xi + ',' + (c - sp).toFixed(2)); giu.push(xi + ',' + (c + sp).toFixed(2));
+      }
+      var d = 'M' + su.join(' L') + ' L' + giu.reverse().join(' L') + 'Z';
+      svg += '<path d="' + d + '" fill="url(#' + id + 'g)" fill-opacity="' + r[2] + '"/><path d="' + d + '" fill="url(#' + id + 'l)" fill-opacity="' + r[2] + '"/>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block">' + svg + '</svg>';
+  }
+  // B · nastro di parole: i termini dell'area scorrono su onde continue da un cartellone all'altro
+  function decoParole(n, termini, col) {
+    n = Number(n); var W = 700, H = 50, G = 4 * W, x0 = (n - 1) * W;
+    var parole = termini.map(function (t) { return t.it; });
+    var righe = [{ y: 12, a: 5, f: 1, fs: 6.2, op: 1, peso: 700, serif: false, off: 0 }, { y: 26, a: 5, f: 1, fs: 9, op: 0.9, peso: 600, serif: true, off: 21 }, { y: 40, a: 5, f: 1, fs: 5.6, op: 0.6, peso: 700, serif: false, off: 43 }];
+    var svg = '<defs>';
+    righe.forEach(function (r, k) {
+      var pts = []; for (var xi = -20; xi <= W + 20; xi += 4) { var gx = x0 + xi; pts.push(xi + ',' + (r.y + r.a * Math.sin(2 * Math.PI * r.f * gx / G * 3)).toFixed(2)); }
+      svg += '<path id="np' + n + k + '" d="M' + pts.join(' L') + '"/>';
+    });
+    svg += '</defs>';
+    righe.forEach(function (r, k) {
+      var testo = []; for (var j = 0; j < 30; j++) testo.push(parole[(r.off + j) % parole.length]);
+      svg += '<text font-size="' + r.fs + '" fill="' + col + '" fill-opacity="' + r.op + '" font-weight="' + r.peso + '" style="font-family:' + (r.serif ? '\'Cormorant Garamond\',Georgia,serif;font-style:italic' : 'Archivo,Arial,sans-serif;letter-spacing:0.3px;text-transform:uppercase') + '"><textPath href="#np' + n + k + '" startOffset="-' + (k * 37 + n * 13) + '">' + testo.map(esc).join('  ·  ') + '</textPath></text>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:hidden">' + svg + '</svg>';
+  }
   function qrPoster(testo, mm) {
     if (typeof qrcode !== 'function') return '';
     var q = qrcode(0, 'M'); q.addData(testo); q.make();
@@ -2703,7 +2782,7 @@ var Poster = (function () {
       (IT && opz.firme ? '<div style="margin:5mm 36mm 0;border:0.7mm solid ' + col + ';background:' + chiaro + ';border-radius:3mm;position:relative;padding:5mm 5mm 3mm">' +
         '<div style="position:absolute;left:6mm;top:-3.6mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;font-size:4.2mm;' + F + 'font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div>' +
         '<div style="height:24mm"></div></div>' : '') +
-      (IT && opz.arcata ? '<div style="margin:' + (Number(area.n) >= 3 ? 5 : 2.5) + 'mm 36mm 0;display:flex;justify-content:center">' + (opz.denti === 3 ? arcata3(area.n, col) : opz.denti === 2 ? arcata2(area.n, col, chiaro) : arcata(area.n, col)) + '</div>' : '') +
+      (IT && opz.arcata ? '<div style="margin:' + (opz.deco === 'nastro' || opz.deco === 'parole' ? '4mm 0 0' : (Number(area.n) >= 3 ? 5 : 2.5) + 'mm 36mm 0') + ';display:flex;justify-content:center">' + (opz.deco === 'opt' ? decoOPT(area.n) : opz.deco === 'nastro' ? decoNastro(area.n) : opz.deco === 'parole' ? decoParole(area.n, termini, col) : opz.denti === 3 ? arcata3(area.n, col) : opz.denti === 2 ? arcata2(area.n, col, chiaro) : arcata(area.n, col)) + '</div>' : '') +
       /* motto: una parola per cartellone, da leggere sui quattro affiancati */
       (IT ? (function () {
         var MOTTO = ['Nomina', 'sunt', 'consequentia', 'rerum'], w = MOTTO[Number(area.n) - 1], ALTO = opz.arcata || opz.firme ? 30 : 46;
@@ -2722,7 +2801,153 @@ var Poster = (function () {
       '</div>' +
       '</div>';
   }
-  return { html: html, logo: logo };
+
+
+  /* versione alfabetica (approvata 12/11/2026): termini A–Z dentro l'area, lettere guida, indice A–Z,
+     testata sfumata con numero gigante, motto latino grande sopra il nastro continuo. Dopo l'inserimento chiamare Poster.adatta(foglio). */
+  function scuro(hex, f) {
+    var h = hex.replace('#', ''), v = [0, 2, 4].map(function (i) { return Math.round(parseInt(h.substr(i, 2), 16) * f); });
+    return 'rgb(' + v.join(',') + ')';
+  }
+  function iniziale(s) { return String(s || '').normalize('NFD').charAt(0).toUpperCase(); }
+  function ordinaAlfa(termini) {
+    return termini.slice().sort(function (x, y) { return String(x.it).localeCompare(String(y.it), 'it', { sensitivity: 'base' }); });
+  }
+  function nastroAlfa(n) {
+    n = Number(n); var W = 700, H = 56, G = 4 * W, x0 = (n - 1) * W, id = 'na' + n;
+    var COL = ['#1F5FA8', '#6B4FA0', '#B4511A', '#2E7D32'];
+    var svg = '<defs><linearGradient id="' + id + 'g" gradientUnits="userSpaceOnUse" x1="' + (-x0 + W * 0.5) + '" y1="0" x2="' + (G - x0 - W * 0.5) + '" y2="0">' +
+      COL.map(function (c, k) { return '<stop offset="' + (k / 3).toFixed(3) + '" stop-color="' + c + '"/>'; }).join('') + '</linearGradient>' +
+      '<linearGradient id="' + id + 'l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.2"/></linearGradient></defs>';
+    [[0, 11, 0.95, 1], [1.7, 6, 0.6, 0.8], [3.4, 3.5, 0.4, 1.25]].forEach(function (r) {
+      var su = [], giu = [];
+      for (var x = 0; x <= W; x += 3) { var gx = x0 + x, f = 2 * Math.PI * gx / G * 3 * r[3] + r[0], c = 30 + 12 * Math.sin(f), sp = r[1] * (0.55 + 0.45 * Math.cos(f * 0.5 + 1)); su.push(x + ',' + (c - sp).toFixed(2)); giu.push(x + ',' + (c + sp).toFixed(2)); }
+      var d = 'M' + su.join(' L') + ' L' + giu.reverse().join(' L') + 'Z';
+      svg += '<path d="' + d + '" fill="url(#' + id + 'g)" fill-opacity="' + r[2] + '"/><path d="' + d + '" fill="url(#' + id + 'l)" fill-opacity="' + r[2] + '"/>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="700mm" height="56mm" style="position:absolute;left:0;top:0">' + svg + '</svg>';
+  }
+  function alfa(area, termini, alunni, opz) {
+    opz = opz || {};
+    var col = area.colore, n = Number(area.n), nomi = {}, clDi = {};
+    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; clDi[a.id] = a.classe || '3E'; });
+    var perCl = {}, visti = {};
+    termini.forEach(function (t) { if (!t.alunno || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
+    var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];
+    var A = "font-family:Archivo,Arial,sans-serif;", S = "font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;";
+    var voci = ordinaAlfa(termini), lettere = {}, corpo = '', ult = '';
+    voci.forEach(function (t) {
+      var l = iniziale(t.it); lettere[l] = 1;
+      if (l !== ult) { corpo += '<div class="pa-let"><b>' + esc(l) + '</b><i></i></div>'; ult = l; }
+      var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata'), mio = opz.evidenzia && t.alunno === opz.evidenzia;
+      corpo += '<div class="pa-v"' + (mio ? ' style="background:#FFE98A;box-shadow:inset 1.4mm 0 0 #15212B;padding-left:2.6mm;padding-right:1.5mm"' : '') + '><h3>' + esc(t.it) + '</h3>' +
+        (ok ? '<p>' + esc(t.defIt) + (nomi[t.alunno] ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>'
+          : '<p class="pa-vuota">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</p>') + '</div>';
+    });
+    var AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function (l) { return '<span style="flex:1;text-align:center;' + A + 'font-weight:800;font-size:9mm;line-height:1;color:' + (lettere[l] ? col : '#C9D1D8') + '">' + l + '</span>'; }).join('');
+    var MOTTO = ['Nomina…', 'sunt…', 'consequentia…', 'rerum.'];
+    var css = '<style>' +
+      '.pa-foglio{--k:1}' +
+      '.pa-corpo{column-count:3;column-gap:12mm;column-fill:auto;column-rule:0.35mm solid ' + tinta(col, 0.25) + '}' +
+      '.pa-let{break-inside:avoid;break-after:avoid;display:flex;align-items:baseline;gap:4mm;margin:calc(3mm*var(--k)) 0 calc(1mm*var(--k))}' +
+      '.pa-let b{' + S + 'font-weight:600;font-size:calc(19mm*var(--k));line-height:0.9;color:' + col + '}' +
+      '.pa-let i{flex:1;height:0.4mm;background:' + tinta(col, 0.35) + '}' +
+      '.pa-v{break-inside:avoid;padding:calc(1.6mm*var(--k)) 0 calc(2.4mm*var(--k))}' +
+      '.pa-v h3{margin:0;' + A + 'font-weight:800;font-size:calc(7.6mm*var(--k));line-height:1.08;color:#15212B}' +
+      '.pa-v p{margin:calc(0.9mm*var(--k)) 0 0;font-size:calc(5.5mm*var(--k));line-height:1.24}' +
+      '.pa-v em{font-size:calc(4.3mm*var(--k));color:#6B7884;white-space:nowrap}' +
+      '.pa-v p.pa-vuota{color:#8494A3;font-style:italic;font-size:calc(4.6mm*var(--k))}' +
+      '</style>';
+    var lab = A + 'font-weight:800;letter-spacing:0.6mm;text-transform:uppercase;font-size:4.8mm';
+    return '<div class="poster-foglio pa-foglio" style="width:700mm;height:1000mm;position:relative;overflow:hidden;background:#FBFAF7;color:#15212B;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;box-sizing:border-box">' + css +
+      '<div class="pa-testata" style="position:relative;height:172mm;box-sizing:border-box;background:linear-gradient(135deg,' + col + ' 0%,' + scuro(col, 0.72) + ' 100%);color:#fff;padding:15mm 34mm 0;overflow:hidden">' +
+        '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">0' + n + '</div>' +
+        '<div style="position:relative;display:flex;justify-content:space-between;align-items:center">' +
+          '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa · Laboratorio odontotecnico</div></div></div>' +
+          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">Glossario odontotecnico<br>Classi ' + classi.join(' e ') + ' · a.s. 2026/27</div></div>' +
+        '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:12mm">' + icona2(n, col).replace('width="64mm" height="64mm"', 'width="74mm" height="74mm"') +
+          '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">Area 0' + n + ' di 04 · ' + termini.length + ' termini dalla A alla Z</div>' +
+          '<div style="' + A + 'font-weight:900;font-size:' + (area.it.length > 30 ? 32 : 40) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div></div></div>' +
+        '<div style="position:relative;margin-top:10mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
+          '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + ':</b> ' + (perCl[c] || []).join(' · '); }).join(' &nbsp;|&nbsp; ') +
+          '<br><b style="' + lab + '">Docente</b> &nbsp;Prof. Danilo Cerrato (Laboratorio odontotecnico)</div></div>' +
+      '<div style="position:absolute;left:34mm;right:34mm;top:179mm;display:flex;gap:1mm;padding:2.5mm 0;border-bottom:0.5mm solid #15212B">' + AZ + '</div>' +
+      '<div class="pa-corpo" style="position:absolute;left:34mm;right:34mm;top:200mm;height:642mm">' + corpo + '</div>' +
+      (opz.firme === false ? '' : '<div style="position:absolute;left:34mm;right:34mm;bottom:128mm;height:22mm;border:0.7mm solid ' + col + ';border-radius:3mm;background:' + tinta(col, 0.07) + '">' +
+        '<div style="position:absolute;left:6mm;top:-3.8mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;' + A + 'font-size:4.2mm;font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div></div>') +
+      '<div style="position:absolute;left:0;right:0;bottom:64mm;height:56mm">' + nastroAlfa(n) +
+        '<div style="position:absolute;left:0;right:0;top:4mm;text-align:center;' + S + 'font-weight:600;font-size:46mm;line-height:1;color:#15212B;-webkit-text-stroke:2.4mm #FBFAF7;paint-order:stroke fill">' + (MOTTO[n - 1] || '') + '</div></div>' +
+      '<div style="position:absolute;left:34mm;right:34mm;bottom:14mm;height:46mm;box-sizing:border-box;border-top:0.6mm solid #15212B;padding-top:5mm;display:flex;align-items:center;gap:9mm;font-size:5mm;line-height:1.35;color:#2C3A47">' +
+        (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
+          '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '')) + '</div>' : '') +
+        '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</div>' +
+        '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>Classi ' + classi.join(' e ') + ' · Area ' + n + ' di 4</div></div>' +
+      '</div>';
+  }
+  /* riduce i caratteri finché tutte le voci stanno nelle tre colonne; restituisce la scala usata */
+  function adatta(foglio) {
+    var f = foglio && foglio.classList && foglio.classList.contains('pa-foglio') ? foglio : (foglio && foglio.querySelector('.pa-foglio'));
+    if (!f) return 1;
+    var body = f.querySelector('.pa-corpo'), k = 1.15;
+    function esce() { var r = body.getBoundingClientRect(), tol = r.width * 0.002; for (var i = 0; i < body.children.length; i++) if (body.children[i].getBoundingClientRect().right > r.right + tol) return true; return false; }
+    f.style.setProperty('--k', k); while (esce() && k > 0.5) { k -= 0.01; f.style.setProperty('--k', k.toFixed(3)); }
+    return k;
+  }
+
+  /* targa introduttiva 50x70: aree [{n,it,colore}], s = statistiche del lavoro (o null per la versione senza numeri) */
+  function targa(aree, s, url) {
+    var F = "font-family:Archivo,Arial,sans-serif;", S = "font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;", T = "font-family:'Atkinson Hyperlegible',Arial,sans-serif;";
+    var COL = aree.map(function (a) { return a.colore; }), W = 500, H = 40;
+    var nastro = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block"><defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="0">' + COL.map(function (c, k) { return '<stop offset="' + (k / 3) + '" stop-color="' + c + '"/>'; }).join('') + '</linearGradient>' +
+      '<linearGradient id="tl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.18"/></linearGradient></defs>';
+    [[0, 9, 0.95, 1], [1.7, 5, 0.6, 0.8], [3.4, 3, 0.4, 1.25]].forEach(function (r) {
+      var su = [], giu = [];
+      for (var x = 0; x <= W; x += 2) { var f = 2 * Math.PI * x / W * 1.6 * r[3] + r[0], c = 20 + 8 * Math.sin(f), sp = r[1] * (0.55 + 0.45 * Math.cos(f * 0.5 + 1)); su.push(x + ',' + (c - sp).toFixed(2)); giu.push(x + ',' + (c + sp).toFixed(2)); }
+      var d = 'M' + su.join(' L') + ' L' + giu.reverse().join(' L') + 'Z';
+      nastro += '<path d="' + d + '" fill="url(#tg)" fill-opacity="' + r[2] + '"/><path d="' + d + '" fill="url(#tl)" fill-opacity="' + r[2] + '"/>';
+    });
+    nastro += '</svg>';
+    var ic = function (a) { return icona2(Number(a.n), a.colore).replace('width="64mm" height="64mm"', 'width="44mm" height="44mm"'); };
+    var area = function (a) { return '<div style="display:flex;align-items:center;gap:6mm;background:#F4F6F8;border-radius:5mm;padding:8mm 7mm;border-left:3mm solid ' + a.colore + '">' +
+      '<div style="background:' + a.colore + ';border-radius:50%;padding:2mm;flex:none">' + ic(a) + '</div>' +
+      '<div><div style="' + F + 'font-weight:900;font-size:15mm;line-height:1;color:' + a.colore + '">0' + a.n + '</div>' +
+      '<div style="' + F + 'font-weight:800;font-size:8.6mm;line-height:1.1;color:#15212B;margin-top:1.5mm">' + esc(a.it) + '</div>' +
+      '<div style="' + T + 'font-size:5.6mm;color:#5B6976;margin-top:1.5mm">65 termini · cartellone ' + a.n + ' di 4</div></div></div>'; };
+    var racconto, cifre;
+    if (s) {
+      racconto = 'Per <b>' + s.giorniParola + ' giorni</b>, ' + s.periodo + ', <b>' + s.autoriParola + ' studenti</b> delle classi ' + s.classi + ' hanno dato voce al linguaggio del loro mestiere. ' +
+        'Insieme hanno dedicato al glossario <b>' + s.oreTesto + '</b> di lavoro: ' + s.mediaTesto + ' ciascuno, in media. ' +
+        'Hanno inviato <b>' + s.risposte + ' risposte</b>, cercando ogni volta, fra otto definizioni, la sola esatta' + (s.primo != null ? ': ' + s.primo + ' volte su cento l’hanno riconosciuta al primo colpo' : '') + '. ' +
+        'Delle ' + s.totale + ' definizioni, <b>' + s.approvate + '</b> hanno superato il vaglio del docente' + (s.voto ? '; il voto medio delle due classi è <b>' + s.voto + '</b>' : '') + '.';
+      cifre = [[s.oreBreve, 'di lavoro'], [s.mediaBreve, 'a studente'], [String(s.risposte), 'risposte'], [s.voto || '—', 'voto medio']];
+    } else {
+      racconto = 'Ogni termine di questo glossario è stato affidato a uno studente, che tra otto definizioni ha individuato quella corretta; il docente l’ha verificata e approvata. Ne sono nati quattro cartelloni, uno per area, firmati dai loro autori.';
+      cifre = [['260', 'termini'], ['26', 'autori'], ['4', 'aree'], ['2', 'classi']];
+    }
+    return '<div style="width:500mm;height:700mm;display:flex;flex-direction:column;color:#15212B;background:#fff;' + T + '">' +
+      '<div style="background:#15212B;color:#fff;padding:13mm 30mm 11mm;display:flex;align-items:center;justify-content:space-between">' +
+        '<div style="display:flex;align-items:center;gap:6mm">' + logo(24) + '<div style="' + F + 'font-weight:800;font-size:9.5mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="' + T + 'font-weight:400;font-size:5.6mm;opacity:.85;margin-top:1.5mm">Massa · Laboratorio odontotecnico</div></div></div>' +
+        '<div style="text-align:right;' + F + 'font-weight:700;font-size:6mm;letter-spacing:0.8mm;text-transform:uppercase;line-height:1.6">a.s. 2026/27<br>Classi 3E e 3F</div></div>' +
+      '<div style="padding:18mm 30mm 0">' +
+        '<div style="' + F + 'font-weight:900;font-size:58mm;line-height:0.9;letter-spacing:-1.4mm">Glossario</div>' +
+        '<div style="' + S + 'font-weight:600;font-size:52mm;line-height:1;margin-top:1mm;color:#2C3A47">odontotecnico</div></div>' +
+      '<div style="margin-top:6mm">' + nastro + '</div>' +
+      '<div style="padding:8mm 30mm 0;' + S + 'font-weight:500;font-size:13mm;line-height:1.32;color:#15212B;font-variant-numeric:lining-nums;font-feature-settings:\'lnum\' 1">' + racconto + '</div>' +
+      '<div style="padding:9mm 30mm 0;display:grid;grid-template-columns:repeat(4,1fr);gap:5mm">' + cifre.map(function (c) {
+        return '<div style="border-top:1.2mm solid #15212B;padding-top:3.5mm"><div style="' + F + 'font-weight:900;font-size:19mm;line-height:1">' + esc(c[0]) + '</div><div style="' + F + 'font-weight:600;font-size:6.2mm;color:#5B6976;margin-top:1.5mm;text-transform:uppercase;letter-spacing:0.5mm">' + esc(c[1]) + '</div></div>'; }).join('') + '</div>' +
+      '<div style="padding:12mm 30mm 0;display:grid;grid-template-columns:1fr 1fr;gap:7mm">' + aree.map(area).join('') + '</div>' +
+      '<div style="flex:1"></div>' +
+      '<div style="padding:0 30mm;display:flex;align-items:center;gap:11mm">' +
+        '<div style="background:#fff;border:1.2mm solid #15212B;border-radius:5mm;padding:3.5mm;flex:none">' + qrPoster(url, 66) + '</div>' +
+        '<div><div style="' + F + 'font-weight:900;font-size:12mm;line-height:1.05">Consulta il glossario<br>dal telefono</div>' +
+        '<div style="font-size:6.6mm;color:#5B6976;margin-top:3mm">Inquadra il codice: trovi tutti i termini, cercabili per argomento.</div>' +
+        '<div style="' + F + 'font-weight:700;font-size:6.2mm;margin-top:2.5mm">' + esc(url.replace(/^https?:\/\//, '')) + '</div></div></div>' +
+      '<div style="padding:10mm 30mm 0;text-align:center;' + S + 'font-weight:600;font-size:25mm;color:#2C3A47">Nomina sunt consequentia rerum.</div>' +
+      '<div style="margin:7mm 30mm 0;border-top:0.6mm solid #15212B;padding:5mm 0 14mm;display:flex;justify-content:space-between;font-size:5.6mm;color:#2C3A47">' +
+        '<span><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
+        '<span style="text-align:right">A cura del <b>Prof. Danilo Cerrato</b><br>Laboratorio odontotecnico</span></div></div>';
+  }
+  return { html: html, alfa: alfa, adatta: adatta, ordinaAlfa: ordinaAlfa, iniziale: iniziale, logo: logo, icona: icona2, qr: qrPoster, targa: targa };
 })();
 /* ===== POSTER-END ===== */
 
@@ -2754,7 +2979,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '11/11/2026 · 15';
+var VERSIONE = '12/11/2026 · 3';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -2903,13 +3128,16 @@ function bloccoPoster(n) {
   var sel = aree.length > 1 ? '<div><label for="selposter" class="sr">Scegli il cartellone</label><select id="selposter" onchange="disegnaPoster(this.value)">' + opts + '</select></div>' : '';
   return '<section class="card stack"><h2 style="margin:0;font-size:22px">Anteprima del cartellone 70×100</h2>' + sel +
     '<p class="muted" style="margin:0;font-size:15px">Sul cartellone vanno solo le definizioni approvate' + (EN() ? ' dai docenti' : ' dal docente') + '.' +
-    (S.d.utente.ruolo === 'alunno' ? ' <b style="background:#FFE98A;color:var(--ink);padding:0 4px;border-radius:3px">In giallo i tuoi termini.</b>' + (CLASSI().length > 1 ? ' Ogni cartellone è di 3E e 3F insieme: i termini 1–40 sono della 3E, i termini 41–65 della 3F.' : '') : '') + '</p>' +
+    (S.d.utente.ruolo === 'alunno' ? ' <b style="background:#FFE98A;color:var(--ink);padding:0 4px;border-radius:3px">In giallo i tuoi termini.</b>' + (CLASSI().length > 1 ? ' Ogni cartellone è di 3E e 3F insieme, con i termini in ordine alfabetico.' : '') : '') + '</p>' +
     '<div class="poster-box" id="pbox"><div class="poster-scale" id="pscale"></div></div></section>';
 }
 function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
-  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, denti: 3, icone: 2, qr: location.origin + '/glossario' });
+  // versione alfabetica (definitiva dal 12/11/2026)
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario' });
+  Poster.adatta(sc);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if ($('pscale') === sc) Poster.adatta(sc); });
   var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
   sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
 }
@@ -3186,7 +3414,7 @@ function bloccoAdmin() {
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + (r.riassegnatoA ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
+  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button><button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
 }
 function presentazione(btn, azione, dati) {
@@ -3199,6 +3427,50 @@ function presentazione(btn, azione, dati) {
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
     btn.disabled = false; btn.textContent = t; toast('Presentazione scaricata');
   }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
+}
+/* targa introduttiva 50x70 con i numeri veri del lavoro, in forma di racconto */
+function numeroParole(n) {
+  var u = ['zero', 'uno', 'due', 'tre', 'quattro', 'cinque', 'sei', 'sette', 'otto', 'nove', 'dieci', 'undici', 'dodici', 'tredici', 'quattordici', 'quindici', 'sedici', 'diciassette', 'diciotto', 'diciannove'];
+  var d = ['', '', 'venti', 'trenta', 'quaranta', 'cinquanta', 'sessanta', 'settanta', 'ottanta', 'novanta'];
+  if (n < 20) return u[n];
+  if (n < 100) { var dd = d[Math.floor(n / 10)], r = n % 10; if (r === 1 || r === 8) dd = dd.slice(0, -1); return dd + (r ? (r === 3 ? 'tré' : u[r]) : ''); }
+  return String(n);
+}
+function durataLunga(min) {
+  min = Math.round(min || 0); var h = Math.floor(min / 60), m = min % 60;
+  if (h >= 10) return Math.round(min / 60) + ' ore';
+  return (h ? (h === 1 ? 'un’ora' : h + ' ore') : '') + (h && m ? ' e ' : '') + (m || !h ? m + (m === 1 ? ' minuto' : ' minuti') : '');
+}
+function durataBreve(min) { min = Math.round(min || 0); var h = Math.floor(min / 60), m = min % 60; return h >= 10 ? Math.round(min / 60) + ' h' : (h ? h + ' h ' : '') + (m || !h ? m + ' min' : ''); }
+function statisticheTarga() {
+  var A = S.d.admin, imp = A.impostazioni, att = A.attivita || {}, voti = {}; A.voti.forEach(function (v) { voti[v.id] = v; });
+  var P = S.d.panoramica || [], T = S.d.termini || [];
+  var minuti = P.reduce(function (a, r) { return a + ((att[r.id] || {}).minuti || 0); }, 0);
+  var conTempo = P.filter(function (r) { return (att[r.id] || {}).minuti > 0; }).length || P.length || 1;
+  var dal = imp.partenza ? Date.parse(imp.partenza) : null, al = Math.min(Date.now(), Date.parse(imp.scadenzaIt));
+  var giorni = dal ? Math.max(1, Math.round((al - dal) / 86400000)) : null;
+  var gm = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', timeZone: 'Europe/Rome' }); };
+  var mese = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { month: 'long', timeZone: 'Europe/Rome' }); }, gg = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { day: 'numeric', timeZone: 'Europe/Rome' }); };
+  var periodo = !dal ? 'nell’autunno del 2026' : Date.now() < Date.parse(imp.scadenzaIt) ? 'dal ' + gm(dal) + ' a oggi' : mese(dal) === mese(al) ? 'dal ' + gg(dal) + ' al ' + gg(al) + ' ' + mese(al) : 'dal ' + gm(dal) + ' al ' + gm(al);
+  var f = T.filter(function (t) { return window.T(t, 'it', 'primoOk') != null; }), ok = f.filter(function (t) { return window.T(t, 'it', 'primoOk') === true; }).length;
+  var vv = A.voti.filter(function (v) { return !v.escluso && v.voto != null; }).map(function (v) { return v.voto; });
+  var voto = vv.length ? fv(Math.round(vv.reduce(function (a, b) { return a + b; }, 0) / vv.length * 100) / 100) : '';
+  return {
+    giorniParola: giorni ? numeroParole(giorni) : 'molti', periodo: periodo, autoriParola: numeroParole(P.length), classi: CLASSI().join(' e '),
+    oreTesto: durataLunga(minuti), mediaTesto: durataLunga(minuti / conTempo), oreBreve: durataBreve(minuti), mediaBreve: durataBreve(minuti / conTempo),
+    risposte: P.reduce(function (a, r) { return a + (r.inviate || 0); }, 0), primo: f.length ? Math.round(ok / f.length * 100) : null,
+    approvate: T.filter(function (t) { return t.statoIt === 'approvata'; }).length, totale: T.length, voto: voto
+  };
+}
+function stampaTarga() {
+  var html = Poster.targa(S.d.aree.map(function (a) { return { n: a.n, it: a.it, colore: a.colore }; }), statisticheTarga(), location.origin + '/glossario');
+  var w = window.open('', '_blank');
+  if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
+  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Targa introduttiva Glossario</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">' +
+    '<style>@page{size:500mm 700mm;margin:0}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media screen{body{background:#C9D2DA;padding:10mm}body>div{box-shadow:0 2mm 8mm rgba(0,0,0,.25);margin:0 auto}}</style></head><body>' + html +
+    '<scr' + 'ipt>document.fonts.ready.then(function(){setTimeout(function(){window.print()},400)})</scr' + 'ipt></body></html>');
+  w.document.close();
 }
 function esportaWord(btn) {
   var t = btn.textContent; btn.disabled = true; btn.textContent = 'Preparo il Word…';

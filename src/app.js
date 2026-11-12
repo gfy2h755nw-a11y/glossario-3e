@@ -24,7 +24,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '11/11/2026 · 15';
+var VERSIONE = '12/11/2026 · 3';
 /* classi: 3E e 3F */
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
@@ -173,13 +173,16 @@ function bloccoPoster(n) {
   var sel = aree.length > 1 ? '<div><label for="selposter" class="sr">Scegli il cartellone</label><select id="selposter" onchange="disegnaPoster(this.value)">' + opts + '</select></div>' : '';
   return '<section class="card stack"><h2 style="margin:0;font-size:22px">Anteprima del cartellone 70×100</h2>' + sel +
     '<p class="muted" style="margin:0;font-size:15px">Sul cartellone vanno solo le definizioni approvate' + (EN() ? ' dai docenti' : ' dal docente') + '.' +
-    (S.d.utente.ruolo === 'alunno' ? ' <b style="background:#FFE98A;color:var(--ink);padding:0 4px;border-radius:3px">In giallo i tuoi termini.</b>' + (CLASSI().length > 1 ? ' Ogni cartellone è di 3E e 3F insieme: i termini 1–40 sono della 3E, i termini 41–65 della 3F.' : '') : '') + '</p>' +
+    (S.d.utente.ruolo === 'alunno' ? ' <b style="background:#FFE98A;color:var(--ink);padding:0 4px;border-radius:3px">In giallo i tuoi termini.</b>' + (CLASSI().length > 1 ? ' Ogni cartellone è di 3E e 3F insieme, con i termini in ordine alfabetico.' : '') : '') + '</p>' +
     '<div class="poster-box" id="pbox"><div class="poster-scale" id="pscale"></div></div></section>';
 }
 function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
-  sc.innerHTML = Poster.html(area(n), ts, S.d.alunni, { soloApprovate: true, soloIt: !EN(), evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, arcata: true, firme: true, denti: 3, icone: 2, qr: location.origin + '/glossario' });
+  // versione alfabetica (definitiva dal 12/11/2026)
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario' });
+  Poster.adatta(sc);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if ($('pscale') === sc) Poster.adatta(sc); });
   var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
   sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
 }
@@ -456,7 +459,7 @@ function bloccoAdmin() {
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + (r.riassegnatoA ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
+  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button><button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
 }
 function presentazione(btn, azione, dati) {
@@ -469,6 +472,50 @@ function presentazione(btn, azione, dati) {
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
     btn.disabled = false; btn.textContent = t; toast('Presentazione scaricata');
   }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
+}
+/* targa introduttiva 50x70 con i numeri veri del lavoro, in forma di racconto */
+function numeroParole(n) {
+  var u = ['zero', 'uno', 'due', 'tre', 'quattro', 'cinque', 'sei', 'sette', 'otto', 'nove', 'dieci', 'undici', 'dodici', 'tredici', 'quattordici', 'quindici', 'sedici', 'diciassette', 'diciotto', 'diciannove'];
+  var d = ['', '', 'venti', 'trenta', 'quaranta', 'cinquanta', 'sessanta', 'settanta', 'ottanta', 'novanta'];
+  if (n < 20) return u[n];
+  if (n < 100) { var dd = d[Math.floor(n / 10)], r = n % 10; if (r === 1 || r === 8) dd = dd.slice(0, -1); return dd + (r ? (r === 3 ? 'tré' : u[r]) : ''); }
+  return String(n);
+}
+function durataLunga(min) {
+  min = Math.round(min || 0); var h = Math.floor(min / 60), m = min % 60;
+  if (h >= 10) return Math.round(min / 60) + ' ore';
+  return (h ? (h === 1 ? 'un’ora' : h + ' ore') : '') + (h && m ? ' e ' : '') + (m || !h ? m + (m === 1 ? ' minuto' : ' minuti') : '');
+}
+function durataBreve(min) { min = Math.round(min || 0); var h = Math.floor(min / 60), m = min % 60; return h >= 10 ? Math.round(min / 60) + ' h' : (h ? h + ' h ' : '') + (m || !h ? m + ' min' : ''); }
+function statisticheTarga() {
+  var A = S.d.admin, imp = A.impostazioni, att = A.attivita || {}, voti = {}; A.voti.forEach(function (v) { voti[v.id] = v; });
+  var P = S.d.panoramica || [], T = S.d.termini || [];
+  var minuti = P.reduce(function (a, r) { return a + ((att[r.id] || {}).minuti || 0); }, 0);
+  var conTempo = P.filter(function (r) { return (att[r.id] || {}).minuti > 0; }).length || P.length || 1;
+  var dal = imp.partenza ? Date.parse(imp.partenza) : null, al = Math.min(Date.now(), Date.parse(imp.scadenzaIt));
+  var giorni = dal ? Math.max(1, Math.round((al - dal) / 86400000)) : null;
+  var gm = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', timeZone: 'Europe/Rome' }); };
+  var mese = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { month: 'long', timeZone: 'Europe/Rome' }); }, gg = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { day: 'numeric', timeZone: 'Europe/Rome' }); };
+  var periodo = !dal ? 'nell’autunno del 2026' : Date.now() < Date.parse(imp.scadenzaIt) ? 'dal ' + gm(dal) + ' a oggi' : mese(dal) === mese(al) ? 'dal ' + gg(dal) + ' al ' + gg(al) + ' ' + mese(al) : 'dal ' + gm(dal) + ' al ' + gm(al);
+  var f = T.filter(function (t) { return window.T(t, 'it', 'primoOk') != null; }), ok = f.filter(function (t) { return window.T(t, 'it', 'primoOk') === true; }).length;
+  var vv = A.voti.filter(function (v) { return !v.escluso && v.voto != null; }).map(function (v) { return v.voto; });
+  var voto = vv.length ? fv(Math.round(vv.reduce(function (a, b) { return a + b; }, 0) / vv.length * 100) / 100) : '';
+  return {
+    giorniParola: giorni ? numeroParole(giorni) : 'molti', periodo: periodo, autoriParola: numeroParole(P.length), classi: CLASSI().join(' e '),
+    oreTesto: durataLunga(minuti), mediaTesto: durataLunga(minuti / conTempo), oreBreve: durataBreve(minuti), mediaBreve: durataBreve(minuti / conTempo),
+    risposte: P.reduce(function (a, r) { return a + (r.inviate || 0); }, 0), primo: f.length ? Math.round(ok / f.length * 100) : null,
+    approvate: T.filter(function (t) { return t.statoIt === 'approvata'; }).length, totale: T.length, voto: voto
+  };
+}
+function stampaTarga() {
+  var html = Poster.targa(S.d.aree.map(function (a) { return { n: a.n, it: a.it, colore: a.colore }; }), statisticheTarga(), location.origin + '/glossario');
+  var w = window.open('', '_blank');
+  if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
+  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Targa introduttiva Glossario</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">' +
+    '<style>@page{size:500mm 700mm;margin:0}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media screen{body{background:#C9D2DA;padding:10mm}body>div{box-shadow:0 2mm 8mm rgba(0,0,0,.25);margin:0 auto}}</style></head><body>' + html +
+    '<scr' + 'ipt>document.fonts.ready.then(function(){setTimeout(function(){window.print()},400)})</scr' + 'ipt></body></html>');
+  w.document.close();
 }
 function esportaWord(btn) {
   var t = btn.textContent; btn.disabled = true; btn.textContent = 'Preparo il Word…';
