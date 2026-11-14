@@ -27,7 +27,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '14/11/2026 · 5';
+var VERSIONE = '14/11/2026 · 6';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -74,7 +74,7 @@ function entra(codice) {
     render();
   }).catch(function (e) { memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e)); });
 }
-function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; vistaLogin(); }
+function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; S.pag = null; ricordaPag(null); document.body.classList.remove('menu-on'); vistaLogin(); }
 function ricarica() { api('login').then(function (d) { S.d = d; render(); toast('Dati aggiornati'); }).catch(function (e) { toast(errMsg(e), true); }); }
 function render() {
   clearInterval(S.timer);
@@ -278,59 +278,6 @@ function conferma(id, l, btn) {
 }
 
 /* ---------- docente ---------- */
-function vistaDocente() {
-  var u = S.d.utente, f = S.filtro;
-  if (!EN()) { f.lingua = 'it'; if (f.stato === 'pronte') f.stato = 'inviata'; }
-  var h = testata(u.nome + ' · area docenti') + '<main class="wrap stack">';
-  if (RO()) h += bannerArchivio();
-  else if (S.d.config.chiusa) h += '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>';
-  h += (ADM() && !RO() ? bloccoChiusuraEdizione() : '') + bloccoAnello() + (RO() ? '' : bloccoSollecito());
-  h += '<section class="grid4">' + S.d.aree.map(function (a) {
-    var ts = S.d.termini.filter(function (t) { return t.area == a.n && inClasse(t.alunno); });
-    var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
-    var riv = c('it', 'inviata') + (EN() ? c('en', 'inviata') : 0);
-    var pronte = EN() ? ts.filter(function (t) { return t.statoIt === 'approvata' && t.statoEn === ''; }).length : 0;
-    return '<div class="card" style="border-top:8px solid ' + a.colore + '"><div class="disp" style="font-weight:800;font-size:17px;line-height:1.2">' + a.n + '. ' + esc(a.it) + '</div>' +
-      LINGUE().map(function (l) { var v = c(l, 'approvata'); return '<div style="margin-top:10px;font-size:15px">' + (l === 'it' ? (EN() ? 'Italiano' : 'Approvate') : 'Inglese') + ' <b>' + v + '/' + ts.length + '</b></div><div class="bar"><span style="width:' + (v / ts.length * 100) + '%;background:' + a.colore + '"></span></div>'; }).join('') +
-      (pronte ? '<div style="margin-top:8px;font-size:14px" class="muted">' + pronte + ' pronte per l\'inglese, non ancora scelte</div>' : '') +
-      '<div style="margin-top:10px">' + (riv ? '<span class="chip s-inviata">' + riv + ' da rivedere</span>' : '<span class="chip s-vuota">Niente da rivedere</span>') + '</div></div>';
-  }).join('') + '</section>';
-
-  var lista = S.d.termini.filter(function (t) {
-    if (f.area !== 'tutte' && t.area != f.area) return false;
-    if (!inClasse(t.alunno)) return false;
-    if (f.stato === 'pronte') return t.statoIt === 'approvata' && t.statoEn !== 'approvata';
-    return f.stato === 'tutti' ? true : T(t, f.lingua, 'stato') === f.stato;
-  });
-  var corrette = lista.filter(function (t) { return T(t, f.lingua, 'stato') === 'inviata' && T(t, f.lingua, 'ok') === true && (f.lingua === 'it' || t.statoIt === 'approvata'); });
-  h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Revisione</h2><div class="grid4">' + selClasse('fc', 'vistaDocente()') +
-    (EN() ? '<div><label for="fl">Lingua</label><select id="fl" onchange="S.filtro.lingua=this.value;vistaDocente()">' + [['it', 'Italiano'], ['en', 'Inglese']].map(function (o) { return '<option value="' + o[0] + '"' + (f.lingua === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' : '') +
-    '<div><label for="fs">Stato</label><select id="fs" onchange="S.filtro.stato=this.value;vistaDocente()">' + [['inviata', 'Da rivedere (inviate)']].concat(EN() ? [['pronte', 'Italiano approvato, inglese da fare']] : []).concat([ ['correggere', 'Rimandate all\'alunno'], ['', 'Non ancora scelte'], ['approvata', 'Approvate'], ['tutti', 'Tutti']]).map(function (o) { return '<option value="' + o[0] + '"' + (f.stato === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
-    '<div><label for="fa">Area</label><select id="fa" onchange="S.filtro.area=this.value;vistaDocente()"><option value="tutte">Tutte le aree</option>' + S.d.aree.map(function (a) { return '<option value="' + a.n + '"' + (f.area == a.n ? ' selected' : '') + '>' + a.n + '. ' + esc(a.it) + '</option>'; }).join('') + '</select></div></div>' +
-    (corrette.length && !RO() && PUO('revisione') ? '<div class="row"><button class="btn ok" onclick="approvaCorrette(this)">Approva tutte le scelte corrette (' + corrette.length + ')</button><span class="muted" style="font-size:15px">Quelle sbagliate restano da rivedere una per una.</span></div>' : '') +
-    '</section>';
-  h += '<p class="muted" style="margin:0">' + lista.length + ' termini' + (EN() ? ' · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') : '') + '</p>';
-  h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
-  h += panoramica() + bloccoSituazione() + (S.d.admin && (PUO('voti') || PUO('studenti') || PUO('documenti')) ? bloccoAdmin() : '') + (S.d.admin && PUO('studenti') && !RO() ? bloccoGestione() : '') + (ADM() && !RO() ? bloccoEdizioni() + bloccoColleghi() : '') + (S.d.admin && S.d.admin.attivita ? bloccoAttivita() : '') + (ADM() && !RO() ? bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
-  if (!RO() && ADM()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
-    '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
-  if (!RO() && PUO('documenti')) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
-  if (S.d.codiciAlunni && !RO()) {
-    h += '<details class="card" id="codici"><summary>Codici personali degli alunni (riservato)</summary>' +
-      '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
-      '<div class="row" style="margin-bottom:10px">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Schede con QR · ' + c + '</button>'; }).join('') +
-      (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Schede di tutte le classi</button>' : '') + '<button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div>' +
-      '<p class="muted" style="margin:0 0 10px;font-size:14px">Le schede si aprono nella stampa: scegli “Salva come PDF” per avere il file. Una pagina A4 per alunno con QR, link, codice, partenza e scadenza (senza i termini).</p>' +
-      '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Classe</th><th>Codice</th></tr></thead><tbody>' +
-      S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
-      '</tbody></table></div></details>';
-  }
-  h += '</main>';
-  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)); selSituazione(); disegnaSituazione(); selGestione(); disegnaGestione();
-  // pagina della nuova edizione aperta dall'indirizzo (#nuova-edizione), anche dopo un ricaricamento
-  if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
-  if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
-}
 function cardDocente(t, l) {
   var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
   var h = '<article class="card" style="border-top:6px solid ' + a.colore + '"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="term-it">' + esc(t.it) + '</div>' + (EN() && t.en ? '<div class="term-en" lang="en" style="color:' + a.colore + '">' + esc(t.en) + '</div>' : '') + '</div>' +
@@ -451,7 +398,7 @@ function panoramica() {
 }
 /* ---------- solo prof. Cerrato: scadenze, voti, report ---------- */
 function isoLocale(iso) { var d = new Date(iso); var p = function (n) { return ('0' + n).slice(-2); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
-function bloccoAdmin() {
+function bloccoAdmin(quale) {
   var A = S.d.admin, imp = A.impostazioni;
   var errFino4 = function (p) { return Math.ceil((imp.votoMax - imp.votoMin) / p - 1e-9); };
   var multi = CLASSI().length > 1 && (S.datePerClasse != null ? S.datePerClasse : Object.keys(imp.calendario || {}).length > 0);
@@ -475,7 +422,7 @@ function bloccoAdmin() {
       return '<label class="op' + (imp.proposta === o[0] ? ' on' : '') + '" for="pr' + o[0] + '"><input type="radio" name="prop" id="pr' + o[0] + '" value="' + o[0] + '"' + (imp.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>';
     }).join('') + '</fieldset>' +
     '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli alunni esclusi</legend>' +
-    [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe (uno solo a testa)'], ['manuale', 'Decido io: restano fermi finché non li passo a chi scelgo (riquadro «Proroghe e passaggio dei termini»)']].map(function (o) {
+    [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe (uno solo a testa)'], ['manuale', 'Decido io: restano fermi finché non li passo a chi scelgo (pagina «Proroghe e passaggi»)']].map(function (o) {
       return '<label class="op' + (imp.riassegnazione === o[0] ? ' on' : '') + '" for="ri' + o[0] + '"><input type="radio" name="riass" id="ri' + o[0] + '" value="' + o[0] + '"' + (imp.riassegnazione === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + o[1] + '</span></label>';
     }).join('') + '</fieldset>' +
     '<div class="row"><button class="btn" onclick="salvaImpostazioni(this)">Salva partenza, scadenza e penalità</button></div>' +
@@ -483,6 +430,8 @@ function bloccoAdmin() {
     '<div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
     '<span class="muted" style="font-size:14px">Slide per la classe, con partenza, scadenza, voto massimo e penalità presi da qui. Salva prima le modifiche, poi scaricala.</span></div>' +
     '<p class="muted" style="margin:0;font-size:14px">' + esc(A.ratio) + '</p></section>';
+  if (quale === 'imp') return h;
+  h = '';
   var nomi = {}; (S.d.panoramica || []).forEach(function (r) { nomi[r.id] = r; });
   var row = function (v) {
     var r = nomi[v.id];
@@ -502,10 +451,13 @@ function bloccoAdmin() {
     attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo.</p>';
   if (esclusi.length) {
     h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Voto finale</th><th></th></tr></thead><tbody>' +
-      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + ((r.riassegnatiA || []).length ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : (r.bloccoRiass || A.impostazioni.riassegnazione === 'manuale' ? '<br><span class="muted" style="font-size:13px">Termini fermi: decidi tu (riquadro «Proroghe e passaggio dei termini»)</span>' : '')) + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
+      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + ((r.riassegnatiA || []).length ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : (r.bloccoRiass || A.impostazioni.riassegnazione === 'manuale' ? '<br><span class="muted" style="font-size:13px">Termini fermi: decidi tu (pagina «Proroghe e passaggi»)</span>' : '')) + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td>' + (RO() || !PUO('studenti') ? '' : '<button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button>') + '</td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  if (PUO('documenti')) h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button>' + (RO() ? '<button class="btn" onclick="scaricaArchivio(\'' + esc(S.d.edizioneArchivio.id) + '\',\'word\',this)">Definizioni approvate (Word)</button>' : '<button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button>') + '<button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button>' + (RO() ? '' : '<button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button>') + '<span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
+  h += '</section>';
+  if (quale === 'voti') return h;
+  h = '';
+  if (PUO('documenti')) h += '<section class="card stack admin"><h2 style="margin:0;font-size:22px">Report, Word e slide</h2><div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button>' + (RO() ? '<button class="btn" onclick="scaricaArchivio(\'' + esc(S.d.edizioneArchivio.id) + '\',\'word\',this)">Definizioni approvate (Word)</button>' : '<button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button>') + '<button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button>' + (RO() ? '' : '<button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button>') + '<span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe nella barra a sinistra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
 }
 function presentazione(btn, azione, dati) {

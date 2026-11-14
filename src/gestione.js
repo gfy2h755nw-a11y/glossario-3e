@@ -96,7 +96,7 @@ function disegnaGestione() {
     (r.proroga ? '<button class="btn sec" onclick="togliProroga(this)">Togli la proroga</button>' : '') + '</div></div>' +
     '<span class="muted" style="font-size:14px">Deve essere dopo la scadenza della classe. Vale per tutti i suoi termini; se era già escluso, torna nel compito' + (passati.length ? ' e puoi scegliere se riprendere i termini già passati ad altri' : '') + '.</span></div>';
   var blocco = '<div class="stack" style="gap:6px;border-top:1px solid var(--line);padding-top:12px"><b>Riassegnazione automatica</b>' +
-    (manuale ? '<p class="muted" style="margin:0;font-size:15px">È impostata su «decido io» per tutti (riquadro «Partenza, scadenza e valutazione»): i termini degli esclusi non passano mai in automatico.</p>'
+    (manuale ? '<p class="muted" style="margin:0;font-size:15px">È impostata su «decido io» per tutti (pagina «Scadenze e valutazione»): i termini degli esclusi non passano mai in automatico.</p>'
       : '<label class="row" style="gap:10px;font-weight:400;cursor:pointer"><input type="checkbox" id="gsBl"' + (r.bloccoRiass ? ' checked' : '') + ' onchange="setBloccoRiass(this)" style="width:22px;height:22px"> Se viene escluso, <b>non</b> passare i suoi termini in automatico: decido io</label>') + '</div>';
   var tab = miei.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th style="width:36px"></th><th>Termine</th><th>Area</th><th>Stato</th><th style="text-align:right">Tentativi</th></tr></thead><tbody>' + miei.map(function (t) {
     var z = area(t.area) || {}, app = t.statoIt === 'approvata';
@@ -186,7 +186,7 @@ function bloccoChiusuraEdizione() {
   if (!arch) return '<section class="card admin" id="chiusuraEd" style="border-color:var(--err);display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
     '<div style="flex:1;min-width:240px"><div class="muted disp" style="font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px">Edizione in corso</div>' +
     '<b style="font-size:19px">' + esc(ed.nome) + '</b><div class="muted" style="font-size:14px">a.s. ' + esc(ed.as) + ' · classi ' + esc(elencoClassi()) + (chiusa ? ' · app già chiusa agli alunni' : ' · aperta agli alunni') + '</div></div>' +
-    '<button class="btn" id="bChiudiEd" style="background:var(--err);border-color:var(--err);min-height:54px;font-size:18px;padding:0 24px" onclick="chiudiEdizione(this)">Chiudi l\'edizione in corso</button></section>';
+    '<button class="btn" id="bChiudiEd2" style="background:var(--err);border-color:var(--err);min-height:54px;font-size:18px;padding:0 24px" onclick="chiudiEdizione(this)">Chiudi l\'edizione in corso</button></section>';
   return '<section class="card admin" id="chiusuraEd" style="border-color:var(--ok);display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
     '<div style="flex:1;min-width:240px"><div class="muted disp" style="font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px">Edizione chiusa e archiviata</div>' +
     '<b style="font-size:19px">' + esc(ed.nome) + '</b><div class="muted" style="font-size:14px">a.s. ' + esc(ed.as) + ' · gli alunni ' + (chiusa ? 'non possono più entrare' : 'possono ancora entrare (app riaperta)') + '. Resta consultabile nell\'archivio.</div></div>' +
@@ -225,7 +225,7 @@ function bloccoEdizioni() {
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi; l\'edizione in corso viene chiusa agli alunni e archiviata in automatico. ' +
       '<b>Aggiungi una classe</b>: nuova classe con i suoi alunni, termini nuovi (mai usati prima) e date proprie; le sue definizioni vanno sugli stessi cartelloni. ' +
       '<b>Archivia</b>: a lavoro concluso fotografa l\'edizione (risposte, voti, definizioni, registro), che resta consultabile qui e nella pagina pubblica; poi potrai crearne una nuova.' +
-      (chiusa ? '' : ' Per archiviare chiudi prima l\'app agli alunni (riquadro «Accesso degli alunni»).') + '</p></div>'
+      (chiusa ? '' : ' Per archiviare chiudi prima l\'app agli alunni (pagina «Scadenze e valutazione», riquadro «Accesso degli alunni»).') + '</p></div>'
       : '<div class="row"><button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button><button class="btn sec" onclick="archiviaEdizione(true,this)">Aggiorna la copia in archivio</button></div>' +
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi. Gli alunni che riprendi tengono il loro codice.</p>') +
     (lista ? '<h3 style="margin:8px 0 0;font-size:18px">Archivio</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Edizione</th><th>a.s.</th><th>Classi</th><th style="text-align:right">Alunni</th><th style="text-align:right">Approvate</th><th style="text-align:right">Media</th><th></th></tr></thead><tbody>' + lista + '</tbody></table></div>'
@@ -244,10 +244,10 @@ function archiviaEdizione(sovrascrivi, btn) {
 }
 function apriArchivio(id, btn) {
   if (btn) btn.disabled = true;
-  api('archivioconsulta', { id: id }).then(function (d) { S.d = d; S.filtro = { area: 'tutte', stato: 'tutti', lingua: 'it', classe: 'tutte' }; S.poster = null; render(); window.scrollTo(0, 0); toast('Edizione archiviata, in sola lettura'); })
+  api('archivioconsulta', { id: id }).then(function (d) { S.d = d; S.pag = 'cruscotto'; ricordaPag('cruscotto'); S.filtro = { area: 'tutte', stato: 'tutti', lingua: 'it', classe: 'tutte' }; S.poster = null; render(); window.scrollTo(0, 0); toast('Edizione archiviata, in sola lettura'); })
     .catch(function (e) { if (btn) btn.disabled = false; toast(errMsg(e), true); });
 }
-function esciArchivio() { api('login').then(function (d) { S.d = d; S.filtro = { area: 'tutte', stato: 'inviata', lingua: 'it', classe: 'tutte' }; render(); window.scrollTo(0, 0); }).catch(function (e) { toast(errMsg(e), true); }); }
+function esciArchivio() { api('login').then(function (d) { S.d = d; S.pag = 'edizioni'; ricordaPag('edizioni'); S.filtro = { area: 'tutte', stato: 'inviata', lingua: 'it', classe: 'tutte' }; render(); window.scrollTo(0, 0); }).catch(function (e) { toast(errMsg(e), true); }); }
 function scaricaArchivio(id, tipo, btn) {
   var t = btn.textContent; btn.disabled = true; btn.textContent = '…';
   api('archiviofile', { id: id, tipo: tipo }).then(function (x) {
@@ -423,7 +423,7 @@ function passo1Html() {
       (w.tipo === 'edizione' ? '<div class="row" style="gap:6px"><span class="muted" style="font-size:14px">Riprendi gli alunni (stesso codice) della classe:</span>' + correnti.map(function (cl) { return '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="riprendiClasse(' + i + ',\'' + esc(cl) + '\')">' + esc(cl) + '</button>'; }).join('') + '</div>' +
         (Object.keys(c.riprendi).length ? '<span class="muted" style="font-size:14px">I nomi che restano uguali a quelli ripresi tengono il loro codice; quelli nuovi o modificati ricevono un codice nuovo.</span>' : '') +
         (w.classi.length > 1 ? '<div><button class="btn sec" style="min-height:36px" onclick="leggiPasso1();S.wz.classi.splice(' + i + ',1);disegnaWizard()">Togli questa classe</button></div>' : '') : '') +
-      '<span class="muted" style="font-size:14px">Senza partenza gli alunni entrano ma vedono il conto alla rovescia solo quando la fissi (riquadro «Partenza, scadenza e valutazione»).</span></fieldset>';
+      '<span class="muted" style="font-size:14px">Senza partenza gli alunni entrano ma vedono il conto alla rovescia solo quando la fissi (pagina «Scadenze e valutazione»).</span></fieldset>';
   });
   if (w.tipo === 'edizione') h += '<div><button class="btn sec" onclick="leggiPasso1();S.wz.classi.push(nuovaClasseWz());disegnaWizard()">+ Aggiungi un\'altra classe</button></div>';
   return h + '<div class="row" style="justify-content:flex-end"><button class="btn" onclick="wzAvanti1(this)">Avanti: proponi i termini</button></div>';
@@ -549,7 +549,7 @@ function passo3Html() {
   if (w.tipo === 'edizione' && S.d.admin.archiviata !== S.d.admin.impostazioni.edizione.id) avvisi.push('L\'edizione in corso (' + S.d.admin.impostazioni.edizione.nome + ') verrà chiusa agli alunni e archiviata: resta consultabile nell\'archivio e nella pagina pubblica.');
   if (w.tipo === 'edizione') avvisi.push('L\'app passa alla nuova edizione: gli alunni dell\'edizione archiviata non ripresi non potranno più entrare (i loro dati restano nell\'archivio). Il tuo codice docente resta lo stesso.');
   else avvisi.push('Le definizioni della nuova classe vanno sugli stessi quattro cartelloni. Le domande già assegnate alle altre classi non cambiano.');
-  avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel riquadro «Codici personali degli alunni».');
+  avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel pagina «Codici e schede QR».');
   return '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Classe</th><th style="text-align:right">Alunni</th><th style="text-align:right">Termini a testa</th><th>Distribuzione</th><th>Partenza</th><th>Scadenza</th></tr></thead><tbody>' + righe + '</tbody></table></div>' +
     '<p style="margin:0">Termini nuovi: <b>' + tot + '</b> (' + AREE_N.filter(function (n) { return w.fab[n]; }).map(function (n) { return 'area ' + n + ': ' + w.termini[n].length; }).join(', ') + ').' +
     (w.tipo === 'edizione' ? ' Edizione: <b>' + esc(w.nome) + '</b>, a.s. ' + esc(w.as) + '. Colleghi: ' + (w.colleghi.length ? w.colleghi.map(function (c) { return esc(c.nome) + ' (' + FACOLTA.filter(function (f) { return c.permessi[f[0]]; }).map(function (f) { return f[1].toLowerCase(); }).join(', ') + ')'; }).join('; ') : 'nessuno') + '. Penalità: proposta ' + w.proposta + ' (' + (w.proposta === 'A' ? '−0,25' : '−0,50') + ' per errore). Termini ricevuti: ' + w.giorniIt + ' giorni. Termini degli esclusi: ' + (w.riassegnazione === 'manuale' ? 'decidi tu.' : 'in automatico, a sorte.') : '') + '</p>' +
@@ -614,7 +614,7 @@ function apriTraduzioni() {
     .catch(function (e) { toast(errMsg(e), true); chiudiTraduzioni(); });
 }
 function chiudiTraduzioni(ricaricare) {
-  S.tr = null;
+  S.tr = null; S.pag = 'cartelloni'; ricordaPag('cartelloni');
   if (location.hash === '#inglese') history.replaceState(null, '', location.pathname + location.search);
   if (ricaricare) return ricarica();
   vistaDocente(); var p = $('pbox'); if (p) p.scrollIntoView({ block: 'center' });

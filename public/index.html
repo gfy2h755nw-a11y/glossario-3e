@@ -117,6 +117,78 @@ details summary{cursor:pointer;font-weight:700;font-family:'Archivo',system-ui,s
 .vl-n{font-family:'Archivo',system-ui,sans-serif;font-weight:900;font-size:34px;line-height:1.1}
 .vl-n small{font-size:15px;color:var(--muted);font-weight:700}
 .note-ered{background:var(--infobg);border-color:#B9D0EC;color:#0F3560}
+
+/* ---------- area docenti: barra laterale + pagina centrale ---------- */
+.dapp{display:grid;grid-template-columns:276px minmax(0,1fr);min-height:100vh}
+.side{background:var(--ink);color:#DCE3E9;display:flex;flex-direction:column;gap:12px;padding:16px 14px 12px;position:sticky;top:0;height:100vh;overflow:hidden;z-index:30}
+.sbrand{display:flex;gap:10px;align-items:center;padding:0 6px}
+.slogo{width:38px;height:38px;flex:none;border-radius:10px;background:#fff;color:var(--err);font:800 22px 'Archivo',system-ui,sans-serif;display:flex;align-items:center;justify-content:center}
+.sbrand b{font:800 16px 'Archivo',system-ui,sans-serif;color:#fff;display:block}
+.sbrand span{font-size:12.5px;opacity:.75;display:block;line-height:1.3}
+.smenu-x{display:none;margin-left:auto;background:none;border:0;color:#fff;font-size:30px;line-height:1;cursor:pointer}
+.sed{background:#1E2D3A;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.35}
+.sed b{color:#fff;font:700 14px 'Archivo',system-ui,sans-serif}
+.sed-l{opacity:.7;font-size:11.5px;font-weight:700;letter-spacing:.08em}
+.sed-c{margin-top:4px;color:#F2B705;font-weight:700}
+.sed.arch{background:#5A2D00}
+.sbtn-arch{display:block;width:100%;margin-top:8px;background:#fff;color:var(--ink);border:0;border-radius:9px;padding:7px 8px;font:700 13px 'Archivo',system-ui,sans-serif;cursor:pointer}
+.seg{display:flex;background:#0E171F;border-radius:10px;padding:3px;gap:3px;margin-top:8px}
+.seg button{flex:1;border:0;background:none;padding:6px 0;border-radius:8px;font:700 13px 'Archivo',system-ui,sans-serif;color:#AFC0CE;cursor:pointer}
+.seg button.on{background:#fff;color:var(--ink)}
+.snav{display:flex;flex-direction:column;gap:1px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#3A4C5B transparent}
+.sgr{font:800 11px 'Archivo',system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#7F93A5;padding:8px 10px 3px}
+.sit{display:flex;align-items:center;gap:11px;padding:7px 10px;border-radius:10px;font:700 14.5px 'Archivo',system-ui,sans-serif;color:#DCE3E9;background:none;border:0;text-align:left;cursor:pointer;width:100%}
+.sit:hover{background:#22323F}
+.sit svg{width:19px;height:19px;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.sit.on{background:#fff;color:var(--ink)}
+.sit:focus-visible,.seg button:focus-visible,.snuova:focus-visible,.srosso:focus-visible{outline:3px solid #9CC3EE;outline-offset:1px}
+.sbd{margin-left:auto;background:#F2B705;color:var(--ink);font:800 12px 'Archivo',system-ui,sans-serif;border-radius:999px;padding:2px 8px}
+.sbd.r{background:#E8A8A3}
+.sfondo{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.snuova{background:#fff;color:var(--ink);border:0;border-radius:12px;padding:11px 12px;font:800 15px 'Archivo',system-ui,sans-serif;display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:center;text-align:left;cursor:pointer}
+.snuova svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2.4;stroke-linecap:round}
+.snuova small{grid-column:2;font:400 12px 'Atkinson Hyperlegible',system-ui,sans-serif;color:var(--muted)}
+.srosso{background:#B3261E;color:#fff;border:0;border-radius:12px;padding:13px 12px;font:800 15px 'Archivo',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.srosso:hover{background:#951E18}
+.srosso svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.2}
+.schiusa{border:2px solid #6FBF73;color:#BFE5C1;border-radius:12px;padding:10px 12px;text-align:center;font:700 14px 'Archivo',system-ui,sans-serif}
+.spiede{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#8FA2B3;padding:0 4px}
+.spiede button{background:none;border:0;color:#DCE3E9;font:700 13px 'Archivo',system-ui,sans-serif;cursor:pointer;padding:4px}
+.dmain{display:flex;flex-direction:column;min-width:0}
+.tbar{position:sticky;top:0;z-index:20;min-height:68px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding:10px 28px}
+.ttit h1{font:800 23px 'Archivo',system-ui,sans-serif;margin:0;line-height:1.15}
+.tsub{color:var(--muted);font-size:14px}
+.tdx{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tchip{font:700 12.5px 'Archivo',system-ui,sans-serif;border-radius:999px;padding:4px 10px;background:#EEF2F5;color:var(--muted)}
+.btn.tb{min-height:38px;padding:0 14px;font-size:14px;border-radius:11px;text-decoration:none}
+.smenu{display:none;background:none;border:2px solid var(--line);border-radius:10px;width:42px;height:42px;font-size:22px;cursor:pointer}
+.dcont{padding:22px 28px 40px;max-width:1180px;width:100%}
+.h2s{margin:0;font-size:19px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kcard{display:flex;flex-direction:column;gap:2px;text-align:left;font:inherit;color:inherit}
+button.kcard{cursor:pointer}button.kcard:hover{border-color:#9CC3EE}
+.kl{font:700 13px 'Archivo',system-ui,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.kv{font:900 32px 'Archivo',system-ui,sans-serif;line-height:1.1}
+.kv small{font-size:16px;color:var(--muted);font-weight:700}
+.ks{font-size:13.5px}
+.cols{align-items:start}
+.voce{display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #EEF1F4}
+.voce i{width:8px;height:38px;border-radius:4px}
+.voce b{font:700 15px 'Archivo',system-ui,sans-serif}
+.voce small{display:block;color:var(--muted);font-size:13px}
+.chipbtn{border:0;cursor:pointer}
+.sveil{display:none}
+@media (max-width:980px){
+  .dapp{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;left:0;top:0;bottom:0;width:286px;max-width:86vw;transform:translateX(-102%);transition:transform .2s}
+  body.menu-on .side{transform:none}
+  body.menu-on .sveil{display:block;position:fixed;inset:0;background:rgba(10,18,25,.45);z-index:25}
+  .smenu,.smenu-x{display:inline-flex;align-items:center;justify-content:center}
+  .tbar{padding:10px 16px}
+  .dcont{padding:16px 16px 32px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){ .ttit h1{font-size:19px} .tdx{margin-left:0;width:100%} .tchip{display:none} }
 </style>
 </head>
 <body>
@@ -2986,7 +3058,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '14/11/2026 · 5';
+var VERSIONE = '14/11/2026 · 6';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3033,7 +3105,7 @@ function entra(codice) {
     render();
   }).catch(function (e) { memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e)); });
 }
-function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; vistaLogin(); }
+function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; S.pag = null; ricordaPag(null); document.body.classList.remove('menu-on'); vistaLogin(); }
 function ricarica() { api('login').then(function (d) { S.d = d; render(); toast('Dati aggiornati'); }).catch(function (e) { toast(errMsg(e), true); }); }
 function render() {
   clearInterval(S.timer);
@@ -3237,59 +3309,6 @@ function conferma(id, l, btn) {
 }
 
 /* ---------- docente ---------- */
-function vistaDocente() {
-  var u = S.d.utente, f = S.filtro;
-  if (!EN()) { f.lingua = 'it'; if (f.stato === 'pronte') f.stato = 'inviata'; }
-  var h = testata(u.nome + ' · area docenti') + '<main class="wrap stack">';
-  if (RO()) h += bannerArchivio();
-  else if (S.d.config.chiusa) h += '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>';
-  h += (ADM() && !RO() ? bloccoChiusuraEdizione() : '') + bloccoAnello() + (RO() ? '' : bloccoSollecito());
-  h += '<section class="grid4">' + S.d.aree.map(function (a) {
-    var ts = S.d.termini.filter(function (t) { return t.area == a.n && inClasse(t.alunno); });
-    var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
-    var riv = c('it', 'inviata') + (EN() ? c('en', 'inviata') : 0);
-    var pronte = EN() ? ts.filter(function (t) { return t.statoIt === 'approvata' && t.statoEn === ''; }).length : 0;
-    return '<div class="card" style="border-top:8px solid ' + a.colore + '"><div class="disp" style="font-weight:800;font-size:17px;line-height:1.2">' + a.n + '. ' + esc(a.it) + '</div>' +
-      LINGUE().map(function (l) { var v = c(l, 'approvata'); return '<div style="margin-top:10px;font-size:15px">' + (l === 'it' ? (EN() ? 'Italiano' : 'Approvate') : 'Inglese') + ' <b>' + v + '/' + ts.length + '</b></div><div class="bar"><span style="width:' + (v / ts.length * 100) + '%;background:' + a.colore + '"></span></div>'; }).join('') +
-      (pronte ? '<div style="margin-top:8px;font-size:14px" class="muted">' + pronte + ' pronte per l\'inglese, non ancora scelte</div>' : '') +
-      '<div style="margin-top:10px">' + (riv ? '<span class="chip s-inviata">' + riv + ' da rivedere</span>' : '<span class="chip s-vuota">Niente da rivedere</span>') + '</div></div>';
-  }).join('') + '</section>';
-
-  var lista = S.d.termini.filter(function (t) {
-    if (f.area !== 'tutte' && t.area != f.area) return false;
-    if (!inClasse(t.alunno)) return false;
-    if (f.stato === 'pronte') return t.statoIt === 'approvata' && t.statoEn !== 'approvata';
-    return f.stato === 'tutti' ? true : T(t, f.lingua, 'stato') === f.stato;
-  });
-  var corrette = lista.filter(function (t) { return T(t, f.lingua, 'stato') === 'inviata' && T(t, f.lingua, 'ok') === true && (f.lingua === 'it' || t.statoIt === 'approvata'); });
-  h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Revisione</h2><div class="grid4">' + selClasse('fc', 'vistaDocente()') +
-    (EN() ? '<div><label for="fl">Lingua</label><select id="fl" onchange="S.filtro.lingua=this.value;vistaDocente()">' + [['it', 'Italiano'], ['en', 'Inglese']].map(function (o) { return '<option value="' + o[0] + '"' + (f.lingua === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' : '') +
-    '<div><label for="fs">Stato</label><select id="fs" onchange="S.filtro.stato=this.value;vistaDocente()">' + [['inviata', 'Da rivedere (inviate)']].concat(EN() ? [['pronte', 'Italiano approvato, inglese da fare']] : []).concat([ ['correggere', 'Rimandate all\'alunno'], ['', 'Non ancora scelte'], ['approvata', 'Approvate'], ['tutti', 'Tutti']]).map(function (o) { return '<option value="' + o[0] + '"' + (f.stato === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
-    '<div><label for="fa">Area</label><select id="fa" onchange="S.filtro.area=this.value;vistaDocente()"><option value="tutte">Tutte le aree</option>' + S.d.aree.map(function (a) { return '<option value="' + a.n + '"' + (f.area == a.n ? ' selected' : '') + '>' + a.n + '. ' + esc(a.it) + '</option>'; }).join('') + '</select></div></div>' +
-    (corrette.length && !RO() && PUO('revisione') ? '<div class="row"><button class="btn ok" onclick="approvaCorrette(this)">Approva tutte le scelte corrette (' + corrette.length + ')</button><span class="muted" style="font-size:15px">Quelle sbagliate restano da rivedere una per una.</span></div>' : '') +
-    '</section>';
-  h += '<p class="muted" style="margin:0">' + lista.length + ' termini' + (EN() ? ' · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') : '') + '</p>';
-  h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
-  h += panoramica() + bloccoSituazione() + (S.d.admin && (PUO('voti') || PUO('studenti') || PUO('documenti')) ? bloccoAdmin() : '') + (S.d.admin && PUO('studenti') && !RO() ? bloccoGestione() : '') + (ADM() && !RO() ? bloccoEdizioni() + bloccoColleghi() : '') + (S.d.admin && S.d.admin.attivita ? bloccoAttivita() : '') + (ADM() && !RO() ? bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
-  if (!RO() && ADM()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
-    '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
-  if (!RO() && PUO('documenti')) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
-  if (S.d.codiciAlunni && !RO()) {
-    h += '<details class="card" id="codici"><summary>Codici personali degli alunni (riservato)</summary>' +
-      '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
-      '<div class="row" style="margin-bottom:10px">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Schede con QR · ' + c + '</button>'; }).join('') +
-      (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Schede di tutte le classi</button>' : '') + '<button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div>' +
-      '<p class="muted" style="margin:0 0 10px;font-size:14px">Le schede si aprono nella stampa: scegli “Salva come PDF” per avere il file. Una pagina A4 per alunno con QR, link, codice, partenza e scadenza (senza i termini).</p>' +
-      '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Classe</th><th>Codice</th></tr></thead><tbody>' +
-      S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
-      '</tbody></table></div></details>';
-  }
-  h += '</main>';
-  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)); selSituazione(); disegnaSituazione(); selGestione(); disegnaGestione();
-  // pagina della nuova edizione aperta dall'indirizzo (#nuova-edizione), anche dopo un ricaricamento
-  if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
-  if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
-}
 function cardDocente(t, l) {
   var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
   var h = '<article class="card" style="border-top:6px solid ' + a.colore + '"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="term-it">' + esc(t.it) + '</div>' + (EN() && t.en ? '<div class="term-en" lang="en" style="color:' + a.colore + '">' + esc(t.en) + '</div>' : '') + '</div>' +
@@ -3410,7 +3429,7 @@ function panoramica() {
 }
 /* ---------- solo prof. Cerrato: scadenze, voti, report ---------- */
 function isoLocale(iso) { var d = new Date(iso); var p = function (n) { return ('0' + n).slice(-2); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
-function bloccoAdmin() {
+function bloccoAdmin(quale) {
   var A = S.d.admin, imp = A.impostazioni;
   var errFino4 = function (p) { return Math.ceil((imp.votoMax - imp.votoMin) / p - 1e-9); };
   var multi = CLASSI().length > 1 && (S.datePerClasse != null ? S.datePerClasse : Object.keys(imp.calendario || {}).length > 0);
@@ -3434,7 +3453,7 @@ function bloccoAdmin() {
       return '<label class="op' + (imp.proposta === o[0] ? ' on' : '') + '" for="pr' + o[0] + '"><input type="radio" name="prop" id="pr' + o[0] + '" value="' + o[0] + '"' + (imp.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>';
     }).join('') + '</fieldset>' +
     '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli alunni esclusi</legend>' +
-    [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe (uno solo a testa)'], ['manuale', 'Decido io: restano fermi finché non li passo a chi scelgo (riquadro «Proroghe e passaggio dei termini»)']].map(function (o) {
+    [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe (uno solo a testa)'], ['manuale', 'Decido io: restano fermi finché non li passo a chi scelgo (pagina «Proroghe e passaggi»)']].map(function (o) {
       return '<label class="op' + (imp.riassegnazione === o[0] ? ' on' : '') + '" for="ri' + o[0] + '"><input type="radio" name="riass" id="ri' + o[0] + '" value="' + o[0] + '"' + (imp.riassegnazione === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + o[1] + '</span></label>';
     }).join('') + '</fieldset>' +
     '<div class="row"><button class="btn" onclick="salvaImpostazioni(this)">Salva partenza, scadenza e penalità</button></div>' +
@@ -3442,6 +3461,8 @@ function bloccoAdmin() {
     '<div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
     '<span class="muted" style="font-size:14px">Slide per la classe, con partenza, scadenza, voto massimo e penalità presi da qui. Salva prima le modifiche, poi scaricala.</span></div>' +
     '<p class="muted" style="margin:0;font-size:14px">' + esc(A.ratio) + '</p></section>';
+  if (quale === 'imp') return h;
+  h = '';
   var nomi = {}; (S.d.panoramica || []).forEach(function (r) { nomi[r.id] = r; });
   var row = function (v) {
     var r = nomi[v.id];
@@ -3461,10 +3482,13 @@ function bloccoAdmin() {
     attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo.</p>';
   if (esclusi.length) {
     h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Voto finale</th><th></th></tr></thead><tbody>' +
-      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + ((r.riassegnatiA || []).length ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : (r.bloccoRiass || A.impostazioni.riassegnazione === 'manuale' ? '<br><span class="muted" style="font-size:13px">Termini fermi: decidi tu (riquadro «Proroghe e passaggio dei termini»)</span>' : '')) + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
+      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + ((r.riassegnatiA || []).length ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : (r.bloccoRiass || A.impostazioni.riassegnazione === 'manuale' ? '<br><span class="muted" style="font-size:13px">Termini fermi: decidi tu (pagina «Proroghe e passaggi»)</span>' : '')) + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
         '<td>' + (RO() || !PUO('studenti') ? '' : '<button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button>') + '</td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  if (PUO('documenti')) h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button>' + (RO() ? '<button class="btn" onclick="scaricaArchivio(\'' + esc(S.d.edizioneArchivio.id) + '\',\'word\',this)">Definizioni approvate (Word)</button>' : '<button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button>') + '<button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button>' + (RO() ? '' : '<button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button>') + '<span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
+  h += '</section>';
+  if (quale === 'voti') return h;
+  h = '';
+  if (PUO('documenti')) h += '<section class="card stack admin"><h2 style="margin:0;font-size:22px">Report, Word e slide</h2><div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button>' + (RO() ? '<button class="btn" onclick="scaricaArchivio(\'' + esc(S.d.edizioneArchivio.id) + '\',\'word\',this)">Definizioni approvate (Word)</button>' : '<button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button>') + '<button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button>' + (RO() ? '' : '<button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button>') + '<span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe nella barra a sinistra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
 }
 function presentazione(btn, azione, dati) {
@@ -4037,7 +4061,7 @@ function disegnaGestione() {
     (r.proroga ? '<button class="btn sec" onclick="togliProroga(this)">Togli la proroga</button>' : '') + '</div></div>' +
     '<span class="muted" style="font-size:14px">Deve essere dopo la scadenza della classe. Vale per tutti i suoi termini; se era già escluso, torna nel compito' + (passati.length ? ' e puoi scegliere se riprendere i termini già passati ad altri' : '') + '.</span></div>';
   var blocco = '<div class="stack" style="gap:6px;border-top:1px solid var(--line);padding-top:12px"><b>Riassegnazione automatica</b>' +
-    (manuale ? '<p class="muted" style="margin:0;font-size:15px">È impostata su «decido io» per tutti (riquadro «Partenza, scadenza e valutazione»): i termini degli esclusi non passano mai in automatico.</p>'
+    (manuale ? '<p class="muted" style="margin:0;font-size:15px">È impostata su «decido io» per tutti (pagina «Scadenze e valutazione»): i termini degli esclusi non passano mai in automatico.</p>'
       : '<label class="row" style="gap:10px;font-weight:400;cursor:pointer"><input type="checkbox" id="gsBl"' + (r.bloccoRiass ? ' checked' : '') + ' onchange="setBloccoRiass(this)" style="width:22px;height:22px"> Se viene escluso, <b>non</b> passare i suoi termini in automatico: decido io</label>') + '</div>';
   var tab = miei.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th style="width:36px"></th><th>Termine</th><th>Area</th><th>Stato</th><th style="text-align:right">Tentativi</th></tr></thead><tbody>' + miei.map(function (t) {
     var z = area(t.area) || {}, app = t.statoIt === 'approvata';
@@ -4127,7 +4151,7 @@ function bloccoChiusuraEdizione() {
   if (!arch) return '<section class="card admin" id="chiusuraEd" style="border-color:var(--err);display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
     '<div style="flex:1;min-width:240px"><div class="muted disp" style="font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px">Edizione in corso</div>' +
     '<b style="font-size:19px">' + esc(ed.nome) + '</b><div class="muted" style="font-size:14px">a.s. ' + esc(ed.as) + ' · classi ' + esc(elencoClassi()) + (chiusa ? ' · app già chiusa agli alunni' : ' · aperta agli alunni') + '</div></div>' +
-    '<button class="btn" id="bChiudiEd" style="background:var(--err);border-color:var(--err);min-height:54px;font-size:18px;padding:0 24px" onclick="chiudiEdizione(this)">Chiudi l\'edizione in corso</button></section>';
+    '<button class="btn" id="bChiudiEd2" style="background:var(--err);border-color:var(--err);min-height:54px;font-size:18px;padding:0 24px" onclick="chiudiEdizione(this)">Chiudi l\'edizione in corso</button></section>';
   return '<section class="card admin" id="chiusuraEd" style="border-color:var(--ok);display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
     '<div style="flex:1;min-width:240px"><div class="muted disp" style="font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px">Edizione chiusa e archiviata</div>' +
     '<b style="font-size:19px">' + esc(ed.nome) + '</b><div class="muted" style="font-size:14px">a.s. ' + esc(ed.as) + ' · gli alunni ' + (chiusa ? 'non possono più entrare' : 'possono ancora entrare (app riaperta)') + '. Resta consultabile nell\'archivio.</div></div>' +
@@ -4166,7 +4190,7 @@ function bloccoEdizioni() {
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi; l\'edizione in corso viene chiusa agli alunni e archiviata in automatico. ' +
       '<b>Aggiungi una classe</b>: nuova classe con i suoi alunni, termini nuovi (mai usati prima) e date proprie; le sue definizioni vanno sugli stessi cartelloni. ' +
       '<b>Archivia</b>: a lavoro concluso fotografa l\'edizione (risposte, voti, definizioni, registro), che resta consultabile qui e nella pagina pubblica; poi potrai crearne una nuova.' +
-      (chiusa ? '' : ' Per archiviare chiudi prima l\'app agli alunni (riquadro «Accesso degli alunni»).') + '</p></div>'
+      (chiusa ? '' : ' Per archiviare chiudi prima l\'app agli alunni (pagina «Scadenze e valutazione», riquadro «Accesso degli alunni»).') + '</p></div>'
       : '<div class="row"><button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button><button class="btn sec" onclick="archiviaEdizione(true,this)">Aggiorna la copia in archivio</button></div>' +
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi. Gli alunni che riprendi tengono il loro codice.</p>') +
     (lista ? '<h3 style="margin:8px 0 0;font-size:18px">Archivio</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Edizione</th><th>a.s.</th><th>Classi</th><th style="text-align:right">Alunni</th><th style="text-align:right">Approvate</th><th style="text-align:right">Media</th><th></th></tr></thead><tbody>' + lista + '</tbody></table></div>'
@@ -4185,10 +4209,10 @@ function archiviaEdizione(sovrascrivi, btn) {
 }
 function apriArchivio(id, btn) {
   if (btn) btn.disabled = true;
-  api('archivioconsulta', { id: id }).then(function (d) { S.d = d; S.filtro = { area: 'tutte', stato: 'tutti', lingua: 'it', classe: 'tutte' }; S.poster = null; render(); window.scrollTo(0, 0); toast('Edizione archiviata, in sola lettura'); })
+  api('archivioconsulta', { id: id }).then(function (d) { S.d = d; S.pag = 'cruscotto'; ricordaPag('cruscotto'); S.filtro = { area: 'tutte', stato: 'tutti', lingua: 'it', classe: 'tutte' }; S.poster = null; render(); window.scrollTo(0, 0); toast('Edizione archiviata, in sola lettura'); })
     .catch(function (e) { if (btn) btn.disabled = false; toast(errMsg(e), true); });
 }
-function esciArchivio() { api('login').then(function (d) { S.d = d; S.filtro = { area: 'tutte', stato: 'inviata', lingua: 'it', classe: 'tutte' }; render(); window.scrollTo(0, 0); }).catch(function (e) { toast(errMsg(e), true); }); }
+function esciArchivio() { api('login').then(function (d) { S.d = d; S.pag = 'edizioni'; ricordaPag('edizioni'); S.filtro = { area: 'tutte', stato: 'inviata', lingua: 'it', classe: 'tutte' }; render(); window.scrollTo(0, 0); }).catch(function (e) { toast(errMsg(e), true); }); }
 function scaricaArchivio(id, tipo, btn) {
   var t = btn.textContent; btn.disabled = true; btn.textContent = '…';
   api('archiviofile', { id: id, tipo: tipo }).then(function (x) {
@@ -4364,7 +4388,7 @@ function passo1Html() {
       (w.tipo === 'edizione' ? '<div class="row" style="gap:6px"><span class="muted" style="font-size:14px">Riprendi gli alunni (stesso codice) della classe:</span>' + correnti.map(function (cl) { return '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="riprendiClasse(' + i + ',\'' + esc(cl) + '\')">' + esc(cl) + '</button>'; }).join('') + '</div>' +
         (Object.keys(c.riprendi).length ? '<span class="muted" style="font-size:14px">I nomi che restano uguali a quelli ripresi tengono il loro codice; quelli nuovi o modificati ricevono un codice nuovo.</span>' : '') +
         (w.classi.length > 1 ? '<div><button class="btn sec" style="min-height:36px" onclick="leggiPasso1();S.wz.classi.splice(' + i + ',1);disegnaWizard()">Togli questa classe</button></div>' : '') : '') +
-      '<span class="muted" style="font-size:14px">Senza partenza gli alunni entrano ma vedono il conto alla rovescia solo quando la fissi (riquadro «Partenza, scadenza e valutazione»).</span></fieldset>';
+      '<span class="muted" style="font-size:14px">Senza partenza gli alunni entrano ma vedono il conto alla rovescia solo quando la fissi (pagina «Scadenze e valutazione»).</span></fieldset>';
   });
   if (w.tipo === 'edizione') h += '<div><button class="btn sec" onclick="leggiPasso1();S.wz.classi.push(nuovaClasseWz());disegnaWizard()">+ Aggiungi un\'altra classe</button></div>';
   return h + '<div class="row" style="justify-content:flex-end"><button class="btn" onclick="wzAvanti1(this)">Avanti: proponi i termini</button></div>';
@@ -4490,7 +4514,7 @@ function passo3Html() {
   if (w.tipo === 'edizione' && S.d.admin.archiviata !== S.d.admin.impostazioni.edizione.id) avvisi.push('L\'edizione in corso (' + S.d.admin.impostazioni.edizione.nome + ') verrà chiusa agli alunni e archiviata: resta consultabile nell\'archivio e nella pagina pubblica.');
   if (w.tipo === 'edizione') avvisi.push('L\'app passa alla nuova edizione: gli alunni dell\'edizione archiviata non ripresi non potranno più entrare (i loro dati restano nell\'archivio). Il tuo codice docente resta lo stesso.');
   else avvisi.push('Le definizioni della nuova classe vanno sugli stessi quattro cartelloni. Le domande già assegnate alle altre classi non cambiano.');
-  avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel riquadro «Codici personali degli alunni».');
+  avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel pagina «Codici e schede QR».');
   return '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Classe</th><th style="text-align:right">Alunni</th><th style="text-align:right">Termini a testa</th><th>Distribuzione</th><th>Partenza</th><th>Scadenza</th></tr></thead><tbody>' + righe + '</tbody></table></div>' +
     '<p style="margin:0">Termini nuovi: <b>' + tot + '</b> (' + AREE_N.filter(function (n) { return w.fab[n]; }).map(function (n) { return 'area ' + n + ': ' + w.termini[n].length; }).join(', ') + ').' +
     (w.tipo === 'edizione' ? ' Edizione: <b>' + esc(w.nome) + '</b>, a.s. ' + esc(w.as) + '. Colleghi: ' + (w.colleghi.length ? w.colleghi.map(function (c) { return esc(c.nome) + ' (' + FACOLTA.filter(function (f) { return c.permessi[f[0]]; }).map(function (f) { return f[1].toLowerCase(); }).join(', ') + ')'; }).join('; ') : 'nessuno') + '. Penalità: proposta ' + w.proposta + ' (' + (w.proposta === 'A' ? '−0,25' : '−0,50') + ' per errore). Termini ricevuti: ' + w.giorniIt + ' giorni. Termini degli esclusi: ' + (w.riassegnazione === 'manuale' ? 'decidi tu.' : 'in automatico, a sorte.') : '') + '</p>' +
@@ -4555,7 +4579,7 @@ function apriTraduzioni() {
     .catch(function (e) { toast(errMsg(e), true); chiudiTraduzioni(); });
 }
 function chiudiTraduzioni(ricaricare) {
-  S.tr = null;
+  S.tr = null; S.pag = 'cartelloni'; ricordaPag('cartelloni');
   if (location.hash === '#inglese') history.replaceState(null, '', location.pathname + location.search);
   if (ricaricare) return ricarica();
   vistaDocente(); var p = $('pbox'); if (p) p.scrollIntoView({ block: 'center' });
@@ -4649,6 +4673,227 @@ function salvaColleghi(btn) {
   api('colleghi', { colleghi: el }).then(function (x) { S.col = null; return ricarica(x.colleghi.length ? 'Colleghi salvati: comunica a ciascuno il suo codice' : 'Nessun collega: l\'app è solo tua'); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
+
+/* ---------- area docenti: barra dei comandi a sinistra, una pagina alla volta al centro ---------- */
+var ICO = {
+  cruscotto: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  revisione: '<path d="M4 5h16v11H8l-4 4z"/><path d="M8 10h8"/>',
+  sollecito: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  situazione: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  gestione: '<path d="M7 4h10M7 20h10M8 4c0 5 8 5 8 8s-8 3-8 8M16 4c0 5-8 5-8 8"/>',
+  voti: '<path d="M3 4h18v16H3zM3 10h18M9 4v16"/>',
+  codici: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-6"/>',
+  cartelloni: '<rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+  documenti: '<path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5M9 13h7M9 17h7"/>',
+  impostazioni: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4.9a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.5a7 7 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-.9c.6.5 1.3.9 2 1.2L10 21h4l.5-2.5c.7-.3 1.4-.7 2-1.2l2.4.9 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/>',
+  edizioni: '<path d="M3 7h18v13H3zM3 7l2-4h14l2 4M10 12h4"/>',
+  registro: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>'
+};
+function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (ICO[k] || '') + '</svg>'; }
+
+/* le pagine, nell'ordine della barra; vis = chi la vede */
+function PAGINE() {
+  var adm = ADM(), ro = RO(), A = S.d.admin;
+  return [
+    { id: 'cruscotto', gr: 'Lavoro', t: 'Cruscotto', vis: true },
+    { id: 'revisione', gr: 'Lavoro', t: 'Risposte da rivedere', vis: true, bd: contaDaRivedere() },
+    { id: 'sollecito', gr: 'Lavoro', t: 'Da sollecitare', vis: !ro, bd: contaSollecito(), rosso: true },
+    { id: 'situazione', gr: 'Studenti', t: 'Situazione e avanzamento', vis: true },
+    { id: 'gestione', gr: 'Studenti', t: 'Proroghe e passaggi', vis: !!A && PUO('studenti') && !ro },
+    { id: 'voti', gr: 'Studenti', t: 'Voti e tabellone', vis: !!A && (PUO('voti') || PUO('studenti') || PUO('documenti')) },
+    { id: 'codici', gr: 'Studenti', t: 'Codici e schede QR', vis: !!S.d.codiciAlunni && !ro },
+    { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
+    { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
+    { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: adm && !ro },
+    { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
+    { id: 'registro', gr: 'Gestione', t: adm && !ro ? 'Registro e backup' : 'Registro delle attività', vis: (adm && !ro) || !!(A && A.attivita) }
+  ].filter(function (p) { return p.vis; });
+}
+function contaDaRivedere() {
+  return S.d.termini.filter(function (t) { return inClasse(t.alunno) && (t.statoIt === 'inviata' || (EN() && t.statoEn === 'inviata')); }).length;
+}
+function righeDaSollecitare() {
+  return (S.d.panoramica || []).filter(function (r) { return inClasse(r.id) && !r.escluso && ((r.mancaIt || 0) > 0 || (r.rimandate || 0) > 0 || (r.mancaRicevuti || 0) > 0); });
+}
+function contaSollecito() { return righeDaSollecitare().length; }
+
+function ricordaPag(id) { try { if (id) sessionStorage.setItem('glo_pag', id); else sessionStorage.removeItem('glo_pag'); } catch (e) { /* niente memoria: si riparte dal cruscotto */ } }
+function pagRicordata() { try { return sessionStorage.getItem('glo_pag'); } catch (e) { return null; } }
+function vai(id) {
+  S.pag = id; ricordaPag(id); document.body.classList.remove('menu-on');
+  vistaDocente(); window.scrollTo(0, 0);
+}
+function filtroClasse(c) { S.filtro.classe = c; vistaDocente(); }
+
+function barraLaterale(pag, pagine) {
+  var u = S.d.utente, ed = (S.d.config && S.d.config.edizione) || {}, cl = CLASSI(), f = S.filtro.classe || 'tutte';
+  var h = '<aside class="side" id="side" aria-label="Comandi"><div class="sbrand"><div class="slogo">B</div><div><b>Glossario</b><span>Area docenti · ' + esc(u.nome) + '</span></div>' +
+    '<button class="smenu-x" onclick="document.body.classList.remove(\'menu-on\')" aria-label="Chiudi il menu">×</button></div>';
+  if (RO()) {
+    var e = S.d.edizioneArchivio || {};
+    h += '<div class="sed arch"><div class="sed-l">ARCHIVIO · SOLA LETTURA</div><b>' + esc(e.nome || '') + '</b> · a.s. ' + esc(e.as || '') +
+      '<button class="sbtn-arch" onclick="esciArchivio()">Torna all\'edizione in corso</button>';
+  } else {
+    var arch = S.d.admin && S.d.admin.archiviata && ed.id && S.d.admin.archiviata === ed.id;
+    h += '<div class="sed"><div class="sed-l">' + (arch ? 'EDIZIONE CHIUSA E ARCHIVIATA' : 'EDIZIONE IN CORSO') + '</div><b>' + esc(ed.nome || ('Glossario ' + cl.join(' e '))) + '</b>' + (ed.as ? ' · a.s. ' + esc(ed.as) : '') +
+      (S.d.config.chiusa ? '<div class="sed-c">App chiusa agli alunni</div>' : '');
+  }
+  if (cl.length > 1) h += '<div class="seg" role="group" aria-label="Filtra per classe">' + ['tutte'].concat(cl).map(function (c) {
+    return '<button class="' + (f === c ? 'on' : '') + '" aria-pressed="' + (f === c) + '" data-classe="' + esc(c) + '" onclick="filtroClasse(\'' + esc(c) + '\')">' + (c === 'tutte' ? 'Tutte' : esc(c)) + '</button>';
+  }).join('') + '</div>';
+  h += '</div><nav class="snav">';
+  var gr = '';
+  pagine.forEach(function (p) {
+    if (p.gr !== gr) { gr = p.gr; h += '<div class="sgr">' + gr + '</div>'; }
+    h += '<button class="sit' + (p.id === pag ? ' on' : '') + '" data-pag="' + p.id + '"' + (p.id === pag ? ' aria-current="page"' : '') + ' onclick="vai(\'' + p.id + '\')">' + svgIco(p.id) + '<span>' + esc(p.t) + '</span>' +
+      (p.bd ? '<span class="sbd' + (p.rosso ? ' r' : '') + '">' + p.bd + '</span>' : '') + '</button>';
+  });
+  h += '</nav><div class="sfondo">';
+  if (ADM() && !RO()) {
+    var ed2 = S.d.admin.impostazioni.edizione, archiviata = S.d.admin.archiviata === ed2.id;
+    h += '<button class="snuova" id="bNuovaEd" onclick="apriWizard(\'edizione\')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nuova edizione</span><small>nuovo progetto: classi, alunni, termini, date</small></button>';
+    h += archiviata ? '<div class="schiusa">Edizione chiusa e archiviata</div>'
+      : '<button class="srosso" id="bChiudiEd" onclick="chiudiEdizione(this)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Chiudi l\'edizione in corso</button>';
+  }
+  h += '<div class="spiede"><span>app ' + esc(VERSIONE) + '</span><button onclick="esci()">Esci</button></div></div></aside>';
+  return h;
+}
+
+function barraAlta(p) {
+  var ed = (S.d.config && S.d.config.edizione) || {}, chips = '';
+  if (!RO()) {
+    var cl = S.filtro.classe && S.filtro.classe !== 'tutte' ? [S.filtro.classe] : CLASSI();
+    chips = cl.map(function (c) { var d = datePerClasse(c); return d && d.scadenzaIt ? '<span class="tchip" title="Scadenza ' + esc(c) + '">' + esc(c) + ' · scade ' + esc(oraIt(d.scadenzaIt)) + '</span>' : ''; }).join('');
+  }
+  return '<header class="tbar"><button class="smenu" onclick="document.body.classList.add(\'menu-on\')" aria-label="Apri il menu" aria-controls="side">☰</button>' +
+    '<div class="ttit"><h1>' + esc(p.t) + '</h1><div class="tsub">' + esc(RO() ? 'Archivio · ' + ((S.d.edizioneArchivio || {}).nome || '') : (ed.nome || '') + (ed.as ? ' · a.s. ' + ed.as : '')) + (S.filtro.classe && S.filtro.classe !== 'tutte' ? ' · solo ' + esc(S.filtro.classe) : '') + '</div></div>' +
+    '<div class="tdx">' + chips + '<button class="btn sec tb" onclick="ricarica(\'Dati aggiornati\')">Aggiorna</button><a class="btn sec tb" href="/glossario" target="_blank" rel="noopener">Pagina pubblica</a></div></header>';
+}
+
+function vistaDocente() {
+  var f = S.filtro;
+  if (!EN()) { f.lingua = 'it'; if (f.stato === 'pronte') f.stato = 'inviata'; }
+  var pagine = PAGINE(), pag = S.pag || pagRicordata() || 'cruscotto';
+  if (!pagine.some(function (p) { return p.id === pag; })) pag = 'cruscotto';
+  S.pag = pag;
+  var p = pagine.filter(function (x) { return x.id === pag; })[0];
+  var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
+  var avvisi = RO() ? bannerArchivio() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '';
+  $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
+    '<main class="dcont stack" id="pag-' + pag + '">' + avvisi + corpo + '</main></section></div>';
+  if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
+  if (pag === 'situazione') { selSituazione(); disegnaSituazione(); }
+  if (pag === 'gestione') { selGestione(); disegnaGestione(); }
+  // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
+  if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
+  if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
+}
+
+function cardAree() {
+  return '<section class="grid4">' + S.d.aree.map(function (a) {
+    var ts = S.d.termini.filter(function (t) { return t.area == a.n && inClasse(t.alunno); });
+    var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
+    var riv = c('it', 'inviata') + (EN() ? c('en', 'inviata') : 0);
+    var pronte = EN() ? ts.filter(function (t) { return t.statoIt === 'approvata' && t.statoEn === ''; }).length : 0;
+    return '<div class="card" style="border-top:8px solid ' + a.colore + '"><div class="disp" style="font-weight:800;font-size:17px;line-height:1.2">' + a.n + '. ' + esc(a.it) + '</div>' +
+      LINGUE().map(function (l) { var v = c(l, 'approvata'); return '<div style="margin-top:10px;font-size:15px">' + (l === 'it' ? (EN() ? 'Italiano' : 'Approvate') : 'Inglese') + ' <b>' + v + '/' + ts.length + '</b></div><div class="bar"><span style="width:' + (ts.length ? v / ts.length * 100 : 0) + '%;background:' + a.colore + '"></span></div>'; }).join('') +
+      (pronte ? '<div style="margin-top:8px;font-size:14px" class="muted">' + pronte + ' pronte per l\'inglese, non ancora scelte</div>' : '') +
+      '<div style="margin-top:10px">' + (riv ? '<button class="chip s-inviata chipbtn" onclick="S.filtro.area=\'' + a.n + '\';S.filtro.stato=\'inviata\';vai(\'revisione\')">' + riv + ' da rivedere</button>' : '<span class="chip s-vuota">Niente da rivedere</span>') + '</div></div>';
+  }).join('') + '</section>';
+}
+
+var PAGINA = {
+  cruscotto: function () {
+    var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); }), n = ts.length || 1;
+    var app = ts.filter(function (t) { return t.statoIt === 'approvata'; }).length, att = ts.filter(function (t) { return t.statoIt === 'inviata'; }).length;
+    var sol = RO() ? null : righeDaSollecitare(), riv = contaDaRivedere();
+    var al = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }), escl = al.filter(function (r) { return r.escluso; }).length;
+    var kpi = [
+      ['Risposte date', (app + att) + '<small> / ' + ts.length + '</small>', Math.round((app + att) / n * 100) + '% dei termini', (app + att) / n, 'var(--a1)'],
+      ['Da rivedere', riv, riv ? 'aspettano la tua revisione' : 'niente in attesa', null, 'var(--a1)', 'revisione'],
+      ['Approvate', app + '<small> / ' + ts.length + '</small>', Math.round(app / n * 100) + '% definitive', app / n, 'var(--ok)'],
+      sol ? ['Da sollecitare', sol.length, escl ? escl + (escl === 1 ? ' escluso' : ' esclusi') : 'nessun escluso', null, 'var(--err)', 'sollecito'] : ['Alunni', al.length, escl ? escl + ' esclusi' : 'nessun escluso', null, 'var(--ink)']
+    ];
+    var h = '<section class="kpis">' + kpi.map(function (k) {
+      var tag = k[5] ? 'button' : 'div';
+      return '<' + tag + ' class="card kcard"' + (k[5] ? ' onclick="vai(\'' + k[5] + '\')"' : '') + '><div class="kl">' + k[0] + '</div><div class="kv">' + k[1] + '</div><div class="muted ks">' + k[2] + '</div>' +
+        (k[3] != null ? '<div class="bar" style="margin-top:8px"><span style="width:' + Math.round(k[3] * 100) + '%;background:' + k[4] + '"></span></div>' : '') + '</' + tag + '>';
+    }).join('') + '</section>';
+    h += bloccoAnello();
+    var cols = '';
+    if (sol) {
+      var now = Date.now();
+      var prime = sol.map(function (r) { return { r: r, sc: Date.parse(r.scadenza) || Infinity }; }).sort(function (a, b) { return a.sc - b.sc || a.r.nome.localeCompare(b.r.nome, 'it'); }).slice(0, 6);
+      cols += '<section class="card stack" style="gap:10px"><div class="row" style="justify-content:space-between"><h2 class="h2s">Da sollecitare</h2>' + (sol.length ? '<button class="btn sec tb" onclick="vai(\'sollecito\')">Vedi tutti (' + sol.length + ')</button>' : '') + '</div>' +
+        (prime.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Senza risposta</th><th>Scadenza</th></tr></thead><tbody>' + prime.map(function (x) {
+          var resta = x.sc - now;
+          return '<tr><td>' + esc(x.r.nome) + ' <span class="muted" style="font-size:13px">' + esc(etich(x.r)) + '</span></td><td class="n">' + ((x.r.mancaIt || 0) + (x.r.rimandate ? ' <span style="color:#9A4A00;font-weight:400;font-size:13px">+' + x.r.rimandate + ' rim.</span>' : '')) + '</td>' +
+            '<td style="font-size:14px">' + (isFinite(x.sc) ? '<b style="color:' + (resta <= 0 ? 'var(--err)' : resta < 2 * 86400000 ? '#9A4A00' : 'var(--ink)') + '">' + (resta <= 0 ? 'scaduta' : 'mancano ' + esc(fraTempo(resta))) + '</b>' : '—') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="muted" style="margin:0">Tutti hanno risposto a tutti i loro termini.</p>') + '</section>';
+    }
+    var attesa = S.d.termini.filter(function (t) { return inClasse(t.alunno) && t.statoIt === 'inviata'; }).slice(0, 5);
+    cols += '<section class="card stack" style="gap:6px"><div class="row" style="justify-content:space-between"><h2 class="h2s">Risposte da rivedere</h2>' + (riv ? '<button class="btn sec tb" onclick="S.filtro.stato=\'inviata\';vai(\'revisione\')">Apri la revisione (' + riv + ')</button>' : '') + '</div>' +
+      (attesa.length ? attesa.map(function (t) {
+        var a = area(t.area) || {}, ok = t.okIt === true;
+        return '<div class="voce"><i style="background:' + esc(a.colore || '#15212B') + '"></i><div><b>' + esc(t.it) + '</b><small>' + esc(nomeAlunno(t.alunno)) + ' · ' + (ok ? '<span style="color:var(--ok)">✓ corretta</span>' : '<span style="color:var(--err)">✗ non corretta</span>') + '</small></div>' +
+          (PUO('revisione') && !RO() ? (ok ? '<button class="btn ok tb" onclick="decidi(\'' + t.id + '\',\'it\',\'approvata\',this)">Approva</button>' : '<button class="btn sec tb" onclick="S.filtro.stato=\'inviata\';vai(\'revisione\')">Rivedi</button>') : '') + '</div>';
+      }).join('') : '<p class="muted" style="margin:0">Niente da rivedere.</p>') + '</section>';
+    h += '<div class="grid2 cols">' + cols + '</div>';
+    h += cardAree();
+    if (S.d.admin && PUO('documenti')) h += '<section class="card stack" style="gap:10px"><h2 class="h2s">Documenti rapidi</h2><div class="row">' +
+      '<button class="btn sec" onclick="reportPdf()">Report completo (PDF)</button>' +
+      (RO() ? '' : '<button class="btn sec" onclick="esportaWord(this)">Definizioni approvate (Word)</button>') +
+      '<button class="btn sec" onclick="vai(\'cartelloni\')">Cartelloni 70×100</button>' +
+      (RO() ? '' : '<button class="btn sec" onclick="presentazione(this)">Presentazione (.pptx)</button>') + '</div></section>';
+    return h + bloccoTappe();
+  },
+  revisione: function () {
+    var f = S.filtro;
+    var lista = S.d.termini.filter(function (t) {
+      if (f.area !== 'tutte' && t.area != f.area) return false;
+      if (!inClasse(t.alunno)) return false;
+      if (f.stato === 'pronte') return t.statoIt === 'approvata' && t.statoEn !== 'approvata';
+      return f.stato === 'tutti' ? true : T(t, f.lingua, 'stato') === f.stato;
+    });
+    var corrette = lista.filter(function (t) { return T(t, f.lingua, 'stato') === 'inviata' && T(t, f.lingua, 'ok') === true && (f.lingua === 'it' || t.statoIt === 'approvata'); });
+    var h = '<section class="card stack"><h2 style="margin:0;font-size:22px">Revisione</h2><div class="grid4">' + selClasse('fc', 'vistaDocente()') +
+      (EN() ? '<div><label for="fl">Lingua</label><select id="fl" onchange="S.filtro.lingua=this.value;vistaDocente()">' + [['it', 'Italiano'], ['en', 'Inglese']].map(function (o) { return '<option value="' + o[0] + '"' + (f.lingua === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' : '') +
+      '<div><label for="fs">Stato</label><select id="fs" onchange="S.filtro.stato=this.value;vistaDocente()">' + [['inviata', 'Da rivedere (inviate)']].concat(EN() ? [['pronte', 'Italiano approvato, inglese da fare']] : []).concat([['correggere', 'Rimandate all\'alunno'], ['', 'Non ancora scelte'], ['approvata', 'Approvate'], ['tutti', 'Tutti']]).map(function (o) { return '<option value="' + o[0] + '"' + (f.stato === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+      '<div><label for="fa">Area</label><select id="fa" onchange="S.filtro.area=this.value;vistaDocente()"><option value="tutte">Tutte le aree</option>' + S.d.aree.map(function (a) { return '<option value="' + a.n + '"' + (f.area == a.n ? ' selected' : '') + '>' + a.n + '. ' + esc(a.it) + '</option>'; }).join('') + '</select></div></div>' +
+      (corrette.length && !RO() && PUO('revisione') ? '<div class="row"><button class="btn ok" onclick="approvaCorrette(this)">Approva tutte le scelte corrette (' + corrette.length + ')</button><span class="muted" style="font-size:15px">Quelle sbagliate restano da rivedere una per una.</span></div>' : '') +
+      '</section>';
+    h += '<p class="muted" style="margin:0">' + lista.length + ' termini' + (EN() ? ' · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') : '') + '</p>';
+    return h + (lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>');
+  },
+  sollecito: function () { return bloccoSollecito(); },
+  situazione: function () { return panoramica() + bloccoSituazione(); },
+  gestione: function () { return bloccoGestione(); },
+  voti: function () { return bloccoAdmin('voti'); },
+  codici: function () {
+    return '<section class="card" id="codici"><h2 style="margin:0 0 6px;font-size:22px">Codici personali degli alunni (riservato)</h2>' +
+      '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
+      '<div class="row" style="margin-bottom:10px">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Schede con QR · ' + c + '</button>'; }).join('') +
+      (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Schede di tutte le classi</button>' : '') + '<button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div>' +
+      '<p class="muted" style="margin:0 0 10px;font-size:14px">Le schede si aprono nella stampa: scegli “Salva come PDF” per avere il file. Una pagina A4 per alunno con QR, link, codice, partenza e scadenza (senza i termini).</p>' +
+      '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Classe</th><th>Codice</th></tr></thead><tbody>' +
+      S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
+      '</tbody></table></div></section>';
+  },
+  cartelloni: function () { return bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
+  documenti: function () {
+    var h = bloccoAdmin('doc');
+    if (ADM() && !RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Presentazione per gli studenti</h2><div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
+      '<span class="muted" style="font-size:14px">Slide per la classe, con partenza, scadenza, voto massimo e penalità presi da «Scadenze e valutazione».</span></section>';
+    if (!RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
+    return h;
+  },
+  impostazioni: function () {
+    return bloccoAdmin('imp') + '<section class="card stack" id="accesso"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
+      '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
+  },
+  edizioni: function () { return bloccoChiusuraEdizione() + bloccoEdizioni() + bloccoColleghi(); },
+  registro: function () { return (S.d.admin && S.d.admin.attivita ? bloccoAttivita() : '') + (ADM() && !RO() ? bloccoBackup() : ''); }
+};
 
 </script>
 </body>

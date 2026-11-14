@@ -34,6 +34,7 @@ html = '''<!DOCTYPE html>
 </script>
 <script>
 ''' + r('src/gestione.js') + '''
+''' + r('src/layout.js') + '''
 </script>
 </body>
 </html>
