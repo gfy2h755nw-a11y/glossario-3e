@@ -583,7 +583,7 @@ function stampaCartelloni(quali, abbondanza, lingua) {
     b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { soloApprovate: true, qr: location.origin + '/glossario', as: as, en: bil });
     document.body.appendChild(b); return b;
   });
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () {
+  caratteriPronti().then(function () {
     var pieni = [];
     var pagine = scatole.map(function (b, i) {
       Poster.adatta(b);
@@ -594,13 +594,16 @@ function stampaCartelloni(quali, abbondanza, lingua) {
         '<div style="position:absolute;left:' + AB + 'mm;top:' + AB + 'mm">' + f.outerHTML + '</div></section>';
       b.remove(); return html;
     });
-    w.document.open();
-    w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Cartelloni Glossario ' + esc(as || '') + (bil ? ' (italiano e inglese)' : ' (italiano)') + (AB ? ' – abbondanza 3 mm' : '') + '</title>' +
-      '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">' +
+    // la pagina di stampa si carica come documento nuovo (blob), così i caratteri si caricano e si misurano in modo affidabile
+    var doc = ('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Cartelloni Glossario ' + esc(as || '') + (bil ? ' (italiano e inglese)' : ' (italiano)') + (AB ? ' – abbondanza 3 mm' : '') + '</title>' +
+      '<style>' + cssFonti(location.origin) + '</style>' +
       '<style>@page{size:' + W + 'mm ' + H + 'mm;margin:0}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pg{position:relative;width:' + W + 'mm;height:' + H + 'mm;overflow:hidden;background:#FBFAF7;break-after:page}.pg:last-child{break-after:auto}' +
-      '@media screen{body{background:#C9D2DA;padding:10mm}.pg{margin:0 auto 10mm;box-shadow:0 2mm 8mm rgba(0,0,0,.25);zoom:.3}}</style></head><body>' + pagine.join('') +
-      '<scr' + 'ipt>document.fonts.ready.then(function(){setTimeout(function(){window.print()},500)})</scr' + 'ipt></body></html>');
-    w.document.close();
+      '@media screen{body{background:#C9D2DA;padding:10mm}body:not(.vista){visibility:hidden}.pg{margin:0 auto 10mm;box-shadow:0 2mm 8mm rgba(0,0,0,.25)}body.vista .pg{zoom:.3}}</style></head><body>' + pagine.join('') +
+      '<scr' + 'ipt>var adatta=' + Poster.adatta.toString() + ';</scr' + 'ipt>' +
+      // nella finestra di stampa si riadatta con i caratteri caricati lì, poi si stampa
+      scriptStampa('[].forEach.call(document.querySelectorAll(".pa-foglio"),function(f){adatta(f)});document.body.classList.add("vista");document.body.setAttribute("data-pronto","1");setTimeout(function(){window.print()},400)') + '</body></html>');
+    var url = URL.createObjectURL(new Blob([doc], { type: 'text/html' }));
+    w.location.href = url; setTimeout(function () { URL.revokeObjectURL(url); }, 120000);
     if (pieni.length) toast('Cartellone ' + pieni.join(', ') + ': troppi termini per il formato 70×100, gli ultimi non entrano.', true);
   });
 }

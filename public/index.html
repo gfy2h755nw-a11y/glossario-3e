@@ -12,8 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Glossario">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,600&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>@font-face{font-family:'Archivo';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/archivo-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/archivo-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:800;font-display:swap;src:url(/fonts/archivo-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:900;font-display:swap;src:url(/fonts/archivo-latin-900-normal.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(/fonts/cormorant-garamond-latin-500-italic.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/cormorant-garamond-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-italic.woff2) format('woff2')}</style>
 <style>
 :root{
   --ink:#15212B; --ink2:#3E4C59; --muted:#5B6976; --line:#D3DCE3; --bg:#EEF2F5; --card:#FFFFFF;
@@ -2944,7 +2943,7 @@ var Poster = (function () {
         '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:' + (opz.en ? 6 : 12) + 'mm">' + icona2(n, col).replace('width="64mm" height="64mm"', opz.en ? 'width="64mm" height="64mm"' : 'width="74mm" height="74mm"') +
           '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">Area 0' + n + ' di 04 · ' + termini.length + ' termini dalla A alla Z</div>' +
           '<div style="' + A + 'font-weight:900;font-size:' + (opz.en ? (area.it.length > 30 ? 26 : 33) : (area.it.length > 30 ? 32 : 40)) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div>' + (opz.en && area.en ? '<div lang="en" style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-style:italic;font-weight:700;font-size:9mm;opacity:.9;margin-top:1.5mm">' + esc(area.en) + '</div>' : '') + '</div></div>' +
-        '<div style="position:relative;margin-top:' + (opz.en ? 6 : 10) + 'mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
+        '<div class="pa-aut" style="position:relative;margin-top:' + (opz.en ? 6 : 10) + 'mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
           '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + ':</b> ' + (perCl[c] || []).join(' · '); }).join(' &nbsp;|&nbsp; ') +
           '<br><b style="' + lab + '">Docente</b> &nbsp;Prof. Danilo Cerrato (Laboratorio odontotecnico)</div></div>' +
       '<div style="position:absolute;left:34mm;right:34mm;top:179mm;display:flex;gap:1mm;padding:2.5mm 0;border-bottom:0.5mm solid #15212B">' + AZ + '</div>' +
@@ -2967,6 +2966,13 @@ var Poster = (function () {
     var body = f.querySelector('.pa-corpo'), k = 1.5;
     function esce() { var r = body.getBoundingClientRect(), tol = r.width * 0.002; for (var i = 0; i < body.children.length; i++) if (body.children[i].getBoundingClientRect().right > r.right + tol) return true; return false; }
     f.style.setProperty('--k', k); while (esce() && k > 0.5) { k -= 0.01; f.style.setProperty('--k', k.toFixed(3)); }
+    // nomi degli autori nella testata: se sono tanti si rimpicciolisce il carattere finché tutto sta nella fascia colorata
+    var aut = f.querySelector('.pa-aut'), te = f.querySelector('.pa-testata');
+    if (aut && te) {
+      var mm = f.getBoundingClientRect().width / 700, fs = 5.2;
+      aut.style.fontSize = fs + 'mm';
+      while (fs > 2.6 && aut.getBoundingClientRect().bottom > te.getBoundingClientRect().bottom - 4 * mm) { fs -= 0.1; aut.style.fontSize = fs.toFixed(2) + 'mm'; }
+    }
     return k;
   }
 
@@ -3058,7 +3064,22 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '14/11/2026 · 6';
+/* caratteri ospitati dall'app (cartella /fonts): stessi caratteri a schermo, nelle finestre di stampa e nei PDF */
+var FONTI = [['Archivo', 400, 'normal', 'archivo-latin-400-normal'], ['Archivo', 600, 'normal', 'archivo-latin-600-normal'], ['Archivo', 600, 'italic', 'archivo-latin-600-italic'], ['Archivo', 700, 'normal', 'archivo-latin-700-normal'],
+  ['Archivo', 800, 'normal', 'archivo-latin-800-normal'], ['Archivo', 900, 'normal', 'archivo-latin-900-normal'], ['Cormorant Garamond', 500, 'italic', 'cormorant-garamond-latin-500-italic'], ['Cormorant Garamond', 600, 'italic', 'cormorant-garamond-latin-600-italic'],
+  ['Atkinson Hyperlegible', 400, 'normal', 'atkinson-hyperlegible-latin-400-normal'], ['Atkinson Hyperlegible', 700, 'normal', 'atkinson-hyperlegible-latin-700-normal'], ['Atkinson Hyperlegible', 400, 'italic', 'atkinson-hyperlegible-latin-400-italic'], ['Atkinson Hyperlegible', 700, 'italic', 'atkinson-hyperlegible-latin-700-italic']];
+function cssFonti(base) { return FONTI.map(function (f) { return "@font-face{font-family:'" + f[0] + "';font-style:" + f[2] + ';font-weight:' + f[1] + ';font-display:block;src:url(' + (base || '') + '/fonts/' + f[3] + ".woff2) format('woff2')}"; }).join(''); }
+/* promessa: tutti i caratteri caricati davvero (document.fonts.ready da solo non aspetta quelli non ancora richiesti) */
+/* script per le finestre di stampa: aspetta i caratteri veri, poi esegue «dopo» */
+function scriptStampa(dopo) {
+  return '<scr' + 'ipt>(function(){var F=' + JSON.stringify(FONTI) + ';var p=document.fonts&&document.fonts.load?Promise.all(F.map(function(f){return document.fonts.load(f[2]+" "+f[1]+" 20px \'"+f[0]+"\'").catch(function(){return 0})})):Promise.resolve();' +
+    'Promise.race([p,new Promise(function(r){setTimeout(r,6000)})]).then(function(){' + dopo + '})})()</scr' + 'ipt>';
+}
+function caratteriPronti(doc) {
+  doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
+  return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
+}
+var VERSIONE = '14/11/2026 · 7';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3239,10 +3260,10 @@ function disegnaPoster(n) {
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
   sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario', as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
-  Poster.adatta(sc);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if ($('pscale') === sc) Poster.adatta(sc); });
-  var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
-  sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
+  var scala = function () { var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth; sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px'; };
+  Poster.adatta(sc); scala();
+  // si riadatta quando i caratteri veri sono caricati: misurare con quelli di riserva fa uscire le voci dalle colonne
+  caratteriPronti().then(function () { if ($('pscale') === sc) { Poster.adatta(sc); scala(); } });
 }
 window.addEventListener('resize', function () { if (S.poster && $('pbox')) disegnaPoster(S.poster); });
 
@@ -3541,9 +3562,9 @@ function stampaTarga() {
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Targa introduttiva Glossario</title>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">' +
+    '<style>' + cssFonti(location.origin) + '</style>' +
     '<style>@page{size:500mm 700mm;margin:0}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media screen{body{background:#C9D2DA;padding:10mm}body>div{box-shadow:0 2mm 8mm rgba(0,0,0,.25);margin:0 auto}}</style></head><body>' + html +
-    '<scr' + 'ipt>document.fonts.ready.then(function(){setTimeout(function(){window.print()},400)})</scr' + 'ipt></body></html>');
+    scriptStampa('setTimeout(function(){window.print()},400)') + '</body></html>');
   w.document.close();
 }
 function esportaWord(btn) {
@@ -3941,9 +3962,8 @@ function stampaSchede(classe) {
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Schede alunni Glossario ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">' +
-    '<style>' + css + '</style></head><body>' + pagine +
-    '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}</scr' + 'ipt></body></html>');
+    '<style>' + cssFonti(location.origin) + css + '</style></head><body>' + pagine +
+    scriptStampa('setTimeout(function(){window.print()},400)') + '</body></html>');
   w.document.close();
 }
 
@@ -4548,7 +4568,7 @@ function stampaCartelloni(quali, abbondanza, lingua) {
     b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { soloApprovate: true, qr: location.origin + '/glossario', as: as, en: bil });
     document.body.appendChild(b); return b;
   });
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () {
+  caratteriPronti().then(function () {
     var pieni = [];
     var pagine = scatole.map(function (b, i) {
       Poster.adatta(b);
@@ -4559,13 +4579,16 @@ function stampaCartelloni(quali, abbondanza, lingua) {
         '<div style="position:absolute;left:' + AB + 'mm;top:' + AB + 'mm">' + f.outerHTML + '</div></section>';
       b.remove(); return html;
     });
-    w.document.open();
-    w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Cartelloni Glossario ' + esc(as || '') + (bil ? ' (italiano e inglese)' : ' (italiano)') + (AB ? ' – abbondanza 3 mm' : '') + '</title>' +
-      '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">' +
+    // la pagina di stampa si carica come documento nuovo (blob), così i caratteri si caricano e si misurano in modo affidabile
+    var doc = ('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Cartelloni Glossario ' + esc(as || '') + (bil ? ' (italiano e inglese)' : ' (italiano)') + (AB ? ' – abbondanza 3 mm' : '') + '</title>' +
+      '<style>' + cssFonti(location.origin) + '</style>' +
       '<style>@page{size:' + W + 'mm ' + H + 'mm;margin:0}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pg{position:relative;width:' + W + 'mm;height:' + H + 'mm;overflow:hidden;background:#FBFAF7;break-after:page}.pg:last-child{break-after:auto}' +
-      '@media screen{body{background:#C9D2DA;padding:10mm}.pg{margin:0 auto 10mm;box-shadow:0 2mm 8mm rgba(0,0,0,.25);zoom:.3}}</style></head><body>' + pagine.join('') +
-      '<scr' + 'ipt>document.fonts.ready.then(function(){setTimeout(function(){window.print()},500)})</scr' + 'ipt></body></html>');
-    w.document.close();
+      '@media screen{body{background:#C9D2DA;padding:10mm}body:not(.vista){visibility:hidden}.pg{margin:0 auto 10mm;box-shadow:0 2mm 8mm rgba(0,0,0,.25)}body.vista .pg{zoom:.3}}</style></head><body>' + pagine.join('') +
+      '<scr' + 'ipt>var adatta=' + Poster.adatta.toString() + ';</scr' + 'ipt>' +
+      // nella finestra di stampa si riadatta con i caratteri caricati lì, poi si stampa
+      scriptStampa('[].forEach.call(document.querySelectorAll(".pa-foglio"),function(f){adatta(f)});document.body.classList.add("vista");document.body.setAttribute("data-pronto","1");setTimeout(function(){window.print()},400)') + '</body></html>');
+    var url = URL.createObjectURL(new Blob([doc], { type: 'text/html' }));
+    w.location.href = url; setTimeout(function () { URL.revokeObjectURL(url); }, 120000);
     if (pieni.length) toast('Cartellone ' + pieni.join(', ') + ': troppi termini per il formato 70×100, gli ultimi non entrano.', true);
   });
 }

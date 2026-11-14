@@ -27,7 +27,22 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '14/11/2026 · 6';
+/* caratteri ospitati dall'app (cartella /fonts): stessi caratteri a schermo, nelle finestre di stampa e nei PDF */
+var FONTI = [['Archivo', 400, 'normal', 'archivo-latin-400-normal'], ['Archivo', 600, 'normal', 'archivo-latin-600-normal'], ['Archivo', 600, 'italic', 'archivo-latin-600-italic'], ['Archivo', 700, 'normal', 'archivo-latin-700-normal'],
+  ['Archivo', 800, 'normal', 'archivo-latin-800-normal'], ['Archivo', 900, 'normal', 'archivo-latin-900-normal'], ['Cormorant Garamond', 500, 'italic', 'cormorant-garamond-latin-500-italic'], ['Cormorant Garamond', 600, 'italic', 'cormorant-garamond-latin-600-italic'],
+  ['Atkinson Hyperlegible', 400, 'normal', 'atkinson-hyperlegible-latin-400-normal'], ['Atkinson Hyperlegible', 700, 'normal', 'atkinson-hyperlegible-latin-700-normal'], ['Atkinson Hyperlegible', 400, 'italic', 'atkinson-hyperlegible-latin-400-italic'], ['Atkinson Hyperlegible', 700, 'italic', 'atkinson-hyperlegible-latin-700-italic']];
+function cssFonti(base) { return FONTI.map(function (f) { return "@font-face{font-family:'" + f[0] + "';font-style:" + f[2] + ';font-weight:' + f[1] + ';font-display:block;src:url(' + (base || '') + '/fonts/' + f[3] + ".woff2) format('woff2')}"; }).join(''); }
+/* promessa: tutti i caratteri caricati davvero (document.fonts.ready da solo non aspetta quelli non ancora richiesti) */
+/* script per le finestre di stampa: aspetta i caratteri veri, poi esegue «dopo» */
+function scriptStampa(dopo) {
+  return '<scr' + 'ipt>(function(){var F=' + JSON.stringify(FONTI) + ';var p=document.fonts&&document.fonts.load?Promise.all(F.map(function(f){return document.fonts.load(f[2]+" "+f[1]+" 20px \'"+f[0]+"\'").catch(function(){return 0})})):Promise.resolve();' +
+    'Promise.race([p,new Promise(function(r){setTimeout(r,6000)})]).then(function(){' + dopo + '})})()</scr' + 'ipt>';
+}
+function caratteriPronti(doc) {
+  doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
+  return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
+}
+var VERSIONE = '14/11/2026 · 7';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -208,10 +223,10 @@ function disegnaPoster(n) {
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
   sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario', as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
-  Poster.adatta(sc);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if ($('pscale') === sc) Poster.adatta(sc); });
-  var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
-  sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px';
+  var scala = function () { var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth; sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px'; };
+  Poster.adatta(sc); scala();
+  // si riadatta quando i caratteri veri sono caricati: misurare con quelli di riserva fa uscire le voci dalle colonne
+  caratteriPronti().then(function () { if ($('pscale') === sc) { Poster.adatta(sc); scala(); } });
 }
 window.addEventListener('resize', function () { if (S.poster && $('pbox')) disegnaPoster(S.poster); });
 
@@ -510,9 +525,9 @@ function stampaTarga() {
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Targa introduttiva Glossario</title>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">' +
+    '<style>' + cssFonti(location.origin) + '</style>' +
     '<style>@page{size:500mm 700mm;margin:0}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media screen{body{background:#C9D2DA;padding:10mm}body>div{box-shadow:0 2mm 8mm rgba(0,0,0,.25);margin:0 auto}}</style></head><body>' + html +
-    '<scr' + 'ipt>document.fonts.ready.then(function(){setTimeout(function(){window.print()},400)})</scr' + 'ipt></body></html>');
+    scriptStampa('setTimeout(function(){window.print()},400)') + '</body></html>');
   w.document.close();
 }
 function esportaWord(btn) {
@@ -910,9 +925,8 @@ function stampaSchede(classe) {
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Schede alunni Glossario ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">' +
-    '<style>' + css + '</style></head><body>' + pagine +
-    '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print()},400)}</scr' + 'ipt></body></html>');
+    '<style>' + cssFonti(location.origin) + css + '</style></head><body>' + pagine +
+    scriptStampa('setTimeout(function(){window.print()},400)') + '</body></html>');
   w.document.close();
 }
 
