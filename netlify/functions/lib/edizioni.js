@@ -132,7 +132,7 @@ async function generaTermini(db, { codice, richiesta, escludi, seme }) {
     const liberi = BANCA[n].map((x, i) => ({ t: x[0], d: x[1], i })).filter((x) => !via.has(SIM.chiave(x.t)) && !SIM.trovaSimile(x.t, x.d, usati));
     disponibili[n] = liberi.length;
     const scelti = (seme ? mescola(liberi, seme) : liberi).slice(0, chiesti).sort((x, y) => x.i - y.i);
-    aree[n] = scelti.map((x) => [x.t, x.d]);
+    aree[n] = scelti.map((x) => [x.t, x.d].concat(CAT.traduzionePronta(x.t) || ['', '']));
     if (scelti.length < chiesti) mancano[n] = chiesti - scelti.length;
   });
   return { aree, disponibili, mancano };
@@ -194,7 +194,9 @@ function validaClasse(c, i) {
 function validaTermini(termini, fab, esistenti) {
   const out = {};
   AREE.forEach((n) => {
-    const lista = ((termini || {})[n] || []).map((x) => [String(x[0] || '').replace(/\s+/g, ' ').trim(), String(x[1] || '').replace(/\s+/g, ' ').trim()]);
+    const pulisci = (v) => String(v || '').replace(/\s+/g, ' ').trim();
+    // termine, definizione e, se ci sono, la loro traduzione inglese
+    const lista = ((termini || {})[n] || []).map((x) => { const it = pulisci(x[0]), pr = CAT.traduzionePronta(it) || []; return [it, pulisci(x[1]), pulisci(x[2]).slice(0, 100) || pr[0] || '', pulisci(x[3]).slice(0, 400) || pr[1] || '']; });
     if (lista.length !== fab[n]) err('Area ' + n + ': servono ' + fab[n] + ' termini, ne sono arrivati ' + lista.length + '.');
     lista.forEach((x) => { if (!x[0] || !x[1]) err('Area ' + n + ': ogni termine deve avere la sua definizione.'); if (x[0].length > 80 || x[1].length > 300) err('Area ' + n + ': «' + x[0].slice(0, 40) + '» è troppo lungo.'); });
     out[n] = lista;
@@ -208,9 +210,10 @@ function validaTermini(termini, fab, esistenti) {
   }));
   return out;
 }
+function giorniValidi(g) { const n = Number(g); if (!(n >= 1 && n <= 30) || Math.floor(n) !== n) err('Giorni per i termini ricevuti: da 1 a 30.'); return n; }
 function terminiDoc(n, k0, lista, assegna) {
   return lista.map((x, j) => {
-    const t = { id: 'T' + n + L.pad2(k0 + j + 1), area: String(n), termine_it: x[0], termine_en: '', alunno_id: assegna[j], aggiornato: '' };
+    const t = { id: 'T' + n + L.pad2(k0 + j + 1), area: String(n), termine_it: x[0], termine_en: x[2] || '', alunno_id: assegna[j], aggiornato: '' };
     ['it', 'en'].forEach((l) => Object.assign(t, L.AZZERA(l)));
     return t;
   });
@@ -224,6 +227,14 @@ function idAlunno(classe, i, usati) {
 }
 function controllaAree(cat) {
   AREE.forEach((n) => { const tot = (cat[n] || []).length; if (tot > 0 && tot < 8) err('Area ' + n + ': con meno di 8 termini non si possono formare le 8 alternative. Cambia il numero di termini a testa o la distribuzione.'); });
+}
+
+/* chiusura dell'edizione in corso decisa dal docente: app chiusa agli alunni e copia in archivio */
+async function chiudiEdizione(db, { codice }) {
+  await adminDa(db, codice);
+  await db.scriviConfig({ chiusa: true });
+  const r = await archivia(db, { codice, sovrascrivi: true });
+  return Object.assign({ chiusa: true }, r);
 }
 
 /* ---------- nuova edizione ---------- */
@@ -256,8 +267,8 @@ async function nuovaEdizione(db, p) {
   let id = '', k = 1; do { id = as.replace('/', '-') + '-' + k; k++; } while (giaUsati.has(id));
   const scadMax = classi.map((c) => c.scadenza).sort().slice(-1)[0], partMin = classi.map((c) => c.partenza).filter(Boolean).sort()[0] || null;
   const nuovaConfig = {
-    chiusa: false, docenti: config.docenti, proposta: config.proposta || DATI.VALUTAZIONE.proposta, lingue: ['it'], versioneDati: 4,
-    giorniIt: config.giorniIt || DATI.EREDITA.giorniIt, giorniEn: config.giorniEn || DATI.EREDITA.giorniEn,
+    chiusa: false, docenti: p.colleghi ? L.nuoviColleghi(config, { alunni }, p.colleghi) : config.docenti, proposta: p.proposta === 'A' || p.proposta === 'B' ? p.proposta : (config.proposta || DATI.VALUTAZIONE.proposta), lingue: ['it'], versioneDati: 4,
+    giorniIt: p.giorniIt != null ? giorniValidi(p.giorniIt) : (config.giorniIt || DATI.EREDITA.giorniIt), giorniEn: config.giorniEn || DATI.EREDITA.giorniEn,
     riassegnazione: p.riassegnazione === 'manuale' ? 'manuale' : p.riassegnazione === 'auto' ? 'auto' : (config.riassegnazione || 'auto'),
     classi: classi.map((c) => c.nome), partenza: partMin, scadenze: { it: scadMax, en: new Date(Date.parse(scadMax) + 7 * 86400000).toISOString() },
     calendario: Object.fromEntries(classi.map((c) => [c.nome, { partenza: c.partenza, scadenzaIt: c.scadenza }])),
@@ -320,4 +331,4 @@ function calcolaFabbisogno(p) {
   return fabbisogno(classi);
 }
 
-module.exports = { archivia, consultaArchivio, fileArchivio, pubblico, generaTermini, verificaTermini, nuovaEdizione, aggiungiClasse, calcolaFabbisogno, piano };
+module.exports = { chiudiEdizione, archivia, consultaArchivio, fileArchivio, pubblico, generaTermini, verificaTermini, nuovaEdizione, aggiungiClasse, calcolaFabbisogno, piano };

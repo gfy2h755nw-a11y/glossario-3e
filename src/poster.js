@@ -415,8 +415,10 @@ var Poster = (function () {
       var l = iniziale(t.it); lettere[l] = 1;
       if (l !== ult) { corpo += '<div class="pa-let"><b>' + esc(l) + '</b><i></i></div>'; ult = l; }
       var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata'), mio = opz.evidenzia && t.alunno === opz.evidenzia;
-      corpo += '<div class="pa-v"' + (mio ? ' style="background:#FFE98A;box-shadow:inset 1.4mm 0 0 #15212B;padding-left:2.6mm;padding-right:1.5mm"' : '') + '><h3>' + esc(t.it) + '</h3>' +
-        (ok ? '<p>' + esc(t.defIt) + (nomi[t.alunno] ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>'
+      var en = opz.en && t.posterEn ? t.posterEn : null;
+      corpo += '<div class="pa-v"' + (mio ? ' style="background:#FFE98A;box-shadow:inset 1.4mm 0 0 #15212B;padding-left:2.6mm;padding-right:1.5mm"' : '') + '><h3>' + esc(t.it) + (en && en.t ? '<span class="pa-en" lang="en">' + esc(en.t) + '</span>' : '') + '</h3>' +
+        (ok ? '<p>' + esc(t.defIt) + (nomi[t.alunno] && !(en && en.d) ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>' +
+            (en && en.d ? '<p class="pa-den" lang="en">' + esc(en.d) + (nomi[t.alunno] ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>' : '')
           : '<p class="pa-vuota">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</p>') + '</div>';
     });
     var AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function (l) { return '<span style="flex:1;text-align:center;' + A + 'font-weight:800;font-size:9mm;line-height:1;color:' + (lettere[l] ? col : '#C9D1D8') + '">' + l + '</span>'; }).join('');
@@ -432,6 +434,8 @@ var Poster = (function () {
       '.pa-v p{margin:calc(0.9mm*var(--k)) 0 0;font-size:calc(5.5mm*var(--k));line-height:1.24}' +
       '.pa-v em{font-size:calc(4.3mm*var(--k));color:#6B7884;white-space:nowrap}' +
       '.pa-v p.pa-vuota{color:#8494A3;font-style:italic;font-size:calc(4.6mm*var(--k))}' +
+      '.pa-v .pa-en{display:block;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:700;font-style:italic;font-size:calc(5.6mm*var(--k));line-height:1.15;color:' + col + ';margin-top:calc(0.4mm*var(--k))}' +
+      '.pa-v p.pa-den{margin-top:calc(0.6mm*var(--k));font-style:italic;font-size:calc(4.7mm*var(--k));line-height:1.22;color:#3E4C59;border-left:0.6mm solid ' + tinta(col, 0.5) + ';padding-left:calc(2mm*var(--k))}' +
       '</style>';
     var lab = A + 'font-weight:800;letter-spacing:0.6mm;text-transform:uppercase;font-size:4.8mm';
     return '<div class="poster-foglio pa-foglio" style="width:700mm;height:1000mm;position:relative;overflow:hidden;background:#FBFAF7;color:#15212B;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;box-sizing:border-box">' + css +
@@ -439,11 +443,11 @@ var Poster = (function () {
         '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">0' + n + '</div>' +
         '<div style="position:relative;display:flex;justify-content:space-between;align-items:center">' +
           '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa · Laboratorio odontotecnico</div></div></div>' +
-          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">Glossario odontotecnico<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
-        '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:12mm">' + icona2(n, col).replace('width="64mm" height="64mm"', 'width="74mm" height="74mm"') +
+          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">Glossario odontotecnico' + (opz.en ? ' · Dental technology glossary' : '') + '<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
+        '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:' + (opz.en ? 6 : 12) + 'mm">' + icona2(n, col).replace('width="64mm" height="64mm"', opz.en ? 'width="64mm" height="64mm"' : 'width="74mm" height="74mm"') +
           '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">Area 0' + n + ' di 04 · ' + termini.length + ' termini dalla A alla Z</div>' +
-          '<div style="' + A + 'font-weight:900;font-size:' + (area.it.length > 30 ? 32 : 40) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div></div></div>' +
-        '<div style="position:relative;margin-top:10mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
+          '<div style="' + A + 'font-weight:900;font-size:' + (opz.en ? (area.it.length > 30 ? 26 : 33) : (area.it.length > 30 ? 32 : 40)) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div>' + (opz.en && area.en ? '<div lang="en" style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-style:italic;font-weight:700;font-size:9mm;opacity:.9;margin-top:1.5mm">' + esc(area.en) + '</div>' : '') + '</div></div>' +
+        '<div style="position:relative;margin-top:' + (opz.en ? 6 : 10) + 'mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
           '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + ':</b> ' + (perCl[c] || []).join(' · '); }).join(' &nbsp;|&nbsp; ') +
           '<br><b style="' + lab + '">Docente</b> &nbsp;Prof. Danilo Cerrato (Laboratorio odontotecnico)</div></div>' +
       '<div style="position:absolute;left:34mm;right:34mm;top:179mm;display:flex;gap:1mm;padding:2.5mm 0;border-bottom:0.5mm solid #15212B">' + AZ + '</div>' +
@@ -463,7 +467,7 @@ var Poster = (function () {
   function adatta(foglio) {
     var f = foglio && foglio.classList && foglio.classList.contains('pa-foglio') ? foglio : (foglio && foglio.querySelector('.pa-foglio'));
     if (!f) return 1;
-    var body = f.querySelector('.pa-corpo'), k = 1.15;
+    var body = f.querySelector('.pa-corpo'), k = 1.5;
     function esce() { var r = body.getBoundingClientRect(), tol = r.width * 0.002; for (var i = 0; i < body.children.length; i++) if (body.children[i].getBoundingClientRect().right > r.right + tol) return true; return false; }
     f.style.setProperty('--k', k); while (esce() && k > 0.5) { k -= 0.01; f.style.setProperty('--k', k.toFixed(3)); }
     return k;

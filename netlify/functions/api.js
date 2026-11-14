@@ -26,6 +26,11 @@ const AZIONI = {
   trasferisci: (d, p) => logica.trasferisciTermini(d, p),
   // edizioni: archivio, nuova edizione, classe aggiunta, generatore di termini
   archivia: (d, p) => ED.archivia(d, p),
+  chiudiedizione: (d, p) => ED.chiudiEdizione(d, p),
+  // inglese per i cartelloni bilingui e colleghi docenti con le loro facoltà
+  traduzioni: (d, p) => logica.traduzioni(d, p),
+  salvatraduzioni: (d, p) => logica.salvaTraduzioni(d, p),
+  colleghi: (d, p) => logica.colleghi(d, p),
   archivioconsulta: (d, p) => ED.consultaArchivio(d, p),
   archiviofile: (d, p) => ED.fileArchivio(d, p),
   generatermini: (d, p) => ED.generaTermini(d, p),
@@ -49,7 +54,7 @@ const AZIONI = {
   },
   // presentazione PowerPoint di riepilogo (grafici nativi)
   presentazione: async (d, p) => {
-    await logica.verificaAdmin(d, p.codice);
+    await logica.verificaPermesso(d, p.codice, 'documenti');
     const tutto = auto.statoDa(await d.backupGrezzo());
     const stato = logica.statoClasse(tutto.stato, p.classe);
     const buf = await require('./lib/presentazione').creaPresentazione(stato, tutto.attivita, Date.now());
@@ -57,7 +62,7 @@ const AZIONI = {
   },
   // presentazione per gli studenti di una classe, con partenza e scadenza prese dalle impostazioni
   presentazionestudenti: async (d, p) => {
-    await logica.verificaAdmin(d, p.codice);
+    await logica.verificaPermesso(d, p.codice, 'documenti');
     const { stato } = auto.statoDa(await d.backupGrezzo());
     const imp = logica.impostazioni(stato.config);
     const classe = String(p.classe || '');
@@ -69,7 +74,7 @@ const AZIONI = {
   dropboxscollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); await d.cancellaSegreto('dropbox'); return { scollegato: true }; },
   // Word con termini e definizioni approvate: si scarica e, se Dropbox è collegato, si salva lì sovrascrivendo
   word: async (d, p) => {
-    await logica.verificaAdmin(d, p.codice);
+    await logica.verificaPermesso(d, p.codice, 'documenti');
     const now = Date.now();
     const { stato } = auto.statoDa(await d.backupGrezzo());
     const { creaWord, NOME_DROPBOX } = require('./lib/word');

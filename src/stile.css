@@ -30,7 +30,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .s-correggere{background:var(--warnbg);color:var(--warn)}
 .s-approvata{background:var(--okbg);color:var(--ok)}
 label{font-weight:700;font-size:15px}
-input[type=text],input[type=password],input[type=datetime-local],textarea,select{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+input[type=text],input[type=number],input[type=password],input[type=datetime-local],textarea,select{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
 input:focus,textarea:focus,select:focus,.btn:focus-visible{outline:3px solid #9CC3EE;outline-offset:1px}
 textarea{min-height:104px;resize:vertical}
 .cnt{font-size:14px;color:var(--muted);text-align:right}

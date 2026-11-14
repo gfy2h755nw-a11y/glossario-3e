@@ -180,6 +180,31 @@ function passaTermini(btn) {
     } }]);
 }
 
+/* ---------- chiusura dell'edizione in corso (pulsante rosso in cima) ---------- */
+function bloccoChiusuraEdizione() {
+  var A = S.d.admin, ed = A.impostazioni.edizione, arch = A.archiviata === ed.id, chiusa = !!S.d.config.chiusa;
+  if (!arch) return '<section class="card admin" id="chiusuraEd" style="border-color:var(--err);display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
+    '<div style="flex:1;min-width:240px"><div class="muted disp" style="font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px">Edizione in corso</div>' +
+    '<b style="font-size:19px">' + esc(ed.nome) + '</b><div class="muted" style="font-size:14px">a.s. ' + esc(ed.as) + ' · classi ' + esc(elencoClassi()) + (chiusa ? ' · app già chiusa agli alunni' : ' · aperta agli alunni') + '</div></div>' +
+    '<button class="btn" id="bChiudiEd" style="background:var(--err);border-color:var(--err);min-height:54px;font-size:18px;padding:0 24px" onclick="chiudiEdizione(this)">Chiudi l\'edizione in corso</button></section>';
+  return '<section class="card admin" id="chiusuraEd" style="border-color:var(--ok);display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
+    '<div style="flex:1;min-width:240px"><div class="muted disp" style="font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px">Edizione chiusa e archiviata</div>' +
+    '<b style="font-size:19px">' + esc(ed.nome) + '</b><div class="muted" style="font-size:14px">a.s. ' + esc(ed.as) + ' · gli alunni ' + (chiusa ? 'non possono più entrare' : 'possono ancora entrare (app riaperta)') + '. Resta consultabile nell\'archivio.</div></div>' +
+    '<button class="btn" style="min-height:54px;font-size:18px;padding:0 24px" onclick="apriWizard(\'edizione\')">Nuova edizione</button></section>';
+}
+function chiudiEdizione(btn) {
+  var ed = S.d.admin.impostazioni.edizione, mancano = (S.d.panoramica || []).filter(function (r) { return !r.escluso && (r.mancaIt || 0) > 0; }).length;
+  var daRivedere = (S.d.termini || []).filter(function (t) { return t.statoIt === 'inviata'; }).length;
+  finestra('Chiudi l\'edizione in corso',
+    '<p style="margin:0">Chiudi <b>' + esc(ed.nome) + '</b> (a.s. ' + esc(ed.as) + '):</p><ul style="margin:0;padding-left:20px"><li>gli alunni non potranno più entrare né rispondere;</li><li>l\'edizione va in archivio con risposte, voti, definizioni e registro, e resta consultabile;</li><li>tu continui a vedere tutto e puoi ancora approvare, scaricare report, Word e cartelloni (poi «Aggiorna la copia in archivio»).</li></ul>' +
+    (mancano || daRivedere ? '<p class="note warn" style="margin:0">' + (mancano ? mancano + (mancano === 1 ? ' alunno ha' : ' alunni hanno') + ' ancora termini senza risposta. ' : '') + (daRivedere ? daRivedere + (daRivedere === 1 ? ' risposta aspetta' : ' risposte aspettano') + ' la tua revisione.' : '') + '</p>' : ''),
+    [{ t: 'Chiudi l\'edizione e archiviala', warn: true, f: function () {
+      btn.disabled = true;
+      api('chiudiedizione', {}).then(function (x) { return ricarica('Edizione chiusa e archiviata' + (x.dropbox === 'ok' ? ' (copia anche su Dropbox)' : '')); })
+        .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+    } }]);
+}
+
 /* ---------- edizioni e archivio ---------- */
 function bloccoEdizioni() {
   var A = S.d.admin, ed = A.impostazioni.edizione, arch = A.archiviata === ed.id, chiusa = !!S.d.config.chiusa;
@@ -299,16 +324,36 @@ function caricaElenco(i, inp) {
   }
 }
 function apriWizard(tipo) {
+  if (tipo === 'edizione' && location.hash !== '#nuova-edizione') { S.wzApri = true; location.hash = 'nuova-edizione'; return; }
   var ed = S.d.admin.impostazioni.edizione, as = ed.as;
   var prossimo = /^(\d{4})\/(\d{2})$/.exec(as) ? (Number(as.slice(0, 4)) + 1) + '/' + ('0' + ((Number(as.slice(5)) + 1) % 100)).slice(-2) : '';
-  S.wz = { tipo: tipo, passo: 1, nome: '', as: prossimo, classi: [nuovaClasseWz()], termini: null, scartati: [], riassegnazione: S.d.admin.impostazioni.riassegnazione };
+  var I = S.d.admin.impostazioni;
+  S.wz = { tipo: tipo, passo: 1, nome: '', as: prossimo, classi: [nuovaClasseWz()], termini: null, scartati: [], riassegnazione: I.riassegnazione, proposta: I.proposta, giorniIt: I.giorniIt,
+    colleghi: (S.d.admin.colleghi || []).map(function (c) { return { nome: c.nome, codice: c.codice, permessi: Object.assign({}, c.permessi) }; }) };
   if (tipo === 'edizione') S.wz.nome = 'Glossario odontotecnico ' + prossimo;
   disegnaWizard();
 }
-function chiudiWizard() { var o = $('wz'); if (o) o.remove(); S.wz = null; }
+function chiudiWizard() {
+  var pagina = S.wz && S.wz.tipo === 'edizione';
+  S.wz = null;
+  if (pagina) { if (location.hash === '#nuova-edizione') history.replaceState(null, '', location.pathname + location.search); vistaDocente(); window.scrollTo(0, 0); return; }
+  var o = $('wz'); if (o) o.remove();
+}
+// la pagina della nuova edizione si apre e si chiude anche con i tasti avanti/indietro del browser
+window.addEventListener('hashchange', function () {
+  if (!S.d || !S.d.admin || RO()) return;
+  if (location.hash === '#nuova-edizione' && !(S.wz && S.wz.tipo === 'edizione')) { S.wzApri = false; apriWizard('edizione'); }
+  else if (location.hash !== '#nuova-edizione' && S.wz && S.wz.tipo === 'edizione') { S.wz = null; vistaDocente(); }
+});
 function leggiPasso1() {
   var w = S.wz;
-  if (w.tipo === 'edizione') { w.nome = $('wzNome').value; w.as = $('wzAs').value.trim(); var rr = document.querySelector('input[name="wzRi"]:checked'); w.riassegnazione = rr ? rr.value : w.riassegnazione; }
+  if (w.tipo === 'edizione') {
+    w.nome = $('wzNome').value; w.as = $('wzAs').value.trim();
+    var rr = document.querySelector('input[name="wzRi"]:checked'); w.riassegnazione = rr ? rr.value : w.riassegnazione;
+    var pp = document.querySelector('input[name="wzPr"]:checked'); w.proposta = pp ? pp.value : w.proposta;
+    w.giorniIt = Number($('wzG').value);
+    w.colleghi = leggiColleghi('wzc', w.colleghi);
+  }
   w.classi.forEach(function (c, i) {
     c.nome = ($('wzC' + i).value || '').trim().toUpperCase().replace(/\s+/g, '');
     c.max = Number($('wzT' + i).value); c.tpa = c.max;
@@ -327,6 +372,7 @@ function riprendiClasse(i, cl) {
 }
 function disegnaWizard() {
   var w = S.wz; if (!w) return;
+  if (w.tipo === 'edizione') return paginaNuovaEdizione();
   var o = $('wz');
   if (!o) { o = document.createElement('div'); o.id = 'wz'; o.setAttribute('style', 'position:fixed;inset:0;background:rgba(21,33,43,.6);z-index:40;overflow:auto;padding:16px'); document.body.appendChild(o); }
   var titolo = w.tipo === 'edizione' ? 'Nuova edizione del glossario' : 'Aggiungi una classe a questa edizione';
@@ -337,12 +383,31 @@ function disegnaWizard() {
   if (w.passo === 1) h += passo1Html(); else if (w.passo === 2) h += passo2Html(); else h += passo3Html();
   o.innerHTML = h + '</div>';
 }
+function paginaNuovaEdizione() {
+  var w = S.wz, passi = ['Edizione, regole, classi e alunni', 'Termini', 'Conferma'];
+  var h = testata('Nuova edizione del glossario') + '<main class="wrap stack"><div id="wz" class="stack">' +
+    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:28px">Nuova edizione del glossario</h1><button class="btn sec" onclick="chiudiWizard()">Torna all\'area docenti</button></div>' +
+    '<p class="muted" style="margin:0">Qui decidi tutto: nome e anno, regole di valutazione, classi, alunni, termini a testa, partenza e scadenze. ' +
+    (S.d.admin.archiviata === S.d.admin.impostazioni.edizione.id ? 'L\'edizione precedente è già in archivio.' : 'Quando confermi, l\'edizione in corso (' + esc(S.d.admin.impostazioni.edizione.nome) + ') viene chiusa agli alunni e archiviata.') + '</p>' +
+    '<div class="row" style="gap:6px">' + passi.map(function (p, i) { return '<span class="chip ' + (w.passo === i + 1 ? 's-approvata' : 's-vuota') + '">' + (i + 1) + '. ' + p + '</span>'; }).join('') + '</div></section>' +
+    '<section class="card stack">' + (w.passo === 1 ? passo1Html() : w.passo === 2 ? passo2Html() : passo3Html()) + '</section></div></main>';
+  $('app').innerHTML = h;
+}
 function passo1Html() {
   var w = S.wz, h = '';
   if (w.tipo === 'edizione') {
-    h += '<div class="grid2"><div><label for="wzNome">Nome dell\'edizione</label><input id="wzNome" type="text" value="' + esc(w.nome) + '"></div><div><label for="wzAs">Anno scolastico</label><input id="wzAs" type="text" placeholder="2027/28" value="' + esc(w.as) + '"></div></div>' +
+    var I = S.d.admin.impostazioni, err4 = function (p) { return Math.ceil((I.votoMax - I.votoMin) / p); };
+    h += '<h2 style="margin:0;font-size:21px">Edizione</h2><div class="grid2"><div><label for="wzNome">Nome dell\'edizione</label><input id="wzNome" type="text" value="' + esc(w.nome) + '"></div><div><label for="wzAs">Anno scolastico</label><input id="wzAs" type="text" placeholder="2027/28" value="' + esc(w.as) + '"></div></div>' +
+      '<h2 style="margin:8px 0 0;font-size:21px">Regole</h2>' +
+      '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Penalità per ogni risposta errata (voto da ' + fv(I.votoMax) + ', minimo ' + I.votoMin + ')</legend>' +
+      [['A', '−0,25 per errore: ' + err4(0.25) + ' errori per scendere da ' + fv(I.votoMax) + ' a ' + I.votoMin], ['B', '−0,50 per errore: ' + err4(0.5) + ' errori per scendere da ' + fv(I.votoMax) + ' a ' + I.votoMin]].map(function (o) {
+        return '<label class="op' + (w.proposta === o[0] ? ' on' : '') + '"><input type="radio" name="wzPr" value="' + o[0] + '"' + (w.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>'; }).join('') + '</fieldset>' +
+      '<div class="grid2"><div><label for="wzG">Termini ricevuti da un escluso: giorni per rispondere</label><input id="wzG" type="number" min="1" max="30" value="' + esc(w.giorniIt) + '"></div></div>' +
       '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli esclusi</legend>' +
-      [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe'], ['manuale', 'Decido io a chi passarli']].map(function (x) { return '<label class="op' + (w.riassegnazione === x[0] ? ' on' : '') + '"><input type="radio" name="wzRi" value="' + x[0] + '"' + (w.riassegnazione === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>';
+      [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe'], ['manuale', 'Decido io a chi passarli']].map(function (x) { return '<label class="op' + (w.riassegnazione === x[0] ? ' on' : '') + '"><input type="radio" name="wzRi" value="' + x[0] + '"' + (w.riassegnazione === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
+      '<h2 style="margin:8px 0 0;font-size:21px">Colleghi docenti</h2><p class="muted" style="margin:0;font-size:14px">Facoltativo: aggiungi un collega e scegli cosa può fare nella nuova edizione. I colleghi già presenti tengono il loro codice.</p>' +
+      '<div id="wzcBox">' + editorColleghi('wzc', w.colleghi) + '</div>' +
+      '<h2 style="margin:8px 0 0;font-size:21px">Classi e alunni</h2>';
   }
   var correnti = CLASSI();
   w.classi.forEach(function (c, i) {
@@ -366,7 +431,7 @@ function passo1Html() {
 function wzAvanti1(btn) {
   leggiPasso1();
   var w = S.wz, errs = [];
-  if (w.tipo === 'edizione') { if (!w.nome.trim()) errs.push('Dai un nome all\'edizione.'); if (!/^\d{4}\/\d{2}$/.test(w.as)) errs.push('Anno scolastico nel formato 2027/28.'); }
+  if (w.tipo === 'edizione') { if (!w.nome.trim()) errs.push('Dai un nome all\'edizione.'); if (!/^\d{4}\/\d{2}$/.test(w.as)) errs.push('Anno scolastico nel formato 2027/28.'); if (!(w.giorniIt >= 1 && w.giorniIt <= 30)) errs.push('Giorni per i termini ricevuti: da 1 a 30.'); }
   var nomi = {};
   w.classi.forEach(function (c) {
     if (!c.nome) errs.push('Manca il nome di una classe.');
@@ -414,6 +479,8 @@ function passo2Html() {
   return h + '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=1;disegnaWizard()">Indietro</button><button class="btn" onclick="S.wz.passo=3;disegnaWizard()"' + (ok ? '' : ' disabled') + '>Avanti: riepilogo</button></div>' +
     (ok ? '' : '<p class="muted" style="margin:0;text-align:right;font-size:14px">Per andare avanti ogni area deve avere esattamente i termini che servono.</p>');
 }
+function wzcAggiungi() { leggiPasso1(); S.wz.colleghi.push({ nome: '', codice: null, permessi: { revisione: true } }); disegnaWizard(); }
+function wzcTogli(i) { leggiPasso1(); S.wz.colleghi.splice(i, 1); disegnaWizard(); }
 function adattaMassimo() {
   var w = S.wz, max = Math.max.apply(null, w.classi.map(function (c) { return c.max; }));
   var regge = function (t) { var cl = w.classi.map(function (c) { return Object.assign({}, c, { tpa: Math.min(c.max, t) }); }); var f = fabbisognoClient(cl); return AREE_N.every(function (n) { return f[n] <= w.disp[n]; }) ? cl : null; };
@@ -485,7 +552,7 @@ function passo3Html() {
   avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel riquadro «Codici personali degli alunni».');
   return '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Classe</th><th style="text-align:right">Alunni</th><th style="text-align:right">Termini a testa</th><th>Distribuzione</th><th>Partenza</th><th>Scadenza</th></tr></thead><tbody>' + righe + '</tbody></table></div>' +
     '<p style="margin:0">Termini nuovi: <b>' + tot + '</b> (' + AREE_N.filter(function (n) { return w.fab[n]; }).map(function (n) { return 'area ' + n + ': ' + w.termini[n].length; }).join(', ') + ').' +
-    (w.tipo === 'edizione' ? ' Edizione: <b>' + esc(w.nome) + '</b>, a.s. ' + esc(w.as) + '. Termini degli esclusi: ' + (w.riassegnazione === 'manuale' ? 'decidi tu.' : 'in automatico, a sorte.') : '') + '</p>' +
+    (w.tipo === 'edizione' ? ' Edizione: <b>' + esc(w.nome) + '</b>, a.s. ' + esc(w.as) + '. Colleghi: ' + (w.colleghi.length ? w.colleghi.map(function (c) { return esc(c.nome) + ' (' + FACOLTA.filter(function (f) { return c.permessi[f[0]]; }).map(function (f) { return f[1].toLowerCase(); }).join(', ') + ')'; }).join('; ') : 'nessuno') + '. Penalità: proposta ' + w.proposta + ' (' + (w.proposta === 'A' ? '−0,25' : '−0,50') + ' per errore). Termini ricevuti: ' + w.giorniIt + ' giorni. Termini degli esclusi: ' + (w.riassegnazione === 'manuale' ? 'decidi tu.' : 'in automatico, a sorte.') : '') + '</p>' +
     avvisi.map(function (a) { return '<p class="note" style="margin:0">' + esc(a) + '</p>'; }).join('') +
     '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=2;disegnaWizard()">Indietro</button><button class="btn ok" onclick="wzCrea(this)">' + (w.tipo === 'edizione' ? 'Crea la nuova edizione' : 'Aggiungi la classe') + '</button></div>';
 }
@@ -494,7 +561,7 @@ function wzCrea(btn) {
   var termini = {}; AREE_N.forEach(function (n) { termini[n] = w.termini[n].map(function (x) { return [x.t, x.d]; }); });
   var classi = w.classi.map(function (c) { return { nome: c.nome, tpa: c.tpa, modo: c.modo, partenza: c.partenza ? new Date(c.partenza).toISOString() : null, scadenza: new Date(c.scadenza).toISOString(), alunni: c.alunni }; });
   btn.disabled = true; btn.textContent = 'Creazione in corso…';
-  var p = w.tipo === 'edizione' ? api('nuovaedizione', { nome: w.nome, as: w.as, classi: classi, termini: termini, riassegnazione: w.riassegnazione }) : api('aggiungiclasse', { classe: classi[0], termini: termini });
+  var p = w.tipo === 'edizione' ? api('nuovaedizione', { nome: w.nome, as: w.as, classi: classi, termini: termini, riassegnazione: w.riassegnazione, proposta: w.proposta, giorniIt: w.giorniIt, colleghi: w.colleghi.filter(function (c) { return String(c.nome).trim(); }) }) : api('aggiungiclasse', { classe: classi[0], termini: termini });
   p.then(function (x) {
     chiudiWizard();
     S.filtro.classe = 'tutte';
@@ -503,7 +570,8 @@ function wzCrea(btn) {
 }
 
 /* ---------- cartelloni 70×100 per la stampa, generati dai dati dell'edizione ---------- */
-function stampaCartelloni(quali, abbondanza) {
+function stampaCartelloni(quali, abbondanza, lingua) {
+  var bil = lingua === 'iten';
   var aree = quali === 'tutti' ? S.d.aree : S.d.aree.filter(function (a) { return String(a.n) === String(quali); });
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
@@ -512,7 +580,7 @@ function stampaCartelloni(quali, abbondanza) {
   // si impaginano qui (stessi caratteri) per calcolare la dimensione del testo, poi si passano alla finestra di stampa
   var scatole = aree.map(function (a) {
     var b = document.createElement('div'); b.style.cssText = 'position:absolute;left:-30000px;top:0;width:700mm';
-    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { soloApprovate: true, qr: location.origin + '/glossario', as: as });
+    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { soloApprovate: true, qr: location.origin + '/glossario', as: as, en: bil });
     document.body.appendChild(b); return b;
   });
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () {
@@ -527,7 +595,7 @@ function stampaCartelloni(quali, abbondanza) {
       b.remove(); return html;
     });
     w.document.open();
-    w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Cartelloni Glossario ' + esc(as || '') + (AB ? ' – abbondanza 3 mm' : '') + '</title>' +
+    w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Cartelloni Glossario ' + esc(as || '') + (bil ? ' (italiano e inglese)' : ' (italiano)') + (AB ? ' – abbondanza 3 mm' : '') + '</title>' +
       '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">' +
       '<style>@page{size:' + W + 'mm ' + H + 'mm;margin:0}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pg{position:relative;width:' + W + 'mm;height:' + H + 'mm;overflow:hidden;background:#FBFAF7;break-after:page}.pg:last-child{break-after:auto}' +
       '@media screen{body{background:#C9D2DA;padding:10mm}.pg{margin:0 auto 10mm;box-shadow:0 2mm 8mm rgba(0,0,0,.25);zoom:.3}}</style></head><body>' + pagine.join('') +
@@ -535,4 +603,108 @@ function stampaCartelloni(quali, abbondanza) {
     w.document.close();
     if (pieni.length) toast('Cartellone ' + pieni.join(', ') + ': troppi termini per il formato 70×100, gli ultimi non entrano.', true);
   });
+}
+
+/* ---------- termini e definizioni in inglese per i cartelloni (pagina #inglese) ---------- */
+function apriTraduzioni() {
+  if (location.hash !== '#inglese') { location.hash = 'inglese'; return; }
+  S.tr = { area: String(S.poster || 1), dati: null, cambiate: {} };
+  $('app').innerHTML = testata('Termini e definizioni in inglese') + '<main class="wrap stack"><section class="card"><p style="margin:0">Carico i termini…</p></section></main>';
+  api('traduzioni', {}).then(function (x) { if (!S.tr) return; S.tr.dati = x.aree; disegnaTraduzioni(); window.scrollTo(0, 0); })
+    .catch(function (e) { toast(errMsg(e), true); chiudiTraduzioni(); });
+}
+function chiudiTraduzioni(ricaricare) {
+  S.tr = null;
+  if (location.hash === '#inglese') history.replaceState(null, '', location.pathname + location.search);
+  if (ricaricare) return ricarica();
+  vistaDocente(); var p = $('pbox'); if (p) p.scrollIntoView({ block: 'center' });
+}
+window.addEventListener('hashchange', function () {
+  if (!S.d || !S.d.utente || RO() || !PUO('documenti')) return;
+  if (location.hash === '#inglese' && !S.tr) apriTraduzioni();
+  else if (location.hash !== '#inglese' && S.tr) { S.tr = null; vistaDocente(); }
+});
+function disegnaTraduzioni() {
+  var T = S.tr, A = T.dati.filter(function (a) { return String(a.n) === T.area; })[0] || T.dati[0];
+  var conta = function (a) { var app = a.voci.filter(function (v) { return v.approvata; }); return { app: app.length, ok: app.filter(function (v) { return v.en && v.defEn; }).length, tot: a.voci.length, en: a.voci.filter(function (v) { return v.en; }).length }; };
+  var schede = T.dati.map(function (a) { var c = conta(a), z = area(a.n) || {}; return '<button class="btn' + (String(a.n) === T.area ? '' : ' sec') + '" style="min-height:40px' + (String(a.n) === T.area ? ';background:' + esc(z.colore) + ';border-color:' + esc(z.colore) : '') + '" onclick="trArea(\'' + a.n + '\')">' + a.n + '. ' + esc(a.it) + ' <span style="font-weight:400;opacity:.85">' + c.ok + '/' + c.app + '</span></button>'; }).join('');
+  var c = conta(A);
+  var righe = A.voci.map(function (v, i) {
+    var cam = T.cambiate[A.n + ':' + v.id] || {};
+    var en = cam.en != null ? cam.en : v.en, de = cam.defEn != null ? cam.defEn : v.defEn;
+    var stato = !en || (v.approvata && !de) ? '<span class="chip s-correggere">da completare</span>' : v.approvata ? '<span class="chip s-approvata">approvata</span>' : '<span class="chip s-vuota">non ancora approvata</span>';
+    return '<div class="stack" style="gap:6px;border-top:1px solid var(--line);padding-top:12px">' +
+      '<div class="row" style="justify-content:space-between"><b style="font-size:17px">' + esc(v.it) + '</b>' + stato + '</div>' +
+      '<div class="grid2"><div><label for="trE' + i + '">Termine in inglese</label><input id="trE' + i + '" type="text" maxlength="100" value="' + esc(en) + '" oninput="trCambia(\'' + A.n + '\',\'' + v.id + '\',\'en\',this.value)"></div>' +
+      '<div class="muted" style="font-size:14px;align-self:end">' + esc(v.alunno) + '</div></div>' +
+      '<div style="font-size:15px"><span class="muted">' + (v.approvata ? 'Definizione approvata:' : 'Definizione corretta (da approvare):') + '</span> ' + esc(v.defIt) + '</div>' +
+      '<div><label for="trD' + i + '">Definizione in inglese</label><textarea id="trD' + i + '" rows="2" maxlength="400" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px" oninput="trCambia(\'' + A.n + '\',\'' + v.id + '\',\'defEn\',this.value)">' + esc(de) + '</textarea></div></div>';
+  }).join('');
+  var n = Object.keys(T.cambiate).length;
+  $('app').innerHTML = testata('Termini e definizioni in inglese') + '<main class="wrap stack">' +
+    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:26px">Termini e definizioni in inglese</h1><button class="btn sec" onclick="trEsci()">Torna ai cartelloni</button></div>' +
+    '<p class="muted" style="margin:0">Per i cartelloni in italiano e inglese. Ogni termine e ogni definizione già data dagli studenti ha la sua versione in <b>inglese tecnico</b>, già pronta: controllala e, se vuoi, correggila. I termini scritti da te in una nuova edizione vanno tradotti qui. L\'app degli studenti non cambia.</p>' +
+    '<div class="row" style="gap:6px">' + schede + '</div>' +
+    '<p style="margin:0">Area ' + A.n + ': <b>' + c.ok + ' su ' + c.app + '</b> definizioni approvate con l\'inglese · ' + c.en + ' termini su ' + c.tot + ' con il nome in inglese.</p>' +
+    '<div class="row"><button class="btn ok" id="trSalva" onclick="trSalva(this)"' + (n ? '' : ' disabled') + '>Salva le modifiche' + (n ? ' (' + n + ')' : '') + '</button></div></section>' +
+    '<section class="card stack">' + righe + '</section></main>';
+}
+function trArea(n) { S.tr.area = String(n); disegnaTraduzioni(); window.scrollTo(0, 0); }
+function trCambia(area, id, campo, val) {
+  var k = area + ':' + id, c = S.tr.cambiate[k] = S.tr.cambiate[k] || {}; c[campo] = val;
+  var b = $('trSalva'); if (b) { b.disabled = false; b.textContent = 'Salva le modifiche (' + Object.keys(S.tr.cambiate).length + ')'; }
+}
+function trVoci() {
+  var out = [];
+  Object.keys(S.tr.cambiate).forEach(function (k) {
+    var p = k.split(':'), a = S.tr.dati.filter(function (x) { return String(x.n) === p[0]; })[0], v = a.voci.filter(function (x) { return x.id === p[1]; })[0], c = S.tr.cambiate[k];
+    out.push({ area: a.n, k: v.k, idxDef: v.idxDef, en: c.en != null ? c.en : v.en, defEn: c.defEn != null ? c.defEn : v.defEn });
+  });
+  return out;
+}
+function trSalva(btn) {
+  var voci = trVoci(); if (!voci.length) return;
+  btn.disabled = true; btn.textContent = 'Salvo…';
+  api('salvatraduzioni', { voci: voci }).then(function () {
+    voci.forEach(function (v) { S.tr.dati.forEach(function (a) { if (a.n != v.area) return; a.voci.forEach(function (x) { if (x.k === v.k) x.en = v.en; if (x.idxDef === v.idxDef) x.defEn = v.defEn; }); }); });
+    S.tr.cambiate = {}; S.tr.salvato = true; disegnaTraduzioni(); toast('Traduzioni salvate');
+  }).catch(function (e) { btn.disabled = false; btn.textContent = 'Salva le modifiche'; toast(errMsg(e), true); });
+}
+function trEsci() {
+  var esci = function () { var s = S.tr && S.tr.salvato; chiudiTraduzioni(s); };
+  if (Object.keys(S.tr.cambiate).length) finestra('Modifiche non salvate', '<p style="margin:0">Hai modifiche non salvate alle traduzioni.</p>', [{ t: 'Esci senza salvare', warn: true, f: esci }]);
+  else esci();
+}
+
+/* ---------- colleghi docenti e loro facoltà ---------- */
+var FACOLTA = [['revisione', 'Rivedere le risposte', 'approvare, rimandare, commentare'], ['voti', 'Voti', 'inserire o cambiare il voto finale'], ['studenti', 'Studenti', 'proroghe, riammissioni, passaggio dei termini'], ['documenti', 'Documenti', 'report, Word, presentazione, cartelloni, inglese'], ['codici', 'Codici e schede QR', 'degli alunni']];
+function editorColleghi(prefisso, elenco) {
+  return '<div class="stack" style="gap:10px">' + elenco.map(function (c, i) {
+    return '<div class="stack" style="gap:8px;border:2px solid var(--line);border-radius:12px;padding:12px">' +
+      '<div class="grid2"><div><label for="' + prefisso + 'N' + i + '">Nome del collega</label><input id="' + prefisso + 'N' + i + '" type="text" maxlength="60" placeholder="prof.ssa Maria Rossi" value="' + esc(c.nome || '') + '"></div>' +
+      '<div style="align-self:end">' + (c.codice ? 'Codice di accesso: <b class="disp" style="font-size:18px;letter-spacing:.08em">' + esc(c.codice) + '</b>' : '<span class="muted">Il codice di accesso si crea al salvataggio.</span>') + '</div></div>' +
+      '<div class="row" style="gap:6px 16px">' + FACOLTA.map(function (f) { return '<label class="row" style="gap:6px;font-weight:400;cursor:pointer" title="' + esc(f[2]) + '"><input type="checkbox" data-c="' + i + '" data-f="' + f[0] + '" class="' + prefisso + 'F"' + (c.permessi && c.permessi[f[0]] ? ' checked' : '') + ' style="width:20px;height:20px"> <b>' + esc(f[1]) + '</b> <span class="muted" style="font-size:13px">(' + esc(f[2]) + ')</span></label>'; }).join('') + '</div>' +
+      '<div><button class="btn sec" style="min-height:34px;padding:0 10px" onclick="' + prefisso + 'Togli(' + i + ')">Togli questo collega</button></div></div>';
+  }).join('') + '<div><button class="btn sec" onclick="' + prefisso + 'Aggiungi()">+ Aggiungi un collega</button></div></div>';
+}
+function leggiColleghi(prefisso, elenco) {
+  return elenco.map(function (c, i) {
+    var p = {}; document.querySelectorAll('.' + prefisso + 'F[data-c="' + i + '"]').forEach(function (x) { p[x.getAttribute('data-f')] = x.checked; });
+    return { nome: ($(prefisso + 'N' + i) || {}).value || '', codice: c.codice || null, permessi: p };
+  });
+}
+function bloccoColleghi() {
+  S.col = S.col || (S.d.admin.colleghi || []).map(function (c) { return { nome: c.nome, codice: c.codice, permessi: Object.assign({}, c.permessi) }; });
+  return '<section class="card stack admin" id="colleghi"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Colleghi docenti</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+    '<p class="muted" style="margin:0;font-size:15px">Aggiungi un collega e scegli cosa può fare: tutte le facoltà o solo alcune. Entra nell\'app con il suo codice, come te. Impostazioni, edizioni, chiusura e backup restano solo tuoi.</p>' +
+    '<div id="colBox">' + editorColleghi('col', S.col) + '</div>' +
+    '<div class="row"><button class="btn" onclick="salvaColleghi(this)">Salva i colleghi</button></div></section>';
+}
+function colAggiungi() { S.col = leggiColleghi('col', S.col); S.col.push({ nome: '', codice: null, permessi: { revisione: true } }); $('colBox').innerHTML = editorColleghi('col', S.col); }
+function colTogli(i) { S.col = leggiColleghi('col', S.col); S.col.splice(i, 1); $('colBox').innerHTML = editorColleghi('col', S.col); }
+function salvaColleghi(btn) {
+  var el = leggiColleghi('col', S.col).filter(function (c) { return String(c.nome).trim(); });
+  btn.disabled = true;
+  api('colleghi', { colleghi: el }).then(function (x) { S.col = null; return ricarica(x.colleghi.length ? 'Colleghi salvati: comunica a ciascuno il suo codice' : 'Nessun collega: l\'app è solo tua'); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }

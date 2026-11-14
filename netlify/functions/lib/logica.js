@@ -61,11 +61,25 @@ function identifica(stato, codice) {
   const doc = (stato.config.docenti || []).find((d) => d.codice && norm(d.codice) === c);
   if (doc) {
     const def = DATI.DOCENTI.find((d) => d.nome === doc.nome) || {};
-    return { ruolo: 'docente', nome: doc.nome, lingua: doc.lingua || def.lingua || 'it', admin: !!(doc.admin || def.admin) };
+    const admin = !!(doc.admin || def.admin);
+    return { ruolo: 'docente', nome: doc.nome, lingua: doc.lingua || def.lingua || 'it', admin, permessi: permessiDi(doc, admin) };
   }
   const a = stato.alunni.find((x) => norm(x.codice) === c);
   if (a) return { ruolo: 'alunno', id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), _a: a };
   errore('Codice non riconosciuto. Controlla di averlo scritto bene.');
+}
+
+/* facoltà che il prof. Cerrato può dare a un collega (lui le ha tutte) */
+const PERMESSI = ['revisione', 'voti', 'studenti', 'documenti', 'codici'];
+function permessiDi(doc, admin) {
+  const out = {};
+  PERMESSI.forEach((p) => { out[p] = admin ? true : doc.permessi ? !!doc.permessi[p] : p === 'revisione'; });
+  return out;
+}
+function permesso(chi, p) {
+  if (chi.ruolo !== 'docente') errore('Operazione riservata ai docenti.');
+  if (chi.admin) return;
+  if (!chi.permessi || !chi.permessi[p]) errore('Il prof. Cerrato non ti ha dato questa facoltà.');
 }
 
 /* ---------- impostazioni e valutazione ---------- */
@@ -225,6 +239,8 @@ function vistaTermine(t, chi, lingue) {
       base['primoOk' + L] = campo(t, l, 'primo_ok');
       base['storia' + L] = (campo(t, l, 'storia') || []).map((x) => ({ ok: x.ok, t: testoDef(t.area, x.i, l), at: x.at }));
       if (st === 'inviata') base['def' + L] = base['scelta' + L];
+      // inglese tecnico per i cartelloni bilingui (solo vista docente)
+      if (l === 'it') base.posterEn = { t: CAT.termineEn(t.area, indiceTermine(t)), d: st === 'approvata' && sc != null ? testoDef(t.area, sc, 'en') : '' };
     } else if (mio) {
       base['comm' + L] = campo(t, l, 'commento') || '';
       const sbloccata = l === 'it' || t.stato_it === 'approvata';
@@ -299,17 +315,22 @@ function pacchetto(stato, chi) {
       termini: v.termini, ereditati: v.ereditati, riassegnatoA: v.riassegnatoA, riassegnatiA: v.riassegnatiA,
       scadenza: v.scadenza, proroga: v.proroga, bloccoRiass: v.bloccoRiass, rimandate: v.rimandate, riammesso: v.riammesso,
       scadenzaRicevuti: v.scadenzaRicevuti ? new Date(v.scadenzaRicevuti).toISOString() : null, mancaRicevuti: v.mancaRicevuti }));
-    if (chi.admin) {
+    const P = chi.permessi || {};
+    if (chi.admin || P.codici) {
       out.codiciAlunni = stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), codice: a.codice,
         termini: stato.termini.filter((t) => t.alunno_id === a.id).map((t) => ({ area: t.area, it: t.termine_it })) }));
+    }
+    if (chi.admin || P.voti || P.studenti || P.documenti || P.codici) {
       out.admin = { impostazioni: imp, penalita: PENALITA, ratio: ratio(imp), archivio: stato.archivio || [], archiviata: stato.config.archiviata || null,
         date: Object.fromEntries(imp.classi.map((c) => { const ic = impClasse(imp, c); return [c, { partenza: ic.partenza || null, scadenzaIt: ic.scadenzaIt, propria: !!imp.calendario[c] }]; })),
         tpa: Object.fromEntries(imp.classi.map((c) => [c, termPerAlunno(imp, c)])),
         voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate, votoMax: v.votoMax, ereditati: v.ereditati,
           tetto: v.tetto, motivoTetto: v.motivoTetto,
           calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })),
-        attivita: stato.attivita ? Object.fromEntries(stato.alunni.map((a) => [a.id, ATT.riepilogo(stato.attivita[a.id], now)])) : null,
-        dropbox: stato.dropbox || null };
+        attivita: stato.attivita && (chi.admin || P.documenti) ? Object.fromEntries(stato.alunni.map((a) => [a.id, ATT.riepilogo(stato.attivita[a.id], now)])) : null,
+        dropbox: chi.admin ? stato.dropbox || null : null,
+        colleghi: chi.admin ? (stato.config.docenti || []).filter((d) => !(d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin)).map((d) => ({ nome: d.nome, codice: d.codice, permessi: permessiDi(d, false) })) : undefined };
+      if (!chi.admin) { out.admin.archivio = []; out.admin.archiviata = null; }
     }
   }
   return out;
@@ -330,12 +351,45 @@ function soloDocente(chi) { if (chi.ruolo !== 'docente') errore('Operazione rise
 async function login(db, { codice }) {
   const stato = await db.leggiTutto();
   const chi = identifica(stato, codice);
-  if (chi.ruolo === 'docente' && chi.admin && db.leggiAttivita) {
+  if (chi.ruolo === 'docente' && (chi.admin || (chi.permessi || {}).documenti) && db.leggiAttivita) {
     [stato.attivita, stato.dropbox, stato.archivio] = await Promise.all([db.leggiAttivita(), DBX.statoPubblico(db), db.leggiArchivi ? db.leggiArchivi().then(elencoLeggero) : []]);
   }
   return pacchetto(stato, chi);
 }
 /* controllo leggero (solo config) per le azioni del prof. Cerrato */
+async function verificaPermesso(db, codice, p) {
+  const stato = await db.leggiTutto();
+  const chi = identifica(stato, codice); permesso(chi, p);
+  return chi;
+}
+/* colleghi docenti: nome, codice e facoltà (il prof. Cerrato resta sempre) */
+function nuoviColleghi(config, stato, elenco) {
+  const admin = (config.docenti || []).filter((d) => d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin);
+  const vecchi = (config.docenti || []).filter((d) => admin.indexOf(d) < 0);
+  const usati = new Set(admin.map((d) => d.codice).concat((stato ? stato.alunni : []).map((a) => a.codice)));
+  const nomi = new Set(admin.map((d) => d.nome.toLowerCase()));
+  const out = (elenco || []).map((c) => {
+    const nome = String(c.nome || '').replace(/\s+/g, ' ').trim();
+    if (!nome) errore('Ogni collega deve avere un nome.');
+    if (nome.length > 60) errore('Nome del collega troppo lungo.');
+    if (nomi.has(nome.toLowerCase())) errore('Due docenti con lo stesso nome: «' + nome + '».');
+    nomi.add(nome.toLowerCase());
+    const prima = c.codice ? vecchi.find((d) => d.codice === c.codice) : null;
+    const codice = prima ? prima.codice : generaCodice(usati);
+    usati.add(codice);
+    const permessi = {}; PERMESSI.forEach((p) => { permessi[p] = !!(c.permessi && c.permessi[p]); });
+    if (!PERMESSI.some((p) => permessi[p])) errore('Dai almeno una facoltà a ' + nome + '.');
+    return { nome, codice, lingua: 'it', admin: false, permessi };
+  });
+  return admin.concat(out);
+}
+async function colleghi(db, { codice, colleghi: elenco }) {
+  const stato = await db.leggiTutto();
+  soloAdmin(identifica(stato, codice));
+  const docenti = nuoviColleghi(stato.config, stato, elenco);
+  await db.scriviConfig({ docenti });
+  return { colleghi: docenti.filter((d) => !d.admin).map((d) => ({ nome: d.nome, codice: d.codice, permessi: d.permessi })) };
+}
 async function verificaAdmin(db, codice) {
   const config = await db.leggiConfig();
   if (!config) errore('Glossario non ancora configurato.');
@@ -380,7 +434,7 @@ async function scegli(db, { codice, id, lingua: l, lettera }) {
 async function revisiona(db, { codice, id, lingua: l, esito, commento }) {
   return db.transazione(async (tx) => {
     const stato = await (tx.leggiTermine ? tx.leggiTermine(id) : tx.leggiTutto());
-    const chi = identifica(stato, codice); soloDocente(chi); lingua(l, stato);
+    const chi = identifica(stato, codice); permesso(chi, 'revisione'); lingua(l, stato);
     const t = trova(stato, id);
     const sc = campo(t, l, 'scelta'), st = campo(t, l, 'stato') || '';
     const mod = { aggiornato: adesso() };
@@ -406,7 +460,7 @@ async function revisiona(db, { codice, id, lingua: l, esito, commento }) {
 async function approvaCorrette(db, { codice, lingua: l, area }) {
   return db.transazione(async (tx) => {
     const stato = await tx.leggiTutto();
-    const chi = identifica(stato, codice); soloDocente(chi); lingua(l, stato);
+    const chi = identifica(stato, codice); permesso(chi, 'revisione'); lingua(l, stato);
     let n = 0;
     stato.termini.forEach((t) => {
       if (area && area !== 'tutte' && String(t.area) !== String(area)) return;
@@ -460,9 +514,39 @@ async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta,
   return dopo;
 }
 
+/* ---------- traduzioni inglesi per i cartelloni ---------- */
+async function traduzioni(db, { codice }) {
+  const stato = await db.leggiTutto();
+  permesso(identifica(stato, codice), 'documenti');
+  const nomi = {}; stato.alunni.forEach((a) => { nomi[a.id] = a.nome; });
+  const aree = DATI.AREE.map((a) => ({ n: a.n, it: a.it, en: a.en, voci: stato.termini.filter((t) => String(t.area) === String(a.n)).map((t) => {
+    const k = indiceTermine(t), app = t.stato_it === 'approvata' && t.scelta_it != null, idxDef = app ? t.scelta_it : k;
+    return { id: t.id, k, idxDef, approvata: app, it: t.termine_it, en: CAT.termineEn(t.area, k), defIt: testoDef(t.area, idxDef, 'it'), defEn: testoDef(t.area, idxDef, 'en'), alunno: nomi[t.alunno_orig || t.alunno_id] || '' };
+  }).sort((x, y) => x.it.localeCompare(y.it, 'it')) }));
+  return { aree };
+}
+async function salvaTraduzioni(db, { codice, voci }) {
+  const stato = await db.leggiTutto();
+  permesso(identifica(stato, codice), 'documenti');
+  if (!Array.isArray(voci) || !voci.length) errore('Nessuna traduzione da salvare.');
+  const { cat, blocchi } = CAT.materializza(stato.config);
+  voci.forEach((v) => {
+    const a = cat[String(v.area)]; if (!a) errore('Area non valida.');
+    const k = Number(v.k), d = Number(v.idxDef);
+    if (!a[k] || !a[d]) errore('Termine non trovato nel catalogo.');
+    const en = String(v.en || '').replace(/\s+/g, ' ').trim(), de = String(v.defEn || '').replace(/\s+/g, ' ').trim();
+    if (en.length > 100) errore('«' + a[k][0] + '»: termine inglese troppo lungo.');
+    if (de.length > 400) errore('«' + a[k][0] + '»: definizione inglese troppo lunga.');
+    while (a[k].length < 4) a[k].push(''); while (a[d].length < 4) a[d].push('');
+    a[k][2] = en; a[d][3] = de;
+  });
+  await db.scriviConfig({ catalogo: cat, blocchi });
+  return { salvate: voci.length };
+}
+
 async function votoManuale(db, { codice, alunno, voto }) {
   const stato = await db.leggiTutto();
-  soloAdmin(identifica(stato, codice));
+  permesso(identifica(stato, codice), 'voti');
   const a = stato.alunni.find((x) => x.id === alunno); if (!a) errore('Alunno non trovato.');
   let v = null;
   if (voto !== null && voto !== '' && voto !== undefined) {
@@ -486,7 +570,7 @@ function terminiRestituibili(stato, a) {
 }
 async function anteprimaRiammissione(db, { codice, alunno }) {
   const stato = await db.leggiTutto();
-  soloAdmin(identifica(stato, codice));
+  permesso(identifica(stato, codice), 'studenti');
   const a = stato.alunni.find((x) => x.id === alunno); if (!a) errore('Alunno non trovato.');
   const r = terminiRestituibili(stato, a);
   return { alunno: a.id, nome: a.nome, termini: r.ts.length, risposti: r.ts.filter(r.risposto).length, eredi: r.eredi };
@@ -517,7 +601,7 @@ function restituisci(tx, stato, a, modo) {
 }
 async function riammetti(db, { codice, alunno, riammesso, modo }) {
   const stato0 = await db.leggiTutto();
-  soloAdmin(identifica(stato0, codice));
+  permesso(identifica(stato0, codice), 'studenti');
   if (!stato0.alunni.some((x) => x.id === alunno)) errore('Alunno non trovato.');
   if (!riammesso) { await db.scriviAlunno(alunno, { riammesso: false }); return { alunno, riammesso: false, restituiti: 0 }; }
   return db.transazione(async (tx) => {
@@ -535,7 +619,7 @@ async function riammetti(db, { codice, alunno, riammesso, modo }) {
    tornano a lui secondo "modo" ('tutti' o 'non_risposti'). */
 async function prorogaAlunno(db, { codice, alunno, data, modo }) {
   const stato0 = await db.leggiTutto();
-  soloAdmin(identifica(stato0, codice));
+  permesso(identifica(stato0, codice), 'studenti');
   const a0 = stato0.alunni.find((x) => x.id === alunno); if (!a0) errore('Alunno non trovato.');
   const imp = impostazioni(stato0.config), now = Date.now();
   const base = Date.parse(impClasse(imp, classeDi(a0)).scadenzaIt);
@@ -563,7 +647,7 @@ async function prorogaAlunno(db, { codice, alunno, data, modo }) {
 }
 async function bloccoRiassegnazione(db, { codice, alunno, blocco }) {
   const stato = await db.leggiTutto();
-  soloAdmin(identifica(stato, codice));
+  permesso(identifica(stato, codice), 'studenti');
   if (!stato.alunni.some((x) => x.id === alunno)) errore('Alunno non trovato.');
   await db.scriviAlunno(alunno, { blocco_riass: !!blocco });
   return { alunno, blocco: !!blocco };
@@ -573,7 +657,7 @@ async function bloccoRiassegnazione(db, { codice, alunno, blocco }) {
 /* da: alunno che cede i termini; a: compagno che li riceve; termini: elenco di id; scadenza: ISO per chi li riceve */
 async function trasferisciTermini(db, { codice, da, a: verso, termini, scadenza }) {
   const stato0 = await db.leggiTutto();
-  const chi = identifica(stato0, codice); soloAdmin(chi);
+  const chi = identifica(stato0, codice); permesso(chi, 'studenti');
   if (!Array.isArray(termini) || !termini.length) errore('Seleziona almeno un termine.');
   if (da === verso) errore('Scegli un compagno diverso dall\'alunno che cede i termini.');
   const imp = impostazioni(stato0.config), now = Date.now();
@@ -669,7 +753,7 @@ async function manutenzione(db, sceltaCasuale) {
 
 async function impostaChiusura(db, { codice, chiusa }) {
   const stato = await db.leggiTutto();
-  soloDocente(identifica(stato, codice));
+  soloAdmin(identifica(stato, codice));
   await db.scriviConfig({ chiusa: !!chiusa });
   return { chiusa: !!chiusa };
 }
@@ -810,5 +894,6 @@ function statoClasse(stato, classe) {
 function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k = classeDi(a); if (c.indexOf(k) < 0) c.push(k); }); return (c.length ? c.sort() : ['3E']).join(' e '); }
 function etichettaAl(a) { return /^[1-4]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
 module.exports = {
+  traduzioni, salvaTraduzioni, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
   anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,
   identifica, soloAdmin, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

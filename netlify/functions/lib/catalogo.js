@@ -7,12 +7,13 @@
  * Il catalogo attivo si imposta a ogni lettura della configurazione (Netlify esegue una richiesta alla volta per istanza).
  */
 const DATI = require('./dati');
+const EN = require('./inglese'); // traduzioni in inglese tecnico dei termini senza inglese in dati.js e della banca
 
 let attivo = null; // { cat, blocchi }
 
 function daDati() {
   const cat = {};
-  DATI.AREE.forEach((a) => { cat[a.n] = DATI.TERMINI[a.n].map((t, k) => [t[0], (DATI.DEFINIZIONI[a.n][k] || [''])[0], t[1] || '', (DATI.DEFINIZIONI[a.n][k] || ['', ''])[1] || '']); });
+  DATI.AREE.forEach((a) => { cat[a.n] = DATI.TERMINI[a.n].map((t, k) => [t[0], (DATI.DEFINIZIONI[a.n][k] || [''])[0], t[1] || (EN[t[0]] || [])[0] || '', (DATI.DEFINIZIONI[a.n][k] || ['', ''])[1] || (EN[t[0]] || [])[1] || '']); });
   return cat;
 }
 function imposta(config) {
@@ -32,9 +33,17 @@ function area(n) {
 function lunghezza(n) { const a = area(n); return a ? a.length : DATI.DEFINIZIONI[n].length; }
 function definizione(n, idx, l) {
   const a = area(n);
-  if (a) { const x = a[idx]; return x ? (l === 'en' ? (x[3] || '') : (x[1] || '')) : ''; }
-  const d = DATI.DEFINIZIONI[n][idx]; return d ? d[l === 'it' ? 0 : 1] : '';
+  if (a) { const x = a[idx]; return x ? (l === 'en' ? (x[3] || (EN[x[0]] || [])[1] || '') : (x[1] || '')) : ''; }
+  const d = DATI.DEFINIZIONI[n][idx]; if (!d) return '';
+  return l === 'it' ? d[0] : (d[1] || (EN[(DATI.TERMINI[n][idx] || [])[0]] || [])[1] || '');
 }
+/* termine inglese della voce k (correzioni del docente nel catalogo, poi dati.js, poi traduzioni pronte) */
+function termineEn(n, k) {
+  const a = area(n);
+  if (a) { const x = a[k]; return x ? (x[2] || (EN[x[0]] || [])[0] || '') : ''; }
+  const t = DATI.TERMINI[n][k]; return t ? (t[1] || (EN[t[0]] || [])[0] || '') : '';
+}
+function traduzionePronta(it) { return EN[it] || null; }
 /* intervallo [da, a) del blocco a cui appartiene l'indice k */
 function blocco(n, k) {
   const b = (attivo && attivo.blocchi && attivo.blocchi[n]) || [];
@@ -54,4 +63,4 @@ function elencoTermini(config, dove) {
   return out;
 }
 
-module.exports = { imposta, corrente, ripristina, con, lunghezza, definizione, blocco, materializza, elencoTermini, daDati };
+module.exports = { termineEn, traduzionePronta, imposta, corrente, ripristina, con, lunghezza, definizione, blocco, materializza, elencoTermini, daDati };
