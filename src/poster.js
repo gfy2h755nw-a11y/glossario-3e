@@ -425,11 +425,15 @@ var Poster = (function () {
     var MOTTO = ['Nomina…', 'sunt…', 'consequentia…', 'rerum.'];
     var css = '<style>' +
       '.pa-foglio{--k:1}' +
-      '.pa-corpo{column-count:3;column-gap:12mm;column-fill:auto;column-rule:0.35mm solid ' + tinta(col, 0.25) + '}' +
-      '.pa-let{break-inside:avoid;break-after:avoid;display:flex;align-items:baseline;gap:4mm;margin:calc(3mm*var(--k)) 0 calc(1mm*var(--k))}' +
+      // tre colonne vere (non colonne automatiche del browser): le voci le distribuisce adatta(), uguale in ogni browser
+      '.pa-corpo{display:flex;gap:12mm;overflow:hidden}' +
+      '.pa-col{flex:1 1 0;min-width:0;position:relative;height:100%}' +
+      '.pa-col+.pa-col::before{content:"";position:absolute;left:-6.2mm;top:0;bottom:0;width:0.35mm;background:' + tinta(col, 0.25) + '}' +
+      '.pa-col>.pa-let:first-child{margin-top:0}' +
+      '.pa-let{display:flex;align-items:baseline;gap:4mm;margin:calc(3mm*var(--k)) 0 calc(1mm*var(--k))}' +
       '.pa-let b{' + S + 'font-weight:600;font-size:calc(19mm*var(--k));line-height:0.9;color:' + col + '}' +
       '.pa-let i{flex:1;height:0.4mm;background:' + tinta(col, 0.35) + '}' +
-      '.pa-v{break-inside:avoid;padding:calc(1.6mm*var(--k)) 0 calc(2.4mm*var(--k))}' +
+      '.pa-v{padding:calc(1.6mm*var(--k)) 0 calc(2.4mm*var(--k))}' +
       '.pa-v h3{margin:0;' + A + 'font-weight:800;font-size:calc(7.6mm*var(--k));line-height:1.08;color:#15212B}' +
       '.pa-v p{margin:calc(0.9mm*var(--k)) 0 0;font-size:calc(5.5mm*var(--k));line-height:1.24}' +
       '.pa-v em{font-size:calc(4.3mm*var(--k));color:#6B7884;white-space:nowrap}' +
@@ -451,7 +455,7 @@ var Poster = (function () {
           '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + ':</b> ' + (perCl[c] || []).join(' · '); }).join(' &nbsp;|&nbsp; ') +
           '<br><b style="' + lab + '">Docente</b> &nbsp;Prof. Danilo Cerrato (Laboratorio odontotecnico)</div></div>' +
       '<div style="position:absolute;left:34mm;right:34mm;top:179mm;display:flex;gap:1mm;padding:2.5mm 0;border-bottom:0.5mm solid #15212B">' + AZ + '</div>' +
-      '<div class="pa-corpo" style="position:absolute;left:34mm;right:34mm;top:200mm;height:642mm">' + corpo + '</div>' +
+      '<div class="pa-corpo" style="position:absolute;left:34mm;right:34mm;top:200mm;height:642mm"><div class="pa-col">' + corpo + '</div><div class="pa-col"></div><div class="pa-col"></div></div>' +
       (opz.firme === false ? '' : '<div style="position:absolute;left:34mm;right:34mm;bottom:128mm;height:22mm;border:0.7mm solid ' + col + ';border-radius:3mm;background:' + tinta(col, 0.07) + '">' +
         '<div style="position:absolute;left:6mm;top:-3.8mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;' + A + 'font-size:4.2mm;font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div></div>') +
       '<div style="position:absolute;left:0;right:0;bottom:64mm;height:56mm">' + nastroAlfa(n) +
@@ -463,13 +467,37 @@ var Poster = (function () {
         '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + n + ' di 4</div></div>' +
       '</div>';
   }
-  /* riduce i caratteri finché tutte le voci stanno nelle tre colonne; restituisce la scala usata */
+  /* Distribuisce le voci nelle tre colonne e sceglie il carattere più grande con cui stanno tutte; restituisce la scala usata.
+     Non usa le colonne automatiche del browser: misura l'altezza di ogni voce e le sistema una per una, quindi il risultato
+     è lo stesso in Chrome, Safari e Firefox, a schermo e in stampa. Funzione autonoma: viene copiata anche nella finestra di stampa. */
   function adatta(foglio) {
     var f = foglio && foglio.classList && foglio.classList.contains('pa-foglio') ? foglio : (foglio && foglio.querySelector('.pa-foglio'));
     if (!f) return 1;
-    var body = f.querySelector('.pa-corpo'), k = 1.5;
-    function esce() { var r = body.getBoundingClientRect(), tol = r.width * 0.002; for (var i = 0; i < body.children.length; i++) if (body.children[i].getBoundingClientRect().right > r.right + tol) return true; return false; }
-    f.style.setProperty('--k', k); while (esce() && k > 0.5) { k -= 0.01; f.style.setProperty('--k', k.toFixed(3)); }
+    var body = f.querySelector('.pa-corpo'), cols = [].slice.call(body.querySelectorAll('.pa-col')), voci = [].slice.call(body.querySelectorAll('.pa-let,.pa-v'));
+    if (cols.length !== 3) { cols = [0, 1, 2].map(function () { var c = document.createElement('div'); c.className = 'pa-col'; return c; }); body.innerHTML = ''; cols.forEach(function (c) { body.appendChild(c); }); }
+    // con la scala k: tutte le voci in fila nella prima colonna, si misurano e si calcola in quale colonna va ciascuna
+    function piano(k) {
+      f.style.setProperty('--k', k.toFixed(3));
+      voci.forEach(function (v) { cols[0].appendChild(v); });
+      var H = body.getBoundingClientRect().height, tol = H * 0.004;
+      var m = voci.map(function (v) { var r = v.getBoundingClientRect(); return { t: r.top, b: r.bottom, let: v.classList.contains('pa-let') }; });
+      var dove = [], c = 0, inizio = m.length ? m[0].t : 0;
+      for (var i = 0; i < m.length; i++) {
+        var fine = m[i].let && m[i + 1] ? m[i + 1].b : m[i].b; // una lettera non resta mai da sola in fondo alla colonna
+        if (fine - inizio > H - tol && m[i].t > inizio) { c++; inizio = m[i].t; }
+        dove.push(c);
+      }
+      return { dove: dove, sta: c <= 2 && (!m.length || m[m.length - 1].b - inizio <= H - tol) };
+    }
+    function disponi(p) { voci.forEach(function (v, i) { cols[Math.min(p.dove[i], 2)].appendChild(v); }); }
+    function dentro() { var rb = body.getBoundingClientRect(); return cols.every(function (c) { var u = c.lastElementChild; return !u || u.getBoundingClientRect().bottom <= rb.bottom + 0.5; }); }
+    // ricerca del k più grande (a passi di 0,01 tra 0,50 e 1,50) con cui tutto sta in tre colonne
+    var lo = 50, hi = 150, ok = 0;
+    while (lo <= hi) { var mid = (lo + hi) >> 1; if (piano(mid / 100).sta) { ok = mid; lo = mid + 1; } else hi = mid - 1; }
+    var k = (ok || 50) / 100, p = piano(k); disponi(p);
+    // verifica sull'impaginazione vera: se per un arrotondamento qualcosa sporge, si scende ancora
+    while (!dentro() && k > 0.5) { k = Math.round(k * 100 - 1) / 100; p = piano(k); disponi(p); }
+    f.setAttribute('data-pieno', dentro() ? '0' : '1');
     // nomi degli autori nella testata: se sono tanti si rimpicciolisce il carattere finché tutto sta nella fascia colorata
     var aut = f.querySelector('.pa-aut'), te = f.querySelector('.pa-testata');
     if (aut && te) {
