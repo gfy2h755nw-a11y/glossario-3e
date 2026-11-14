@@ -8,6 +8,7 @@ const { db } = require('./lib/firestore');
 const ATT = require('./lib/attivita');
 const auto = require('./lib/automatico');
 const DBX = require('./lib/dropbox');
+const ED = require('./lib/edizioni');
 
 const AZIONI = {
   login: (d, p) => logica.login(d, p),
@@ -18,18 +19,33 @@ const AZIONI = {
   impostazioni: (d, p) => logica.impostazioniAdmin(d, p),
   voto: (d, p) => logica.votoManuale(d, p),
   riammetti: (d, p) => logica.riammetti(d, p),
+  anteprimariammissione: (d, p) => logica.anteprimaRiammissione(d, p),
+  // proroga individuale, blocco della riassegnazione automatica, passaggio dei termini deciso dal docente
+  proroga: (d, p) => logica.prorogaAlunno(d, p),
+  bloccoriassegnazione: (d, p) => logica.bloccoRiassegnazione(d, p),
+  trasferisci: (d, p) => logica.trasferisciTermini(d, p),
+  // edizioni: archivio, nuova edizione, classe aggiunta, generatore di termini
+  archivia: (d, p) => ED.archivia(d, p),
+  archivioconsulta: (d, p) => ED.consultaArchivio(d, p),
+  archiviofile: (d, p) => ED.fileArchivio(d, p),
+  generatermini: (d, p) => ED.generaTermini(d, p),
+  verificatermini: (d, p) => ED.verificaTermini(d, p),
+  nuovaedizione: (d, p) => ED.nuovaEdizione(d, p),
+  aggiungiclasse: (d, p) => ED.aggiungiClasse(d, p),
   setup: (d, p) => logica.setup(d, p, process.env.SETUP_KEY),
   // segnale di presenza (ogni minuto, app aperta in primo piano): serve solo al registro attività
   presenza: async () => ({}),
   // pagina pubblica /glossario: nessun codice richiesto, solo definizioni approvate
-  pubblico: (d) => logica.pubblico(d),
+  pubblico: (d, p) => ED.pubblico(d, { ed: p.ed }),
   // solo prof. Cerrato: backup, ripristino, Dropbox
-  backup: async (d, p) => { await logica.verificaAdmin(d, p.codice); return auto.backupDa(await d.backupGrezzo(), Date.now()); },
+  backup: async (d, p) => { await logica.verificaAdmin(d, p.codice); return auto.backupDa(await d.backupGrezzo(true), Date.now()); },
   ripristina: async (d, p) => {
     await logica.verificaAdmin(d, p.codice);
     const b = auto.validaBackup(p.backup);
-    await d.ripristina(b);
-    return { alunni: b.alunni.length, termini: b.termini.length, attivita: (b.attivita || []).length, creato: b.creato };
+    // prima di sostituire tutto, una copia dello stato attuale va su Dropbox (se collegato)
+    const copia = await auto.copiaPrima(d, 'ripristino');
+    await d.sostituisciTutto(b);
+    return { alunni: b.alunni.length, termini: b.termini.length, attivita: (b.attivita || []).length, creato: b.creato, copiaDropbox: copia };
   },
   // presentazione PowerPoint di riepilogo (grafici nativi)
   presentazione: async (d, p) => {
@@ -46,7 +62,7 @@ const AZIONI = {
     const imp = logica.impostazioni(stato.config);
     const classe = String(p.classe || '');
     if (imp.classi.indexOf(classe) < 0) throw Object.assign(new Error('Classe non valida.'), { utente: true });
-    const buf = await require('./lib/deck-studenti').creaDeckStudenti(classe, imp, Date.now());
+    const buf = await require('./lib/deck-studenti').creaDeckStudenti(classe, logica.impClasse(imp, classe), Date.now(), stato);
     return { nome: 'Presentazione_Studenti_Glossario_' + classe + '.pptx', base64: buf.toString('base64') };
   },
   dropboxcollega: async (d, p) => { await logica.verificaAdmin(d, p.codice); return { url: await DBX.linkCollegamento(d) }; },

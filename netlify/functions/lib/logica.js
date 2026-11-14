@@ -7,6 +7,9 @@
 const DATI = require('./dati');
 const ATT = require('./attivita');
 const DBX = require('./dropbox');
+const CAT = require('./catalogo');
+const SIM = require('./simili');
+const BANCA = require('./banca-termini');
 
 const N_OPZIONI = 8;
 const LETTERE = 'ABCDEFGH';
@@ -39,14 +42,16 @@ function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 166452
 function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function indiceTermine(t) { return Number(String(t.id).slice(2)) - 1; }
 function opzioni(t, l) {
-  const k = indiceTermine(t), n = DATI.DEFINIZIONI[t.area].length;
+  const k = indiceTermine(t), [lo, hi] = CAT.blocco(t.area, k);
   const cand = [], d = [-1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6, -7, 7, 8, -8, 9, -9];
-  for (let i = 0; i < d.length && cand.length < N_OPZIONI - 1; i++) { const j = k + d[i]; if (j >= 0 && j < n) cand.push(j); }
+  for (let i = 0; i < d.length && cand.length < N_OPZIONI - 1; i++) { const j = k + d[i]; if (j >= lo && j < hi) cand.push(j); }
+  // blocco con meno di 8 termini (classe aggiunta con pochi termini in quest'area): si completano con i termini precedenti più vicini
+  for (let j = lo - 1; j >= 0 && cand.length < N_OPZIONI - 1; j--) cand.push(j);
   const ops = [k].concat(cand), r = rng(hash(t.id + l));
   for (let x = ops.length - 1; x > 0; x--) { const y = Math.floor(r() * (x + 1)); [ops[x], ops[y]] = [ops[y], ops[x]]; }
   return ops;
 }
-function testoDef(area, idx, l) { const d = DATI.DEFINIZIONI[area][idx]; return d ? d[l === 'it' ? 0 : 1] : ''; }
+function testoDef(area, idx, l) { return CAT.definizione(area, idx, l); }
 function giusta(t) { return indiceTermine(t); }
 
 /* ---------- identità ---------- */
@@ -80,9 +85,36 @@ function impostazioni(config) {
     votoEsclusione: DATI.VALUTAZIONE.votoEsclusione,
     lingue: Array.isArray(config.lingue) && config.lingue.length ? (config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0).length ? config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0) : DATI.LINGUE.slice()) : DATI.LINGUE,
     partenza: config.partenza !== undefined ? config.partenza : DATI.PARTENZA,
-    classi: Array.isArray(config.classi) && config.classi.length ? config.classi : DATI.CLASSI
+    classi: Array.isArray(config.classi) && config.classi.length ? config.classi : DATI.CLASSI,
+    // date diverse per classe: { '3F': { partenza, scadenzaIt } } (se manca, valgono quelle generali)
+    calendario: config.calendario && typeof config.calendario === 'object' ? config.calendario : {},
+    // 'auto': i termini degli esclusi passano a sorte a un compagno; 'manuale': decide il docente
+    riassegnazione: config.riassegnazione === 'manuale' ? 'manuale' : 'auto',
+    tpaClassi: config.tpaClassi || {},
+    edizione: edizioneDi(config)
   };
 }
+function edizioneDi(config) {
+  const e = (config && config.edizione) || {};
+  const classi = Array.isArray(config && config.classi) && config.classi.length ? config.classi : DATI.CLASSI;
+  const elenco = classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('');
+  return { id: e.id || '2026-27-1', nome: e.nome || 'Glossario odontotecnico ' + elenco, as: e.as || '2026/27', creata: e.creata || null };
+}
+/* impostazioni viste da una classe: partenza e scadenza della classe se diverse da quelle generali */
+function impClasse(imp, classe) {
+  const c = (imp.calendario || {})[classe] || {};
+  return Object.assign({}, imp, { partenza: c.partenza !== undefined ? c.partenza : imp.partenza, scadenzaIt: c.scadenzaIt || imp.scadenzaIt });
+}
+/* scadenza personale (ms): quella della classe, oppure la proroga se più tarda */
+function scadenzaAlunno(imp, a) {
+  const base = Date.parse(impClasse(imp, classeDi(a)).scadenzaIt), p = a && a.proroga ? Date.parse(a.proroga) : 0;
+  return Math.max(base, p || 0);
+}
+/* la scadenza più vicina tra tutte le classi e le proroghe (prima non può esserci nessun escluso) */
+function primaScadenza(imp) {
+  return Math.min.apply(null, [Date.parse(imp.scadenzaIt)].concat(imp.classi.map((c) => Date.parse(impClasse(imp, c).scadenzaIt))));
+}
+function termPerAlunno(imp, classe) { return Number(imp.tpaClassi[classe]) > 0 ? Number(imp.tpaClassi[classe]) : DATI.TERMINI_PER_ALUNNO; }
 // il compito è partito? (senza data di partenza gli alunni restano in attesa)
 function partito(imp, now) { return !!imp.partenza && (now || Date.now()) >= Date.parse(imp.partenza); }
 const classeDi = (a) => (a && a.classe) || '3E';
@@ -96,9 +128,11 @@ function ratio(imp) {
       ' punti per ogni risposta errata (proposta ' + imp.proposta + '), senza scendere sotto ' + imp.votoMin + '. ' +
       'Il voto compare dalla prima risposta inviata. ' +
       'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito con voto ' + imp.votoEsclusione + '. ' +
-      'I termini dell\'alunno escluso passano automaticamente, a sorte, a un compagno della stessa classe: chi li riceve ha ' + imp.giorniIt + ' giorni per rispondere ' +
+      (imp.riassegnazione === 'manuale' ? 'I termini dell\'alunno escluso passano ai compagni scelti dal docente: chi li riceve ha i giorni indicati dal docente (di norma ' + imp.giorniIt + ') per rispondere ' :
+        'I termini dell\'alunno escluso passano automaticamente, a sorte, a un compagno della stessa classe: chi li riceve ha ' + imp.giorniIt + ' giorni per rispondere ') +
       'e il suo voto massimo sale da ' + fmtN(imp.votoMax) + ' a ' + fmtN(imp.votoMaxErede) + ', con le stesse penalità. ' +
       'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto finale scende a ' + imp.tetto + ' se era ' + imp.tetto + ' o più; se era sotto ' + imp.tetto + ' resta quello. ' +
+      'Il docente può concedere una proroga individuale della scadenza. ' +
       'Il voto inserito a mano dal docente sostituisce il voto finale calcolato.';
   }
   return 'Il voto di italiano e quello di inglese si calcolano separatamente: si parte da ' + fmtN(imp.votoMax) + ' e si tolgono ' + p +
@@ -133,8 +167,8 @@ function valuta(stato, a, now) {
   const mancaEn = EN ? miei.filter((t) => !(campo(t, 'en', 'tent') > 0)).length : 0;
   // ogni termine ha la sua scadenza: quella generale, o quella dei termini ereditati
   // esclusione: solo per i termini propri; per quelli ricevuti il ritardo porta il voto a non più di 6
-  const scaduti = (l) => miei.filter((t) => !t.ereditato && now > scadenzaTermine(t, l, imp) && !(campo(t, l, 'tent') > 0)).length;
-  const ritardiEredita = miei.filter((t) => t.ereditato && imp.lingue.some((l) => now > scadenzaTermine(t, l, imp) && !(campo(t, l, 'tent') > 0))).length;
+  const scaduti = (l) => miei.filter((t) => !t.ereditato && now > scadenzaTermine(t, l, imp, a) && !(campo(t, l, 'tent') > 0)).length;
+  const ritardiEredita = miei.filter((t) => t.ereditato && imp.lingue.some((l) => now > scadenzaTermine(t, l, imp, a) && !(campo(t, l, 'tent') > 0))).length;
   const tetto = !!a.tetto || ritardiEredita > 0;
   const sIt = scaduti('it'), sEn = EN ? scaduti('en') : 0;
   let motivo = a.esclusione ? a.esclusione.motivo : '';
@@ -153,12 +187,18 @@ function valuta(stato, a, now) {
   const voto = manuale != null ? manuale : escluso ? imp.votoEsclusione : (tetto && calcolato != null ? Math.min(calcolato, imp.tetto) : calcolato);
   return Object.assign(c, { id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
     votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn, votoMax: max, ereditati,
-    riassegnatoA: a.riassegnato_a || null, termini: miei.length, tetto, tettoValore: imp.tetto,
+    riassegnatoA: a.riassegnato_a || null, riassegnatiA: a.riassegnati_a || (a.riassegnato_a ? [a.riassegnato_a] : []), termini: miei.length, tetto, tettoValore: imp.tetto,
+    scadenza: new Date(scadenzaAlunno(imp, a)).toISOString(), proroga: a.proroga || null, bloccoRiass: !!a.blocco_riass,
+    rimandate: miei.filter((t) => campo(t, 'it', 'stato') === 'correggere').length,
+    scadenzaRicevuti: (miei.filter((t) => t.ereditato && t.scad_it).map((t) => scadenzaTermine(t, 'it', imp, a)).sort((x, y) => x - y)[0] || null),
+    mancaRicevuti: miei.filter((t) => t.ereditato && !(campo(t, 'it', 'tent') > 0)).length,
     lingue: imp.lingue, motivoTetto: tetto ? (a.tetto ? a.tetto.motivo : (ritardiEredita === 1 ? '1 termine ricevuto' : ritardiEredita + ' termini ricevuti') + ' senza risposta alla scadenza') : '' });
 }
-function scadenzaTermine(t, l, imp) {
+function scadenzaTermine(t, l, imp, a) {
   const own = campo(t, l, 'scad');
-  return Date.parse(own || (l === 'it' ? imp.scadenzaIt : imp.scadenzaEn));
+  const base = own ? Date.parse(own) : (l === 'it' ? (a ? scadenzaAlunno(imp, a) : Date.parse(imp.scadenzaIt)) : Date.parse(imp.scadenzaEn));
+  const p = a && a.proroga ? Date.parse(a.proroga) : 0;
+  return Math.max(base, p || 0);
 }
 function messaggioEsclusione() { return 'SEI STATO ESCLUSO DAL COMPITO CAUSA MANCATO RISPETTO DELLA DATA DI CONSEGNA - IL TUO VOTO FINALE SARÀ 4.'; }
 
@@ -198,20 +238,32 @@ function vistaTermine(t, chi, lingue) {
   return base;
 }
 
-function tappe(imp) {
+function tappe(imp, classe) {
   const g = (iso) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
   const en = conInglese(imp);
+  // le date del calendario 2026/27 valgono solo per 3E e 3F di quell'edizione; per le altre classi tappe ricavate dalle loro date
+  if (imp.edizione.id !== '2026-27-1' || (classe && classe !== '3E' && classe !== '3F')) {
+    const out = [];
+    if (imp.partenza) out.push({ data: g(imp.partenza), chiave: 'partenza', testo: 'Partenza: si apre l\'app' });
+    out.push({ data: g(imp.scadenzaIt), chiave: 'it', testo: 'Scadenza: risposta a tutti i termini' });
+    out.push({ data: g(new Date(Date.parse(imp.scadenzaIt) + 7 * 86400000).toISOString()), testo: 'Circa una settimana dopo: definizioni approvate dal prof. Cerrato' });
+    return out;
+  }
   return DATI.TAPPE.filter((t) => (en ? !t.soloIt : t.lingua !== 'en') && (t.chiave !== 'partenza' || imp.partenza)).map((t) => t.chiave === 'partenza' ? Object.assign({}, t, { data: g(imp.partenza) }) : t.chiave === 'it' ? Object.assign({}, t, { data: g(imp.scadenzaIt) }) : t.chiave === 'en' ? Object.assign({}, t, { data: g(imp.scadenzaEn) }) : t)
     .sort((a, b) => a.data.localeCompare(b.data));
 }
 function pacchetto(stato, chi) {
-  const now = Date.now(), imp = impostazioni(stato.config);
+  const now = Date.now(), imp0 = impostazioni(stato.config);
+  let imp = imp0;
   if (chi.ruolo === 'alunno') {
     const v = valuta(stato, chi._a, now);
     if (v.escluso) return { utente: { ruolo: 'alunno', nome: chi.nome }, escluso: true, messaggio: messaggioEsclusione() };
+    // l'alunno vede partenza della sua classe e scadenza personale (classe o proroga)
+    imp = Object.assign(impClasse(imp0, chi.classe), { scadenzaIt: new Date(scadenzaAlunno(imp0, chi._a)).toISOString() });
+    const nMiei = stato.termini.filter((t) => t.alunno_id === chi.id && !t.ereditato).length || termPerAlunno(imp0, chi.classe);
     // prima della partenza: solo il conto alla rovescia
     if (!partito(imp, now)) return { utente: { ruolo: 'alunno', nome: chi.nome, classe: chi.classe }, nonPartito: true, partenza: imp.partenza, ora: new Date(now).toISOString(),
-      config: { chiusa: !!stato.config.chiusa, classi: imp.classi, scadenzaIt: imp.scadenzaIt, terminiPerAlunno: DATI.TERMINI_PER_ALUNNO, lingue: imp.lingue } };
+      config: { chiusa: !!stato.config.chiusa, classi: imp.classi, scadenzaIt: imp.scadenzaIt, terminiPerAlunno: nMiei, lingue: imp.lingue, proroga: !!chi._a.proroga, edizione: imp.edizione } };
   }
   let termini = stato.termini;
   if (chi.ruolo === 'alunno') {
@@ -222,7 +274,10 @@ function pacchetto(stato, chi) {
   }
   const out = {
     utente: chi,
-    config: { chiusa: !!stato.config.chiusa, tappe: tappe(imp), lingue: imp.lingue, classi: imp.classi, partenza: imp.partenza, terminiPerAlunno: DATI.TERMINI_PER_ALUNNO, scadenzaIt: imp.scadenzaIt, scadenzaEn: imp.scadenzaEn,
+    config: { chiusa: !!stato.config.chiusa, tappe: tappe(imp, chi.ruolo === 'alunno' ? chi.classe : null), lingue: imp.lingue, classi: imp.classi, partenza: imp.partenza,
+      terminiPerAlunno: chi.ruolo === 'alunno' ? (stato.termini.filter((t) => t.alunno_id === chi.id && !t.ereditato).length || termPerAlunno(imp0, chi.classe)) : DATI.TERMINI_PER_ALUNNO,
+      scadenzaIt: imp.scadenzaIt, scadenzaEn: imp.scadenzaEn, proroga: chi.ruolo === 'alunno' ? !!(chi._a && chi._a.proroga) : undefined, edizione: imp.edizione,
+      riassegnazione: imp.riassegnazione,
       docenti: (stato.config.docenti || []).map((d) => d.nome) },
     ora: new Date(now).toISOString(),
     aree: DATI.AREE,
@@ -241,11 +296,15 @@ function pacchetto(stato, chi) {
     // vista condivisa: conteggi per studente
     out.panoramica = val.map((v) => ({ id: v.id, nome: v.nome, gruppo: v.gruppo, classe: v.classe, inviate: v.inviate, corrette: v.corrette, errate: v.errate,
       daApprovare: v.daApprovare, approvate: v.approvate, escluso: v.escluso, motivo: v.motivo, mancaIt: v.mancaIt, mancaEn: v.mancaEn,
-      termini: v.termini, ereditati: v.ereditati, riassegnatoA: v.riassegnatoA }));
+      termini: v.termini, ereditati: v.ereditati, riassegnatoA: v.riassegnatoA, riassegnatiA: v.riassegnatiA,
+      scadenza: v.scadenza, proroga: v.proroga, bloccoRiass: v.bloccoRiass, rimandate: v.rimandate, riammesso: v.riammesso,
+      scadenzaRicevuti: v.scadenzaRicevuti ? new Date(v.scadenzaRicevuti).toISOString() : null, mancaRicevuti: v.mancaRicevuti }));
     if (chi.admin) {
       out.codiciAlunni = stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), codice: a.codice,
         termini: stato.termini.filter((t) => t.alunno_id === a.id).map((t) => ({ area: t.area, it: t.termine_it })) }));
-      out.admin = { impostazioni: imp, penalita: PENALITA, ratio: ratio(imp),
+      out.admin = { impostazioni: imp, penalita: PENALITA, ratio: ratio(imp), archivio: stato.archivio || [], archiviata: stato.config.archiviata || null,
+        date: Object.fromEntries(imp.classi.map((c) => { const ic = impClasse(imp, c); return [c, { partenza: ic.partenza || null, scadenzaIt: ic.scadenzaIt, propria: !!imp.calendario[c] }]; })),
+        tpa: Object.fromEntries(imp.classi.map((c) => [c, termPerAlunno(imp, c)])),
         voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate, votoMax: v.votoMax, ereditati: v.ereditati,
           tetto: v.tetto, motivoTetto: v.motivoTetto,
           calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })),
@@ -256,6 +315,10 @@ function pacchetto(stato, chi) {
   return out;
 }
 
+function elencoLeggero(metas) {
+  return (metas || []).map((m) => ({ id: m.id, nome: m.nome, as: m.as, classi: m.classi, creata: m.creata || null, archiviata: m.archiviata, alunni: m.alunni, termini: m.termini, approvate: m.approvate, mediaVoto: m.mediaVoto }))
+    .sort((x, y) => String(y.archiviata).localeCompare(String(x.archiviata)));
+}
 function trova(stato, id) { const t = stato.termini.find((x) => x.id === String(id)); if (!t) errore('Termine non trovato.'); return t; }
 function lingua(l, stato) {
   if (l !== 'it' && l !== 'en') errore('Lingua non valida.');
@@ -268,7 +331,7 @@ async function login(db, { codice }) {
   const stato = await db.leggiTutto();
   const chi = identifica(stato, codice);
   if (chi.ruolo === 'docente' && chi.admin && db.leggiAttivita) {
-    [stato.attivita, stato.dropbox] = await Promise.all([db.leggiAttivita(), DBX.statoPubblico(db)]);
+    [stato.attivita, stato.dropbox, stato.archivio] = await Promise.all([db.leggiAttivita(), DBX.statoPubblico(db), db.leggiArchivi ? db.leggiArchivi().then(elencoLeggero) : []]);
   }
   return pacchetto(stato, chi);
 }
@@ -288,7 +351,7 @@ async function scegli(db, { codice, id, lingua: l, lettera }) {
     if (chi.ruolo !== 'alunno') errore('Solo gli alunni scelgono le definizioni.');
     const now = Date.now(), imp = impostazioni(stato.config);
     if (valuta(stato, chi._a, now).escluso) errore(messaggioEsclusione());
-    if (!partito(imp, now)) errore('Il compito non è ancora partito.');
+    if (!partito(impClasse(imp, chi.classe), now)) errore('Il compito non è ancora partito.');
     if (stato.config.chiusa) errore("L'app è chiusa: le scelte non sono più modificabili.");
     lingua(l, stato);
     const t = trova(stato, id);
@@ -301,7 +364,7 @@ async function scegli(db, { codice, id, lingua: l, lettera }) {
     const idx = opzioni(t, l)[i];
     if ((campo(t, l, 'scartate') || []).indexOf(idx) >= 0) errore('Questa definizione è già stata scartata: scegline un\'altra.');
     if (st === 'inviata' && campo(t, l, 'scelta') === idx) errore('Hai già inviato questa scelta.');
-    const scad = scadenzaTermine(t, l, imp);
+    const scad = scadenzaTermine(t, l, imp, chi._a);
     if (now > scad && !(campo(t, l, 'tent') > 0) && !chi._a.riammesso && !t.ereditato) errore('La scadenza per ' + (l === 'it' ? "l'italiano" : "l'inglese") + ' è passata.');
     const ok = idx === giusta(t);
     const storia = (campo(t, l, 'storia') || []).concat([{ i: idx, ok, at: adesso() }]);
@@ -359,7 +422,7 @@ async function approvaCorrette(db, { codice, lingua: l, area }) {
 function soloAdmin(chi) { if (chi.ruolo !== 'docente' || !chi.admin) errore('Operazione riservata al prof. Cerrato.'); }
 function isoValida(s) { const t = Date.parse(s); if (!s || isNaN(t)) errore('Data non valida.'); return new Date(t).toISOString(); }
 
-async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta, giorniIt, giorniEn, partenza }) {
+async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta, giorniIt, giorniEn, partenza, calendario, riassegnazione }) {
   const stato = await db.leggiTutto();
   soloAdmin(identifica(stato, codice));
   const mod = {};
@@ -370,8 +433,29 @@ async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta,
     const n = Number(v); if (!(n >= 1 && n <= 14)) errore('I giorni per i termini ereditati vanno da 1 a 14.'); mod[k] = n;
   });
   if (partenza !== undefined) mod.partenza = partenza ? isoValida(partenza) : null;
+  if (riassegnazione !== undefined && riassegnazione !== null) {
+    if (riassegnazione !== 'auto' && riassegnazione !== 'manuale') errore('Modalità di riassegnazione non valida.');
+    mod.riassegnazione = riassegnazione;
+  }
+  if (calendario !== undefined && calendario !== null) {
+    // { classe: { partenza: ISO|null|'' , scadenzaIt: ISO|'' } }: i campi vuoti tornano alle date generali
+    const imp0 = impostazioni(stato.config), cal = {};
+    Object.keys(calendario).forEach((c) => {
+      if (imp0.classi.indexOf(c) < 0) errore('Classe sconosciuta: ' + c + '.');
+      const x = calendario[c] || {}, r = {};
+      if ('partenza' in x) r.partenza = x.partenza ? isoValida(x.partenza) : null;
+      if (!x.scadenzaIt) errore('Classe ' + c + ': manca la scadenza.');
+      r.scadenzaIt = isoValida(x.scadenzaIt);
+      cal[c] = r;
+    });
+    mod.calendario = cal;
+  }
   const dopo = impostazioni(Object.assign({}, stato.config, mod));
   if (dopo.partenza && Date.parse(dopo.partenza) >= Date.parse(dopo.scadenzaIt)) errore('La partenza deve venire prima della scadenza.');
+  dopo.classi.forEach((c) => {
+    const ic = impClasse(dopo, c);
+    if (ic.partenza && Date.parse(ic.partenza) >= Date.parse(ic.scadenzaIt)) errore('Classe ' + c + ': la partenza deve venire prima della scadenza.');
+  });
   await db.scriviConfig(mod);
   return dopo;
 }
@@ -390,12 +474,136 @@ async function votoManuale(db, { codice, alunno, voto }) {
   return { alunno: a.id, voto_manuale: v };
 }
 
-async function riammetti(db, { codice, alunno, riammesso }) {
+/* Riammissione: l'alunno torna nel compito e, se i suoi termini erano già passati a un compagno, gli vengono restituiti.
+   modo 'tutti': tornano tutti (le risposte date dal compagno si azzerano); 'non_risposti': restano al compagno quelli a cui ha già risposto. */
+function terminiRestituibili(stato, a) {
+  const nomi = {}; stato.alunni.forEach((x) => { nomi[x.id] = x.nome; });
+  const ts = stato.termini.filter((t) => t.ereditato && t.alunno_orig === a.id && t.alunno_id !== a.id);
+  const risposto = (t) => ['it', 'en'].some((l) => campo(t, l, 'tent') > 0 || !!campo(t, l, 'stato'));
+  const eredi = {};
+  ts.forEach((t) => { const e = eredi[t.alunno_id] = eredi[t.alunno_id] || { id: t.alunno_id, nome: nomi[t.alunno_id] || t.alunno_id, termini: 0, risposti: 0 }; e.termini++; if (risposto(t)) e.risposti++; });
+  return { ts, risposto, eredi: Object.values(eredi) };
+}
+async function anteprimaRiammissione(db, { codice, alunno }) {
   const stato = await db.leggiTutto();
   soloAdmin(identifica(stato, codice));
   const a = stato.alunni.find((x) => x.id === alunno); if (!a) errore('Alunno non trovato.');
-  await db.scriviAlunno(a.id, { riammesso: !!riammesso });
-  return { alunno: a.id, riammesso: !!riammesso };
+  const r = terminiRestituibili(stato, a);
+  return { alunno: a.id, nome: a.nome, termini: r.ts.length, risposti: r.ts.filter(r.risposto).length, eredi: r.eredi };
+}
+/* restituisce all'alunno a i suoi termini passati ad altri (tutti, o solo quelli a cui il compagno non ha ancora risposto) */
+function restituisci(tx, stato, a, modo) {
+  const { ts, risposto } = terminiRestituibili(stato, a);
+  const torna = ts.filter((t) => modo === 'tutti' || !risposto(t));
+  const toccati = new Set(torna.map((t) => t.alunno_id));
+  torna.forEach((t) => {
+    const mod = Object.assign({ alunno_id: a.id, alunno_orig: null, ereditato: false, scad_it: null, scad_en: null, aggiornato: adesso() }, AZZERA('it'), AZZERA('en'));
+    Object.assign(t, mod); tx.scriviTermine(t.id, mod);
+  });
+  // chi li aveva ricevuti: se non ha più termini di questo alunno lo si toglie dai "donatori"; senza termini ricevuti torna al voto massimo normale
+  toccati.forEach((id) => {
+    const e = stato.alunni.find((x) => x.id === id); if (!e) return;
+    const suoi = stato.termini.filter((t) => t.alunno_id === id && t.ereditato);
+    const da = (e.eredita_da || []).filter((d) => d !== a.id || suoi.some((t) => t.alunno_orig === a.id));
+    const mod = { eredita_da: da, ereditati: da.length };
+    if (!suoi.length) mod.tetto = null;
+    Object.assign(e, mod); tx.scriviAlunno(id, mod);
+  });
+  const ancora = [...new Set(stato.termini.filter((t) => t.ereditato && t.alunno_orig === a.id && t.alunno_id !== a.id).map((t) => t.alunno_id))];
+  const restano = ts.length - torna.length;
+  const modA = Object.assign(torna.length ? { riassegnato: false } : {}, { riassegnati_a: ancora, riassegnato_a: ancora[0] || null });
+  Object.assign(a, modA); tx.scriviAlunno(a.id, modA);
+  return { restituiti: torna.length, restano };
+}
+async function riammetti(db, { codice, alunno, riammesso, modo }) {
+  const stato0 = await db.leggiTutto();
+  soloAdmin(identifica(stato0, codice));
+  if (!stato0.alunni.some((x) => x.id === alunno)) errore('Alunno non trovato.');
+  if (!riammesso) { await db.scriviAlunno(alunno, { riammesso: false }); return { alunno, riammesso: false, restituiti: 0 }; }
+  return db.transazione(async (tx) => {
+    const stato = await tx.leggiTutto();
+    const a = stato.alunni.find((x) => x.id === alunno);
+    const r = restituisci(tx, stato, a, modo);
+    tx.scriviAlunno(a.id, { riammesso: true });
+    return { alunno: a.id, riammesso: true, restituiti: r.restituiti, restano: r.restano };
+  });
+}
+
+/* ---------- proroga individuale ---------- */
+/* data: ISO (nuova scadenza personale) oppure null (si torna alla scadenza della classe).
+   Se l'alunno era già escluso, la proroga lo rimette nel compito; se i suoi termini erano già passati ad altri,
+   tornano a lui secondo "modo" ('tutti' o 'non_risposti'). */
+async function prorogaAlunno(db, { codice, alunno, data, modo }) {
+  const stato0 = await db.leggiTutto();
+  soloAdmin(identifica(stato0, codice));
+  const a0 = stato0.alunni.find((x) => x.id === alunno); if (!a0) errore('Alunno non trovato.');
+  const imp = impostazioni(stato0.config), now = Date.now();
+  const base = Date.parse(impClasse(imp, classeDi(a0)).scadenzaIt);
+  let iso = null;
+  if (data) {
+    iso = isoValida(data);
+    if (Date.parse(iso) <= base) errore('La proroga deve essere successiva alla scadenza della classe ' + classeDi(a0) + ' (' + new Date(base).toLocaleString('it-IT', { timeZone: 'Europe/Rome', dateStyle: 'short', timeStyle: 'short' }) + ').');
+    if (Date.parse(iso) <= now) errore('La proroga deve essere nel futuro.');
+  }
+  return db.transazione(async (tx) => {
+    const stato = await tx.leggiTutto();
+    const a = stato.alunni.find((x) => x.id === alunno);
+    let restituiti = 0, restano = 0;
+    const mod = { proroga: iso };
+    if (iso) {
+      // la proroga annulla un'esclusione già registrata e la riammissione non serve più
+      if (a.esclusione) mod.esclusione = null;
+      if (a.riammesso) mod.riammesso = false;
+      const r = restituisci(tx, stato, a, modo === 'non_risposti' ? 'non_risposti' : 'tutti');
+      restituiti = r.restituiti; restano = r.restano;
+    }
+    tx.scriviAlunno(a.id, mod);
+    return { alunno: a.id, proroga: iso, restituiti, restano };
+  });
+}
+async function bloccoRiassegnazione(db, { codice, alunno, blocco }) {
+  const stato = await db.leggiTutto();
+  soloAdmin(identifica(stato, codice));
+  if (!stato.alunni.some((x) => x.id === alunno)) errore('Alunno non trovato.');
+  await db.scriviAlunno(alunno, { blocco_riass: !!blocco });
+  return { alunno, blocco: !!blocco };
+}
+
+/* ---------- passaggio dei termini deciso dal docente ---------- */
+/* da: alunno che cede i termini; a: compagno che li riceve; termini: elenco di id; scadenza: ISO per chi li riceve */
+async function trasferisciTermini(db, { codice, da, a: verso, termini, scadenza }) {
+  const stato0 = await db.leggiTutto();
+  const chi = identifica(stato0, codice); soloAdmin(chi);
+  if (!Array.isArray(termini) || !termini.length) errore('Seleziona almeno un termine.');
+  if (da === verso) errore('Scegli un compagno diverso dall\'alunno che cede i termini.');
+  const imp = impostazioni(stato0.config), now = Date.now();
+  const scad = scadenza ? isoValida(scadenza) : new Date(now + imp.giorniIt * 86400000).toISOString();
+  if (Date.parse(scad) <= now) errore('La scadenza per chi riceve i termini deve essere nel futuro.');
+  return db.transazione(async (tx) => {
+    const stato = await tx.leggiTutto();
+    const src = stato.alunni.find((x) => x.id === da), dst = stato.alunni.find((x) => x.id === verso);
+    if (!src) errore('Alunno che cede i termini non trovato.');
+    if (!dst) errore('Alunno che riceve i termini non trovato.');
+    const vDst = valuta(stato, dst, now);
+    if (vDst.escluso) errore(dst.nome + ' è escluso dal compito: scegli un altro compagno.');
+    const vSrc = valuta(stato, src, now);
+    const ts = termini.map((id) => stato.termini.find((t) => t.id === String(id)));
+    if (ts.some((t) => !t)) errore('Uno dei termini selezionati non esiste.');
+    if (ts.some((t) => t.alunno_id !== src.id)) errore('Uno dei termini selezionati non è (più) assegnato a ' + src.nome + ': ricarica la pagina.');
+    if (ts.some((t) => t.stato_it === 'approvata')) errore('Un termine già approvato non si può passare: deselezionalo.');
+    // chi cede: se è escluso si registra l'esclusione (resta escluso anche senza termini) e l'app non riassegna più nulla in automatico
+    const modSrc = { riassegnato: true, riassegnati_a: [...new Set((src.riassegnati_a || (src.riassegnato_a ? [src.riassegnato_a] : [])).concat([dst.id]))] };
+    modSrc.riassegnato_a = modSrc.riassegnati_a[0];
+    if (vSrc.escluso && !src.esclusione) modSrc.esclusione = { motivo: vSrc.motivo, at: new Date(now).toISOString() };
+    ts.forEach((t) => {
+      tx.scriviTermine(t.id, Object.assign({ alunno_id: dst.id, alunno_orig: t.alunno_orig || src.id, ereditato: true, scad_it: scad, scad_en: scad, aggiornato: adesso(), passato_da: chi.nome }, AZZERA('it'), AZZERA('en')));
+    });
+    tx.scriviAlunno(src.id, modSrc);
+    const orig = [...new Set(ts.map((t) => t.alunno_orig || src.id))];
+    const eredita = [...new Set((dst.eredita_da || []).concat(orig))];
+    tx.scriviAlunno(dst.id, { eredita_da: eredita, ereditati: eredita.length });
+    return { da: src.id, a: dst.id, passati: ts.length, scadenza: scad };
+  });
 }
 
 /* ---------- riassegnazione automatica dei termini degli esclusi ---------- */
@@ -410,7 +618,8 @@ function pianoRiassegnazione(stato, now, sceltaCasuale) {
   const scriviA = (a, mod) => { Object.assign(a, mod); wA[a.id] = Object.assign(wA[a.id] || {}, mod); };
   for (let giro = 0; giro < stato.alunni.length; giro++) {
     const val = stato.alunni.map((a) => ({ a, v: valuta(stato, a, now) }));
-    const daFare = val.filter((x) => x.v.escluso && !x.a.riassegnato && x.v.termini > 0 && !senzaErede.has(x.a.id));
+    // in modalità manuale, o per gli alunni bloccati dal docente, i termini restano dove sono finché decide il docente
+    const daFare = val.filter((x) => x.v.escluso && !x.a.riassegnato && x.v.termini > 0 && !senzaErede.has(x.a.id) && imp.riassegnazione !== 'manuale' && !x.a.blocco_riass);
     if (!daFare.length) break;
     daFare.forEach(({ a, v }) => {
       const esclusiOra = new Set(stato.alunni.map((x) => x).filter((x) => x.esclusione || valuta(stato, x, now).escluso).map((x) => x.id));
@@ -424,11 +633,17 @@ function pianoRiassegnazione(stato, now, sceltaCasuale) {
       stato.termini.filter((t) => t.alunno_id === a.id).forEach((t) => {
         scriviT(t, Object.assign({ alunno_id: erede.id, alunno_orig: t.alunno_orig || a.id, ereditato: true, scad_it: scadIt, scad_en: scadEn, aggiornato: adesso() }, AZZERA('it'), AZZERA('en')));
       });
-      scriviA(a, { riassegnato_a: erede.id });
+      scriviA(a, { riassegnato_a: erede.id, riassegnati_a: [erede.id] });
       scriviA(erede, { ereditati: (erede.ereditati || 0) + 1, eredita_da: (erede.eredita_da || []).concat([a.id]) });
       eventi.push({ da: a.id, a: erede.id });
     });
   }
+  // esclusi non riassegnati (modalità manuale o alunno bloccato): si registra comunque l'esclusione
+  stato.alunni.forEach((a) => {
+    if (a.esclusione) return;
+    const v = valuta(stato, a, now);
+    if (v.escluso) { scriviA(a, { esclusione: { motivo: v.motivo, at: new Date(now).toISOString() } }); eventi.push({ escluso: a.id }); }
+  });
   // tetto a 6 per chi non ha risposto in tempo ai termini ricevuti: si registra e resta anche se poi completa
   stato.alunni.forEach((a) => {
     if (a.tetto) return;
@@ -441,7 +656,7 @@ async function manutenzione(db, sceltaCasuale) {
   // prima della scadenza di italiano non può esserci nessun escluso: basta una lettura
   if (db.leggiConfig) {
     const cfg = await db.leggiConfig();
-    if (!cfg || Date.now() <= Date.parse(impostazioni(cfg).scadenzaIt)) return [];
+    if (!cfg || Date.now() <= primaScadenza(impostazioni(cfg))) return [];
   }
   return db.transazione(async (tx) => {
     const stato = await tx.leggiTutto();
@@ -568,6 +783,9 @@ function nomePubblico(completo) {
 async function pubblico(db) {
   const stato = await db.leggiTutto();
   if (!stato.config) return { aree: [], classi: {} };
+  return pubblicoDa(stato);
+}
+function pubblicoDa(stato) {
   const imp = impostazioni(stato.config);
   const nomi = {}; stato.alunni.forEach((a) => { nomi[a.id] = nomePubblico(a.nome); });
   const classi = {};
@@ -579,7 +797,8 @@ async function pubblico(db) {
       return { n: Number(String(t.id).slice(2)), termine: t.termine_it, def: ok ? testoDef(t.area, t.scelta_it, 'it') : '', autore: ok ? (nomi[t.alunno_id] || '') : '' };
     }) };
   });
-  return { docente: 'Prof. Danilo Cerrato', materia: 'Laboratorio odontotecnico', scuola: 'Istituto Barsanti - sede Salvetti, Massa', anno: '2026/27', classi, aree, aggiornato: new Date().toISOString() };
+  return { docente: 'Prof. Danilo Cerrato', materia: 'Laboratorio odontotecnico', scuola: 'Istituto Barsanti - sede Salvetti, Massa', anno: imp.edizione.as,
+    edizione: { id: imp.edizione.id, nome: imp.edizione.nome, as: imp.edizione.as }, classi, aree, aggiornato: new Date().toISOString() };
 }
 
 /* filtro per classe (report e presentazione) */
@@ -589,5 +808,7 @@ function statoClasse(stato, classe) {
   return Object.assign({}, stato, { alunni: stato.alunni.filter((a) => ids.has(a.id)), termini: stato.termini.filter((t) => ids.has(t.alunno_id)) });
 }
 function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k = classeDi(a); if (c.indexOf(k) < 0) c.push(k); }); return (c.length ? c.sort() : ['3E']).join(' e '); }
-function etichettaAl(a) { return classeDi(a) === '3E' ? '3E·' + a.gruppo : classeDi(a); }
-module.exports = { nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };
+function etichettaAl(a) { return /^[1-4]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
+module.exports = {
+  anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,
+  identifica, soloAdmin, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

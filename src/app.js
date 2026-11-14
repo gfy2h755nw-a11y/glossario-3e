@@ -8,7 +8,10 @@ function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function toast(msg, err) { var t = $('toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(function () { t.style.display = 'none'; }, 3500); }
 function memo(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+// in un'edizione archiviata si può solo leggere
+var AZ_LETTURA = ['login', 'archivioconsulta', 'archiviofile', 'pubblico', 'backup', 'presenza'];
 function api(azione, dati) {
+  if (S.d && S.d.solaLettura && AZ_LETTURA.indexOf(azione) < 0) return Promise.reject(new Error('Stai consultando un\'edizione archiviata: è in sola lettura. Usa «Torna all\'edizione in corso» per lavorare.'));
   var corpo = Object.assign({ azione: azione, codice: S.codice }, dati || {});
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
     .catch(function () { throw new Error('Connessione assente: controlla internet e riprova.'); })
@@ -24,12 +27,13 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '12/11/2026 · 3';
+var VERSIONE = '14/11/2026 · 2';
 /* classi: 3E e 3F */
+function elencoClassi(arr) { arr = arr || CLASSI(); return arr.length > 1 ? arr.slice(0, -1).join(', ') + ' e ' + arr[arr.length - 1] : arr.join(''); }
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
 function alunnoDi(id) { return S.d.alunni.filter(function (x) { return x.id === id; })[0]; }
 function classeAl(id) { var a = alunnoDi(id); return a && a.classe ? a.classe : '3E'; }
-function etich(a) { return !a ? '' : (a.classe || '3E') === '3E' ? '3E · ' + a.gruppo : a.classe; }
+function etich(a) { return !a ? '' : /^[1-4]$/.test(String(a.gruppo)) ? (a.classe || '3E') + ' · ' + a.gruppo : (a.classe || '3E'); }
 function inClasse(id) { var c = S.filtro && S.filtro.classe; return !c || c === 'tutte' || classeAl(id) === c; }
 function selClasse(id, cb) {
   if (CLASSI().length < 2) return '';
@@ -47,7 +51,7 @@ function giorniA(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if (!m) r
 /* ---------- accesso ---------- */
 function vistaLogin(msg) {
   $('app').innerHTML = '<div class="wrap"><form class="card login stack" id="flogin">' +
-    '<div><div class="muted disp" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">Classi 3E e 3F · a.s. 2026/27</div>' +
+    '<div><div class="muted disp" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">Istituto Barsanti - sede Salvetti</div>' +
     '<h1>Glossario odontotecnico</h1></div>' +
     '<p class="muted" style="margin:0">Laboratorio odontotecnico · prof. Danilo Cerrato</p>' +
     (msg ? '<div class="note err">' + esc(msg) + '</div>' : '') +
@@ -124,7 +128,7 @@ function bloccoScadenze(tutti) {
       '<div data-cd="' + esc(iso) + '">' + cdHtml(iso) + '</div>' +
       '<div style="font-size:14px">' + (manca ? '<b>' + manca + '</b> ' + (manca === 1 ? 'termine' : 'termini') + ' ancora senza risposta' : nota) + '</div></div>';
   }
-  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Scadenze</h2><div class="grid2">' +
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Scadenze</h2>' + (c.proroga ? '<p class="note info" style="margin:0">Il prof. Cerrato ti ha concesso una <b>proroga</b>: la tua scadenza è quella qui sotto.</p>' : '') + '<div class="grid2">' +
     (miei.length ? riga(EN() ? 'Italiano' : 'I tuoi termini', c.scadenzaIt, mancaIt, '✓ Tutti i termini hanno una risposta') +
     (EN() ? riga('Inglese', c.scadenzaEn, mancaEn, '✓ Tutti i termini hanno una risposta') : '') : '') +
     (ered.length ? riga(EN() ? 'Termini ricevuti · italiano' : 'Termini ricevuti', ered[0].scadIt, ered.filter(function (t) { return !t.statoIt; }).length, '✓ Tutti hanno una risposta') +
@@ -173,14 +177,19 @@ function bloccoPoster(n) {
   var sel = aree.length > 1 ? '<div><label for="selposter" class="sr">Scegli il cartellone</label><select id="selposter" onchange="disegnaPoster(this.value)">' + opts + '</select></div>' : '';
   return '<section class="card stack"><h2 style="margin:0;font-size:22px">Anteprima del cartellone 70×100</h2>' + sel +
     '<p class="muted" style="margin:0;font-size:15px">Sul cartellone vanno solo le definizioni approvate' + (EN() ? ' dai docenti' : ' dal docente') + '.' +
-    (S.d.utente.ruolo === 'alunno' ? ' <b style="background:#FFE98A;color:var(--ink);padding:0 4px;border-radius:3px">In giallo i tuoi termini.</b>' + (CLASSI().length > 1 ? ' Ogni cartellone è di 3E e 3F insieme, con i termini in ordine alfabetico.' : '') : '') + '</p>' +
-    '<div class="poster-box" id="pbox"><div class="poster-scale" id="pscale"></div></div></section>';
+    (S.d.utente.ruolo === 'alunno' ? ' <b style="background:#FFE98A;color:var(--ink);padding:0 4px;border-radius:3px">In giallo i tuoi termini.</b>' + (CLASSI().length > 1 ? ' Ogni cartellone è di ' + esc(elencoClassi()) + ' insieme, con i termini in ordine alfabetico.' : '') : '') + '</p>' +
+    '<div class="poster-box" id="pbox"><div class="poster-scale" id="pscale"></div></div>' +
+    (S.d.utente.ruolo === 'docente' ? '<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:12px"><b>Cartelloni per la stampa (PDF 70×100)</b>' +
+      '<div class="row"><button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked)">I 4 cartelloni in un PDF</button><button class="btn sec" onclick="stampaCartelloni(S.poster, $(\'pabb\').checked)">Solo questo cartellone</button></div>' +
+      '<label class="row" style="gap:8px;font-weight:400;cursor:pointer"><input type="checkbox" id="pabb" style="width:20px;height:20px"> Con abbondanza di 3 mm per la tipografia (706×1006 mm)</label>' +
+      '<span class="muted" style="font-size:14px">Generati con i termini, le definizioni approvate e gli autori di ' + (RO() ? 'questa edizione archiviata' : 'questa edizione') + '. Si aprono nella stampa: scegli «Salva come PDF» e, nelle opzioni, attiva «Grafica di sfondo».</span></div>' : '') +
+    '</section>';
 }
 function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
-  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario' });
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario', as: (S.d.config.edizione || {}).as });
   Poster.adatta(sc);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if ($('pscale') === sc) Poster.adatta(sc); });
   var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth;
@@ -204,7 +213,7 @@ function vistaAlunno() {
   var ered = miei.filter(function (t) { return t.ereditato; });
   if (ered.length) {
     var da = ered.map(function (t) { return nomeAlunno(t.alunnoOrig); }).filter(function (x, i, arr) { return arr.indexOf(x) === i; });
-    h += '<section class="card note-ered" role="status"><b>Hai ricevuto ' + ered.length + ' termini in più</b> da ' + esc(da.join(', ')) + ', escluso per mancato rispetto della scadenza. ' +
+    h += '<section class="card note-ered" role="status"><b>Hai ricevuto ' + ered.length + ' termini in più</b> da ' + esc(da.join(', ')) + '. ' +
       'Il tuo <b>voto massimo sale a ' + fv(S.d.voto ? S.d.voto.votoMax : 9.5) + '</b> e il tuo nome andrà sul cartellone al suo posto. Per questi termini hai tempo fino a <b>' + esc(oraIt(ered[0].scadIt)) + '</b>' + (EN() ? ' per l\'italiano e <b>' + esc(oraIt(ered[0].scadEn)) + '</b> per l\'inglese' : '') + '. Se non rispondi in tempo a questi termini non vieni escluso, ma il tuo voto finale non potrà superare 6.</section>';
   }
   if (S.d.config.chiusa) h += '<div class="note warn"><b>L\'app è chiusa.</b> Le scelte non sono più modificabili.</div>';
@@ -255,8 +264,9 @@ function vistaDocente() {
   var u = S.d.utente, f = S.filtro;
   if (!EN()) { f.lingua = 'it'; if (f.stato === 'pronte') f.stato = 'inviata'; }
   var h = testata(u.nome + ' · area docenti') + '<main class="wrap stack">';
-  if (S.d.config.chiusa) h += '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>';
-  h += bloccoAnello();
+  if (RO()) h += bannerArchivio();
+  else if (S.d.config.chiusa) h += '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>';
+  h += bloccoAnello() + (RO() ? '' : bloccoSollecito());
   h += '<section class="grid4">' + S.d.aree.map(function (a) {
     var ts = S.d.termini.filter(function (t) { return t.area == a.n && inClasse(t.alunno); });
     var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
@@ -279,15 +289,15 @@ function vistaDocente() {
     (EN() ? '<div><label for="fl">Lingua</label><select id="fl" onchange="S.filtro.lingua=this.value;vistaDocente()">' + [['it', 'Italiano'], ['en', 'Inglese']].map(function (o) { return '<option value="' + o[0] + '"' + (f.lingua === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' : '') +
     '<div><label for="fs">Stato</label><select id="fs" onchange="S.filtro.stato=this.value;vistaDocente()">' + [['inviata', 'Da rivedere (inviate)']].concat(EN() ? [['pronte', 'Italiano approvato, inglese da fare']] : []).concat([ ['correggere', 'Rimandate all\'alunno'], ['', 'Non ancora scelte'], ['approvata', 'Approvate'], ['tutti', 'Tutti']]).map(function (o) { return '<option value="' + o[0] + '"' + (f.stato === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
     '<div><label for="fa">Area</label><select id="fa" onchange="S.filtro.area=this.value;vistaDocente()"><option value="tutte">Tutte le aree</option>' + S.d.aree.map(function (a) { return '<option value="' + a.n + '"' + (f.area == a.n ? ' selected' : '') + '>' + a.n + '. ' + esc(a.it) + '</option>'; }).join('') + '</select></div></div>' +
-    (corrette.length ? '<div class="row"><button class="btn ok" onclick="approvaCorrette(this)">Approva tutte le scelte corrette (' + corrette.length + ')</button><span class="muted" style="font-size:15px">Quelle sbagliate restano da rivedere una per una.</span></div>' : '') +
+    (corrette.length && !RO() ? '<div class="row"><button class="btn ok" onclick="approvaCorrette(this)">Approva tutte le scelte corrette (' + corrette.length + ')</button><span class="muted" style="font-size:15px">Quelle sbagliate restano da rivedere una per una.</span></div>' : '') +
     '</section>';
   h += '<p class="muted" style="margin:0">' + lista.length + ' termini' + (EN() ? ' · ' + (f.lingua === 'it' ? 'italiano' : 'inglese') : '') + '</p>';
   h += lista.map(function (t) { return cardDocente(t, f.lingua); }).join('') || '<div class="card muted">Nessun termine con questo filtro.</div>';
-  h += panoramica() + bloccoSituazione() + (S.d.admin ? bloccoAdmin() + bloccoAttivita() + bloccoBackup() : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
-  h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
+  h += panoramica() + bloccoSituazione() + (S.d.admin ? bloccoAdmin() + (RO() ? '' : bloccoGestione() + bloccoEdizioni()) + bloccoAttivita() + (RO() ? '' : bloccoBackup()) : '') + bloccoPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)) + bloccoTappe();
+  if (!RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
     '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
-  h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
-  if (S.d.codiciAlunni) {
+  if (!RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
+  if (S.d.codiciAlunni && !RO()) {
     h += '<details class="card" id="codici"><summary>Codici personali degli alunni (riservato)</summary>' +
       '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
       '<div class="row" style="margin-bottom:10px">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Schede con QR · ' + c + '</button>'; }).join('') +
@@ -298,7 +308,7 @@ function vistaDocente() {
       '</tbody></table></div></details>';
   }
   h += '</main>';
-  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)); selSituazione(); disegnaSituazione();
+  $('app').innerHTML = h; disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1)); selSituazione(); disegnaSituazione(); selGestione(); disegnaGestione();
 }
 function cardDocente(t, l) {
   var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
@@ -315,7 +325,9 @@ function cardDocente(t, l) {
   } else {
     h += '<div class="fixed-text"' + (l === 'en' ? ' lang="en"' : '') + '>' + esc(scelta) + '</div>' +
       '<div class="esito ' + (ok ? 'si' : 'no') + '">' + (ok ? '✓ Corrisponde alla definizione corretta' : '✗ Non è la definizione corretta. Quella giusta: <span' + (l === 'en' ? ' lang="en"' : '') + '>“' + esc(T(t, l, 'giusta')) + '”</span>') + '</div>';
-    if (st === 'inviata') {
+    if (RO()) {
+      h += st === 'approvata' ? '<p class="muted" style="margin:8px 0 0;font-size:14px">Approvata da ' + esc(T(t, l, 'da')) + '</p>' : '';
+    } else if (st === 'inviata') {
       var cid = 'cm_' + t.id + '_' + l;
       h += '<label for="' + cid + '" style="display:block;margin-top:10px">Commento per l\'alunno (facoltativo)</label><input type="text" id="' + cid + '" maxlength="200" placeholder="' + (ok ? 'Es. Ottimo!' : 'Es. Rileggi bene: dove si trova?') + '">' +
         '<div class="row" style="margin-top:10px">' + (l === 'en' && t.statoIt !== 'approvata' ? '' : '<button class="btn ok" onclick="decidi(\'' + t.id + '\',\'' + l + '\',\'approvata\',this)">Approva' + (ok ? '' : ' comunque') + '</button>') +
@@ -353,7 +365,7 @@ function bloccoAnello() {
     var d = '<circle cx="90" cy="90" r="' + R + '" fill="none" stroke="' + sg[2] + '" stroke-width="26" stroke-dasharray="' + Math.max(l - gap, 1) + ' ' + C + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 90 90)"><title>' + sg[0] + ': ' + sg[1] + '</title></circle>';
     off += l; return d;
   }).join('');
-  var cl = S.filtro && S.filtro.classe && S.filtro.classe !== 'tutte' ? 'della ' + S.filtro.classe : CLASSI().length > 1 ? 'di ' + CLASSI().join(' e ') : '';
+  var cl = S.filtro && S.filtro.classe && S.filtro.classe !== 'tutte' ? 'della ' + S.filtro.classe : CLASSI().length > 1 ? 'di ' + elencoClassi() : '';
   return '<section class="card" style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">' +
     '<svg viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="Risposte date: ' + date + ' su ' + ts.length + '"><circle cx="90" cy="90" r="' + R + '" fill="none" stroke="#EEF2F5" stroke-width="26"/>' + archi +
     '<text x="90" y="86" text-anchor="middle" font-size="30" font-weight="800" fill="#15212B" style="font-family:inherit">' + date + '</text>' +
@@ -406,7 +418,7 @@ function panoramica() {
   var P = S.d.panoramica || [], tot = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0 };
   var righe = P.filter(function (r) { return inClasse(r.id); }).map(function (r) {
     Object.keys(tot).forEach(function (k) { tot[k] += r[k]; });
-    return '<tr' + (r.escluso ? ' class="riga-esclusa"' : '') + '><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere" title="' + esc(r.motivo) + '">Escluso</span>' + (r.riassegnatoA ? ' <span class="muted" style="font-size:13px">termini → ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') : '') + (r.ereditati ? ' <span class="chip s-inviata">+' + (r.termini - TPA()) + ' ricevuti</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
+    return '<tr' + (r.escluso ? ' class="riga-esclusa"' : '') + '><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere" title="' + esc(r.motivo) + '">Escluso</span>' + ((r.riassegnatiA || []).length ? ' <span class="muted" style="font-size:13px">termini → ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : '') : '') + (r.ereditati ? ' <span class="chip s-inviata">+' + r.ereditati + ' ricevuti</span>' : '') + (r.proroga ? ' <span class="chip s-vuota" title="Proroga fino a ' + esc(oraIt(r.proroga)) + '">proroga</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
       '<td class="n">' + r.inviate + '</td><td class="n" style="color:var(--ok)">' + r.corrette + '</td><td class="n" style="color:var(--err)">' + r.errate + '</td>' +
       '<td class="n">' + (r.daApprovare ? '<span class="chip s-inviata">' + r.daApprovare + '</span>' : '0') + '</td><td class="n">' + r.approvate + '/' + (r.termini * LINGUE().length) + '</td></tr>';
   }).join('');
@@ -421,10 +433,19 @@ function isoLocale(iso) { var d = new Date(iso); var p = function (n) { return (
 function bloccoAdmin() {
   var A = S.d.admin, imp = A.impostazioni;
   var errFino4 = function (p) { return Math.ceil((imp.votoMax - imp.votoMin) / p - 1e-9); };
-  var h = '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato · app ' + VERSIONE + '</span></div>' +
-    '<div class="grid2"><div><label for="pa">Partenza (uguale per ' + (CLASSI().length > 1 ? CLASSI().join(' e ') : 'la classe') + ')</label><input id="pa" type="datetime-local" value="' + (imp.partenza ? isoLocale(imp.partenza) : '') + '"></div>' +
-    '<div class="muted" style="align-self:end;font-size:14px">' + (imp.partenza ? (Date.parse(imp.partenza) <= Date.now() ? '<b style="color:var(--ok)">Partito</b> ' + esc(oraIt(imp.partenza)) : 'Gli alunni vedono il conto alla rovescia fino a ' + esc(oraIt(imp.partenza))) : '<b>Partenza non fissata:</b> gli alunni entrano ma non vedono ancora i termini.') + '</div></div>' +
-    '<div class="grid2"><div><label for="scIt">' + (EN() ? 'Scadenza italiano' : 'Scadenza per tutti i termini') + '</label><input id="scIt" type="datetime-local" value="' + isoLocale(imp.scadenzaIt) + '"></div>' +
+  var multi = CLASSI().length > 1 && (S.datePerClasse != null ? S.datePerClasse : Object.keys(imp.calendario || {}).length > 0);
+  var statoPart = function (p) { return p ? (Date.parse(p) <= Date.now() ? '<b style="color:var(--ok)">Partito</b> ' + esc(oraIt(p)) : 'Conto alla rovescia fino a ' + esc(oraIt(p))) : '<b>Partenza non fissata:</b> gli alunni entrano ma non vedono ancora i termini.'; };
+  var date = multi ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Classe</th><th>Partenza</th><th>Scadenza per tutti i termini</th><th></th></tr></thead><tbody>' + CLASSI().map(function (c) {
+      var d = datePerClasse(c);
+      return '<tr><td><b>' + esc(c) + '</b></td><td><label for="pa_' + c + '" class="sr">Partenza ' + esc(c) + '</label><input id="pa_' + c + '" type="datetime-local" value="' + (d.partenza ? isoLocale(d.partenza) : '') + '"></td>' +
+        '<td><label for="sc_' + c + '" class="sr">Scadenza ' + esc(c) + '</label><input id="sc_' + c + '" type="datetime-local" value="' + isoLocale(d.scadenzaIt) + '"></td><td class="muted" style="font-size:13px">' + statoPart(d.partenza) + '</td></tr>';
+    }).join('') + '</tbody></table></div>'
+    : '<div class="grid2"><div><label for="pa">Partenza (uguale per ' + (CLASSI().length > 1 ? elencoClassi() : 'la classe') + ')</label><input id="pa" type="datetime-local" value="' + (imp.partenza ? isoLocale(imp.partenza) : '') + '"></div>' +
+    '<div class="muted" style="align-self:end;font-size:14px">' + statoPart(imp.partenza) + '</div></div>';
+  var h = RO() ? '' : '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato · app ' + VERSIONE + '</span></div>' +
+    (CLASSI().length > 1 ? '<label class="row" style="gap:10px;font-weight:400;cursor:pointer"><input type="checkbox" id="dpc"' + (multi ? ' checked' : '') + ' onchange="S.datePerClasse=this.checked;vistaDocente();var x=$(\'dpc\');if(x)x.scrollIntoView({block:\'center\'})" style="width:22px;height:22px"> Partenza e scadenza diverse per ogni classe</label>' : '') +
+    date +
+    '<div class="grid2">' + (multi ? '' : '<div><label for="scIt">' + (EN() ? 'Scadenza italiano' : 'Scadenza per tutti i termini') + '</label><input id="scIt" type="datetime-local" value="' + isoLocale(imp.scadenzaIt) + '"></div>') +
     (EN() ? '<div><label for="scEn">Scadenza inglese</label><input id="scEn" type="datetime-local" value="' + isoLocale(imp.scadenzaEn) + '"></div></div>' : '<div><label for="gIt">Termini ricevuti da un escluso: giorni per rispondere</label><input id="gIt" type="text" inputmode="numeric" value="' + imp.giorniIt + '"></div></div>') +
     (EN() ? '<div class="grid2"><div><label for="gIt">Termini ricevuti da un escluso: giorni per l\'italiano</label><input id="gIt" type="text" inputmode="numeric" value="' + imp.giorniIt + '"></div>' +
     '<div><label for="gEn">Termini ricevuti da un escluso: giorni per l\'inglese</label><input id="gEn" type="text" inputmode="numeric" value="' + imp.giorniEn + '"></div></div>' : '') +
@@ -432,10 +453,14 @@ function bloccoAdmin() {
     [['A', '−0,25 per errore: ' + errFino4(0.25) + ' errori per scendere da ' + fv(imp.votoMax) + ' a ' + imp.votoMin], ['B', '−0,50 per errore: ' + errFino4(0.5) + ' errori per scendere da ' + fv(imp.votoMax) + ' a ' + imp.votoMin]].map(function (o) {
       return '<label class="op' + (imp.proposta === o[0] ? ' on' : '') + '" for="pr' + o[0] + '"><input type="radio" name="prop" id="pr' + o[0] + '" value="' + o[0] + '"' + (imp.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>';
     }).join('') + '</fieldset>' +
+    '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli alunni esclusi</legend>' +
+    [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe (uno solo a testa)'], ['manuale', 'Decido io: restano fermi finché non li passo a chi scelgo (riquadro «Proroghe e passaggio dei termini»)']].map(function (o) {
+      return '<label class="op' + (imp.riassegnazione === o[0] ? ' on' : '') + '" for="ri' + o[0] + '"><input type="radio" name="riass" id="ri' + o[0] + '" value="' + o[0] + '"' + (imp.riassegnazione === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + o[1] + '</span></label>';
+    }).join('') + '</fieldset>' +
     '<div class="row"><button class="btn" onclick="salvaImpostazioni(this)">Salva partenza, scadenza e penalità</button></div>' +
     '<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:14px"><b>Presentazione per gli studenti</b>' +
     '<div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
-    '<span class="muted" style="font-size:14px">22 slide per la classe, con partenza, scadenza, voto massimo e penalità presi da qui. Salva prima le modifiche, poi scaricala.</span></div>' +
+    '<span class="muted" style="font-size:14px">Slide per la classe, con partenza, scadenza, voto massimo e penalità presi da qui. Salva prima le modifiche, poi scaricala.</span></div>' +
     '<p class="muted" style="margin:0;font-size:14px">' + esc(A.ratio) + '</p></section>';
   var nomi = {}; (S.d.panoramica || []).forEach(function (r) { nomi[r.id] = r; });
   var row = function (v) {
@@ -456,10 +481,10 @@ function bloccoAdmin() {
     attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo.</p>';
   if (esclusi.length) {
     h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Voto finale</th><th></th></tr></thead><tbody>' +
-      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + (r.riassegnatoA ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '</span>' : '') + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
-        '<td><button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button></td></tr>'; }).join('') + '</tbody></table></div>';
+      esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + ((r.riassegnatiA || []).length ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : (r.bloccoRiass || A.impostazioni.riassegnazione === 'manuale' ? '<br><span class="muted" style="font-size:13px">Termini fermi: decidi tu (riquadro «Proroghe e passaggio dei termini»)</span>' : '')) + '</td><td class="n"><b>' + fv(v.voto) + '</b></td>' +
+        '<td>' + (RO() ? '' : '<button class="btn sec" style="min-height:38px;padding:0 10px" onclick="riammetti(\'' + v.id + '\',' + (!v.riammesso) + ',this)">' + (v.riammesso ? 'Annulla riammissione' : 'Riammetti') + '</button>') + '</td></tr>'; }).join('') + '</tbody></table></div>';
   }
-  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button><button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button><button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button><button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button><span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
+  h += '<div class="row"><button class="btn" onclick="reportPdf()">Report completo (PDF)</button>' + (RO() ? '<button class="btn" onclick="scaricaArchivio(\'' + esc(S.d.edizioneArchivio.id) + '\',\'word\',this)">Definizioni approvate (Word)</button>' : '<button class="btn" onclick="esportaWord(this)">Definizioni approvate (Word)</button>') + '<button class="btn sec" onclick="stampaTarga()">Targa introduttiva 50×70 (PDF)</button>' + (RO() ? '' : '<button class="btn" onclick="presentazione(this)">Presentazione PowerPoint (.pptx)</button>') + '<span class="muted" style="font-size:14px">Per ' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? 'la ' + esc(S.filtro.classe) : 'tutte le classi') + ' (scegli la classe qui sopra). Il PDF si apre nella stampa (“Salva come PDF”); la presentazione si scarica, con grafici modificabili.</span></div></section>';
   return h;
 }
 function presentazione(btn, azione, dati) {
@@ -496,15 +521,15 @@ function statisticheTarga() {
   var giorni = dal ? Math.max(1, Math.round((al - dal) / 86400000)) : null;
   var gm = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', timeZone: 'Europe/Rome' }); };
   var mese = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { month: 'long', timeZone: 'Europe/Rome' }); }, gg = function (ms) { return new Date(ms).toLocaleDateString('it-IT', { day: 'numeric', timeZone: 'Europe/Rome' }); };
-  var periodo = !dal ? 'nell’autunno del 2026' : Date.now() < Date.parse(imp.scadenzaIt) ? 'dal ' + gm(dal) + ' a oggi' : mese(dal) === mese(al) ? 'dal ' + gg(dal) + ' al ' + gg(al) + ' ' + mese(al) : 'dal ' + gm(dal) + ' al ' + gm(al);
+  var periodo = !dal ? 'in questo anno scolastico' : Date.now() < Date.parse(imp.scadenzaIt) ? 'dal ' + gm(dal) + ' a oggi' : mese(dal) === mese(al) ? 'dal ' + gg(dal) + ' al ' + gg(al) + ' ' + mese(al) : 'dal ' + gm(dal) + ' al ' + gm(al);
   var f = T.filter(function (t) { return window.T(t, 'it', 'primoOk') != null; }), ok = f.filter(function (t) { return window.T(t, 'it', 'primoOk') === true; }).length;
   var vv = A.voti.filter(function (v) { return !v.escluso && v.voto != null; }).map(function (v) { return v.voto; });
   var voto = vv.length ? fv(Math.round(vv.reduce(function (a, b) { return a + b; }, 0) / vv.length * 100) / 100) : '';
   return {
-    giorniParola: giorni ? numeroParole(giorni) : 'molti', periodo: periodo, autoriParola: numeroParole(P.length), classi: CLASSI().join(' e '),
+    giorniParola: giorni ? numeroParole(giorni) : 'molti', periodo: periodo, autoriParola: numeroParole(P.length), classi: elencoClassi(),
     oreTesto: durataLunga(minuti), mediaTesto: durataLunga(minuti / conTempo), oreBreve: durataBreve(minuti), mediaBreve: durataBreve(minuti / conTempo),
     risposte: P.reduce(function (a, r) { return a + (r.inviate || 0); }, 0), primo: f.length ? Math.round(ok / f.length * 100) : null,
-    approvate: T.filter(function (t) { return t.statoIt === 'approvata'; }).length, totale: T.length, voto: voto
+    approvate: T.filter(function (t) { return t.statoIt === 'approvata'; }).length, totale: T.length, voto: voto, as: (S.d.config.edizione || {}).as || '2026/27'
   };
 }
 function stampaTarga() {
@@ -530,12 +555,22 @@ function esportaWord(btn) {
   }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
 }
 function salvaImpostazioni(btn) {
-  var it = $('scIt').value, en = $('scEn') ? $('scEn').value : null, pr = document.querySelector('input[name="prop"]:checked');
-  if (!it || (EN() && !en)) { toast(EN() ? 'Inserisci entrambe le scadenze.' : 'Inserisci la scadenza.', true); return; }
+  var en = $('scEn') ? $('scEn').value : null, pr = document.querySelector('input[name="prop"]:checked'), ri = document.querySelector('input[name="riass"]:checked');
+  var dati = { scadenzaEn: en ? new Date(en).toISOString() : null, proposta: pr ? pr.value : null, giorniIt: $('gIt').value, giorniEn: $('gEn') ? $('gEn').value : null, riassegnazione: ri ? ri.value : null };
+  if ($('pa_' + CLASSI()[0])) {
+    // date diverse per classe: si salvano tutte, esplicitamente
+    var cal = {}, manca = null;
+    CLASSI().forEach(function (c) { var p = $('pa_' + c).value, sc = $('sc_' + c).value; if (!sc) manca = c; cal[c] = { partenza: p ? new Date(p).toISOString() : null, scadenzaIt: sc ? new Date(sc).toISOString() : null }; });
+    if (manca) { toast('Inserisci la scadenza della ' + manca + '.', true); return; }
+    dati.calendario = cal;
+  } else {
+    var it = $('scIt').value;
+    if (!it || (EN() && !en)) { toast(EN() ? 'Inserisci entrambe le scadenze.' : 'Inserisci la scadenza.', true); return; }
+    var pa = $('pa') ? $('pa').value : '';
+    dati.partenza = pa ? new Date(pa).toISOString() : null; dati.scadenzaIt = new Date(it).toISOString(); dati.calendario = {};
+  }
   btn.disabled = true;
-  var pa = $('pa') ? $('pa').value : '';
-  api('impostazioni', { partenza: pa ? new Date(pa).toISOString() : null, scadenzaIt: new Date(it).toISOString(), scadenzaEn: en ? new Date(en).toISOString() : null, proposta: pr ? pr.value : null, giorniIt: $('gIt').value, giorniEn: $('gEn') ? $('gEn').value : null })
-    .then(function () { return api('login'); }).then(function (d) { S.d = d; toast('Impostazioni salvate'); vistaDocente(); })
+  api('impostazioni', dati).then(function () { return api('login'); }).then(function (d) { S.d = d; S.datePerClasse = null; toast('Impostazioni salvate'); vistaDocente(); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 function salvaVoto(id, btn) {
@@ -546,9 +581,34 @@ function salvaVoto(id, btn) {
 }
 function riammetti(id, val, btn) {
   btn.disabled = true;
-  api('riammetti', { alunno: id, riammesso: val }).then(function () { return api('login'); }).then(function (d) { S.d = d; toast(val ? 'Alunno riammesso' : 'Riammissione annullata'); vistaDocente(); })
-    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+  var esegui = function (modo) {
+    btn.disabled = true;
+    return api('riammetti', { alunno: id, riammesso: val, modo: modo || 'tutti' }).then(function (r) { return api('login').then(function (d) { S.d = d; return r; }); })
+      .then(function (r) { toast(val ? 'Alunno riammesso' + (r && r.restituiti ? ': ' + r.restituiti + ' termini restituiti' : '') : 'Riammissione annullata'); vistaDocente(); })
+      .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+  };
+  if (!val) {
+    btn.disabled = false;
+    sceltaRiammissione('<p style="margin:0">Annullando la riammissione l\'alunno torna escluso con voto ' + fv(S.d.admin.impostazioni.votoEsclusione || 4) + '. ' + (S.d.admin.impostazioni.riassegnazione === 'manuale' ? 'I suoi termini restano dove sono finché non decidi tu.' : 'Al primo accesso successivo i suoi termini passano di nuovo, a sorte, a un compagno della stessa classe.') + '</p>',
+      [{ t: 'Annulla la riammissione', f: function () { esegui(); } }]);
+    return;
+  }
+  api('anteprimariammissione', { alunno: id }).then(function (a) {
+    btn.disabled = false;
+    if (!a.termini) return esegui('tutti');
+    var chi = a.eredi.map(function (e) { return '<b>' + esc(e.nome) + '</b> (' + e.termini + ' termini, ' + (e.risposti ? 'a ' + e.risposti + ' ha già risposto' : 'nessuna risposta ancora') + ')'; }).join(', ');
+    var testa = '<p style="margin:0 0 8px">Riammetti <b>' + esc(a.nome) + '</b>. I suoi ' + a.termini + ' termini sono passati a ' + chi + '.</p>';
+    if (!a.risposti) {
+      sceltaRiammissione(testa + '<p style="margin:0">Tutti i termini tornano a ' + esc(a.nome) + '. Chi li aveva ricevuti torna al voto massimo normale.</p>',
+        [{ t: 'Riammetti e restituisci i termini', f: function () { esegui('tutti'); } }]);
+    } else {
+      sceltaRiammissione(testa + '<p class="note warn" style="margin:0">Attenzione: a ' + a.risposti + (a.risposti === 1 ? ' termine' : ' termini') + ' il compagno ha già risposto. Scegli cosa fare.</p>',
+        [{ t: 'Restituisci tutti i ' + a.termini + ' termini', s: 'le risposte già date dal compagno si cancellano', f: function () { esegui('tutti'); } },
+         { t: 'Restituisci solo i ' + (a.termini - a.risposti) + ' senza risposta', s: 'gli altri ' + a.risposti + ' restano al compagno (voto massimo ' + fv(S.d.admin.impostazioni.votoMaxErede) + ')', f: function () { esegui('non_risposti'); } }]);
+    }
+  }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
+function sceltaRiammissione(testo, scelte) { finestra('Riammissione', testo, scelte); }
 function reportPdf() {
   var A = S.d.admin, voti = {}; A.voti.forEach(function (v) { voti[v.id] = v; });
   var oggi = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -556,7 +616,8 @@ function reportPdf() {
   var PAN = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); });
   var classi = CLASSI().filter(function (c) { return PAN.some(function (r) { return (r.classe || '3E') === c; }); });
   var titoloCl = classi.length > 1 ? 'Classi ' + classi.join(' e ') : 'Classe ' + (classi[0] || '3E');
-  var COL = { '3E': '#1F5FA8', '3F': '#B4511A' }, colCl = function (c) { return COL[c] || '#15212B'; };
+  var COL = { '3E': '#1F5FA8', '3F': '#B4511A' }, ALTRI = ['#1F5FA8', '#B4511A', '#2E7D32', '#6B4FA0', '#0E7C7B', '#9A4A00'];
+  var colCl = function (c) { return COL[c] || ALTRI[Math.max(0, CLASSI().indexOf(c)) % ALTRI.length]; };
   var ST = [['approvata', 'Approvate', '#2E7D32'], ['inviata', 'Da approvare', '#7A9CC6'], ['correggere', 'Da rivedere', '#C77700'], ['', 'Senza risposta', '#C3CED7']];
   var termDi = function (id) { return S.d.termini.filter(function (t) { return t.alunno === id; }); };
   var TT = S.d.termini.filter(function (t) { return inClasse(t.alunno); });
@@ -642,7 +703,7 @@ function reportPdf() {
   }).join('') + '</tbody></table>' : '';
 
   function testata(sotto) {
-    return '<header><div class="lg0">' + logo(17) + '<div><b>Istituto Barsanti - sede Salvetti</b><span>Massa · Laboratorio odontotecnico · a.s. 2026/27</span></div></div>' +
+    return '<header><div class="lg0">' + logo(17) + '<div><b>Istituto Barsanti - sede Salvetti</b><span>Massa · Laboratorio odontotecnico · a.s. ' + esc((S.d.config.edizione || {}).as || '2026/27') + '</span></div></div>' +
       '<div class="dx"><b>Glossario odontotecnico</b><span>' + esc(sotto) + '</span></div></header>';
   }
   var npag = 0, totPag = 2 + PAN.length;
@@ -774,7 +835,7 @@ function bloccoBackup() {
   var D = S.d.admin.dropbox || {};
   var stato = !D.configurato ? '<b>Dropbox non ancora configurato.</b> Servono le variabili DROPBOX_APP_KEY e DROPBOX_APP_SECRET su Netlify (vedi la guida).' :
     !D.collegato ? '<b>Dropbox non collegato.</b> Premi “Collega Dropbox” e autorizza l\'app con il tuo account.' :
-    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo, il report PDF e il Word <b>Glossario_definizioni_approvate.docx</b> (sempre lo stesso file, sovrascritto).' +
+    '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo (cartella <b>Backup</b>: risposte, tentativi, tempi, voti, codici, registro accessi e archivio delle edizioni), il report PDF e il Word <b>Glossario_definizioni_approvate.docx</b> (sempre lo stesso file, sovrascritto).' +
     '<br>Ultimo invio: ' + (D.ultimoInvio ? esc(quando(D.ultimoInvio)) + ' — ' + (D.esito === 'ok' ? '<span style="color:#1B6E20;font-weight:700">riuscito</span>' : '<span style="color:#B0304A;font-weight:700">' + esc(D.esito) + '</span>') : 'nessuno');
   return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Backup e report automatici</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">' + stato + '</p>' +
@@ -784,7 +845,7 @@ function bloccoBackup() {
     '</div><hr style="border:0;border-top:1px solid #DDE4EA;width:100%;margin:4px 0">' +
     '<div class="row"><button class="btn sec" onclick="scaricaBackup(this)">Scarica backup completo (.json)</button>' +
     '<button class="btn warn" onclick="$(\'filebk\').click()">Ripristina da backup…</button><input type="file" id="filebk" accept=".json,application/json" style="display:none" onchange="ripristina(this)"></div>' +
-    '<p class="muted" style="margin:0;font-size:14px">Il ripristino riporta risposte, voti, codici e registro accessi al momento del backup scelto. Prima di ripristinare l\'app scarica da sola una copia dello stato attuale.</p></section>';
+    '<p class="muted" style="margin:0;font-size:14px">Il ripristino riporta risposte, tentativi, voti, codici e registro accessi al momento del backup scelto. Prima di ripristinare l\'app scarica sul tuo dispositivo una copia dello stato attuale e, se Dropbox è collegato, ne salva un\'altra nella cartella Backup. Le edizioni in archivio non vengono mai cancellate da un ripristino.</p></section>';
 }
 function salvaFile(nome, testo) {
   var url = URL.createObjectURL(new Blob([testo], { type: 'application/json' }));
@@ -808,8 +869,10 @@ function ripristina(inp) {
     var conf = prompt('Ripristino del backup del ' + quando(b.creato) + '.\nTutti i dati attuali verranno sostituiti (prima ne scarico una copia).\n\nPer confermare scrivi RIPRISTINA');
     if (conf === null) return;
     if (String(conf).trim().toUpperCase() !== 'RIPRISTINA') { toast('Ripristino annullato.', true); return; }
+    // l'archivio non si cancella mai: se il file è troppo grande per un invio, si ripristina senza
+    if (b.archivio && JSON.stringify(b).length > 5000000) { delete b.archivio; delete b.archivio_parti; }
     scaricaBackup().then(function () { return api('ripristina', { backup: b }); })
-      .then(function (x) { return ricarica('Ripristinato il backup del ' + quando(x.creato)); })
+      .then(function (x) { return ricarica('Ripristinato il backup del ' + quando(x.creato) + (x.copiaDropbox && x.copiaDropbox.charAt(0) === '/' ? ' (copia dello stato precedente su Dropbox)' : '')); })
       .catch(function (e) { toast(errMsg(e), true); });
   };
   r.readAsText(f);

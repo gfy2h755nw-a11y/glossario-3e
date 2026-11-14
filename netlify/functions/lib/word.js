@@ -35,7 +35,7 @@ async function creaWord(stato, now) {
 
   const corpo = [
     new D.Paragraph({ heading: D.HeadingLevel.TITLE, children: [t('Glossario odontotecnico · definizioni approvate', { bold: true, size: 36, color: INK })] }),
-    new D.Paragraph({ spacing: { after: 80 }, children: [t('Istituto Barsanti - sede Salvetti, Massa · Laboratorio odontotecnico · a.s. 2026/27', { size: 20, color: MUTO })] }),
+    new D.Paragraph({ spacing: { after: 80 }, children: [t('Istituto Barsanti - sede Salvetti, Massa · Laboratorio odontotecnico · a.s. ' + imp.edizione.as, { size: 20, color: MUTO })] }),
     new D.Paragraph({ spacing: { after: 240 }, children: [t('Classi ' + classi.join(' e ') + ' · aggiornato al ' + dataIt(now) + ' · definizioni approvate: ' + approvate + ' su ' + tutti.length, { size: 20, color: MUTO })] })
   ];
 
@@ -71,7 +71,7 @@ async function creaWord(stato, now) {
         righe.push(new D.TableRow({ cantSplit: true, children: [
           cella(t(n, { size: 18, color: MUTO }), { w: W[0], al: D.AlignmentType.CENTER }),
           cella([[t(x.termine_it, { bold: true, size: 19 })], [t('Area ' + x.area + ' · ' + (aree[x.area] ? aree[x.area].it : ''), { size: 15, color: MUTO })]], { w: W[1] }),
-          cella(ap ? t(logica.testoDef(x.area, x.scelta_it, 'it'), { size: 19 }) : t('— non ancora approvata', { size: 18, italics: true, color: MUTO }), { w: W[2] }),
+          cella(ap ? t(x._def != null ? x._def : logica.testoDef(x.area, x.scelta_it, 'it'), { size: 19 }) : t('— non ancora approvata', { size: 18, italics: true, color: MUTO }), { w: W[2] }),
           cella(t(STATO[st] || st, { size: 16, bold: ap, color: ap ? '1B6E20' : MUTO }), { w: W[3], al: D.AlignmentType.CENTER, v: D.VerticalAlign.CENTER })
         ] }));
       });

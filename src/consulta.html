@@ -38,6 +38,9 @@ body{margin:0;background:var(--fondo);color:var(--ink);font-family:'Atkinson Hyp
 .tab:focus-visible,.cerca:focus-visible{outline:3px solid #F2B705;outline-offset:2px}
 .cerca{width:100%;margin-top:10px;font:inherit;padding:10px 14px;border:2px solid var(--linea);border-radius:10px;background:var(--carta)}
 .stat{margin:8px 0 0;font-size:14px;color:var(--muto)}
+.edz{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-size:15px}
+.edz select{font:inherit;padding:6px 10px;border:2px solid var(--linea);border-radius:10px;background:var(--carta)}
+.edz .arch{background:#FFF6D6;border-radius:8px;padding:4px 10px}
 /* aree e voci */
 h2{font-family:Archivo,Arial,sans-serif;font-size:24px;margin:26px 0 4px;display:flex;align-items:center;gap:10px}
 h2 .num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;color:#fff;font-size:19px}
@@ -62,13 +65,14 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
 <header class="top" id="top">
   <div class="wrap">
     <div class="lg" id="logo"></div>
-    <div><b>Glossario odontotecnico</b><span>Prof. Danilo Cerrato · Laboratorio odontotecnico · a.s. 2026/27</span></div>
+    <div><b>Glossario odontotecnico</b><span id="sottotit">Prof. Danilo Cerrato · Laboratorio odontotecnico</span></div>
     <div class="dx"><span>Istituto Barsanti - sede Salvetti</span><span>Massa</span></div>
   </div>
   <div class="aut"><div class="wrap" id="autori"><p>Caricamento…</p></div></div>
 </header>
 <main class="wrap">
   <div class="cmd" id="cmd">
+    <div id="edz"></div>
     <div class="tabs" id="tabs" role="toolbar" aria-label="Argomenti"></div>
     <label for="q" style="position:absolute;left:-9999px">Cerca un termine</label>
     <input class="cerca" id="q" type="search" placeholder="Cerca un termine o una parola nella definizione…" autocomplete="off">
@@ -85,6 +89,7 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
 </script>
 <script>
 var G = null, AREA = 'tutte', Q = '';
+var ED = (function () { try { return new URLSearchParams(location.search).get('ed') || ''; } catch (e) { return ''; } })();
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
 function evid(testo) {
@@ -96,14 +101,27 @@ function evid(testo) {
 function altezze() { document.documentElement.style.setProperty('--hTop', document.getElementById('top').offsetHeight + 'px'); }
 function autori() {
   var c = Object.keys(G.classi || {});
-  document.getElementById('clf').textContent = c.join(' e ');
+  document.getElementById('clf').textContent = (c.length > 1 ? c.slice(0, -1).join(', ') + ' e ' + c[c.length - 1] : c.join(''));
   var righe = c.map(function (k) { return '<p><b>' + esc(k) + '</b> · ' + G.classi[k].map(esc).join(' · ') + '</p>'; }).join('');
   // su schermi piccoli i nomi si aprono a richiesta, per non coprire il glossario
   document.getElementById('autori').innerHTML = window.innerWidth < 700
-    ? '<details><summary>Autori: classi ' + esc(c.join(' e ')) + ' ▾</summary>' + righe + '</details>'
+    ? '<details><summary>Autori: classi ' + esc((c.length > 1 ? c.slice(0, -1).join(', ') + ' e ' + c[c.length - 1] : c.join(''))) + ' ▾</summary>' + righe + '</details>'
     : '<p style="color:#fff;font-weight:700;margin-bottom:2px">Autori</p>' + righe;
   document.querySelectorAll('#autori details').forEach(function (d) { d.addEventListener('toggle', altezze); });
   altezze();
+}
+function edizioni() {
+  document.getElementById('sottotit').textContent = 'Prof. Danilo Cerrato · Laboratorio odontotecnico · a.s. ' + (G.anno || '');
+  var el = document.getElementById('edz'), E = G.edizioni || [];
+  var cur = (G.edizione || {}).id;
+  if (E.length < 2 && !G.archiviata) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="edz"><label for="selEd">Edizione</label><select id="selEd">' + E.map(function (e) {
+    return '<option value="' + esc(e.id) + '"' + (e.id === cur ? ' selected' : '') + '>' + esc(e.nome) + ' · a.s. ' + esc(e.as) + (e.inCorso ? ' (in corso)' : '') + '</option>'; }).join('') + '</select>' +
+    (G.archiviata ? '<span class="arch">Edizione archiviata: la consulti com\'era a lavoro concluso.</span>' : '') + '</div>';
+  document.getElementById('selEd').onchange = function () {
+    var v = this.value, e = E.filter(function (x) { return x.id === v; })[0];
+    location.href = location.pathname + (e && e.inCorso ? '' : '?ed=' + encodeURIComponent(v));
+  };
 }
 function tabs() {
   var h = '<button class="tab" data-a="tutte" aria-pressed="' + (AREA === 'tutte') + '">Tutti gli argomenti</button>' + G.aree.map(function (a) {
@@ -138,13 +156,13 @@ document.getElementById('q').addEventListener('input', function (e) { Q = e.targ
 window.addEventListener('resize', function () { if (G) autori(); });
 try { document.getElementById('logo').innerHTML = Poster.logo(11); } catch (e) {}
 try { AREA = localStorage.getItem('gl-area') || 'tutte'; } catch (e) {}
-fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'pubblico' }) })
+fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'pubblico', ed: ED || undefined }) })
   .then(function (r) { return r.json(); })
   .then(function (r) {
     if (!r.ok) throw new Error(r.errore || 'errore');
     G = r.dati;
     if (AREA !== 'tutte' && !G.aree.some(function (a) { return String(a.n) === String(AREA); })) AREA = 'tutte';
-    autori(); tabs(); lista();
+    edizioni(); autori(); tabs(); lista();
   })
   .catch(function () { document.getElementById('lista').innerHTML = '<p class="nulla">Il glossario non è raggiungibile in questo momento. Riprova tra poco.</p>'; document.getElementById('autori').innerHTML = ''; });
 </script>

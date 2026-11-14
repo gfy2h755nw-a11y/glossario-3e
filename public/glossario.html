@@ -38,6 +38,9 @@ body{margin:0;background:var(--fondo);color:var(--ink);font-family:'Atkinson Hyp
 .tab:focus-visible,.cerca:focus-visible{outline:3px solid #F2B705;outline-offset:2px}
 .cerca{width:100%;margin-top:10px;font:inherit;padding:10px 14px;border:2px solid var(--linea);border-radius:10px;background:var(--carta)}
 .stat{margin:8px 0 0;font-size:14px;color:var(--muto)}
+.edz{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-size:15px}
+.edz select{font:inherit;padding:6px 10px;border:2px solid var(--linea);border-radius:10px;background:var(--carta)}
+.edz .arch{background:#FFF6D6;border-radius:8px;padding:4px 10px}
 /* aree e voci */
 h2{font-family:Archivo,Arial,sans-serif;font-size:24px;margin:26px 0 4px;display:flex;align-items:center;gap:10px}
 h2 .num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;color:#fff;font-size:19px}
@@ -62,13 +65,14 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
 <header class="top" id="top">
   <div class="wrap">
     <div class="lg" id="logo"></div>
-    <div><b>Glossario odontotecnico</b><span>Prof. Danilo Cerrato · Laboratorio odontotecnico · a.s. 2026/27</span></div>
+    <div><b>Glossario odontotecnico</b><span id="sottotit">Prof. Danilo Cerrato · Laboratorio odontotecnico</span></div>
     <div class="dx"><span>Istituto Barsanti - sede Salvetti</span><span>Massa</span></div>
   </div>
   <div class="aut"><div class="wrap" id="autori"><p>Caricamento…</p></div></div>
 </header>
 <main class="wrap">
   <div class="cmd" id="cmd">
+    <div id="edz"></div>
     <div class="tabs" id="tabs" role="toolbar" aria-label="Argomenti"></div>
     <label for="q" style="position:absolute;left:-9999px">Cerca un termine</label>
     <input class="cerca" id="q" type="search" placeholder="Cerca un termine o una parola nella definizione…" autocomplete="off">
@@ -412,7 +416,7 @@ var Poster = (function () {
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:10mm">' +
           '<div style="display:flex;align-items:center;gap:7mm"><div style="background:#fff;padding:1.6mm;border-radius:1.5mm;line-height:0">' + logo(30) + '</div>' +
             '<div style="' + F + 'font-weight:800;font-size:11mm;line-height:1.05">Istituto Barsanti - sede Salvetti</div></div>' +
-          '<div style="text-align:right;' + F + lab + 'line-height:1.7"><div>' + (IT ? 'Glossario odontotecnico' : 'Glossario odontotecnico bilingue · Bilingual dental glossary') + '</div><div>Classe ' + classi.join(' e ') + ' · a.s. 2026/27</div></div></div>' +
+          '<div style="text-align:right;' + F + lab + 'line-height:1.7"><div>' + (IT ? 'Glossario odontotecnico' : 'Glossario odontotecnico bilingue · Bilingual dental glossary') + '</div><div>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. 2026/27</div></div></div>' +
         '<div style="display:flex;align-items:center;gap:14mm">' +
           '<div style="' + F + 'font-weight:900;font-size:96mm;line-height:0.8;letter-spacing:-0.04em">0' + area.n + '</div>' +
           '<div style="flex:1;min-width:0">' +
@@ -452,7 +456,7 @@ var Poster = (function () {
       })() : '') +
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
-        '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + classi.join(' e ') + ' · Area ' + area.n + ' di 4</span>' +
+        '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
         '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
         (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
         '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>' +
@@ -522,7 +526,7 @@ var Poster = (function () {
         '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">0' + n + '</div>' +
         '<div style="position:relative;display:flex;justify-content:space-between;align-items:center">' +
           '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa · Laboratorio odontotecnico</div></div></div>' +
-          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">Glossario odontotecnico<br>Classi ' + classi.join(' e ') + ' · a.s. 2026/27</div></div>' +
+          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">Glossario odontotecnico<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
         '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:12mm">' + icona2(n, col).replace('width="64mm" height="64mm"', 'width="74mm" height="74mm"') +
           '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">Area 0' + n + ' di 04 · ' + termini.length + ' termini dalla A alla Z</div>' +
           '<div style="' + A + 'font-weight:900;font-size:' + (area.it.length > 30 ? 32 : 40) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div></div></div>' +
@@ -539,7 +543,7 @@ var Poster = (function () {
         (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
           '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '')) + '</div>' : '') +
         '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</div>' +
-        '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>Classi ' + classi.join(' e ') + ' · Area ' + n + ' di 4</div></div>' +
+        '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + n + ' di 4</div></div>' +
       '</div>';
   }
   /* riduce i caratteri finché tutte le voci stanno nelle tre colonne; restituisce la scala usata */
@@ -585,7 +589,7 @@ var Poster = (function () {
     return '<div style="width:500mm;height:700mm;display:flex;flex-direction:column;color:#15212B;background:#fff;' + T + '">' +
       '<div style="background:#15212B;color:#fff;padding:13mm 30mm 11mm;display:flex;align-items:center;justify-content:space-between">' +
         '<div style="display:flex;align-items:center;gap:6mm">' + logo(24) + '<div style="' + F + 'font-weight:800;font-size:9.5mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="' + T + 'font-weight:400;font-size:5.6mm;opacity:.85;margin-top:1.5mm">Massa · Laboratorio odontotecnico</div></div></div>' +
-        '<div style="text-align:right;' + F + 'font-weight:700;font-size:6mm;letter-spacing:0.8mm;text-transform:uppercase;line-height:1.6">a.s. 2026/27<br>Classi 3E e 3F</div></div>' +
+        '<div style="text-align:right;' + F + 'font-weight:700;font-size:6mm;letter-spacing:0.8mm;text-transform:uppercase;line-height:1.6">a.s. ' + esc(s && s.as || '2026/27') + '<br>Classi ' + esc(s && s.classi || '3E e 3F') + '</div></div>' +
       '<div style="padding:18mm 30mm 0">' +
         '<div style="' + F + 'font-weight:900;font-size:58mm;line-height:0.9;letter-spacing:-1.4mm">Glossario</div>' +
         '<div style="' + S + 'font-weight:600;font-size:52mm;line-height:1;margin-top:1mm;color:#2C3A47">odontotecnico</div></div>' +
@@ -612,6 +616,7 @@ var Poster = (function () {
 </script>
 <script>
 var G = null, AREA = 'tutte', Q = '';
+var ED = (function () { try { return new URLSearchParams(location.search).get('ed') || ''; } catch (e) { return ''; } })();
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
 function evid(testo) {
@@ -623,14 +628,27 @@ function evid(testo) {
 function altezze() { document.documentElement.style.setProperty('--hTop', document.getElementById('top').offsetHeight + 'px'); }
 function autori() {
   var c = Object.keys(G.classi || {});
-  document.getElementById('clf').textContent = c.join(' e ');
+  document.getElementById('clf').textContent = (c.length > 1 ? c.slice(0, -1).join(', ') + ' e ' + c[c.length - 1] : c.join(''));
   var righe = c.map(function (k) { return '<p><b>' + esc(k) + '</b> · ' + G.classi[k].map(esc).join(' · ') + '</p>'; }).join('');
   // su schermi piccoli i nomi si aprono a richiesta, per non coprire il glossario
   document.getElementById('autori').innerHTML = window.innerWidth < 700
-    ? '<details><summary>Autori: classi ' + esc(c.join(' e ')) + ' ▾</summary>' + righe + '</details>'
+    ? '<details><summary>Autori: classi ' + esc((c.length > 1 ? c.slice(0, -1).join(', ') + ' e ' + c[c.length - 1] : c.join(''))) + ' ▾</summary>' + righe + '</details>'
     : '<p style="color:#fff;font-weight:700;margin-bottom:2px">Autori</p>' + righe;
   document.querySelectorAll('#autori details').forEach(function (d) { d.addEventListener('toggle', altezze); });
   altezze();
+}
+function edizioni() {
+  document.getElementById('sottotit').textContent = 'Prof. Danilo Cerrato · Laboratorio odontotecnico · a.s. ' + (G.anno || '');
+  var el = document.getElementById('edz'), E = G.edizioni || [];
+  var cur = (G.edizione || {}).id;
+  if (E.length < 2 && !G.archiviata) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="edz"><label for="selEd">Edizione</label><select id="selEd">' + E.map(function (e) {
+    return '<option value="' + esc(e.id) + '"' + (e.id === cur ? ' selected' : '') + '>' + esc(e.nome) + ' · a.s. ' + esc(e.as) + (e.inCorso ? ' (in corso)' : '') + '</option>'; }).join('') + '</select>' +
+    (G.archiviata ? '<span class="arch">Edizione archiviata: la consulti com\'era a lavoro concluso.</span>' : '') + '</div>';
+  document.getElementById('selEd').onchange = function () {
+    var v = this.value, e = E.filter(function (x) { return x.id === v; })[0];
+    location.href = location.pathname + (e && e.inCorso ? '' : '?ed=' + encodeURIComponent(v));
+  };
 }
 function tabs() {
   var h = '<button class="tab" data-a="tutte" aria-pressed="' + (AREA === 'tutte') + '">Tutti gli argomenti</button>' + G.aree.map(function (a) {
@@ -665,13 +683,13 @@ document.getElementById('q').addEventListener('input', function (e) { Q = e.targ
 window.addEventListener('resize', function () { if (G) autori(); });
 try { document.getElementById('logo').innerHTML = Poster.logo(11); } catch (e) {}
 try { AREA = localStorage.getItem('gl-area') || 'tutte'; } catch (e) {}
-fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'pubblico' }) })
+fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'pubblico', ed: ED || undefined }) })
   .then(function (r) { return r.json(); })
   .then(function (r) {
     if (!r.ok) throw new Error(r.errore || 'errore');
     G = r.dati;
     if (AREA !== 'tutte' && !G.aree.some(function (a) { return String(a.n) === String(AREA); })) AREA = 'tutte';
-    autori(); tabs(); lista();
+    edizioni(); autori(); tabs(); lista();
   })
   .catch(function () { document.getElementById('lista').innerHTML = '<p class="nulla">Il glossario non è raggiungibile in questo momento. Riprova tra poco.</p>'; document.getElementById('autori').innerHTML = ''; });
 </script>

@@ -1,5 +1,6 @@
 /** Adattatore Firestore (firebase-admin) per la logica del glossario. */
 const admin = require('firebase-admin');
+const CAT = require('./catalogo');
 
 let fs = null;
 function firestore() {
@@ -15,14 +16,17 @@ function firestore() {
   return fs;
 }
 
-const COL = { config: 'config', alunni: 'alunni', termini: 'termini', attivita: 'attivita', segreti: 'segreti' };
+const COL = { config: 'config', alunni: 'alunni', termini: 'termini', attivita: 'attivita', segreti: 'segreti', archivio: 'archivio', parti: 'archivio_parti' };
+const PARTE = 300000; // caratteri per documento: anche con caratteri a 3 byte resta sotto il limite Firestore di 1 MiB
 const docs = (snap) => snap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
 
 function compone(cfgSnap, aluSnap, terSnap) {
   if (!cfgSnap.exists) throw Object.assign(new Error('Glossario non ancora configurato: apri la pagina /setup.html.'), { utente: true });
   const alunni = aluSnap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
   const termini = terSnap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
-  return { config: cfgSnap.data(), alunni, termini };
+  const config = cfgSnap.data();
+  CAT.imposta(config); // catalogo dei termini dell'edizione in corso
+  return { config, alunni, termini };
 }
 
 function db() {
@@ -33,7 +37,7 @@ function db() {
       const [c, a, t] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get()]);
       return compone(c, a, t);
     },
-    async leggiConfig() { const c = await cfgRef.get(); return c.exists ? c.data() : null; },
+    async leggiConfig() { const c = await cfgRef.get(); if (c.exists) CAT.imposta(c.data()); return c.exists ? c.data() : null; },
     async scriviConfig(mod) { await cfgRef.set(mod, { merge: true }); },
     async scriviAlunno(id, mod) { await f.collection(COL.alunni).doc(String(id)).set(mod, { merge: true }); },
     async aggiungiAlunni(alunni) {
@@ -73,17 +77,55 @@ function db() {
     async scriviSegreto(nome, mod) { await f.collection(COL.segreti).doc(nome).set(mod, { merge: true }); },
     async cancellaSegreto(nome) { await f.collection(COL.segreti).doc(nome).delete(); },
     /* ---- backup completo e ripristino ---- */
-    async backupGrezzo() {
+    async backupGrezzo(conArchivio) {
       const [c, a, t, at] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get(), f.collection(COL.attivita).get()]);
-      return { config: c.exists ? c.data() : null, alunni: docs(a), termini: docs(t), attivita: docs(at) };
+      if (c.exists) CAT.imposta(c.data());
+      const out = { config: c.exists ? c.data() : null, alunni: docs(a), termini: docs(t), attivita: docs(at) };
+      if (conArchivio) {
+        const [m, p] = await Promise.all([f.collection(COL.archivio).get(), f.collection(COL.parti).get()]);
+        out.archivio = docs(m); out.archivio_parti = docs(p);
+      }
+      return out;
     },
-    async ripristina(b) {
+    /* sostituisce config, alunni, termini e attività (e, se presenti nel backup, l'archivio): i documenti che non ci sono più vengono cancellati.
+       Scritture a gruppi di 400 (limite Firestore: 500 per gruppo). I segreti (Dropbox) non si toccano. */
+    async sostituisciTutto(b) {
+      const ops = [];
+      const insiemi = [[COL.alunni, b.alunni], [COL.termini, b.termini], [COL.attivita, b.attivita || []]];
+      if (Array.isArray(b.archivio)) insiemi.push([COL.archivio, b.archivio], [COL.parti, b.archivio_parti || []]);
+      for (const [col, elenco] of insiemi) {
+        // l'archivio non si cancella mai: un backup vecchio non deve far sparire edizioni archiviate dopo
+        if (col !== COL.archivio && col !== COL.parti) {
+          const esistenti = (await f.collection(col).get()).docs.map((d) => d.id), nuovi = new Set(elenco.map((x) => String(x.id)));
+          esistenti.filter((id) => !nuovi.has(id)).forEach((id) => ops.push(['del', f.collection(col).doc(id)]));
+        }
+        elenco.forEach((x) => { const { id, ...r } = x; ops.push(['set', f.collection(col).doc(String(id)), r]); });
+      }
+      ops.push(['set', cfgRef, b.config]);
+      for (let i = 0; i < ops.length; i += 400) {
+        const batch = f.batch();
+        ops.slice(i, i + 400).forEach(([tipo, ref, d]) => (tipo === 'del' ? batch.delete(ref) : batch.set(ref, d)));
+        await batch.commit();
+      }
+      CAT.imposta(b.config);
+    },
+    async ripristina(b) { return this.sostituisciTutto(b); },
+    /* ---- archivio delle edizioni concluse ---- */
+    async leggiArchivi() { return docs(await f.collection(COL.archivio).get()); },
+    async leggiArchivioMeta(id) { const d = await f.collection(COL.archivio).doc(String(id)).get(); return d.exists ? Object.assign({ id: d.id }, d.data()) : null; },
+    async scriviArchivio(meta, testo) {
+      const n = Math.max(1, Math.ceil(testo.length / PARTE)), { id, ...m } = meta;
+      const vecchie = (await f.collection(COL.parti).where('ed', '==', String(id)).get()).docs.map((d) => d.id);
       const batch = f.batch();
-      batch.set(cfgRef, b.config);
-      b.alunni.forEach((x) => { const { id, ...r } = x; batch.set(f.collection(COL.alunni).doc(id), r); });
-      b.termini.forEach((x) => { const { id, ...r } = x; batch.set(f.collection(COL.termini).doc(id), r); });
-      (b.attivita || []).forEach((x) => { const { id, ...r } = x; batch.set(f.collection(COL.attivita).doc(id), r); });
+      vecchie.forEach((pid) => batch.delete(f.collection(COL.parti).doc(pid)));
+      for (let k = 0; k < n; k++) batch.set(f.collection(COL.parti).doc(id + '_' + k), { ed: String(id), k, dati: testo.slice(k * PARTE, (k + 1) * PARTE) });
+      batch.set(f.collection(COL.archivio).doc(String(id)), Object.assign(m, { parti: n, dimensione: testo.length }));
       await batch.commit();
+    },
+    async leggiArchivioDati(id) {
+      const q = await f.collection(COL.parti).where('ed', '==', String(id)).get();
+      if (!q.docs.length) return null;
+      return JSON.parse(q.docs.map((d) => d.data()).sort((x, y) => x.k - y.k).map((x) => x.dati).join(''));
     },
     async transazione(fn) {
       return f.runTransaction(async (tx) => {

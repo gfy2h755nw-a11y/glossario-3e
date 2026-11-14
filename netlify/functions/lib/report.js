@@ -122,7 +122,7 @@ function creaReport(stato, attivita, now) {
     info: { Title: 'Report Glossario ' + CL, Author: 'Prof. Danilo Cerrato', Subject: 'Glossario odontotecnico' + (EN ? ' bilingue' : '') + ' - ' + CLS } });
   const pezzi = []; doc.on('data', (b) => pezzi.push(b));
   const fine = new Promise((ok) => doc.on('end', () => ok(Buffer.concat(pezzi))));
-  const sotto = 'Istituto Barsanti - sede Salvetti · a.s. 2026/27 · Prof. Danilo Cerrato' + (EN ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato ' + generato;
+  const sotto = 'Istituto Barsanti - sede Salvetti · a.s. ' + imp.edizione.as + ' · Prof. Danilo Cerrato' + (EN ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato ' + generato;
 
   /* --- pagina 1: sintesi --- */
   let y = testata(doc, 'Glossario odontotecnico' + (EN ? ' bilingue' : '') + ' · Report · ' + CLS, sotto);
@@ -132,7 +132,7 @@ function creaReport(stato, attivita, now) {
   const daAppr = (l) => stato.termini.filter((t) => campo(t, l, 'stato') === 'inviata').length;
   const box = !EN ? [
     ['Scadenza', quando(imp.scadenzaIt)],
-    ['Termini', String(totT) + ' (' + DATI.TERMINI_PER_ALUNNO + ' a testa)'],
+    ['Termini', String(totT) + (() => { const n = [...new Set(stato.alunni.map((a) => stato.termini.filter((t) => (t.alunno_orig || t.alunno_id) === a.id).length).filter((x) => x > 0))]; return n.length === 1 ? ' (' + n[0] + ' a testa)' : ''; })()],
     ['Approvate', appr('it') + '/' + totT],
     ['Da approvare', String(daAppr('it'))],
     ['Esclusi', String(righe.filter((x) => x.v.escluso).length)],

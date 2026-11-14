@@ -28,7 +28,7 @@ async function esegui(db, motivo) {
   const segreto = await db.leggiSegreto('dropbox');
   if (!dbx.configurato() || !segreto || !segreto.refresh) return { saltato: true, motivo: 'Dropbox non collegato' };
   try {
-    const grezzo = await db.backupGrezzo();
+    const grezzo = await db.backupGrezzo(true); // con l'archivio delle edizioni concluse
     if (!grezzo.config) return { saltato: true, motivo: 'Glossario non ancora configurato' };
     const { stato, attivita } = statoDa(grezzo);
     const pdf = await creaReport(stato, attivita, now);
@@ -59,7 +59,20 @@ function validaBackup(b) {
   if (!Array.isArray(b.alunni) || !b.alunni.length || !b.alunni.every((a) => a.id && a.nome && a.codice)) no('elenco alunni incompleto');
   if (!Array.isArray(b.termini) || !b.termini.length || !b.termini.every((t) => t.id && t.area && t.alunno_id)) no('elenco termini incompleto');
   if (b.attivita && !Array.isArray(b.attivita)) no('registro attività non valido');
+  if (b.archivio && (!Array.isArray(b.archivio) || !Array.isArray(b.archivio_parti || []))) no('archivio non valido');
   return b;
 }
 
-module.exports = { esegui, backupDa, statoDa, validaBackup, FORMATO };
+/* copia dello stato attuale su Dropbox prima di un ripristino o di una nuova edizione (se Dropbox è collegato) */
+async function copiaPrima(db, motivo) {
+  const segreto = await db.leggiSegreto('dropbox');
+  if (!dbx.configurato() || !segreto || !segreto.refresh) return 'non collegato';
+  try {
+    const now = Date.now(), grezzo = await db.backupGrezzo(true);
+    const percorso = '/Backup/prima_di_' + motivo + '_' + timbro(now) + '.json';
+    await dbx.carica(await dbx.tokenAccesso(segreto), percorso, Buffer.from(JSON.stringify(backupDa(grezzo, now), null, 1), 'utf8'));
+    return percorso;
+  } catch (e) { return 'errore: ' + String(e.message || e).slice(0, 200); }
+}
+
+module.exports = { esegui, backupDa, statoDa, validaBackup, copiaPrima, timbro, FORMATO };

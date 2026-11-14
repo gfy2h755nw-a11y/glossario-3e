@@ -111,7 +111,12 @@ async function creaPresentazione(stato, attivita, now) {
   attivita = attivita || {};
   const CL = logica.nomeClassi(stato); CLS = CL.indexOf(' e ') > 0 ? 'Classi ' + CL : 'Classe ' + CL;
   const D = calcola(stato, attivita, now);
-  const EN = D.EN, TPA = DATI.TERMINI_PER_ALUNNO, PERAREA = stato.termini.length / DATI.AREE.length;
+  const EN = D.EN;
+  // termini a testa: il valore più frequente tra gli alunni (le classi aggiunte possono averne un numero diverso)
+  const conti = {}; stato.alunni.forEach((a) => { const n = stato.termini.filter((t) => (t.alunno_orig || t.alunno_id) === a.id).length; if (n) conti[n] = (conti[n] || 0) + 1; });
+  const TPA = Number(Object.keys(conti).sort((x, y) => conti[y] - conti[x])[0]) || DATI.TERMINI_PER_ALUNNO;
+  const perArea = DATI.AREE.map((a) => stato.termini.filter((t) => String(t.area) === String(a.n)).length);
+  const PERAREA = Math.max.apply(null, perArea.concat([1])), UGUALI = perArea.every((x) => x === perArea[0]);
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_16x9';
   pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
@@ -154,7 +159,7 @@ async function creaPresentazione(stato, attivita, now) {
   let s = pres.addSlide({ masterName: 'Copertina', sectionTitle: 'Apertura' });
   s.addText(EN ? 'Glossario odontotecnico bilingue' : 'Glossario odontotecnico', { placeholder: 'title' });
   s.addText([
-    { text: 'Report dell\'attività · ' + CLS + ' · a.s. 2026/27', options: { bold: true, color: 'FFFFFF', breakLine: true } },
+    { text: 'Report dell\'attività · ' + CLS + ' · a.s. ' + logica.impostazioni(stato.config).edizione.as, options: { bold: true, color: 'FFFFFF', breakLine: true } },
     { text: EN ? 'Prof. Danilo Cerrato (Laboratorio odontotecnico) · Prof.ssa Federica Aliboni (Inglese tecnico)' : 'Prof. Danilo Cerrato · Laboratorio odontotecnico', options: { breakLine: true } },
     { text: 'Istituto Barsanti - sede Salvetti · aggiornato a ' + dataLunga(now), options: { fontSize: 13 } }
   ], { placeholder: 'body' });
@@ -184,12 +189,12 @@ async function creaPresentazione(stato, attivita, now) {
   s = nuova('Avanzamento e voti', 'Avanzamento per area');
   const COL_ST = [K.ok, K.warn, K.bad, K.empty];
   (EN ? [['it', 'Italiano', 0.5, 4.4], ['en', 'Inglese', 5.1, 4.4]] : [['it', '', 0.5, 9]]).forEach(([l, nome, x, w]) => {
-    s.addChart(pres.charts.BAR, D.avanz[l], stile((nome ? nome + ': stato' : 'Stato') + ' dei ' + PERAREA + ' termini di ogni area', {
+    s.addChart(pres.charts.BAR, D.avanz[l], stile((nome ? nome + ': stato' : 'Stato') + (UGUALI ? ' dei ' + PERAREA + ' termini di ogni area' : ' dei termini di ogni area'), {
       x, y: 1.0, w, h: 4.1, barDir: 'bar', barGrouping: 'stacked', chartColors: COL_ST, showLegend: true, legendPos: 'b',
       showValue: true, dataLabelPosition: 'ctr', dataLabelColor: 'FFFFFF', dataLabelFormatCode: '0;;;', valAxisMaxVal: PERAREA, valAxisMajorUnit: 5, catAxisOrientation: 'maxMin', objectName: 'Avanzamento ' + (nome || 'aree')
     }));
   });
-  s.addNotes('Ogni barra è un\'area con i suoi ' + PERAREA + ' termini: verde approvati, giallo in attesa di approvazione, rosso rimandati all\'alunno, grigio senza risposta.');
+  s.addNotes('Ogni barra è un\'area con i suoi ' + (UGUALI ? PERAREA + ' ' : '') + 'termini: verde approvati, giallo in attesa di approvazione, rosso rimandati all\'alunno, grigio senza risposta.');
 
   /* 4. distribuzione dei voti */
   s = nuova('Avanzamento e voti', 'Distribuzione dei voti finali');

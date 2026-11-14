@@ -2,7 +2,8 @@
    Icone e immagini sono in deck-assets.js (generato da deck2/assets.js). */
 const pptxgen = require('pptxgenjs');
 const DATI = require('./dati');
-const { alunnoIniziale } = require('./logica');
+const L = require('./logica');
+const { alunnoIniziale } = L;
 const A = require('./deck-assets');
 const AREE = DATI.AREE.map((a) => Object.assign({}, a, { termini: DATI.TERMINI[a.n] }));
 const fa = new Proxy({}, { get: (t, k) => k });
@@ -30,8 +31,29 @@ const THEME = {
   name: 'Glossario 3E-3F', headFontFace: 'Arial', bodyFontFace: 'Arial',
   colors: { dk1: HEX.ink, lt1: 'FFFFFF', dk2: HEX.ink2, lt2: HEX.bg, accent1: HEX.a[0], accent2: HEX.a[1], accent3: HEX.a[2], accent4: HEX.a[3], accent5: HEX.teal, accent6: HEX.red, hlink: HEX.a[0], folHlink: HEX.a[1] }
 };
-async function creaDeckStudenti(classe, imp, now) {
-  const CL = classe === '3F' ? '3F' : '3E', F = CL === '3F';
+/* dati della classe per le edizioni nuove (o le classi aggiunte): nomi, termini e distribuzione reali */
+function contesto(classe, imp, stato) {
+  const ed = L.edizioneDi(stato.config);
+  const al = stato.alunni.filter((a) => L.classeDi(a) === classe).sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+  const ids = new Set(al.map((a) => a.id));
+  const ts = stato.termini.filter((t) => ids.has(t.alunno_orig || t.alunno_id));
+  const perAl = {}; al.forEach((a) => { perAl[a.id] = { 1: 0, 2: 0, 3: 0, 4: 0 }; });
+  ts.forEach((t) => { const k = t.alunno_orig || t.alunno_id; if (perAl[k]) perAl[k][t.area] = (perAl[k][t.area] || 0) + 1; });
+  const tpa = L.termPerAlunno(imp, classe);
+  const gruppi = al.length && al.every((a) => /^[1-4]$/.test(String(a.gruppo)));
+  const classi = imp.classi.map((c) => ({ nome: c, alunni: stato.alunni.filter((a) => L.classeDi(a) === c).length, termini: stato.termini.filter((t) => { const a = stato.alunni.find((x) => x.id === (t.alunno_orig || t.alunno_id)); return a && L.classeDi(a) === c; }).length }));
+  const nt = Math.max.apply(null, DATI.AREE.map((a) => stato.termini.filter((t) => String(t.area) === String(a.n)).length).concat([0]));
+  return { ed, al, ts, perAl, tpa, gruppi, classi, nt, auto: imp.riassegnazione !== 'manuale' };
+}
+async function creaDeckStudenti(classe, imp, now, stato) {
+  // la presentazione originale di 3E e 3F (edizione 2026/27) resta quella; per le altre classi si usano i dati reali
+  const orig = !stato || (L.edizioneDi(stato.config).id === '2026-27-1' && (classe === '3E' || classe === '3F'));
+  const X = orig ? null : contesto(classe, imp, stato);
+  const CL = orig ? (classe === '3F' ? '3F' : '3E') : classe, F = orig ? CL === '3F' : !X.gruppi;
+  const TPA = orig ? 10 : X.tpa, AS = orig ? '2026/27' : X.ed.as;
+  const CLASSI_TXT = orig ? '3E e 3F' : (X.classi.length > 1 ? X.classi.slice(0, -1).map((c) => c.nome).join(', ') + ' e ' + X.classi[X.classi.length - 1].nome : X.classi[0].nome);
+  const cogn = (a) => a.nome.split(' ')[0];
+  const lista = (arr) => arr.length > 1 ? arr.slice(0, -1).join(', ') + ' e ' + arr[arr.length - 1] : arr.join('');
   now = now || Date.now();
   const V = { votoMax: imp.votoMax, votoMaxErede: imp.votoMaxErede, votoMin: imp.votoMin };
   const VM = fn(V.votoMax), VE = fn(V.votoMaxErede), PEN = imp.proposta === 'A' ? 0.25 : 0.5;
@@ -74,7 +96,7 @@ async function creaDeckStudenti(classe, imp, now) {
   let s = pres.addSlide({ masterName: 'Scura', sectionTitle: 'Il progetto' });
   s.addText('Glossario odontotecnico', { placeholder: 'title' });
   s.addText('Istruzioni per l\'uso · classe ' + CL, { placeholder: 'body' });
-  T(s, 'ISTITUTO BARSANTI - SEDE SALVETTI · CLASSE ' + CL + ' · A.S. 2026/27', { x: 0.7, y: 1.1, w: 7.8, h: 0.4, fontSize: 12, bold: true, color: '9FB3C6', charSpacing: 1.5 });
+  T(s, 'ISTITUTO BARSANTI - SEDE SALVETTI · CLASSE ' + CL + ' · A.S. ' + AS, { x: 0.7, y: 1.1, w: 7.8, h: 0.4, fontSize: 12, bold: true, color: '9FB3C6', charSpacing: 1.5 });
   T(s, [{ text: 'Laboratorio odontotecnico · Prof. Danilo Cerrato' }],
     { x: 0.7, y: 5.75, w: 7.6, h: 0.8, fontSize: 15, color: 'C9D6E2', paraSpaceAfter: 4 });
   [1, 2, 3, 4].forEach((n, i) => s.addImage({ data: img('poster' + n + '.jpg'), x: 8.7 + (i % 2) * 2.15, y: 0.6 + Math.floor(i / 2) * 3.15, w: 2.0, h: 2.857, altText: 'Cartellone ' + n }));
@@ -84,13 +106,13 @@ async function creaDeckStudenti(classe, imp, now) {
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Il progetto' });
   s.addText('Il compito in breve', { placeholder: 'title' });
   T(s, [
-    { text: 'La 3E e la 3F costruiscono insieme un glossario tecnico di odontotecnica.', options: { bold: true, color: C.text1, breakLine: true } },
-    { text: F ? 'Ognuno di voi ha 10 termini, presi da tutte e quattro le aree.' : 'Ognuno di voi ha 10 termini della sua area.', options: { bullet: true, breakLine: true } },
+    { text: orig ? 'La 3E e la 3F costruiscono insieme un glossario tecnico di odontotecnica.' : (X.classi.length > 1 ? 'Le classi ' + CLASSI_TXT + ' costruiscono insieme un glossario tecnico di odontotecnica.' : 'La ' + CL + ' costruisce un glossario tecnico di odontotecnica.'), options: { bold: true, color: C.text1, breakLine: true } },
+    { text: F ? 'Ognuno di voi ha ' + TPA + ' termini, presi da tutte e quattro le aree.' : 'Ognuno di voi ha ' + TPA + ' termini della sua area.', options: { bullet: true, breakLine: true } },
     { text: 'Per ogni termine sceglie la definizione giusta tra 8 alternative.', options: { bullet: true, breakLine: true } },
     { text: 'Il prof. Cerrato controlla ogni scelta e la approva.', options: { bullet: true, breakLine: true } },
-    { text: 'Le definizioni approvate finiscono su 4 cartelloni 70×100 stampati e appesi in laboratorio, con i nomi di tutte e due le classi.', options: { bullet: true } }
+    { text: 'Le definizioni approvate finiscono su 4 cartelloni 70×100 stampati e appesi in laboratorio' + (orig ? ', con i nomi di tutte e due le classi.' : ', con i vostri nomi.'), options: { bullet: true } }
   ], { x: 0.6, y: 1.6, w: 5.8, h: 4.8, fontSize: 18, paraSpaceAfter: 10 });
-  [['10', 'termini a testa'], ['8', 'alternative per ogni scelta'], [String(NT), 'termini per area'], ['4', 'cartelloni 70×100']].forEach((st, i) => {
+  [[String(TPA), 'termini a testa'], ['8', 'alternative per ogni scelta'], [String(orig ? NT : X.nt), 'termini per area'], ['4', 'cartelloni 70×100']].forEach((st, i) => {
     const x = 6.9 + (i % 2) * 2.95, y = 1.6 + Math.floor(i / 2) * 2.45;
     card(s, x, y, 2.75, 2.25, null, 'Dato ' + (i + 1));
     T(s, st[0], { x: x + 0.3, y: y + 0.25, w: 2.2, h: 1.1, fontSize: 64, bold: true, color: AC[i], valign: 'middle' });
@@ -99,8 +121,11 @@ async function creaDeckStudenti(classe, imp, now) {
 
   /* 2b · Novità */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Il progetto' });
-  s.addText('Due classi, un solo glossario', { placeholder: 'title' });
-  const nov = [[fa.FaUsers, '3E: 16 alunni, 160 termini', 'Quattro gruppi, uno per area: i termini da 1 a 40 di ogni cartellone.', HEX.a[0]],
+  s.addText(orig ? 'Due classi, un solo glossario' : (X.classi.length > 1 ? 'Le classi di questa edizione' : 'La classe ' + CL), { placeholder: 'title' });
+  const nov = !orig ? [[fa.FaUsers, CL + ': ' + X.al.length + ' alunni, ' + X.ts.length + ' termini', F ? 'Ognuno ha termini di tutte e quattro le aree.' : 'Quattro gruppi, uno per area.', HEX.a[0]],
+    [fa.FaUserFriends, X.classi.length > 1 ? 'Insieme a ' + lista(X.classi.filter((c) => c.nome !== CL).map((c) => c.nome)) : X.ed.nome, X.classi.length > 1 ? 'Le definizioni di tutte le classi finiscono sugli stessi cartelloni.' : 'Edizione ' + X.ed.as + ' del glossario del laboratorio.', HEX.a[1]],
+    [fa.FaFlagCheckered, 'La partenza', (PART ? 'Si parte ' + conOra(PART) + ': fino a quel momento nell\'app vedi il conto alla rovescia.' : 'La partenza la fissa il prof. nell\'app: fino a quel momento vedi il conto alla rovescia.'), HEX.a[2]],
+    [fa.FaCalendarAlt, 'La scadenza', conOra(SCAD) + ', per tutti e ' + TPA + ' i tuoi termini.', HEX.a[3]]] : [[fa.FaUsers, '3E: 16 alunni, 160 termini', 'Quattro gruppi, uno per area: i termini da 1 a 40 di ogni cartellone.', HEX.a[0]],
     [fa.FaUserFriends, '3F: 10 alunni, 100 termini', 'Ognuno ha termini di tutte e quattro le aree: i termini da 41 a 65 di ogni cartellone.', HEX.a[1]],
     [fa.FaFlagCheckered, 'Si parte insieme', (PART ? 'Si parte ' + conOra(PART) + ': fino a quel momento nell\'app vedi il conto alla rovescia.' : 'La partenza la fissa il prof. nell\'app: fino a quel momento vedi il conto alla rovescia.'), HEX.a[2]],
     [fa.FaCalendarAlt, 'Una sola scadenza', 'Uguale per le due classi: ' + conOra(SCAD) + ', per tutti e 10 i termini.', HEX.a[3]]];
@@ -112,7 +137,7 @@ async function creaDeckStudenti(classe, imp, now) {
     T(s, nov[i][1], { x: x + 1.65, y: y + 0.35, w: 4.0, h: 0.5, fontSize: 22, bold: true, color: C.text1 });
     T(s, nov[i][2], { x: x + 1.65, y: y + 0.95, w: 4.0, h: 1.2, fontSize: 16 });
   }
-  s.addNotes('Il glossario è unico: 65 termini per area, 40 della 3E e 25 della 3F. Stesse regole, stessa partenza e stessa scadenza per le due classi.');
+  s.addNotes(orig ? 'Il glossario è unico: 65 termini per area, 40 della 3E e 25 della 3F. Stesse regole, stessa partenza e stessa scadenza per le due classi.' : 'Classe ' + CL + ': ' + X.al.length + ' alunni, ' + TPA + ' termini a testa.');
 
   /* 3 · Perché */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Il progetto' });
@@ -128,7 +153,46 @@ async function creaDeckStudenti(classe, imp, now) {
     T(s, why[i][2], { x: 2.3, y: y + 0.52, w: 10, h: 0.6, fontSize: 17 });
   }
 
-  if (F) {
+  if (!orig) {
+  /* 4 · Aree e distribuzione (dati reali della classe) */
+  s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Il progetto' });
+  s.addText(F ? 'Quattro aree, ' + TPA + ' termini a testa' : 'Quattro aree, quattro gruppi', { placeholder: 'title' });
+  AREE.forEach((a, i) => {
+    const x = 0.6 + i * 3.1, w = 2.85, n = X.ts.filter((t) => String(t.area) === String(a.n)).length;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.45, w, h: 1.15, fill: { color: AC[i] }, line: { color: AC[i] }, rectRadius: 0.12, objectName: 'Testata area ' + a.n });
+    T(s, '0' + a.n, { x: x + 0.2, y: 1.52, w: 0.9, h: 0.6, fontSize: 28, bold: true, color: C.background1 });
+    T(s, a.it, { x: x + 1.0, y: 1.52, w: w - 1.15, h: 0.6, fontSize: 13, bold: true, color: C.background1, valign: 'middle' });
+    T(s, n + ' termini della ' + CL, { x: x + 0.2, y: 2.13, w: w - 0.35, h: 0.35, fontSize: 12, color: C.background1 });
+  });
+  const righe = X.al.slice(0, 22);
+  const hdG = ['Alunno'].concat(AREE.map((a) => 'Area ' + a.n), ['Totale']).map((t, k) => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: k && k < 5 ? HEX.a[k - 1] : HEX.ink }, align: k ? 'center' : 'left' } }));
+  const altezza = Math.min(0.34, 3.9 / (righe.length + 1));
+  s.addTable([hdG].concat(righe.map((a, r) => [{ text: a.nome, options: { bold: true, color: HEX.ink } }].concat(AREE.map((ar) => ({ text: String(X.perAl[a.id][ar.n] || 0), options: { align: 'center', color: HEX.ink } })), [{ text: String(AREE.reduce((z, ar) => z + (X.perAl[a.id][ar.n] || 0), 0)), options: { align: 'center', bold: true, color: HEX.ink } }])
+    .map((c) => Object.assign(c, { options: Object.assign({ fill: { color: r % 2 ? 'FFFFFF' : HEX.bg } }, c.options) })))),
+    { x: 0.6, y: 2.85, w: 12.1, colW: [4.1, 1.6, 1.6, 1.6, 1.6, 1.6], rowH: altezza, fontSize: righe.length > 14 ? 10 : 13, fontFace: 'Arial', valign: 'middle', border: { type: 'solid', pt: 0.75, color: HEX.line }, margin: [0.02, 0.1, 0.02, 0.1] });
+  if (X.al.length > righe.length) T(s, 'Elenco completo nelle slide dei termini.', { x: 0.6, y: 6.75, w: 12, h: 0.25, fontSize: 11, italic: true, color: HEX.muted });
+  s.addNotes('Distribuzione dei termini della ' + CL + ' tra le quattro aree. I nomi dei termini sono nelle prossime slide.');
+
+  /* 5-8 · Termini della classe, area per area */
+  pres.addSection({ title: 'I termini' });
+  AREE.forEach((a, i) => {
+    const lista = X.ts.filter((t) => String(t.area) === String(a.n)).sort((x, y) => Number(String(x.id).slice(2)) - Number(String(y.id).slice(2)));
+    if (!lista.length) return;
+    const nomeDiId = (id) => { const al = stato.alunni.find((x) => x.id === id); return al ? cogn(al) : ''; };
+    for (let p = 0; p < lista.length; p += 26) {
+      const pag = lista.slice(p, p + 26);
+      s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'I termini' });
+      s.addText('Area ' + a.n + ' · ' + a.it + (lista.length > 26 ? ' (' + (p / 26 + 1) + ')' : ''), { placeholder: 'title' });
+      T(s, 'I termini della ' + CL + ' in quest\'area e a chi sono assegnati', { x: 0.6, y: 1.15, w: 12, h: 0.35, fontSize: 15, italic: true, color: AC[i] });
+      [pag.slice(0, 13), pag.slice(13)].forEach((col, ci) => {
+        if (!col.length) return;
+        const rows = [['Termine', 'Alunno'].map((t) => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: HEX.a[i] } } }))];
+        col.forEach((t, k) => { const fill = { color: k % 2 ? 'FFFFFF' : HEX.bg }; rows.push([{ text: t.termine_it, options: { fill, bold: true, color: HEX.ink } }, { text: nomeDiId(t.alunno_orig || t.alunno_id), options: { fill, color: HEX.ink } }]); });
+        s.addTable(rows, { x: 0.6 + ci * 6.2, y: 1.65, w: 5.9, colW: [4.0, 1.9], rowH: 0.355, fontSize: 12, fontFace: 'Arial', valign: 'middle', border: { type: 'solid', pt: 0.75, color: HEX.line }, margin: [0.02, 0.06, 0.02, 0.06] });
+      });
+    }
+  });
+  } else if (F) {
   /* 4F · Aree e distribuzione */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Il progetto' });
   s.addText('Quattro aree, dieci termini a testa', { placeholder: 'title' });
@@ -268,7 +332,7 @@ async function creaDeckStudenti(classe, imp, now) {
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 1.0, y: 1.7, w: 4.95, h: 4.6, fill: { color: 'FFFFFF' }, line: { color: HEX.line, width: 0.75 }, rectRadius: 0.12, objectName: 'Schermata attesa' });
   T(s, 'GLOSSARIO ODONTOTECNICO', { x: 1.3, y: 1.95, w: 4.4, h: 0.3, fontSize: 11, bold: true, color: HEX.muted, charSpacing: 2 });
   T(s, 'Il compito non è ancora partito', { x: 1.3, y: 2.3, w: 4.4, h: 0.9, fontSize: 22, bold: true, color: C.text1 });
-  T(s, PART ? [{ text: 'Si parte ' }, { text: conOra(PART).replace(', ore', ' alle'), options: { bold: true } }, { text: '. Da quel momento qui trovi i tuoi ' }, { text: '10 termini', options: { bold: true } }, { text: '.' }]
+  T(s, PART ? [{ text: 'Si parte ' }, { text: conOra(PART).replace(', ore', ' alle'), options: { bold: true } }, { text: '. Da quel momento qui trovi i tuoi ' }, { text: TPA + ' termini', options: { bold: true } }, { text: '.' }]
     : 'Il prof. non ha ancora fissato la partenza.', { x: 1.3, y: 3.25, w: 4.4, h: 0.8, fontSize: 14 });
   ['giorni', 'ore', 'min', 'sec'].forEach((u, k) => {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 1.3 + k * 1.05, y: 4.15, w: 0.9, h: 0.85, fill: { color: HEX.bg }, line: { color: HEX.bg }, rectRadius: 0.08, objectName: 'Conto ' + u });
@@ -276,8 +340,8 @@ async function creaDeckStudenti(classe, imp, now) {
     T(s, u, { x: 1.3 + k * 1.05, y: 4.65, w: 0.9, h: 0.3, fontSize: 10, color: HEX.muted, align: 'center' });
   });
   T(s, 'Scadenza per rispondere a tutti i termini: ' + conOra(SCAD).replace(', ore', ' alle') + '.', { x: 1.3, y: 5.25, w: 4.4, h: 0.8, fontSize: 13, color: HEX.muted });
-  [[HEX.a[2], 'Partenza', PART ? conOra(PART) : 'la fissa il prof. nell\'app', 'uguale per 3E e 3F: prima vedi solo il conto alla rovescia, poi compaiono i tuoi 10 termini'],
-    [HEX.a[0], 'Scadenza', conOra(SCAD), 'entro questa ora devi aver risposto a tutti e 10 i tuoi termini']].forEach((d, i) => {
+  [[HEX.a[2], 'Partenza', PART ? conOra(PART) : 'la fissa il prof. nell\'app', (orig ? 'uguale per 3E e 3F' : 'della ' + CL) + ': prima vedi solo il conto alla rovescia, poi compaiono i tuoi ' + TPA + ' termini'],
+    [HEX.a[0], 'Scadenza', conOra(SCAD), 'entro questa ora devi aver risposto a tutti e ' + TPA + ' i tuoi termini']].forEach((d, i) => {
     const y = 1.55 + i * 1.75;
     card(s, 6.7, y, 6.0, 1.55, null, 'Scadenza ' + d[1]);
     T(s, d[1].toUpperCase(), { x: 7.0, y: y + 0.15, w: 5.5, h: 0.3, fontSize: 13, bold: true, color: d[0], charSpacing: 2 });
@@ -306,9 +370,10 @@ async function creaDeckStudenti(classe, imp, now) {
   /* 15b · Riassegnazione */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Scadenze e voto' });
   s.addText('Se un compagno viene escluso', { placeholder: 'title' });
-  const ria = [[fa.FaRandom, 'I suoi termini passano a un altro', 'L\'app li assegna da sola, a sorte, a un compagno non escluso della stessa classe.'],
-    [fa.FaUserPlus, 'Uno solo a testa', 'Nessuno riceve i termini di più di un compagno.'],
-    [fa.FaHourglassHalf, 'Nuove scadenze per quei termini', imp.giorniIt + ' giorni da quando li ricevi. In ritardo: niente esclusione, ma voto finale massimo 6.'],
+  const AUTO = imp.riassegnazione !== 'manuale';
+  const ria = [[fa.FaRandom, 'I suoi termini passano a un altro', AUTO ? 'L\'app li assegna da sola, a sorte, a un compagno non escluso della stessa classe.' : 'Decide il prof. Cerrato a chi passarli, tra i compagni non esclusi.'],
+    [fa.FaUserPlus, AUTO ? 'Uno solo a testa' : 'Scelta del docente', AUTO ? 'Nessuno riceve i termini di più di un compagno.' : 'Il prof. può dividerli tra più compagni o lasciarli fermi.'],
+    [fa.FaHourglassHalf, 'Nuove scadenze per quei termini', (AUTO ? imp.giorniIt + ' giorni da quando li ricevi' : 'La scadenza la fissa il prof. quando te li passa') + '. In ritardo: niente esclusione, ma voto finale massimo 6.'],
     [fa.FaStar, 'Voto massimo ' + VE, 'Chi riceve i termini di un altro può arrivare a ' + VE + ' invece che a ' + VM + ', con le stesse penalità.'],
     [fa.FaIdBadge, 'Il tuo nome sul cartellone', 'Sui termini ricevuti compare chi li ha davvero completati, al posto dell\'escluso.']];
   for (let i = 0; i < ria.length; i++) {
@@ -320,10 +385,18 @@ async function creaDeckStudenti(classe, imp, now) {
   }
   card(s, 8.6, 1.5, 4.1, 4.95, HEX.infobg, 'Esempio riassegnazione');
   T(s, [{ text: 'Esempio', options: { bold: true, color: C.text1, breakLine: true } },
+    ...(orig ? [
     { text: F ? 'Taddei (3F) non risponde in tempo: è esclusa con 4.' : 'Tonlorenzi (3E, area 4) non risponde in tempo: è escluso con 4.', options: { breakLine: true } },
     { text: F ? 'L\'app sorteggia Balleri, sempre della 3F: ora ha 20 termini.' : 'L\'app sorteggia Bertelà, sempre della 3E: ora ha 20 termini, 10 di anatomia e 10 di laboratorio.', options: { breakLine: true } },
     { text: (F ? 'Balleri può arrivare a ' + VE + ' e il suo nome va sui cartelloni al posto di Taddei.' : 'Bertelà può arrivare a ' + VE + ' e il suo nome va sul cartellone 4 al posto di Tonlorenzi.'), options: { breakLine: true } },
-    { text: 'Se però ' + (F ? 'Balleri' : 'Bertelà') + ' non risponde in tempo ai termini ricevuti, non è escluso: il voto finale scende a 6 (se era 6 o più; se era sotto 6 resta quello).' }],
+    { text: 'Se però ' + (F ? 'Balleri' : 'Bertelà') + ' non risponde in tempo ai termini ricevuti, non è escluso: il voto finale scende a 6 (se era 6 o più; se era sotto 6 resta quello).' }] : (() => {
+      const e1 = X.al.length > 1 ? cogn(X.al[X.al.length - 1]) : 'Un alunno', e2 = X.al.length > 1 ? cogn(X.al[0]) : 'un compagno';
+      return [
+        { text: e1 + ' non risponde in tempo: è escluso con 4.', options: { breakLine: true } },
+        { text: (AUTO ? 'L\'app sorteggia ' + e2 + ', della stessa classe' : 'Il prof. passa i suoi termini a ' + e2) + ': ora ha ' + (TPA * 2) + ' termini.', options: { breakLine: true } },
+        { text: e2 + ' può arrivare a ' + VE + ' e il suo nome va sui cartelloni al posto di ' + e1 + '.', options: { breakLine: true } },
+        { text: 'Se però ' + e2 + ' non risponde in tempo ai termini ricevuti, non è escluso: il voto finale scende a 6 (se era 6 o più; se era sotto 6 resta quello).' }];
+    })())],
     { x: 8.85, y: 1.7, w: 3.65, h: 4.6, fontSize: 15, color: '0F3560', paraSpaceAfter: 10 });
 
   /* 16 · Voto: regole */
@@ -360,8 +433,11 @@ async function creaDeckStudenti(classe, imp, now) {
   /* 18 · Tappe */
   pres.addSection({ title: 'Calendario e risultato' });
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Calendario e risultato' });
-  s.addText('Le tappe fino all\'11 dicembre', { placeholder: 'title' });
-  const tappe = DATI.TAPPE.filter((t) => t.lingua !== 'en').map((t) => t.chiave === 'partenza' ? [PART ? breve(PART) : 'Partenza', PART ? 'Partenza: si apre l\'app per 3E e 3F' : 'Partenza: la fissa il prof. nell\'app', false]
+  s.addText(orig ? 'Le tappe fino all\'11 dicembre' : 'Le tappe', { placeholder: 'title' });
+  const tappe = !orig ? [[PART ? breve(PART) : 'Partenza', PART ? 'Partenza: si apre l\'app' : 'Partenza: la fissa il prof. nell\'app', false],
+    [breve(SCAD), 'SCADENZA: tutti e ' + TPA + ' i termini', true],
+    [breve(new Date(Date.parse(SCAD) + 7 * 86400000).toISOString()), 'Circa una settimana dopo: definizioni approvate dal prof. Cerrato', false],
+    ['Poi', 'Cartelloni in tipografia e in laboratorio', false]] : DATI.TAPPE.filter((t) => t.lingua !== 'en').map((t) => t.chiave === 'partenza' ? [PART ? breve(PART) : 'Partenza', PART ? 'Partenza: si apre l\'app per 3E e 3F' : 'Partenza: la fissa il prof. nell\'app', false]
     : t.chiave === 'it' ? [breve(SCAD), 'SCADENZA: tutti e 10 i termini', true] : [breve(t.data + 'T12:00:00Z'), t.testo, false]);
   const passo = 10.74 / (tappe.length - 1);
   s.addShape(pres.shapes.LINE, { x: 1.3, y: 3.35, w: 10.74, h: 0, line: { color: HEX.line, width: 4 }, objectName: 'Linea del tempo' });
@@ -374,13 +450,13 @@ async function creaDeckStudenti(classe, imp, now) {
     T(s, t[1], { x: cx - 0.85, y: 3.85, w: 1.7, h: 1.5, fontSize: 13, color: C.text1, align: 'center', bold: sc });
   });
   card(s, 0.6, 5.55, 12.1, 1.0, null, 'Nota tappe');
-  T(s, [{ text: 'Si lavora da casa, ', options: { bold: true, color: C.text1 } }, { text: 'nei tempi che ognuno organizza. Non aspettate l\'ultima sera: 10 termini richiedono tempo, e una risposta rimandata va corretta.' }],
+  T(s, [{ text: 'Si lavora da casa, ', options: { bold: true, color: C.text1 } }, { text: 'nei tempi che ognuno organizza. Non aspettate l\'ultima sera: ' + TPA + ' termini richiedono tempo, e una risposta rimandata va corretta.' }],
     { x: 0.9, y: 5.55, w: 11.5, h: 1.0, fontSize: 16, valign: 'middle' });
 
   /* 19 · Risultato */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Calendario e risultato' });
   s.addText('Il risultato: quattro cartelloni 70×100', { placeholder: 'title' });
-  T(s, 'Stampati e appesi in laboratorio, con il logo della scuola e i nomi di 3E e 3F: ' + NT + ' termini per cartellone.', { x: 0.6, y: 1.2, w: 12.1, h: 0.5, fontSize: 16 });
+  T(s, 'Stampati e appesi in laboratorio, con il logo della scuola e i nomi di ' + CLASSI_TXT + (orig ? ': ' + NT + ' termini per cartellone.' : '.'), { x: 0.6, y: 1.2, w: 12.1, h: 0.5, fontSize: 16 });
   [1, 2, 3, 4].forEach((n, i) => s.addImage({ data: img('poster' + n + '.jpg'), x: 0.75 + i * 3.0, y: 1.85, w: 2.8, h: 4.0, objectName: 'Cartellone ' + n, altText: 'Cartellone ' + n + ': ' + AREE[i].it }));
   AREE.forEach((a, i) => T(s, a.n + '. ' + a.it, { x: 0.75 + i * 3.0, y: 5.95, w: 2.8, h: 0.6, fontSize: 13, bold: true, color: AC[i], align: 'center' }));
 
@@ -405,8 +481,8 @@ async function creaDeckStudenti(classe, imp, now) {
   /* 21 · Chiusura */
   s = pres.addSlide({ masterName: 'Scura', sectionTitle: 'Calendario e risultato' });
   s.addText('Scadenza: ' + giorno(SCAD), { placeholder: 'title' });
-  s.addText('10 termini a testa · buon lavoro!', { placeholder: 'body' });
-  T(s, 'ISTITUTO BARSANTI - SEDE SALVETTI · CLASSE ' + CL + ' · A.S. 2026/27', { x: 0.7, y: 1.1, w: 7.8, h: 0.4, fontSize: 12, bold: true, color: '9FB3C6', charSpacing: 1.5 });
+  s.addText(TPA + ' termini a testa · buon lavoro!', { placeholder: 'body' });
+  T(s, 'ISTITUTO BARSANTI - SEDE SALVETTI · CLASSE ' + CL + ' · A.S. ' + AS, { x: 0.7, y: 1.1, w: 7.8, h: 0.4, fontSize: 12, bold: true, color: '9FB3C6', charSpacing: 1.5 });
   T(s, 'Domande?', { x: 0.7, y: 5.7, w: 7, h: 0.6, fontSize: 24, bold: true, color: C.background1 });
   s.addImage({ data: img('poster1.jpg'), x: 8.7, y: 0.75, w: 4.2, h: 6.0, altText: 'Cartellone 1' });
 

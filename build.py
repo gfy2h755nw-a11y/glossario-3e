@@ -7,7 +7,7 @@ html = '''<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Glossario odontotecnico · 3E e 3F</title>
+<title>Glossario odontotecnico</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -31,6 +31,9 @@ html = '''<!DOCTYPE html>
 </script>
 <script>
 ''' + r('src/app.js') + '''
+</script>
+<script>
+''' + r('src/gestione.js') + '''
 </script>
 </body>
 </html>
