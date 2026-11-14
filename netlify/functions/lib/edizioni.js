@@ -230,7 +230,6 @@ function controllaAree(cat) {
 async function nuovaEdizione(db, p) {
   const { stato } = await adminDa(db, p.codice);
   const config = stato.config, edCorr = L.edizioneDi(config);
-  if (config.archiviata !== edCorr.id) err('Prima archivia l\'edizione in corso (riquadro «Edizioni e archivio»): i suoi dati restano consultabili.');
   const nome = String(p.nome || '').replace(/\s+/g, ' ').trim(), as = String(p.as || '').trim();
   if (!nome) err('Dai un nome alla nuova edizione.');
   if (!/^\d{4}\/\d{2}$/.test(as)) err('Anno scolastico non valido (es. 2027/28).');
@@ -265,9 +264,15 @@ async function nuovaEdizione(db, p) {
     tpaClassi: Object.fromEntries(classi.map((c) => [c.nome, c.tpa])),
     catalogo, blocchi: {}, edizione: { id, nome, as, creata: new Date().toISOString() }, archiviata: null
   };
+  // l'edizione in corso, se non è già in archivio, si chiude agli alunni e si archivia (resta consultabile)
+  let archiviata = null;
+  if (config.archiviata !== edCorr.id) {
+    await db.scriviConfig({ chiusa: true });
+    archiviata = (await archivia(db, { codice: p.codice, sovrascrivi: true })).id;
+  }
   const copia = await auto.copiaPrima(db, 'nuova_edizione');
   await db.sostituisciTutto({ config: nuovaConfig, alunni, termini: docs, attivita: [] });
-  return { id, nome, as, alunni: alunni.length, termini: docs.length, copiaDropbox: copia };
+  return { id, nome, as, alunni: alunni.length, termini: docs.length, copiaDropbox: copia, archiviata };
 }
 
 /* ---------- classe aggiunta all'edizione in corso ---------- */

@@ -194,12 +194,14 @@ function bloccoEdizioni() {
   return '<section class="card stack admin" id="edizioni"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Edizioni e archivio</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">Edizione in corso: <b>' + esc(ed.nome) + '</b> · a.s. ' + esc(ed.as) + ' · classi ' + esc(CLASSI().join(', ')) + (arch ? ' <span class="chip s-approvata">in archivio</span>' : '') + '</p>' +
     (!arch ? '<div class="stack" style="gap:8px"><div class="row">' +
-      '<button class="btn" onclick="apriWizard(\'classe\')">Aggiungi una classe a questa edizione</button>' +
+      '<button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button>' +
+      '<button class="btn sec" onclick="apriWizard(\'classe\')">Aggiungi una classe a questa edizione</button>' +
       '<button class="btn sec" onclick="archiviaEdizione(false,this)"' + (chiusa ? '' : ' disabled') + '>Archivia questa edizione</button></div>' +
-      '<p class="muted" style="margin:0;font-size:14px"><b>Aggiungi una classe</b>: nuova classe con i suoi alunni, termini nuovi (mai usati prima) e date proprie; le sue definizioni vanno sugli stessi cartelloni. ' +
+      '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi; l\'edizione in corso viene chiusa agli alunni e archiviata in automatico. ' +
+      '<b>Aggiungi una classe</b>: nuova classe con i suoi alunni, termini nuovi (mai usati prima) e date proprie; le sue definizioni vanno sugli stessi cartelloni. ' +
       '<b>Archivia</b>: a lavoro concluso fotografa l\'edizione (risposte, voti, definizioni, registro), che resta consultabile qui e nella pagina pubblica; poi potrai crearne una nuova.' +
       (chiusa ? '' : ' Per archiviare chiudi prima l\'app agli alunni (riquadro «Accesso degli alunni»).') + '</p></div>'
-      : '<div class="row"><button class="btn" onclick="apriWizard(\'edizione\')">Crea una nuova edizione</button><button class="btn sec" onclick="archiviaEdizione(true,this)">Aggiorna la copia in archivio</button></div>' +
+      : '<div class="row"><button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button><button class="btn sec" onclick="archiviaEdizione(true,this)">Aggiorna la copia in archivio</button></div>' +
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi. Gli alunni che riprendi tengono il loro codice.</p>') +
     (lista ? '<h3 style="margin:8px 0 0;font-size:18px">Archivio</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Edizione</th><th>a.s.</th><th>Classi</th><th style="text-align:right">Alunni</th><th style="text-align:right">Approvate</th><th style="text-align:right">Media</th><th></th></tr></thead><tbody>' + lista + '</tbody></table></div>'
       : '<p class="muted" style="margin:0;font-size:14px">Archivio vuoto: nessuna edizione conclusa finora.</p>') + '</section>';
@@ -477,6 +479,7 @@ function passo3Html() {
       '<td>' + (c.partenza ? esc(oraIt(new Date(c.partenza).toISOString())) : '<span class="muted">da fissare</span>') + '</td><td>' + esc(oraIt(new Date(c.scadenza).toISOString())) + '</td></tr>';
   }).join('');
   var avvisi = [];
+  if (w.tipo === 'edizione' && S.d.admin.archiviata !== S.d.admin.impostazioni.edizione.id) avvisi.push('L\'edizione in corso (' + S.d.admin.impostazioni.edizione.nome + ') verrà chiusa agli alunni e archiviata: resta consultabile nell\'archivio e nella pagina pubblica.');
   if (w.tipo === 'edizione') avvisi.push('L\'app passa alla nuova edizione: gli alunni dell\'edizione archiviata non ripresi non potranno più entrare (i loro dati restano nell\'archivio). Il tuo codice docente resta lo stesso.');
   else avvisi.push('Le definizioni della nuova classe vanno sugli stessi quattro cartelloni. Le domande già assegnate alle altre classi non cambiano.');
   avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel riquadro «Codici personali degli alunni».');

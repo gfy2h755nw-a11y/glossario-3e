@@ -27,7 +27,7 @@ function nomeAlunno(id) { var a = S.d.alunni.filter(function (x) { return x.id =
 function EN() { return !!(S.d && S.d.config && (S.d.config.lingue || ['it', 'en']).indexOf('en') >= 0); }
 function LINGUE() { return EN() ? ['it', 'en'] : ['it']; }
 function TPA() { return (S.d && S.d.config && S.d.config.terminiPerAlunno) || 10; }
-var VERSIONE = '14/11/2026 · 2';
+var VERSIONE = '14/11/2026 · 3';
 /* classi: 3E e 3F */
 function elencoClassi(arr) { arr = arr || CLASSI(); return arr.length > 1 ? arr.slice(0, -1).join(', ') + ' e ' + arr[arr.length - 1] : arr.join(''); }
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
