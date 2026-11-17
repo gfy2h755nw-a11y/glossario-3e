@@ -6,7 +6,7 @@
  * e si torna indietro di 5 termini (gli ultimi indovinati). I progressi restano tra una sessione e l'altra.
  * La prova è superata quando i termini indovinati raggiungono la soglia (di norma tutti i termini del glossario):
  * solo allora l'alunno è ammesso all'interrogazione. Chi non la supera entro la scadenza non viene interrogato e non ha voto.
- * Per ogni sessione si registrano inizio, tempo di gioco, risposte, corrette, errori, scadute, termini nuovi e termini persi.
+ * Per ogni sessione si registrano inizio, tempo, risposte, corrette, errori, scadute, termini nuovi e termini persi.
  *
  * Orale: il docente pesca 10 termini (bilanciati sulle aree, mai quelli dell'alunno, di preferenza i meno usciti nella classe)
  * e segna ogni risposta come corretta (1), parziale (½) o sbagliata (0). Voto = 3 + ½ per punto (massimo 8);

@@ -144,11 +144,11 @@ function ratio(imp) {
     return 'Il voto si calcola sulle risposte in italiano: si parte da ' + fmtN(imp.votoMax) + ' e si tolgono ' + p +
       ' punti per ogni risposta errata (proposta ' + imp.proposta + '), senza scendere sotto ' + imp.votoMin + '. ' +
       'Il voto compare dalla prima risposta inviata. ' +
-      'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito con voto ' + imp.votoEsclusione + '. ' +
+      'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito e prende ' + imp.votoEsclusione + ' nello scritto per mancata consegna. ' +
       (imp.riassegnazione === 'manuale' ? 'I termini dell\'alunno escluso passano ai compagni scelti dal docente: chi li riceve ha i giorni indicati dal docente (di norma ' + imp.giorniIt + ') per rispondere ' :
         'I termini dell\'alunno escluso passano automaticamente, a sorte, a un compagno della stessa classe: chi li riceve ha ' + imp.giorniIt + ' giorni per rispondere ') +
       'e il suo voto massimo sale da ' + fmtN(imp.votoMax) + ' a ' + fmtN(imp.votoMaxErede) + ', con le stesse penalità. ' +
-      'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto finale scende a ' + imp.tetto + ' se era ' + imp.tetto + ' o più; se era sotto ' + imp.tetto + ' resta quello. ' +
+      'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto dello scritto scende a ' + imp.tetto + ' se era ' + imp.tetto + ' o più; se era sotto ' + imp.tetto + ' resta quello. ' +
       'Il docente può concedere una proroga individuale della scadenza. ' +
       'Il voto inserito a mano dal docente sostituisce il voto finale calcolato.';
   }
@@ -156,10 +156,10 @@ function ratio(imp) {
     ' punti per ogni risposta errata (proposta ' + imp.proposta + '), senza scendere sotto ' + imp.votoMin + '. ' +
     'Il voto finale è la media dei due, arrotondata al quarto di voto più vicino: per difetto se la parte decimale è sotto la metà, per eccesso dalla metà in su (es. 6,75 e 8 → media 7,375 → 7,5). ' +
     'Il voto finale compare quando ci sono risposte in entrambe le lingue. ' +
-    'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito con voto ' + imp.votoEsclusione + '. ' +
+    'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito e prende ' + imp.votoEsclusione + ' nello scritto per mancata consegna. ' +
     'I termini dell\'alunno escluso passano automaticamente, a sorte, a un compagno: chi li riceve ha ' + imp.giorniIt + ' giorni per l\'italiano e ' + imp.giorniEn +
     ' per l\'inglese e il suo voto massimo sale da ' + fmtN(imp.votoMax) + ' a ' + fmtN(imp.votoMaxErede) + ', con le stesse penalità. ' +
-    'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto finale scende a ' + imp.tetto + ' se era ' + imp.tetto + ' o più; se era sotto ' + imp.tetto + ' resta quello. ' +
+    'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto dello scritto scende a ' + imp.tetto + ' se era ' + imp.tetto + ' o più; se era sotto ' + imp.tetto + ' resta quello. ' +
     'Il voto inserito a mano dal docente sostituisce il voto finale calcolato.';
 }
 const conInglese = (imp) => imp.lingue.indexOf('en') >= 0;
@@ -223,7 +223,7 @@ function scadenzaTermine(t, l, imp, a) {
   const p = a && a.proroga ? Date.parse(a.proroga) : 0;
   return Math.max(base, p || 0);
 }
-function messaggioEsclusione() { return 'SEI STATO ESCLUSO DAL COMPITO CAUSA MANCATO RISPETTO DELLA DATA DI CONSEGNA - IL TUO VOTO FINALE SARÀ 4.'; }
+function messaggioEsclusione() { return 'Non hai consegnato lo scritto e pertanto il tuo voto è 4. PUOI ANCORA FARE IL QUIZ E L’INTERROGAZIONE, CON VOTO FINALE MASSIMO 5,5.'; }
 
 /* ---------- cosa vede chi ---------- */
 function campo(t, l, nome) { return t[nome + '_' + l]; }
@@ -915,7 +915,7 @@ function statoClasse(stato, classe) {
 }
 function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k = classeDi(a); if (c.indexOf(k) < 0) c.push(k); }); return (c.length ? c.sort() : ['3E']).join(' e '); }
 function etichettaAl(a) { return /^[1-4]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
-module.exports = {
+module.exports = { messaggioEsclusione,
   indiceTermine, arrotFinale,
   traduzioni, salvaTraduzioni, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
   anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,

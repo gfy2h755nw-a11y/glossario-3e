@@ -18,17 +18,18 @@ body{margin:0;background:var(--fondo);color:var(--ink);font-family:'Atkinson Hyp
 .top .in{max-width:760px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
 .top .lg svg{display:block}
 .top b{display:block;font-family:Archivo,Arial,sans-serif;font-size:17px;line-height:1.15}
-.top span{display:block;font-size:13.5px;opacity:.85}
-.top a{margin-left:auto;color:#fff;font:700 14px Archivo,Arial,sans-serif;border:2px solid rgba(255,255,255,.4);border-radius:10px;padding:7px 12px;text-decoration:none;white-space:nowrap}
+.top .sott{display:block;font-size:13.5px;opacity:.85}
+#hdr{margin-left:auto}
+.top .hb{display:inline-flex;align-items:center;min-height:44px;color:#fff;background:none;font:700 15px Archivo,Arial,sans-serif;border:2px solid rgba(255,255,255,.45);border-radius:10px;padding:0 14px;text-decoration:none;white-space:nowrap;cursor:pointer}
 .qz{max-width:760px;margin:0 auto;padding:16px 16px 40px}
 .qz-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .qz-top b{font:800 22px Archivo,Arial,sans-serif;flex:1}
-.qz-x{display:inline-block;border:2px solid var(--linea);background:var(--carta);color:var(--ink);border-radius:10px;padding:8px 14px;font:700 15px Archivo,Arial,sans-serif;cursor:pointer;text-decoration:none}
+.qz-x{display:inline-flex;align-items:center;min-height:44px;border:2px solid var(--linea);background:var(--carta);color:var(--ink);border-radius:10px;padding:8px 14px;font:700 15px Archivo,Arial,sans-serif;cursor:pointer;text-decoration:none}
 .qz-riga{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.qz-card{background:var(--carta);border-radius:16px;padding:20px;box-shadow:0 1px 0 var(--linea)}
+.qz-card{background:var(--carta);border-radius:16px;padding:18px;box-shadow:0 1px 0 var(--linea)}
 .qz-card label{font-weight:700;display:block;margin-bottom:6px}
 .qz-card input{font:700 22px monospace;letter-spacing:.15em;text-transform:uppercase;padding:10px 12px;border:2px solid var(--linea);border-radius:10px;width:100%;max-width:260px}
-.qz-btn{border:0;border-radius:12px;background:var(--ink);color:#fff;font:800 16px Archivo,Arial,sans-serif;padding:12px 20px;cursor:pointer}
+.qz-btn{min-height:48px;border:0;border-radius:12px;background:var(--ink);color:#fff;font:800 16px Archivo,Arial,sans-serif;padding:12px 20px;cursor:pointer}
 .qz-btn[disabled]{opacity:.5}
 .qz-num{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .qz-num div{background:var(--carta);border-radius:12px;padding:8px 10px;text-align:center;font-size:13px;color:var(--muto)}
@@ -50,11 +51,19 @@ body{margin:0;background:var(--fondo);color:var(--ink);font-family:'Atkinson Hyp
 .qz-su{background:#E3F3E7;border:2px solid #1F7A3D;border-radius:14px;padding:12px 16px;margin-bottom:12px;font-weight:700}
 .qz-err{color:#B3261E;font-weight:700;margin:10px 0 0}
 :focus-visible{outline:3px solid #2A6CC4;outline-offset:2px}
-@media (max-width:520px){.qz-term{font-size:24px}.qz-num{grid-template-columns:repeat(2,minmax(0,1fr))}.top span{display:none}}
+/* durante la domanda: una riga sola con i progressi, e il tempo che resta visibile in alto mentre si scorrono le definizioni */
+.qz-mini{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:15px;color:var(--muto);margin:0 0 6px}
+.qz-mini b{font:800 19px Archivo,Arial,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+.qz-orologio{position:sticky;top:0;z-index:2;background:var(--carta);margin:6px -18px 0;padding:8px 18px 4px;border-bottom:1px solid #EEF1F4}
+.qz-orologio .qz-tempo{margin:0 0 4px}
+.qz-codice{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.qz-regole{margin:0;padding-left:20px}.qz-regole li{margin:6px 0}
+h2.qz-h{font:800 18px Archivo,Arial,sans-serif;margin:18px 0 4px}
+@media (max-width:520px){.qz{padding-top:12px}.qz-card{padding:16px}.qz-orologio{margin:6px -16px 0;padding:8px 16px 4px}.qz-term{font-size:24px}.qz-num{grid-template-columns:repeat(2,minmax(0,1fr))}.top .sott{display:none}}
 </style>
 </head>
 <body>
-<header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Quiz del glossario</b><span>Istituto Barsanti · Laboratorio odontotecnico</span></div><a href="/glossario">Studia il glossario</a></div></header>
+<header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Quiz del glossario</b><span class="sott">Istituto Barsanti · Laboratorio odontotecnico</span></div><div id="hdr"><a class="hb" href="/glossario">Studia il glossario</a></div></div></header>
 <main class="qz" id="qz" aria-live="off"></main>
 <script>/* ===== POSTER-START: modello del cartellone 70×100 cm ===== */
 var Poster = (function () {
@@ -644,24 +653,31 @@ var Quiz = (function () {
       .then(function (r) { if (!r.ok) throw new Error(r.errore || 'Errore'); return r.dati; });
   }
   function tempo(ms) { var s = Math.round(ms / 1000), m = Math.floor(s / 60); return m + ':' + ('0' + (s % 60)).slice(-2); }
-  function testa() { return '<div class="qz-top"><b>Quiz del glossario</b>' + (dom ? '<button class="qz-x" onclick="Quiz.chiudi()">Termina la sessione</button>' : '') + '</div>'; }
+  function testa() {
+    var h = document.getElementById('hdr');
+    if (h) h.innerHTML = dom ? '<button class="hb" onclick="Quiz.chiudi()">Termina</button>' : '<a class="hb" href="/glossario">Studia il glossario</a>';
+    return dom ? '' : '<div class="qz-top"><b>Quiz del glossario</b></div>';
+  }
   function quandoIt(iso) { return new Date(iso).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
   function numeri() {
     var pc = Math.min(100, Math.round(st.indovinati / st.soglia * 100));
-    return (st.superata ? '<div class="qz-su">Quiz superato: hai indovinato ' + (st.soglia === tot ? 'tutti i ' + st.soglia + ' termini' : st.soglia + ' termini') + '. Sei ammesso all\'interrogazione. Puoi continuare ad allenarti: ora gli errori non tolgono più nulla.</div>' : '') +
-      '<div class="qz-num"><div><b id="qzInd">' + st.indovinati + ' / ' + st.soglia + '</b>termini indovinati</div><div><b>' + ses.c + ' / ' + ses.r + '</b>corrette in questa sessione</div>' +
-      '<div><b>' + (ses.e || 0) + '</b>' + ((ses.e || 0) === 1 ? 'errore' : 'errori') + ' (' + (ses.p || 0) + ' termini persi)</div><div><b>' + tempo(ses.ms) + '</b>tempo di gioco</div></div>' +
+    return (st.superata ? '<div class="qz-su">Quiz superato: sei ammesso all\'interrogazione. Puoi continuare ad allenarti: ora gli errori non tolgono più nulla.</div>' : '') +
+      '<div class="qz-mini qz-num"><span>' + esc(nome) + '</span><span><b id="qzInd">' + st.indovinati + ' / ' + st.soglia + '</b> termini indovinati</span>' +
+      (ses.r ? '<span>oggi ' + ses.c + (ses.c === 1 ? ' giusta' : ' giuste') + ', ' + (ses.e || 0) + ((ses.e || 0) === 1 ? ' errore' : ' errori') + '</span>' : '') + '</div>' +
       '<div class="qz-prog" role="progressbar" aria-valuemin="0" aria-valuemax="' + st.soglia + '" aria-valuenow="' + Math.min(st.indovinati, st.soglia) + '" aria-label="Termini indovinati"><i style="width:' + pc + '%"></i></div>' +
-      (st.scadenza && !st.superata ? '<p class="qz-area" id="qzScad" style="margin:-6px 0 12px">Da completare entro ' + esc(quandoIt(st.scadenza)) + '.</p>' : '');
+      (st.scadenza && !st.superata ? '<p class="qz-area" id="qzScad" style="margin:-8px 0 10px">Da completare entro ' + esc(new Date(st.scadenza).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + '</p>' : '');
   }
   function accesso(err) {
     stop(); dom = null;
     var salvato = ''; try { salvato = localStorage.getItem(KEY) || ''; } catch (e) { /* senza memoria si scrive il codice a mano */ }
-    box().innerHTML = testa() + '<div class="qz-card"><p style="margin-top:0">Compare un termine con <b>quattro definizioni</b>: scegli quella giusta entro <b>60 secondi</b>. Ogni risposta giusta è un termine indovinato.</p>' +
-      '<p><b>Se sbagli</b> (o lasci scadere il tempo) la risposta giusta non viene mostrata e <b>torni indietro di 5 termini</b>: per andare avanti devi studiare le definizioni.</p>' +
-      '<p>I progressi restano salvati: puoi fermarti e riprendere quando vuoi, entro la scadenza. Il quiz è superato quando hai indovinato tutti i termini richiesti: solo allora sei <b>ammesso all\'interrogazione</b>.</p>' +
-      '<label for="qzCod">Il tuo codice personale</label><input id="qzCod" autocomplete="off" autocapitalize="characters" maxlength="12" value="' + esc(/^[A-Z0-9]{4,12}$/i.test(salvato) ? salvato : '') + '"> ' +
-      '<button class="qz-btn" id="qzVia" onclick="Quiz.via()">Inizia</button>' + (err ? '<p class="qz-err" role="alert">' + esc(err) + '</p>' : '') + '</div>';
+    box().innerHTML = testa() + '<div class="qz-card"><label for="qzCod">Il tuo codice personale</label>' +
+      '<div class="qz-codice"><input id="qzCod" autocomplete="off" autocapitalize="characters" maxlength="12" value="' + esc(/^[A-Z0-9]{4,12}$/i.test(salvato) ? salvato : '') + '">' +
+      '<button class="qz-btn" id="qzVia" onclick="Quiz.via()">Inizia</button></div>' + (err ? '<p class="qz-err" role="alert">' + esc(err) + '</p>' : '') +
+      '<h2 class="qz-h">Come funziona</h2><ul class="qz-regole">' +
+      '<li>Compare un termine con <b>quattro definizioni</b>: scegli quella giusta entro <b>60 secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
+      '<li><b>Se sbagli</b> (o lasci scadere il tempo) la risposta giusta non viene mostrata e <b>torni indietro di 5 termini</b>: per andare avanti devi studiare le definizioni.</li>' +
+      '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi, entro la scadenza.</li>' +
+      '<li>Il quiz è superato quando hai indovinato tutti i termini richiesti: solo allora sei <b>ammesso all\'interrogazione</b>.</li></ul></div>';
     var i = document.getElementById('qzCod'); i.onkeydown = function (e) { if (e.key === 'Enter') Quiz.via(); }; i.focus();
   }
   function via() {
@@ -677,9 +693,9 @@ var Quiz = (function () {
   function domanda(d) {
     dom = d; attesa = false;
     var a = { it: d.nomeArea, colore: d.colore };
-    box().innerHTML = testa() + '<p class="qz-area" style="margin:0 0 8px">' + esc(nome) + '</p><div id="qzNum">' + numeri() + '</div>' +
+    box().innerHTML = testa() + '<div id="qzNum">' + numeri() + '</div>' +
       '<div class="qz-card" style="border-top:8px solid ' + esc(a.colore || '#15212B') + '"><div class="qz-area">' + esc(a.it ? d.area + '. ' + a.it : 'Domanda ' + d.n) + '</div><div class="qz-term">' + esc(d.termine) + '</div>' +
-      '<div class="qz-tempo" id="qzT"><i id="qzTi"></i></div><div class="qz-area" id="qzSec" aria-live="off">' + d.secondi + ' secondi</div>' +
+      '<div class="qz-orologio"><div class="qz-tempo" id="qzT"><i id="qzTi"></i></div><div class="qz-area" id="qzSec" aria-live="off">' + d.secondi + ' secondi</div></div>' +
       (d.lettere || ['A', 'B']).map(function (l) { return '<button class="qz-op" data-l="' + l + '" onclick="Quiz.rispondi(\'' + l + '\')"><b>' + l + '</b>' + esc(d[l]) + '</button>'; }).join('') +
       '<div id="qzEs" aria-live="polite"></div></div>';
     scad = Date.now() + d.secondi * 1000; stop();
