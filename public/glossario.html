@@ -58,6 +58,42 @@ footer{margin:40px 0 0;padding:26px 0 40px;text-align:center;color:var(--muto);f
 footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:30px;color:var(--ink);margin-bottom:4px}
 @media (max-width:640px){.top .dx{display:none}.voce{padding:10px 12px}h2{font-size:20px}}
 @media print{.top,.cmd{position:static}.voce{break-inside:avoid}}
+/* quiz (seconda parte della prova) */
+.qz-apri{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:12px 16px;border:0;border-radius:14px;background:var(--ink);color:#fff;font:800 17px Archivo,Arial,sans-serif;cursor:pointer;text-align:left}
+.qz-apri small{display:block;font:400 13.5px 'Atkinson Hyperlegible',Arial,sans-serif;opacity:.85}
+.qz-apri span.f{margin-left:auto;font-size:24px}
+#quiz{position:fixed;inset:0;z-index:50;background:#F2F0EA;overflow:auto;display:none}
+#quiz.on{display:block}
+.qz{max-width:760px;margin:0 auto;padding:16px 16px 40px}
+.qz-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.qz-top b{font:800 20px Archivo,Arial,sans-serif;flex:1}
+.qz-x{border:2px solid var(--linea);background:var(--carta);border-radius:10px;padding:8px 14px;font:700 15px Archivo,Arial,sans-serif;cursor:pointer}
+.qz-card{background:var(--carta);border-radius:16px;padding:20px;box-shadow:0 1px 0 var(--linea)}
+.qz-card label{font-weight:700;display:block;margin-bottom:6px}
+.qz-card input{font:700 22px monospace;letter-spacing:.15em;text-transform:uppercase;padding:10px 12px;border:2px solid var(--linea);border-radius:10px;width:100%;max-width:260px}
+.qz-btn{border:0;border-radius:12px;background:var(--ink);color:#fff;font:800 16px Archivo,Arial,sans-serif;padding:12px 20px;cursor:pointer}
+.qz-btn[disabled]{opacity:.5}
+.qz-num{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.qz-num div{background:var(--carta);border-radius:12px;padding:8px 10px;text-align:center;font-size:13px;color:var(--muto)}
+.qz-num b{display:block;font:800 20px Archivo,Arial,sans-serif;color:var(--ink)}
+.qz-prog{height:10px;border-radius:99px;background:#DDD8CC;overflow:hidden;margin:0 0 14px}
+.qz-prog i{display:block;height:100%;background:#1F7A3D}
+.qz-tempo{height:8px;border-radius:99px;background:#DDD8CC;overflow:hidden;margin:12px 0}
+.qz-tempo i{display:block;height:100%;background:#2A6CC4;width:100%}
+.qz-tempo.poco i{background:#B3261E}
+.qz-term{font:800 30px/1.15 Archivo,Arial,sans-serif;margin:4px 0 2px}
+.qz-area{font-size:14px;color:var(--muto)}
+.qz-op{display:block;width:100%;text-align:left;font:inherit;font-size:17px;line-height:1.4;background:#fff;border:2px solid var(--linea);border-radius:14px;padding:14px 16px;margin:10px 0;cursor:pointer}
+.qz-op:hover:not([disabled]){border-color:var(--ink)}
+.qz-op b{font:800 15px Archivo,Arial,sans-serif;margin-right:8px}
+.qz-op[disabled]{color:inherit;opacity:1;cursor:default}
+.qz-op.ok{border-color:#1F7A3D;background:#E3F3E7}
+.qz-op.no{border-color:#B3261E;background:#FBE6E4}
+.qz-es{font:800 18px Archivo,Arial,sans-serif;margin:10px 0}
+.qz-su{background:#E3F3E7;border:2px solid #1F7A3D;border-radius:14px;padding:12px 16px;margin-bottom:12px;font-weight:700}
+.qz-err{color:#B3261E;font-weight:700;margin:10px 0 0}
+@media (max-width:520px){.qz-term{font-size:24px}.qz-num{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{#quiz,.qz-apri{display:none!important}}
 </style>
 </head>
 <body>
@@ -72,6 +108,7 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
 <main class="wrap">
   <div class="cmd" id="cmd">
     <div id="edz"></div>
+    <button class="qz-apri" id="qzApri" hidden onclick="Quiz.apri('')"><span>Quiz: seconda parte della prova<small>Un termine, quattro definizioni, 60 secondi. Se sbagli torni indietro di 5 termini.</small></span><span class="f" aria-hidden="true">›</span></button>
     <div class="tabs" id="tabs" role="toolbar" aria-label="Argomenti"></div>
     <label for="q" style="position:absolute;left:-9999px">Cerca un termine</label>
     <input class="cerca" id="q" type="search" placeholder="Cerca un termine o una parola nella definizione…" autocomplete="off">
@@ -353,7 +390,7 @@ var Poster = (function () {
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
     var nomi = {};
     var clDi = {};
-    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; clDi[a.id] = a.classe || '3E'; });
+    (alunni || []).forEach(function (a) { nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
     // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
     var visti = {}, perCl = {}, ordineCl = [];
     termini.forEach(function (t) {
@@ -456,7 +493,7 @@ var Poster = (function () {
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
         '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
-        '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
+        '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
         (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
         '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>' +
       '</div>' +
@@ -469,6 +506,15 @@ var Poster = (function () {
   function scuro(hex, f) {
     var h = hex.replace('#', ''), v = [0, 2, 4].map(function (i) { return Math.round(parseInt(h.substr(i, 2), 16) * f); });
     return 'rgb(' + v.join(',') + ')';
+  }
+  /* nome sul cartellone: nome per esteso e cognome puntato ("Bertelà Linda" → "Linda B.", "Dalle Luche Grace" → "Grace D.L."), come nella pagina pubblica */
+  var PARTICELLE = ['da', 'dal', 'dalla', 'dalle', 'de', 'dei', 'del', 'della', 'delle', 'di', 'la', 'lo', 'li', 'van', 'von', 'mc', 'mac'];
+  var NOMI_PUBBLICI = { 'Giannarelli Rigel Francesca Lina': 'Francesca G.' };
+  function nomePuntato(completo) {
+    var c = String(completo || '').trim(); if (NOMI_PUBBLICI[c]) return NOMI_PUBBLICI[c];
+    var p = c.split(/\s+/).filter(Boolean); if (p.length < 2) return p.join(' ');
+    var n = 1; while (n < p.length - 1 && PARTICELLE.indexOf(p[n - 1].toLowerCase()) >= 0) n++;
+    return p.slice(n).join(' ') + ' ' + p.slice(0, n).map(function (x) { return x.charAt(0).toUpperCase() + '.'; }).join('');
   }
   function iniziale(s) { return String(s || '').normalize('NFD').charAt(0).toUpperCase(); }
   function ordinaAlfa(termini) {
@@ -491,7 +537,7 @@ var Poster = (function () {
   function alfa(area, termini, alunni, opz) {
     opz = opz || {};
     var col = area.colore, n = Number(area.n), nomi = {}, clDi = {};
-    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; clDi[a.id] = a.classe || '3E'; });
+    (alunni || []).forEach(function (a) { nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
     var perCl = {}, visti = {};
     termini.forEach(function (t) { if (!t.alunno || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
     var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];
@@ -549,7 +595,7 @@ var Poster = (function () {
       '<div style="position:absolute;left:34mm;right:34mm;bottom:14mm;height:46mm;box-sizing:border-box;border-top:0.6mm solid #15212B;padding-top:5mm;display:flex;align-items:center;gap:9mm;font-size:5mm;line-height:1.35;color:#2C3A47">' +
         (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
           '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '')) + '</div>' : '') +
-        '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</div>' +
+        '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
         '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + n + ' di 4</div></div>' +
       '</div>';
   }
@@ -644,7 +690,7 @@ var Poster = (function () {
         '<div style="' + F + 'font-weight:700;font-size:6.2mm;margin-top:2.5mm">' + esc(url.replace(/^https?:\/\//, '')) + '</div></div></div>' +
       '<div style="padding:10mm 30mm 0;text-align:center;' + S + 'font-weight:600;font-size:25mm;color:#2C3A47">Nomina sunt consequentia rerum.</div>' +
       '<div style="margin:7mm 30mm 0;border-top:0.6mm solid #15212B;padding:5mm 0 14mm;display:flex;justify-content:space-between;font-size:5.6mm;color:#2C3A47">' +
-        '<span><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
+        '<span><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
         '<span style="text-align:right">A cura del <b>Prof. Danilo Cerrato</b><br>Laboratorio odontotecnico</span></div></div>';
   }
   return { html: html, alfa: alfa, adatta: adatta, ordinaAlfa: ordinaAlfa, iniziale: iniziale, logo: logo, icona: icona2, qr: qrPoster, targa: targa };
@@ -728,8 +774,109 @@ fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     G = r.dati;
     if (AREA !== 'tutte' && !G.aree.some(function (a) { return String(a.n) === String(AREA); })) AREA = 'tutte';
     edizioni(); autori(); tabs(); lista();
+    document.getElementById('qzApri').hidden = !!ED; // il quiz riguarda solo l'edizione in corso
+    // arrivo dal QR della scheda «Accessi al quiz»: ?quiz=CODICE apre il quiz ed entra subito; il codice viene tolto dall'indirizzo
+    try {
+      var pq = new URLSearchParams(location.search), cq = pq.get('quiz');
+      if (cq !== null && !ED) {
+        pq.delete('quiz'); history.replaceState(null, '', location.pathname + (pq.toString() ? '?' + pq.toString() : '') + location.hash);
+        Quiz.apri(/^[A-Za-z0-9]{4,12}$/.test(cq) ? cq.toUpperCase() : '');
+      }
+    } catch (e) { /* indirizzo non leggibile: resta il pulsante del quiz */ }
   })
   .catch(function () { document.getElementById('lista').innerHTML = '<p class="nulla">Il glossario non è raggiungibile in questo momento. Riprova tra poco.</p>'; document.getElementById('autori').innerHTML = ''; });
+
+/* ---------- quiz, seconda parte della prova (con il codice personale) ---------- */
+var Quiz = (function () {
+  var KEY = 'glossario3e_codice', cod = '', st = null, ses = null, dom = null, tot = 0, nome = '', timer = null, scad = 0, finePrec = 0, attesa = false;
+  var box = function () { return document.getElementById('qz'); };
+  function chiama(p) {
+    return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).then(function (r) { return r.json(); })
+      .then(function (r) { if (!r.ok) throw new Error(r.errore || 'Errore'); return r.dati; });
+  }
+  function tempo(ms) { var s = Math.round(ms / 1000), m = Math.floor(s / 60); return m + ':' + ('0' + (s % 60)).slice(-2); }
+  function testa() { return '<div class="qz-top"><b>Quiz del glossario</b><button class="qz-x" onclick="Quiz.chiudi()">' + (dom ? 'Termina' : 'Chiudi') + '</button></div>'; }
+  function quandoIt(iso) { return new Date(iso).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
+  function numeri() {
+    var pc = Math.min(100, Math.round(st.indovinati / st.soglia * 100));
+    return (st.superata ? '<div class="qz-su">Quiz superato: hai indovinato ' + (st.soglia === tot ? 'tutti i ' + st.soglia + ' termini' : st.soglia + ' termini') + '. Sei ammesso all\'interrogazione. Puoi continuare ad allenarti: ora gli errori non tolgono più nulla.</div>' : '') +
+      '<div class="qz-num"><div><b id="qzInd">' + st.indovinati + ' / ' + st.soglia + '</b>termini indovinati</div><div><b>' + ses.c + ' / ' + ses.r + '</b>corrette in questa sessione</div>' +
+      '<div><b>' + (ses.e || 0) + '</b>' + ((ses.e || 0) === 1 ? 'errore' : 'errori') + ' (' + (ses.p || 0) + ' termini persi)</div><div><b>' + tempo(ses.ms) + '</b>tempo di gioco</div></div>' +
+      '<div class="qz-prog" role="progressbar" aria-valuemin="0" aria-valuemax="' + st.soglia + '" aria-valuenow="' + Math.min(st.indovinati, st.soglia) + '" aria-label="Termini indovinati"><i style="width:' + pc + '%"></i></div>' +
+      (st.scadenza && !st.superata ? '<p class="qz-area" id="qzScad" style="margin:-6px 0 12px">Da completare entro ' + esc(quandoIt(st.scadenza)) + '.</p>' : '');
+  }
+  function accesso(err) {
+    stop(); dom = null;
+    var salvato = ''; try { salvato = localStorage.getItem(KEY) || ''; } catch (e) { /* senza memoria si scrive il codice a mano */ }
+    box().innerHTML = testa() + '<div class="qz-card"><p style="margin-top:0">Compare un termine con <b>quattro definizioni</b>: scegli quella giusta entro <b>60 secondi</b>. Ogni risposta giusta è un termine indovinato.</p>' +
+      '<p><b>Se sbagli</b> (o lasci scadere il tempo) la risposta giusta non viene mostrata e <b>torni indietro di 5 termini</b>: per andare avanti devi studiare le definizioni.</p>' +
+      '<p>I progressi restano salvati: puoi fermarti e riprendere quando vuoi, entro la scadenza. Il quiz è superato quando hai indovinato tutti i termini richiesti: solo allora sei <b>ammesso all\'interrogazione</b>.</p>' +
+      '<label for="qzCod">Il tuo codice personale</label><input id="qzCod" autocomplete="off" autocapitalize="characters" maxlength="12" value="' + esc(/^[A-Z0-9]{4,12}$/i.test(salvato) ? salvato : '') + '"> ' +
+      '<button class="qz-btn" id="qzVia" onclick="Quiz.via()">Inizia</button>' + (err ? '<p class="qz-err" role="alert">' + esc(err) + '</p>' : '') + '</div>';
+    var i = document.getElementById('qzCod'); i.onkeydown = function (e) { if (e.key === 'Enter') Quiz.via(); }; i.focus();
+  }
+  function via() {
+    cod = String(document.getElementById('qzCod').value || '').trim().toUpperCase();
+    if (!cod) return accesso('Inserisci il tuo codice.');
+    document.getElementById('qzVia').disabled = true;
+    chiama({ azione: 'quizinizio', codice: cod }).then(function (d) {
+      try { localStorage.setItem(KEY, cod); } catch (e) { /* niente memoria */ }
+      st = d.stato; ses = d.sessione; tot = d.totale; nome = d.nome; finePrec = 0; domanda(d.domanda);
+    }).catch(function (e) { accesso(e.message); });
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  function domanda(d) {
+    dom = d; attesa = false;
+    var a = (G && G.aree || []).filter(function (x) { return String(x.n) === String(d.area); })[0] || {};
+    box().innerHTML = testa() + '<p class="qz-area" style="margin:0 0 8px">' + esc(nome) + '</p><div id="qzNum">' + numeri() + '</div>' +
+      '<div class="qz-card" style="border-top:8px solid ' + esc(a.colore || '#15212B') + '"><div class="qz-area">' + esc(a.it ? d.area + '. ' + a.it : 'Domanda ' + d.n) + '</div><div class="qz-term">' + esc(d.termine) + '</div>' +
+      '<div class="qz-tempo" id="qzT"><i id="qzTi"></i></div><div class="qz-area" id="qzSec" aria-live="off">' + d.secondi + ' secondi</div>' +
+      (d.lettere || ['A', 'B']).map(function (l) { return '<button class="qz-op" data-l="' + l + '" onclick="Quiz.rispondi(\'' + l + '\')"><b>' + l + '</b>' + esc(d[l]) + '</button>'; }).join('') +
+      '<div id="qzEs" aria-live="polite"></div></div>';
+    scad = Date.now() + d.secondi * 1000; stop();
+    timer = setInterval(function () {
+      var r = scad - Date.now(), b = document.getElementById('qzTi'); if (!b) return stop();
+      b.style.width = Math.max(0, r / (d.secondi * 10)) + '%'; document.getElementById('qzT').className = 'qz-tempo' + (r < 8000 ? ' poco' : '');
+      document.getElementById('qzSec').textContent = Math.max(0, Math.ceil(r / 1000)) + ' secondi';
+      if (r <= 0) rispondi('');
+    }, 200);
+    window.scrollTo(0, 0);
+  }
+  function rispondi(l) {
+    if (attesa || !dom) return; attesa = true; stop();
+    [].forEach.call(document.querySelectorAll('.qz-op'), function (b) { b.disabled = true; });
+    chiama({ azione: 'quizrisposta', codice: cod, scelta: l, pausa: Quiz._pausa || 0 }).then(function (d) {
+      Quiz._pausa = 0; st = d.stato; ses = d.sessione;
+      var e = d.esito;
+      [].forEach.call(document.querySelectorAll('.qz-op'), function (b) { var x = b.getAttribute('data-l'); if (e.corretta && x === e.giusta) b.className = 'qz-op ok'; else if (!e.corretta && x === l) b.className = 'qz-op no'; });
+      var t0 = Date.now(), prossima = d.domanda;
+      document.getElementById('qzEs').innerHTML = '<div class="qz-es" style="color:' + (e.corretta ? '#1F7A3D' : '#B3261E') + '">' + (e.corretta ? 'Giusto!' : (e.scaduta ? 'Tempo scaduto' : 'Sbagliato') + (e.persi ? ': torni indietro di ' + e.persi + (e.persi === 1 ? ' termine' : ' termini') + '. Ora sei a ' + st.indovinati + ' su ' + st.soglia + '.' : '.')) + '</div>' +
+        (!e.corretta && !st.superata ? '<p class="qz-area" style="margin:0 0 10px">La risposta giusta non viene mostrata: ripassa «' + esc(e.termine) + '» sul glossario, tornerà.</p>' : '') +
+        '<button class="qz-btn" id="qzAvanti">Prossimo termine</button>';
+      var avanti = function () { if (!prossima) return; var p = prossima; prossima = null; clearTimeout(auto); Quiz._pausa = Math.min(Date.now() - t0, 15000); domanda(p); };
+      var auto = setTimeout(avanti, 15000); // oltre 15 secondi di pausa il tempo della domanda successiva partirebbe comunque
+      var b = document.getElementById('qzAvanti'); b.onclick = avanti; b.focus();
+      var nm = document.getElementById('qzNum'); if (nm) nm.innerHTML = numeri();
+    }).catch(function (e) { accesso(e.message); });
+  }
+  function apri(codice) {
+    document.getElementById('quiz').className = 'on'; document.body.style.overflow = 'hidden'; accesso();
+    if (codice && typeof codice === 'string') { document.getElementById('qzCod').value = codice; via(); }
+  }
+  function chiudi() {
+    stop();
+    if (dom && ses && ses.r) {
+      dom = null;
+      box().innerHTML = testa() + '<div class="qz-card"><div class="qz-term" style="font-size:24px">Sessione terminata</div><p>Hai risposto a <b>' + ses.r + '</b> domande: <b>' + ses.c + '</b> corrette e <b>' + (ses.e || 0) + '</b> ' + ((ses.e || 0) === 1 ? 'errore' : 'errori') + ' (' + (ses.p || 0) + ' termini persi), in <b>' + tempo(ses.ms) + '</b>.</p>' +
+        '<p>Sei a <b>' + st.indovinati + '</b> termini indovinati su ' + st.soglia + (st.superata ? ': <b>quiz superato</b>, sei ammesso all\'interrogazione.' : '. Te ne mancano <b>' + Math.max(0, st.soglia - st.indovinati) + '</b>. I progressi restano salvati' + (st.scadenza ? ': hai tempo fino a ' + esc(quandoIt(st.scadenza)) + '.' : '.')) + '</p>' +
+        '<button class="qz-btn" onclick="Quiz.apri()">Riprendi il quiz</button></div>';
+      ses = null; return;
+    }
+    dom = null; document.getElementById('quiz').className = ''; document.body.style.overflow = '';
+  }
+  return { apri: apri, chiudi: chiudi, via: via, rispondi: rispondi, _pausa: 0 };
+})();
 </script>
+<div id="quiz" role="dialog" aria-modal="true" aria-label="Quiz del glossario"><div class="qz" id="qz"></div></div>
 </body>
 </html>

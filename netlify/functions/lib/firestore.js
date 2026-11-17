@@ -40,6 +40,13 @@ function db() {
     async leggiConfig() { const c = await cfgRef.get(); if (c.exists) CAT.imposta(c.data()); return c.exists ? c.data() : null; },
     async scriviConfig(mod) { await cfgRef.set(mod, { merge: true }); },
     async scriviAlunno(id, mod) { await f.collection(COL.alunni).doc(String(id)).set(mod, { merge: true }); },
+    /* il quiz si sostituisce per intero: con la fusione i termini «persi» resterebbero nella mappa */
+    async sostituisciQuiz(id, quiz) { await f.collection(COL.alunni).doc(String(id)).update({ quiz }); },
+    /* lettura leggera per il quiz: un solo alunno, cercato per codice (2 letture invece di tutto il glossario) */
+    async leggiAlunnoCodice(codice) {
+      const s = await f.collection(COL.alunni).where('codice', '==', String(codice)).limit(1).get();
+      return s.docs.length ? Object.assign({ id: s.docs[0].id }, s.docs[0].data()) : null;
+    },
     async aggiungiAlunni(alunni) {
       const batch = f.batch();
       alunni.forEach((a) => { const { id, ...r } = a; batch.set(f.collection(COL.alunni).doc(id), r, { merge: true }); });

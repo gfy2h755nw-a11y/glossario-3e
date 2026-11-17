@@ -96,6 +96,7 @@ function impostazioni(config) {
     giorniIt: Number(config.giorniIt) > 0 ? Number(config.giorniIt) : DATI.EREDITA.giorniIt,
     giorniEn: Number(config.giorniEn) > 0 ? Number(config.giorniEn) : DATI.EREDITA.giorniEn,
     votoMin: DATI.VALUTAZIONE.votoMin,
+    quiz: { soglia: config.quiz && Number(config.quiz.soglia) >= 1 ? Number(config.quiz.soglia) : null, scadenze: Object.assign({}, (config.quiz && config.quiz.scadenze) || {}) },
     votoEsclusione: DATI.VALUTAZIONE.votoEsclusione,
     lingue: Array.isArray(config.lingue) && config.lingue.length ? (config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0).length ? config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0) : DATI.LINGUE.slice()) : DATI.LINGUE,
     partenza: config.partenza !== undefined ? config.partenza : DATI.PARTENZA,
@@ -135,6 +136,8 @@ const classeDi = (a) => (a && a.classe) || '3E';
 const fmtN = (n) => String(n).replace('.', ',');
 // arrotondamento al quarto di voto più vicino: sotto la metà per difetto, dalla metà in su per eccesso (7,375 → 7,5; 7,3 → 7,25)
 function arrot(x) { return Math.floor(x * 4 + 0.5 + 1e-9) / 4; }
+/* voto finale (media scritto/orale): oltre il mezzo voto si sale all'intero, sotto si scende, il mezzo resta (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7) */
+function arrotFinale(x) { const i = Math.floor(x + 1e-9), f = x - i; return f > 0.5 + 1e-9 ? i + 1 : (f >= 0.5 - 1e-9 ? i + 0.5 : i); }
 function ratio(imp) {
   const p = String(PENALITA[imp.proposta]).replace('.', ',');
   if (!conInglese(imp)) {
@@ -199,7 +202,13 @@ function valuta(stato, a, now) {
   const calcolato = media != null ? arrot(media) : null;
   const manuale = typeof a.voto_manuale === 'number' ? a.voto_manuale : null;
   const voto = manuale != null ? manuale : escluso ? imp.votoEsclusione : (tetto && calcolato != null ? Math.min(calcolato, imp.tetto) : calcolato);
-  return Object.assign(c, { id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
+  // orale: interrogazione sui termini di tutti; finale = media scritto/orale (per gli esclusi solo l'orale, che per loro arriva al massimo a 5,5)
+  // quiz: chi lo completa è ammesso all'interrogazione; chi non lo completa entro la scadenza resta senza voto
+  const rq = require('./orale'), qz = rq.riepilogoQuiz(a.quiz, rq.cfgQuiz(stato.config, classeDi(a)));
+  const or = a.orale && typeof a.orale.voto === 'number' ? a.orale : null;
+  const finale = or ? (escluso ? arrotFinale(or.voto) : (voto != null ? arrotFinale((voto + or.voto) / 2) : null)) : null;
+  return Object.assign(c, { orale: or ? { voto: or.voto, punti: or.punti, data: or.data, docente: or.docente, escluso: !!or.escluso, cambi: or.cambi || 0, nota: or.nota || '', termini: or.termini || [] } : null, finale, oraleInCorso: !!a.orale_bozza, quizStato: qz.stato, ammesso: qz.stato === 'superato',
+    id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
     votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn, votoMax: max, ereditati,
     riassegnatoA: a.riassegnato_a || null, riassegnatiA: a.riassegnati_a || (a.riassegnato_a ? [a.riassegnato_a] : []), termini: miei.length, tetto, tettoValore: imp.tetto,
     scadenza: new Date(scadenzaAlunno(imp, a)).toISOString(), proroga: a.proroga || null, bloccoRiass: !!a.blocco_riass,
@@ -304,7 +313,8 @@ function pacchetto(stato, chi) {
   if (chi.ruolo === 'alunno') {
     const v = valuta(stato, chi._a || stato.alunni.find((a) => a.id === chi.id), now);
     out.voto = { voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, manuale: v.manuale != null, escluso: v.escluso, votoMax: v.votoMax, ereditati: v.ereditati,
-      tetto: v.tetto, tettoValore: v.tettoValore, calcolato: v.calcolato,
+      tetto: v.tetto, tettoValore: v.tettoValore, calcolato: v.calcolato, orale: v.orale ? { voto: v.orale.voto, punti: v.orale.punti, data: v.orale.data } : null, finale: v.finale,
+      quiz: (function () { const o = require('./orale'), aa = chi._a || stato.alunni.find((a) => a.id === chi.id), r = o.riepilogoQuiz(aa.quiz, o.cfgQuiz(stato.config, classeDi(aa))); return { stato: r.stato, indovinati: r.indovinati, soglia: r.soglia, scadenza: r.scadenza, superata: r.superata }; })(),
       errIt: v.it.errate, errEn: v.en.errate, invIt: v.it.inviate, invEn: v.en.inviate, errate: v.errate, corrette: v.corrette, inviate: v.inviate, ratio: ratio(imp) };
   }
   if (chi.ruolo === 'docente') {
@@ -316,6 +326,8 @@ function pacchetto(stato, chi) {
       scadenza: v.scadenza, proroga: v.proroga, bloccoRiass: v.bloccoRiass, rimandate: v.rimandate, riammesso: v.riammesso,
       scadenzaRicevuti: v.scadenzaRicevuti ? new Date(v.scadenzaRicevuti).toISOString() : null, mancaRicevuti: v.mancaRicevuti }));
     const P = chi.permessi || {};
+    // esercitazioni con il quiz della pagina pubblica: tabellone a parte, visibile a tutti i docenti
+    out.quiz = require('./orale').tabelloneQuiz(stato);
     if (chi.admin || P.codici) {
       out.codiciAlunni = stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), codice: a.codice,
         termini: stato.termini.filter((t) => t.alunno_id === a.id).map((t) => ({ area: t.area, it: t.termine_it })) }));
@@ -325,7 +337,7 @@ function pacchetto(stato, chi) {
         date: Object.fromEntries(imp.classi.map((c) => { const ic = impClasse(imp, c); return [c, { partenza: ic.partenza || null, scadenzaIt: ic.scadenzaIt, propria: !!imp.calendario[c] }]; })),
         tpa: Object.fromEntries(imp.classi.map((c) => [c, termPerAlunno(imp, c)])),
         voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate, votoMax: v.votoMax, ereditati: v.ereditati,
-          tetto: v.tetto, motivoTetto: v.motivoTetto,
+          tetto: v.tetto, motivoTetto: v.motivoTetto, orale: (chi.admin || P.voti) ? v.orale : (v.orale ? { voto: v.orale.voto, punti: v.orale.punti, data: v.orale.data } : null), finale: v.finale, oraleInCorso: v.oraleInCorso, quizStato: v.quizStato, ammesso: v.ammesso,
           calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })),
         attivita: stato.attivita && (chi.admin || P.documenti) ? Object.fromEntries(stato.alunni.map((a) => [a.id, ATT.riepilogo(stato.attivita[a.id], now)])) : null,
         dropbox: chi.admin ? stato.dropbox || null : null,
@@ -476,7 +488,7 @@ async function approvaCorrette(db, { codice, lingua: l, area }) {
 function soloAdmin(chi) { if (chi.ruolo !== 'docente' || !chi.admin) errore('Operazione riservata al prof. Cerrato.'); }
 function isoValida(s) { const t = Date.parse(s); if (!s || isNaN(t)) errore('Data non valida.'); return new Date(t).toISOString(); }
 
-async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta, giorniIt, giorniEn, partenza, calendario, riassegnazione }) {
+async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta, giorniIt, giorniEn, partenza, calendario, riassegnazione, quiz }) {
   const stato = await db.leggiTutto();
   soloAdmin(identifica(stato, codice));
   const mod = {};
@@ -503,6 +515,16 @@ async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta,
       cal[c] = r;
     });
     mod.calendario = cal;
+  }
+  if (quiz !== undefined && quiz !== null) {
+    // quiz (parte della prova): { soglia, scadenze: { classe: ISO | '' } }. Una classe senza scadenza ha il quiz chiuso.
+    const imp0 = impostazioni(stato.config), tot = Object.values(CAT.materializza(stato.config).cat).reduce((x, v) => x + v.length, 0), qz = { soglia: tot, scadenze: {} };
+    if (quiz.soglia !== undefined && quiz.soglia !== null && quiz.soglia !== '') {
+      const n = Number(quiz.soglia); if (!(Number.isInteger(n) && n >= 10 && n <= tot)) errore('I termini da indovinare nel quiz vanno da 10 a ' + tot + '.'); qz.soglia = n;
+    } else if (stato.config.quiz && stato.config.quiz.soglia) qz.soglia = stato.config.quiz.soglia;
+    imp0.classi.forEach((c) => { const v = (quiz.scadenze || {})[c]; qz.scadenze[c] = v ? isoValida(v) : null; });
+    Object.keys(quiz.scadenze || {}).forEach((c) => { if (imp0.classi.indexOf(c) < 0) errore('Classe sconosciuta: ' + c + '.'); });
+    mod.quiz = qz;
   }
   const dopo = impostazioni(Object.assign({}, stato.config, mod));
   if (dopo.partenza && Date.parse(dopo.partenza) >= Date.parse(dopo.scadenzaIt)) errore('La partenza deve venire prima della scadenza.');
@@ -894,6 +916,7 @@ function statoClasse(stato, classe) {
 function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k = classeDi(a); if (c.indexOf(k) < 0) c.push(k); }); return (c.length ? c.sort() : ['3E']).join(' e '); }
 function etichettaAl(a) { return /^[1-4]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
 module.exports = {
+  indiceTermine, arrotFinale,
   traduzioni, salvaTraduzioni, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
   anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,
   identifica, soloAdmin, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

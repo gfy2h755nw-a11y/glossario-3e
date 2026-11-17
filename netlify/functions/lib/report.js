@@ -2,6 +2,7 @@
  * Report PDF automatico (generato sul server, senza browser): stato del lavoro, voti e attività di ogni alunno.
  */
 const PDFDocument = require('pdfkit');
+const OR = require('./orale');
 const DATI = require('./dati');
 const logica = require('./logica');
 const ATT = require('./attivita');
@@ -227,6 +228,30 @@ function creaReport(stato, attivita, now) {
     });
     yy += 64;
 
+    // riepilogo personale: tempi e voti con le date
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Riepilogo: tempi e voti', 36, yy); yy = doc.y + 4;
+    {
+      const q = OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a))), o = x.v.orale, tqm = (ms) => { const m = Math.round((ms || 0) / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
+      const risp = []; x.miei.forEach((t) => (campo(t, 'it', 'storia') || []).forEach((k) => { if (k.at) risp.push(k.at); }));
+      const ord = (at) => { const m = /^(\d\d)\/(\d\d)\/(\d{4}) (\d\d):(\d\d)/.exec(at); return m ? m[3] + m[2] + m[1] + m[4] + m[5] : ''; };
+      risp.sort((a, b) => ord(a).localeCompare(ord(b)));
+      const cr = [{ t: 'Voce', w: 90 }, { t: 'Valore', w: 60, a: 'center' }, { t: 'Dettaglio', w: 190 }, { t: 'Date', w: 183 }];
+      const sr = Wp / cr.reduce((s, c) => s + c.w, 0); cr.forEach((c) => { c.w *= sr; });
+      yy = tabella(doc, 36, yy, cr, [
+        [{ t: 'Tempo in app', b: true }, { t: durata(x.r.ultimo ? x.r.minuti : null), b: true }, x.r.accessi + ' accessi · ' + x.r.giorni + ' giorni attivi', x.r.ultimo ? 'primo accesso ' + quando(x.r.primo) + ' · ultimo ' + quando(x.r.ultimo) : 'nessun accesso'],
+        [{ t: 'Tempo sul quiz', b: true }, { t: q.sessioni ? tqm(q.ms) : '-', b: true }, q.sessioni + ' sessioni · ' + q.corrette + ' corrette e ' + q.errori + ' errori su ' + q.risposte + ' risposte · ' + q.persi + ' termini persi · ' + q.indovinati + ' / ' + q.soglia + ' indovinati (massimo ' + q.massimo + ')',
+          (q.sessioni ? 'prima sessione ' + quando(q.prima) + ' · ultima ' + quando(q.ultima) : 'nessuna sessione') + (q.scadenza ? ' · scadenza ' + quando(q.scadenza) : '')],
+        [{ t: 'Ammissione all\'orale', b: true }, q.stato === 'superato' ? { t: 'ammesso', c: VERDE, b: true } : { t: q.stato === 'scaduto' ? 'non ammesso' : '-', c: q.stato === 'scaduto' ? ARANCIO : SCURO, b: true },
+          q.stato === 'superato' ? 'quiz superato: ' + q.indovinati + ' termini indovinati' : q.stato === 'scaduto' ? 'quiz non completato entro la scadenza: niente interrogazione e niente voto' : q.stato === 'chiuso' ? 'quiz non ancora aperto' : 'quiz da completare: ' + q.indovinati + ' / ' + q.soglia,
+          q.superata ? 'quiz superato il ' + quando(q.superata) : '-'],
+        [{ t: 'Voto scritto', b: true }, x.v.escluso ? { t: 'escluso', c: ARANCIO, b: true } : { t: fv(x.v.voto), b: true }, x.v.escluso ? (x.v.motivo || 'escluso dal compito') : x.it.errori + ' risposte errate · ' + x.it.approvate + ' / ' + x.miei.length + ' approvate' + (x.v.manuale != null ? ' · voto del docente' : ''),
+          risp.length ? 'prima risposta ' + risp[0] + ' · ultima ' + risp[risp.length - 1] : 'nessuna risposta'],
+        [{ t: 'Voto orale', b: true }, { t: o ? fv(o.voto) : '-', b: true }, o ? fv(o.punti) + ' punti su 10' + (o.escluso ? ' · massimo 5,5' : '') + (o.docente ? ' · ' + o.docente : '') : 'non ancora interrogato', o ? 'interrogazione del ' + quando(o.data) : '-'],
+        [{ t: 'Voto finale', b: true }, { t: fv(x.v.finale), b: true }, x.v.finale == null ? (q.stato === 'scaduto' ? 'senza voto: quiz non completato' : 'manca l\'orale') : x.v.escluso ? 'solo orale (escluso dallo scritto)' : 'media tra scritto ' + fv(x.v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv((x.v.voto + o.voto) / 2), x.v.finale != null ? 'definito il ' + quando(o.data) : '-']
+      ], { fs: 8 }) + 12;
+      if (yy > doc.page.height - 140) { doc.addPage({ layout: 'portrait', margin: 36 }); yy = 40; }
+    }
+
     // termini
     doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Termini e risposte', 36, yy); yy = doc.y + 4;
     const STT = { '': 'Da scegliere', inviata: 'Da approvare', correggere: 'Rimandata', approvata: 'Approvata' };
@@ -258,6 +283,35 @@ function creaReport(stato, attivita, now) {
       tabella(doc, 36, yy, cs, ses.map((s) => [quando(s.inizio).split(' ').slice(0, 2).join(' ') + '/' + parti(Date.parse(s.inizio)).year, ora(s.inizio), ora(s.fine), durata(s.minuti), s.disp || '-']), { fs: 8 });
     }
   });
+
+  /* --- quiz, interrogazione orale e voto finale --- */
+  doc.addPage({ size: 'A4', layout: 'landscape', margin: 36 });
+  const qzDi = (x) => OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a))), cqz = OR.cfgQuiz(stato.config, (imp.classi || [])[0]);
+  const STQ = { superato: 'ammesso', scaduto: 'non ammesso', 'in corso': 'in corso', 'non iniziato': 'non iniziato', chiuso: 'quiz non aperto' };
+  let yo = testata(doc, 'Quiz, interrogazione orale e voto finale', sotto);
+  doc.font('Helvetica').fontSize(9).fillColor(SCURO).text('Quiz (seconda parte della prova): un termine, ' + OR.QUIZ.opzioni + ' definizioni, ' + OR.QUIZ.secondi + ' secondi; a ogni errore la risposta giusta non viene mostrata e si torna indietro di ' + OR.QUIZ.passo + ' termini; superato con ' + cqz.soglia + ' termini indovinati su ' + cqz.totale + ', entro la scadenza fissata dal docente. Chi lo supera è ammesso all\'interrogazione; chi non lo completa non viene interrogato e resta senza voto (le sue definizioni restano sui cartelloni). ' +
+    'Interrogazione orale: ' + OR.ORALE.domande + ' termini pescati tra tutti quelli del glossario (mai quelli dell\'alunno); corretta 1 punto, parziale 0,5, sbagliata 0; voto orale = 3 + 0,5 per punto (massimo 8), per gli esclusi 3 + 0,25 per punto (massimo 5,5). ' +
+    'Voto finale = media tra scritto e orale (per gli esclusi il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore.', 36, yo, { width: doc.page.width - 72 });
+  yo = doc.y + 10;
+  const tq = (ms) => { const m = Math.round((ms || 0) / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
+  const colO = [{ t: 'Alunno', w: 130 }, { t: 'Gr.', w: 26, a: 'center' }, { t: 'Scritto', w: 44, a: 'center' }, { t: 'Sessioni quiz', w: 46, a: 'center' }, { t: 'Tempo nel quiz', w: 56, a: 'center' }, { t: 'Risposte quiz', w: 50, a: 'center' },
+    { t: 'Corrette', w: 50, a: 'center' }, { t: 'Errori', w: 36, a: 'center' }, { t: 'Termini persi', w: 40, a: 'center' }, { t: 'Termini indovinati', w: 56, a: 'center' }, { t: 'Ammissione all\'orale', w: 76, a: 'center' }, { t: 'Orale: data', w: 62, a: 'center' }, { t: 'Punti orale', w: 44, a: 'center' }, { t: 'Voto orale', w: 44, a: 'center' }, { t: 'Voto finale', w: 46, a: 'center' }];
+  const WO = doc.page.width - 72, scO = WO / colO.reduce((x, c) => x + c.w, 0); colO.forEach((c) => { c.w *= scO; });
+  yo = tabella(doc, 36, yo, colO, righe.map((x) => {
+    const q = qzDi(x), o = x.v.orale;
+    return [{ t: x.a.nome, b: true }, logica.etichettaAl(x.a), x.v.escluso ? { t: 'escluso', c: ARANCIO } : fv(x.v.voto), q.sessioni, q.sessioni ? tq(q.ms) : '-', q.risposte, q.risposte ? q.corrette + ' (' + Math.round(q.corrette / q.risposte * 100) + '%)' : '-',
+      q.errori, q.persi, q.indovinati + ' / ' + q.soglia, q.superata ? { t: 'ammesso ' + soloData(q.superata), c: VERDE, b: true } : { t: STQ[q.stato], c: q.stato === 'scaduto' ? ARANCIO : SCURO, b: q.stato === 'scaduto' }, o ? soloData(o.data) : '-', o ? fv(o.punti) + ' / 10' : '-', { t: o ? fv(o.voto) : '-', b: true }, { t: fv(x.v.finale), b: true }];
+  }), { fs: 8, layout: 'landscape' });
+  // dettaglio delle interrogazioni: i termini chiesti e l'esito di ogni risposta
+  const interr = righe.filter((x) => x.v.orale);
+  if (interr.length) {
+    yo += 14; if (yo > doc.page.height - 110) { doc.addPage({ layout: 'landscape', margin: 36 }); yo = 40; }
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Interrogazioni: termini chiesti ed esito', 36, yo); yo = doc.y + 4;
+    const colD = [{ t: 'Alunno', w: 120 }, { t: 'Data e docente', w: 110 }, { t: 'Termini chiesti (1 = corretta · ½ = parziale · 0 = sbagliata)', w: 430 }, { t: 'Punti', w: 40, a: 'center' }, { t: 'Voto', w: 36, a: 'center' }];
+    const scD = WO / colD.reduce((x, c) => x + c.w, 0); colD.forEach((c) => { c.w *= scD; });
+    tabella(doc, 36, yo, colD, interr.map((x) => { const o = x.v.orale; return [{ t: x.a.nome, b: true }, soloData(o.data) + (o.docente ? ' · ' + o.docente : ''),
+      (o.termini || []).map((t) => t.it + ' ' + (t.e === 1 ? '1' : t.e === 0.5 ? '½' : '0')).join(' · ') + (o.cambi ? '  (termini cambiati: ' + o.cambi + ')' : '') + (o.nota ? '  Nota: ' + o.nota : ''), fv(o.punti), { t: fv(o.voto), b: true }]; }), { fs: 7.5, layout: 'landscape' });
+  }
 
   /* --- criterio --- */
   doc.addPage({ size: 'A4', layout: 'portrait', margin: 36 });

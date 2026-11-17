@@ -267,7 +267,7 @@ var Poster = (function () {
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
     var nomi = {};
     var clDi = {};
-    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; clDi[a.id] = a.classe || '3E'; });
+    (alunni || []).forEach(function (a) { nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
     // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
     var visti = {}, perCl = {}, ordineCl = [];
     termini.forEach(function (t) {
@@ -370,7 +370,7 @@ var Poster = (function () {
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
         '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
-        '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
+        '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
         (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
         '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>' +
       '</div>' +
@@ -383,6 +383,15 @@ var Poster = (function () {
   function scuro(hex, f) {
     var h = hex.replace('#', ''), v = [0, 2, 4].map(function (i) { return Math.round(parseInt(h.substr(i, 2), 16) * f); });
     return 'rgb(' + v.join(',') + ')';
+  }
+  /* nome sul cartellone: nome per esteso e cognome puntato ("Bertelà Linda" → "Linda B.", "Dalle Luche Grace" → "Grace D.L."), come nella pagina pubblica */
+  var PARTICELLE = ['da', 'dal', 'dalla', 'dalle', 'de', 'dei', 'del', 'della', 'delle', 'di', 'la', 'lo', 'li', 'van', 'von', 'mc', 'mac'];
+  var NOMI_PUBBLICI = { 'Giannarelli Rigel Francesca Lina': 'Francesca G.' };
+  function nomePuntato(completo) {
+    var c = String(completo || '').trim(); if (NOMI_PUBBLICI[c]) return NOMI_PUBBLICI[c];
+    var p = c.split(/\s+/).filter(Boolean); if (p.length < 2) return p.join(' ');
+    var n = 1; while (n < p.length - 1 && PARTICELLE.indexOf(p[n - 1].toLowerCase()) >= 0) n++;
+    return p.slice(n).join(' ') + ' ' + p.slice(0, n).map(function (x) { return x.charAt(0).toUpperCase() + '.'; }).join('');
   }
   function iniziale(s) { return String(s || '').normalize('NFD').charAt(0).toUpperCase(); }
   function ordinaAlfa(termini) {
@@ -405,7 +414,7 @@ var Poster = (function () {
   function alfa(area, termini, alunni, opz) {
     opz = opz || {};
     var col = area.colore, n = Number(area.n), nomi = {}, clDi = {};
-    (alunni || []).forEach(function (a) { nomi[a.id] = a.nome; clDi[a.id] = a.classe || '3E'; });
+    (alunni || []).forEach(function (a) { nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
     var perCl = {}, visti = {};
     termini.forEach(function (t) { if (!t.alunno || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
     var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];
@@ -463,7 +472,7 @@ var Poster = (function () {
       '<div style="position:absolute;left:34mm;right:34mm;bottom:14mm;height:46mm;box-sizing:border-box;border-top:0.6mm solid #15212B;padding-top:5mm;display:flex;align-items:center;gap:9mm;font-size:5mm;line-height:1.35;color:#2C3A47">' +
         (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
           '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '')) + '</div>' : '') +
-        '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</div>' +
+        '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
         '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + n + ' di 4</div></div>' +
       '</div>';
   }
@@ -558,7 +567,7 @@ var Poster = (function () {
         '<div style="' + F + 'font-weight:700;font-size:6.2mm;margin-top:2.5mm">' + esc(url.replace(/^https?:\/\//, '')) + '</div></div></div>' +
       '<div style="padding:10mm 30mm 0;text-align:center;' + S + 'font-weight:600;font-size:25mm;color:#2C3A47">Nomina sunt consequentia rerum.</div>' +
       '<div style="margin:7mm 30mm 0;border-top:0.6mm solid #15212B;padding:5mm 0 14mm;display:flex;justify-content:space-between;font-size:5.6mm;color:#2C3A47">' +
-        '<span><b>Metodologia:</b> compito di realtà in modalità digitale,<br>con valutazione formativa e feedback immediato.</span>' +
+        '<span><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
         '<span style="text-align:right">A cura del <b>Prof. Danilo Cerrato</b><br>Laboratorio odontotecnico</span></div></div>';
   }
   return { html: html, alfa: alfa, adatta: adatta, ordinaAlfa: ordinaAlfa, iniziale: iniziale, logo: logo, icona: icona2, qr: qrPoster, targa: targa };

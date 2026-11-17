@@ -11,6 +11,8 @@ var ICO = {
   documenti: '<path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5M9 13h7M9 17h7"/>',
   impostazioni: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4.9a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.5a7 7 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-.9c.6.5 1.3.9 2 1.2L10 21h4l.5-2.5c.7-.3 1.4-.7 2-1.2l2.4.9 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/>',
   edizioni: '<path d="M3 7h18v13H3zM3 7l2-4h14l2 4M10 12h4"/>',
+  quiz: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
+  orale: '<path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3"/>',
   registro: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>'
 };
 function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (ICO[k] || '') + '</svg>'; }
@@ -24,6 +26,8 @@ function PAGINE() {
     { id: 'sollecito', gr: 'Lavoro', t: 'Da sollecitare', vis: !ro, bd: contaSollecito(), rosso: true },
     { id: 'situazione', gr: 'Studenti', t: 'Situazione e avanzamento', vis: true },
     { id: 'gestione', gr: 'Studenti', t: 'Proroghe e passaggi', vis: !!A && PUO('studenti') && !ro },
+    { id: 'quiz', gr: 'Studenti', t: 'Quiz (seconda prova)', vis: !!S.d.quiz },
+    { id: 'orale', gr: 'Studenti', t: 'Interrogazioni', vis: !!A && (PUO('voti') || adm) },
     { id: 'voti', gr: 'Studenti', t: 'Voti e tabellone', vis: !!A && (PUO('voti') || PUO('studenti') || PUO('documenti')) },
     { id: 'codici', gr: 'Studenti', t: 'Codici e schede QR', vis: !!S.d.codiciAlunni && !ro },
     { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
@@ -44,7 +48,7 @@ function contaSollecito() { return righeDaSollecitare().length; }
 function ricordaPag(id) { try { if (id) sessionStorage.setItem('glo_pag', id); else sessionStorage.removeItem('glo_pag'); } catch (e) { /* niente memoria: si riparte dal cruscotto */ } }
 function pagRicordata() { try { return sessionStorage.getItem('glo_pag'); } catch (e) { return null; } }
 function vai(id) {
-  S.pag = id; ricordaPag(id); document.body.classList.remove('menu-on');
+  S.or = null; S.pag = id; ricordaPag(id); document.body.classList.remove('menu-on');
   vistaDocente(); window.scrollTo(0, 0);
 }
 function filtroClasse(c) { S.filtro.classe = c; vistaDocente(); }
@@ -193,12 +197,15 @@ var PAGINA = {
   situazione: function () { return panoramica() + bloccoSituazione(); },
   gestione: function () { return bloccoGestione(); },
   voti: function () { return bloccoAdmin('voti'); },
+  quiz: function () { return paginaQuiz(); },
+  orale: function () { return paginaOrale(); },
   codici: function () {
     return '<section class="card" id="codici"><h2 style="margin:0 0 6px;font-size:22px">Codici personali degli alunni (riservato)</h2>' +
       '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
       '<div class="row" style="margin-bottom:10px">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Schede con QR · ' + c + '</button>'; }).join('') +
       (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Schede di tutte le classi</button>' : '') + '<button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div>' +
       '<p class="muted" style="margin:0 0 10px;font-size:14px">Le schede si aprono nella stampa: scegli “Salva come PDF” per avere il file. Una pagina A4 per alunno con QR, link, codice, partenza e scadenza (senza i termini).</p>' +
+      '<h3 style="margin:14px 0 8px;font-size:18px">Accessi al quiz</h3><div class="stack" style="gap:8px;margin-bottom:12px">' + bottoniAccessiQuiz() + '</div>' +
       '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Classe</th><th>Codice</th></tr></thead><tbody>' +
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
@@ -212,7 +219,7 @@ var PAGINA = {
     return h;
   },
   impostazioni: function () {
-    return bloccoAdmin('imp') + '<section class="card stack" id="accesso"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
+    return bloccoAdmin('imp') + bloccoQuizImp() + '<section class="card stack" id="accesso"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
       '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
   },
   edizioni: function () { return bloccoChiusuraEdizione() + bloccoEdizioni() + bloccoColleghi(); },

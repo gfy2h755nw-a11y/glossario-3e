@@ -42,6 +42,7 @@ html = '''<!DOCTYPE html>
 <script>
 ''' + r('src/gestione.js') + '''
 ''' + r('src/layout.js') + '''
+''' + r('src/orale.js') + '''
 </script>
 </body>
 </html>

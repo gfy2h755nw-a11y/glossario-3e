@@ -173,3 +173,21 @@ button.kcard{cursor:pointer}button.kcard:hover{border-color:#9CC3EE}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:520px){ .ttit h1{font-size:19px} .tdx{margin-left:0;width:100%} .tchip{display:none} }
+
+/* ---------- interrogazione orale ---------- */
+.or-punti{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;position:sticky;top:68px;z-index:5;background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 14px}
+.or-punti b{display:block;font:900 24px 'Archivo',system-ui,sans-serif}
+.or-term{font:800 24px/1.2 'Archivo',system-ui,sans-serif}
+.or-def{margin:10px 0;font-size:17px;line-height:1.45;background:#F6F8FA;border-radius:10px;padding:10px 12px}
+.or-b{flex:1;min-width:120px;min-height:48px;border-radius:12px;border:2px solid var(--line);background:#fff;font:800 16px 'Archivo',system-ui,sans-serif;cursor:pointer;color:var(--ink)}
+.or-b small{font-weight:400;color:var(--muted)}
+.or-b.ok.on{background:#1F7A3D;border-color:#1F7A3D;color:#fff}.or-b.mz.on{background:#B36B00;border-color:#B36B00;color:#fff}.or-b.no.on{background:#B3261E;border-color:#B3261E;color:#fff}
+.or-b.on small{color:#fff}
+.or-b:focus-visible{outline:3px solid #9CC3EE;outline-offset:2px}
+
+.or-info{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.or-info div{background:#F6F8FA;border-radius:12px;padding:10px 12px}
+.or-info b{display:block;font:900 22px 'Archivo',system-ui,sans-serif}
+.or-info small{color:var(--muted);font-size:13px}
+@media (max-width:760px){.or-info{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.note.ok{background:#E3F3E7;color:#12401F}

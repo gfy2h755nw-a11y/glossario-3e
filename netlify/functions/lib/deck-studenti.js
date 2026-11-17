@@ -1,6 +1,7 @@
 /* Presentazione per gli studenti (una per classe), generata dall'app con partenza, scadenza e regole prese dalle impostazioni.
    Icone e immagini sono in deck-assets.js (generato da deck2/assets.js). */
 const pptxgen = require('pptxgenjs');
+const OR = require('./orale');
 const DATI = require('./dati');
 const L = require('./logica');
 const { alunnoIniziale } = L;
@@ -429,6 +430,41 @@ async function creaDeckStudenti(classe, imp, now, stato) {
     const y = 1.55 + i * 1.25;
     num(s, i + 1, 6.8, y); T(s, a[0], { x: 7.6, y: y - 0.02, w: 5.1, h: 0.4, fontSize: 19, bold: true, color: C.text1 }); T(s, a[1], { x: 7.6, y: y + 0.4, w: 5.1, h: 0.75, fontSize: 15 });
   });
+
+  /* 17b · Dopo lo scritto: il quiz, seconda parte della prova */
+  const cq = OR.cfgQuiz(stato ? stato.config : {}, classe), dq = cq.scadenza ? new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(cq.scadenza)) : null;
+  s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Scadenze e voto' });
+  s.addText('Dopo lo scritto: il quiz', { placeholder: 'title' });
+  [['Dove si trova', 'Nella pagina pubblica del glossario c\'è il pulsante «Quiz». Entri con il tuo codice personale o con il QR della tua scheda.'],
+    ['Come funziona', 'Compare un termine con ' + OR.QUIZ.opzioni + ' definizioni: scegli quella giusta entro ' + OR.QUIZ.secondi + ' secondi. Ogni risposta giusta è un termine indovinato.'],
+    ['Se sbagli', 'La risposta giusta non viene mostrata e torni indietro di ' + OR.QUIZ.passo + ' termini: per andare avanti devi studiare le definizioni.'],
+    ['Quando è superato', 'Quando hai indovinato ' + (cq.soglia === cq.totale ? 'tutti i ' + cq.totale + ' termini' : cq.soglia + ' termini su ' + cq.totale) + '. I progressi restano: puoi fermarti e riprendere quando vuoi' + (dq ? ', entro ' + dq + '.' : ', entro la scadenza che ti dirà il prof.')]].forEach((a, i) => {
+    const y = 1.55 + i * 1.3;
+    num(s, i + 1, 0.6, y); T(s, a[0], { x: 1.4, y: y - 0.02, w: 6.6, h: 0.4, fontSize: 19, bold: true, color: C.text1 }); T(s, a[1], { x: 1.4, y: y + 0.4, w: 6.6, h: 0.8, fontSize: 15 });
+  });
+  card(s, 8.6, 1.5, 4.1, 5.0, null, 'Numeri del quiz');
+  [[String(cq.soglia), 'termini da indovinare'], [String(OR.QUIZ.secondi), 'secondi per rispondere'], ['-' + OR.QUIZ.passo, 'termini a ogni errore']].forEach((v, i) => {
+    T(s, v[0], { x: 8.9, y: 1.75 + i * 1.55, w: 3.5, h: 0.8, fontSize: 44, bold: true, color: C.text1 });
+    T(s, v[1], { x: 8.9, y: 2.55 + i * 1.55, w: 3.5, h: 0.5, fontSize: 15 });
+  });
+
+  /* 17c · Interrogazione orale e voto finale */
+  s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Scadenze e voto' });
+  s.addText('L\'interrogazione orale e il voto finale', { placeholder: 'title' });
+  [[HEX.a[0], 'Solo dopo il quiz', 'All\'interrogazione è ammesso solo chi ha superato il quiz: chi non lo completa entro la scadenza non viene interrogato e resta senza voto. Il prof. pesca ' + OR.ORALE.domande + ' termini, mai tra i tuoi.'],
+    [HEX.a[3], 'Fino a 8', 'Risposta corretta 1 punto, parziale ½, sbagliata 0. Voto orale = 3 + ½ per ogni punto: con 6 punti hai 6, con 10 hai 8.'],
+    [HEX.ink, 'Chi è stato escluso', 'Può essere interrogato lo stesso, ma arriva al massimo a 5,5 (3 + ¼ per punto) e il voto finale è quello dell\'orale.']].forEach((v, i) => {
+    const x = 0.6 + i * 4.1;
+    card(s, x, 1.5, 3.85, 2.6, null, v[1]);
+    s.addShape(pres.shapes.RECTANGLE, { x, y: 1.5, w: 3.85, h: 0.12, fill: { color: v[0] }, line: { color: v[0] }, objectName: 'Fascia ' + v[1] });
+    T(s, v[1], { x: x + 0.3, y: 1.8, w: 3.3, h: 0.45, fontSize: 21, bold: true, color: C.text1 });
+    T(s, v[2], { x: x + 0.3, y: 2.35, w: 3.3, h: 1.6, fontSize: 15 });
+  });
+  const esO = [['7,5', '8', '7,75', '8'], ['7,5', '7,5', '7,5', '7,5'], ['7,5', '7,25', '7,375', '7'], ['6', '6,5', '6,25', '6']];
+  const hdO = ['Scritto', 'Orale', 'Media', 'Voto finale'].map((t) => ({ text: t, options: { bold: true, color: 'FFFFFF', fill: { color: HEX.ink }, align: 'center' } }));
+  s.addTable([hdO].concat(esO.map((r, i) => r.map((c, j) => ({ text: c, options: { align: 'center', bold: j === 3, fill: { color: i % 2 ? 'FFFFFF' : HEX.bg }, color: HEX.ink } })))),
+    { x: 0.6, y: 4.35, w: 12.1, colW: [3.025, 3.025, 3.025, 3.025], rowH: 0.4, fontSize: 15, fontFace: 'Arial', valign: 'middle', border: { type: 'solid', pt: 0.75, color: HEX.line }, margin: [0.03, 0.12, 0.03, 0.12] });
+  T(s, 'Voto finale = media tra scritto e orale. Oltre il mezzo voto si sale all\'intero, sotto si scende; il mezzo voto resta.', { x: 0.6, y: 6.5, w: 12.1, h: 0.35, fontSize: 13, italic: true, color: HEX.muted });
 
   /* 18 · Tappe */
   pres.addSection({ title: 'Calendario e risultato' });

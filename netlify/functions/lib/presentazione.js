@@ -5,6 +5,7 @@
 const PptxGenJS = require('pptxgenjs');
 const DATI = require('./dati');
 const logica = require('./logica');
+const OR = require('./orale');
 const { righeAlunni } = require('./report');
 
 const TZ = 'Europe/Rome';
@@ -391,6 +392,37 @@ async function creaPresentazione(stato, attivita, now) {
     s.addText(r[1], { x: x + 1.15, y: y + 0.15, w: 3.1, h: 1.3, fontSize: 15, color: K.ink, valign: 'middle', margin: 0, isTextBox: true, objectName: 'Testo regola ' + (i + 1) });
   });
   s.addNotes('Criterio completo, come nel report: ' + logica.ratio(D.imp));
+
+  /* 14. quiz e interrogazione orale: il meccanismo */
+  const cqz = OR.cfgQuiz(stato.config, classiT[0]), qzDi = (x) => OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a)));
+  const STQ = { superato: 'ammesso', scaduto: 'non ammesso', 'in corso': 'in corso', 'non iniziato': 'non iniziato', chiuso: '-' };
+  s = nuova('Regole e voti', 'Quiz, interrogazione orale e voto finale');
+  [[String(cqz.soglia), 'Quiz, seconda parte della prova: un termine, ' + OR.QUIZ.opzioni + ' definizioni, ' + OR.QUIZ.secondi + ' secondi. A ogni errore la risposta giusta non viene mostrata e si torna indietro di ' + OR.QUIZ.passo + ' termini. Superato con ' + cqz.soglia + ' termini indovinati su ' + cqz.totale + ', entro la scadenza'],
+    ['10', 'Interrogazione orale, solo per chi ha superato il quiz (gli altri restano senza voto): l\'app pesca ' + OR.ORALE.domande + ' termini, mai quelli dell\'alunno, bilanciati sulle aree. Risposta corretta 1 punto, parziale ½, sbagliata 0'],
+    ['8', 'Voto orale = 3 + ½ per ogni punto, fino a 8. Per gli alunni esclusi dallo scritto 3 + ¼ per punto, fino a 5,5'],
+    ['½', 'Voto finale = media tra scritto e orale (per gli esclusi vale solo l\'orale). Oltre il mezzo voto si sale all\'intero, sotto si scende: 7,75 → 8 · 7,5 → 7,5 · 7,4 → 7']].forEach((r, i) => {
+    const x = 0.5 + (i % 2) * 4.6, y = 1.15 + Math.floor(i / 2) * 1.95;
+    card(s, x, y, 4.4, 1.75, 'Regola orale ' + (i + 1));
+    s.addShape(pres.shapes.OVAL, { x: x + 0.2, y: y + 0.5, w: 0.75, h: 0.75, fill: { color: i === 3 ? K.red : K.navy }, line: { color: 'FFFFFF' }, objectName: 'Cerchio regola orale ' + (i + 1) });
+    s.addText(r[0], { x: x + 0.2, y: y + 0.5, w: 0.75, h: 0.75, fontFace: THEME.headFontFace, fontSize: r[0].length > 2 ? 17 : 22, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', margin: 0, isTextBox: true, objectName: 'Numero regola orale ' + (i + 1) });
+    s.addText(r[1], { x: x + 1.15, y: y + 0.1, w: 3.15, h: 1.55, fontSize: 12.5, color: K.ink, valign: 'middle', margin: 0, isTextBox: true, objectName: 'Testo regola orale ' + (i + 1) });
+  });
+  s.addNotes('Il quiz è parte della prova: chi lo completa entro la scadenza è ammesso all\'interrogazione, gli altri restano senza voto (le loro definizioni restano sui cartelloni). Per ogni alunno si registrano sessioni, tempo, risposte, errori e termini persi. L\'interrogazione si fa di persona, con la scheda dell\'app che mostra al docente la definizione corretta.');
+
+  /* 15. scritto, quiz, orale e finale: un tabellone per classe */
+  const tq = (ms) => { const m = Math.round((ms || 0) / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
+  blocchi.forEach((B) => {
+    s = nuova('Regole e voti', 'Scritto, quiz, orale e voto finale' + (classiT.length > 1 ? ' · ' + B.c : '') + (B.parte ? ' (' + B.parte + ')' : ''));
+    const tab = [['Alunno', 'Classe', 'Scritto', 'Sessioni quiz', 'Tempo quiz', 'Errori quiz', 'Indovinati', 'Ammissione', 'Punti orale', 'Orale', 'Finale'].map((t, i) => ({ text: t, options: Object.assign({}, H2, { align: i ? 'center' : 'left' }) }))]
+      .concat(B.r.map((x, i) => {
+        const f = i % 2 ? { fill: { color: 'F7F9FA' } } : {}, q = qzDi(x), o = x.v.orale;
+        const c = (v, opt) => cel(v, Object.assign({ align: 'center' }, opt || {}, f));
+        return [cel(x.a.nome, f), c(logica.etichettaAl(x.a)), c(x.v.escluso ? 'escluso' : num(x.v.voto), x.v.escluso ? { color: K.bad } : {}), c(q.sessioni), c(q.sessioni ? tq(q.ms) : '-'), c(q.errori), c(q.indovinati + '/' + q.soglia),
+          c(STQ[q.stato], q.stato === 'superato' ? { color: K.ok, bold: true } : q.stato === 'scaduto' ? { color: K.bad, bold: true } : {}), c(o ? num(o.punti) + '/10' : '-'), c(o ? num(o.voto) : '-', { bold: true }), c(x.v.finale != null ? num(x.v.finale) : '-', { bold: true })];
+      }));
+    s.addTable(tab, { x: 0.5, y: 0.95, w: 9, colW: [2.0, 0.55, 0.7, 0.75, 0.8, 0.7, 0.85, 0.95, 0.65, 0.5, 0.55], rowH: 0.235, border: { type: 'solid', pt: 0.5, color: K.line }, margin: [0, 0.06, 0, 0.06], objectName: 'Tabellone orale' });
+    s.addNotes('Finale = media tra scritto e orale, arrotondata (oltre il mezzo voto all\'intero superiore, sotto a quello inferiore); per gli esclusi vale il solo orale, al massimo 5,5.');
+  });
 
   const buf = await pres.write({ outputType: 'nodebuffer' });
   return applicaTema(buf);

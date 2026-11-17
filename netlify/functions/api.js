@@ -9,6 +9,7 @@ const ATT = require('./lib/attivita');
 const auto = require('./lib/automatico');
 const DBX = require('./lib/dropbox');
 const ED = require('./lib/edizioni');
+const OR = require('./lib/orale');
 
 const AZIONI = {
   login: (d, p) => logica.login(d, p),
@@ -37,6 +38,13 @@ const AZIONI = {
   verificatermini: (d, p) => ED.verificaTermini(d, p),
   nuovaedizione: (d, p) => ED.nuovaEdizione(d, p),
   aggiungiclasse: (d, p) => ED.aggiungiClasse(d, p),
+  // quiz di esercitazione (pagina pubblica, con il codice personale) e interrogazione orale (docenti con la facoltà «voti»)
+  quizinizio: (d, p) => OR.quizInizio(d, p),
+  quizrisposta: (d, p) => OR.quizRisposta(d, p),
+  oralepesca: (d, p) => OR.oralePesca(d, p),
+  oralecambia: (d, p) => OR.oraleCambia(d, p),
+  oralesalva: (d, p) => OR.oraleSalva(d, p),
+  oraleannulla: (d, p) => OR.oraleAnnulla(d, p),
   setup: (d, p) => logica.setup(d, p, process.env.SETUP_KEY),
   // segnale di presenza (ogni minuto, app aperta in primo piano): serve solo al registro attività
   presenza: async () => ({}),
