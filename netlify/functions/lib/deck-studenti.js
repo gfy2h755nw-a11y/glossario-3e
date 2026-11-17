@@ -435,7 +435,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   const cq = OR.cfgQuiz(stato ? stato.config : {}, classe), dq = cq.scadenza ? new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(cq.scadenza)) : null;
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Scadenze e voto' });
   s.addText('Dopo lo scritto: il quiz', { placeholder: 'title' });
-  [['Dove si trova', 'Nella pagina pubblica del glossario c\'è il pulsante «Quiz». Entri con il tuo codice personale o con il QR della tua scheda.'],
+  [['Dove si trova', 'Nella pagina del quiz, separata dal glossario: inquadri il QR della tua scheda oppure apri l\'indirizzo che c\'è scritto e inserisci il tuo codice personale.'],
     ['Come funziona', 'Compare un termine con ' + OR.QUIZ.opzioni + ' definizioni: scegli quella giusta entro ' + OR.QUIZ.secondi + ' secondi. Ogni risposta giusta è un termine indovinato.'],
     ['Se sbagli', 'La risposta giusta non viene mostrata e torni indietro di ' + OR.QUIZ.passo + ' termini: per andare avanti devi studiare le definizioni.'],
     ['Quando è superato', 'Quando hai indovinato ' + (cq.soglia === cq.totale ? 'tutti i ' + cq.totale + ' termini' : cq.soglia + ' termini su ' + cq.totale) + '. I progressi restano: puoi fermarti e riprendere quando vuoi' + (dq ? ', entro ' + dq + '.' : ', entro la scadenza che ti dirà il prof.')]].forEach((a, i) => {

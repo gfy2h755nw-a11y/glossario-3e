@@ -1,5 +1,5 @@
 /**
- * Quiz (parte della prova, sulla pagina pubblica con il codice personale) e interrogazione orale (area docenti).
+ * Quiz (parte della prova, nella pagina /quiz con il codice personale) e interrogazione orale (area docenti).
  *
  * Quiz: un termine e quattro definizioni, 60 secondi. Si apre quando il docente fissa la scadenza della classe.
  * A ogni risposta giusta il termine è «indovinato»; a ogni risposta sbagliata o non data NON si mostra quella giusta
@@ -16,6 +16,7 @@
  */
 const L = require('./logica');
 const CAT = require('./catalogo');
+const DATI = require('./dati');
 
 const QUIZ = { secondi: 60, tolleranza: 4, soglia: 260, maxSessioni: 300, opzioni: 4, passo: 5 };
 const LETTERE = 'ABCDEFGH';
@@ -34,10 +35,13 @@ function totaleDi(config) {
   if (!TOT.has(config)) TOT.set(config, tutte(CAT.materializza(config).cat).length);
   return TOT.get(config);
 }
-function cfgQuiz(config, classe, tot) {
+function cfgQuiz(config, classe, tot, alunno) {
   const q = (config && config.quiz) || {}, totale = tot || totaleDi(config);
-  const n = Number(q.soglia), scad = (q.scadenze || {})[classe] || null;
-  return { soglia: n >= 1 ? Math.min(Math.round(n), totale) : totale, totale, scadenza: scad, aperto: !!scad, scaduto: !!scad && Date.now() > Date.parse(scad), passo: QUIZ.passo };
+  const n = Number(q.soglia), sc = (q.scadenze || {})[classe] || null;
+  // proroga individuale: vale solo se la classe ha il quiz aperto e se è più tarda della scadenza della classe
+  const pr = alunno && alunno.quiz_proroga && sc && Date.parse(alunno.quiz_proroga) > Date.parse(sc) ? alunno.quiz_proroga : null;
+  const scad = pr || sc;
+  return { soglia: n >= 1 ? Math.min(Math.round(n), totale) : totale, totale, scadenza: scad, scadenzaClasse: sc, proroga: pr, aperto: !!scad, scaduto: !!scad && Date.now() > Date.parse(scad), passo: QUIZ.passo };
 }
 /* lettura leggera (configurazione + un alunno): il quiz fa una richiesta a ogni risposta e non deve rileggere tutto il glossario */
 async function contestoQuiz(db, codice) {
@@ -51,7 +55,7 @@ async function contestoQuiz(db, codice) {
     L.errore('Codice non riconosciuto. Controlla di averlo scritto bene.');
   }
   const cat = CAT.materializza(config).cat;
-  return { a, cat, cfg: cfgQuiz(config, L.classeDi(a), tutte(cat).length) };
+  return { a, cat, cfg: cfgQuiz(config, L.classeDi(a), tutte(cat).length, a) };
 }
 const giorno = (iso) => new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 function controllaAccesso(q, cfg) {
@@ -61,7 +65,7 @@ function controllaAccesso(q, cfg) {
 function riepilogoQuiz(q, cfg) {
   const s = (q && q.sessioni) || [], c = cfg || { soglia: QUIZ.soglia, scadenza: null, aperto: false, scaduto: false };
   const ind = Object.keys((q && q.ok) || {}).length, sup = (q && q.superata) || null;
-  return { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, scadenza: c.scadenza || null,
+  return { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null,
     // stato rispetto all'ammissione all'orale
     stato: sup ? 'superato' : !c.aperto ? 'chiuso' : c.scaduto ? 'scaduto' : s.length ? 'in corso' : 'non iniziato',
     prima: s.length ? s[0].i : null, ultima: s.length ? (s[s.length - 1].f || s[s.length - 1].i) : null,
@@ -89,7 +93,8 @@ function nuovaDomanda(cat, q, stessa) {
   return { a: t.a, k: t.k, o, g: LETTERE[o.indexOf(t.k)], t: Date.now() };
 }
 function vistaDomanda(cat, cur, n) {
-  const d = { n, area: cur.a, termine: cat[cur.a][cur.k][0], secondi: QUIZ.secondi, lettere: cur.o.map((k, i) => LETTERE[i]) };
+  const ar = DATI.AREE.find((x) => String(x.n) === String(cur.a)) || {};
+  const d = { n, area: cur.a, nomeArea: ar.it || '', colore: ar.colore || '', termine: cat[cur.a][cur.k][0], secondi: QUIZ.secondi, lettere: cur.o.map((k, i) => LETTERE[i]) };
   cur.o.forEach((k, i) => { d[LETTERE[i]] = cat[cur.a][k][1]; });
   return d;
 }
@@ -141,7 +146,7 @@ async function quizRisposta(db, { codice, scelta, pausa }) {
 /* tabellone del quiz per i docenti */
 function tabelloneQuiz(stato) {
   const tot = tutte(catalogo(stato)).length;
-  return stato.alunni.map((a) => Object.assign({ id: a.id }, riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a), tot)), {
+  return stato.alunni.map((a) => Object.assign({ id: a.id }, riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a), tot, a)), {
     ultime: ((a.quiz && a.quiz.sessioni) || []).slice(-60).map((s) => ({ i: s.i, ms: s.ms || 0, r: s.r || 0, c: s.c || 0, e: s.e || 0, s: s.s || 0, n: s.n || 0, p: s.p || 0 })) }));
 }
 
@@ -171,7 +176,7 @@ async function oralePesca(db, { codice, alunno: id, nuova }) {
   const a = alunno(stato, id), cat = catalogo(stato);
   // all'interrogazione è ammesso solo chi ha completato il quiz
   if (!(a.quiz && a.quiz.superata)) {
-    const rq = riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a)));
+    const rq = riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a), null, a));
     L.errore(a.nome + ' non è ammesso all\'interrogazione: non ha completato il quiz (' + rq.indovinati + ' termini su ' + rq.soglia + ').');
   }
   if (a.orale_bozza && !nuova) return { alunno: a.id, bozza: vistaBozza(cat, a.orale_bozza) };
@@ -221,4 +226,17 @@ async function oraleAnnulla(db, { codice, alunno: id, bozza }) {
   return { alunno: a.id };
 }
 
-module.exports = { QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };
+/* proroga individuale del quiz: data successiva alla scadenza della classe (data vuota = togli la proroga) */
+async function quizProroga(db, { codice, alunno: id, data }) {
+  const stato = await db.leggiTutto(); L.permesso(L.identifica(stato, codice), 'studenti');
+  const a = alunno(stato, id), sc = ((stato.config.quiz || {}).scadenze || {})[L.classeDi(a)];
+  if (!data) { await db.scriviAlunno(a.id, { quiz_proroga: null }); return { alunno: a.id, proroga: null }; }
+  if (!sc) L.errore('Il quiz della ' + L.classeDi(a) + ' non è ancora aperto: fissa prima la scadenza della classe.');
+  const iso = L.isoValida(data);
+  if (Date.parse(iso) <= Date.parse(sc)) L.errore('La proroga deve essere successiva alla scadenza del quiz della ' + L.classeDi(a) + ' (' + giorno(sc) + ').');
+  if (Date.parse(iso) <= Date.now()) L.errore('La proroga deve essere nel futuro.');
+  await db.scriviAlunno(a.id, { quiz_proroga: iso });
+  return { alunno: a.id, proroga: iso };
+}
+
+module.exports = { quizProroga, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };

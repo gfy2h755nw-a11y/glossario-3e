@@ -394,7 +394,7 @@ async function creaPresentazione(stato, attivita, now) {
   s.addNotes('Criterio completo, come nel report: ' + logica.ratio(D.imp));
 
   /* 14. quiz e interrogazione orale: il meccanismo */
-  const cqz = OR.cfgQuiz(stato.config, classiT[0]), qzDi = (x) => OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a)));
+  const cqz = OR.cfgQuiz(stato.config, classiT[0]), qzDi = (x) => OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a), null, x.a));
   const STQ = { superato: 'ammesso', scaduto: 'non ammesso', 'in corso': 'in corso', 'non iniziato': 'non iniziato', chiuso: '-' };
   s = nuova('Regole e voti', 'Quiz, interrogazione orale e voto finale');
   [[String(cqz.soglia), 'Quiz, seconda parte della prova: un termine, ' + OR.QUIZ.opzioni + ' definizioni, ' + OR.QUIZ.secondi + ' secondi. A ogni errore la risposta giusta non viene mostrata e si torna indietro di ' + OR.QUIZ.passo + ' termini. Superato con ' + cqz.soglia + ' termini indovinati su ' + cqz.totale + ', entro la scadenza'],

@@ -231,7 +231,7 @@ function creaReport(stato, attivita, now) {
     // riepilogo personale: tempi e voti con le date
     doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Riepilogo: tempi e voti', 36, yy); yy = doc.y + 4;
     {
-      const q = OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a))), o = x.v.orale, tqm = (ms) => { const m = Math.round((ms || 0) / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
+      const q = OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a), null, x.a)), o = x.v.orale, tqm = (ms) => { const m = Math.round((ms || 0) / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
       const risp = []; x.miei.forEach((t) => (campo(t, 'it', 'storia') || []).forEach((k) => { if (k.at) risp.push(k.at); }));
       const ord = (at) => { const m = /^(\d\d)\/(\d\d)\/(\d{4}) (\d\d):(\d\d)/.exec(at); return m ? m[3] + m[2] + m[1] + m[4] + m[5] : ''; };
       risp.sort((a, b) => ord(a).localeCompare(ord(b)));
@@ -240,7 +240,7 @@ function creaReport(stato, attivita, now) {
       yy = tabella(doc, 36, yy, cr, [
         [{ t: 'Tempo in app', b: true }, { t: durata(x.r.ultimo ? x.r.minuti : null), b: true }, x.r.accessi + ' accessi · ' + x.r.giorni + ' giorni attivi', x.r.ultimo ? 'primo accesso ' + quando(x.r.primo) + ' · ultimo ' + quando(x.r.ultimo) : 'nessun accesso'],
         [{ t: 'Tempo sul quiz', b: true }, { t: q.sessioni ? tqm(q.ms) : '-', b: true }, q.sessioni + ' sessioni · ' + q.corrette + ' corrette e ' + q.errori + ' errori su ' + q.risposte + ' risposte · ' + q.persi + ' termini persi · ' + q.indovinati + ' / ' + q.soglia + ' indovinati (massimo ' + q.massimo + ')',
-          (q.sessioni ? 'prima sessione ' + quando(q.prima) + ' · ultima ' + quando(q.ultima) : 'nessuna sessione') + (q.scadenza ? ' · scadenza ' + quando(q.scadenza) : '')],
+          (q.sessioni ? 'prima sessione ' + quando(q.prima) + ' · ultima ' + quando(q.ultima) : 'nessuna sessione') + (q.scadenza ? ' · scadenza ' + quando(q.scadenza) + (q.proroga ? ' (proroga individuale)' : '') : '')],
         [{ t: 'Ammissione all\'orale', b: true }, q.stato === 'superato' ? { t: 'ammesso', c: VERDE, b: true } : { t: q.stato === 'scaduto' ? 'non ammesso' : '-', c: q.stato === 'scaduto' ? ARANCIO : SCURO, b: true },
           q.stato === 'superato' ? 'quiz superato: ' + q.indovinati + ' termini indovinati' : q.stato === 'scaduto' ? 'quiz non completato entro la scadenza: niente interrogazione e niente voto' : q.stato === 'chiuso' ? 'quiz non ancora aperto' : 'quiz da completare: ' + q.indovinati + ' / ' + q.soglia,
           q.superata ? 'quiz superato il ' + quando(q.superata) : '-'],
@@ -286,7 +286,7 @@ function creaReport(stato, attivita, now) {
 
   /* --- quiz, interrogazione orale e voto finale --- */
   doc.addPage({ size: 'A4', layout: 'landscape', margin: 36 });
-  const qzDi = (x) => OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a))), cqz = OR.cfgQuiz(stato.config, (imp.classi || [])[0]);
+  const qzDi = (x) => OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a), null, x.a)), cqz = OR.cfgQuiz(stato.config, (imp.classi || [])[0]);
   const STQ = { superato: 'ammesso', scaduto: 'non ammesso', 'in corso': 'in corso', 'non iniziato': 'non iniziato', chiuso: 'quiz non aperto' };
   let yo = testata(doc, 'Quiz, interrogazione orale e voto finale', sotto);
   doc.font('Helvetica').fontSize(9).fillColor(SCURO).text('Quiz (seconda parte della prova): un termine, ' + OR.QUIZ.opzioni + ' definizioni, ' + OR.QUIZ.secondi + ' secondi; a ogni errore la risposta giusta non viene mostrata e si torna indietro di ' + OR.QUIZ.passo + ' termini; superato con ' + cqz.soglia + ' termini indovinati su ' + cqz.totale + ', entro la scadenza fissata dal docente. Chi lo supera è ammesso all\'interrogazione; chi non lo completa non viene interrogato e resta senza voto (le sue definizioni restano sui cartelloni). ' +

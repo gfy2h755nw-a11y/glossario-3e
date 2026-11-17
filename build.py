@@ -54,3 +54,7 @@ print('public/index.html', len(html))
 con = r('src/consulta.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
 open(os.path.join(B, 'public/glossario.html'), 'w', encoding='utf-8').write(con)
 print('public/glossario.html', len(con))
+# pagina del quiz (/quiz): separata dalla pagina pubblica, si entra con il codice personale o con il QR della scheda
+qz = r('src/quiz.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
+open(os.path.join(B, 'public/quiz.html'), 'w', encoding='utf-8').write(qz)
+print('public/quiz.html', len(qz))

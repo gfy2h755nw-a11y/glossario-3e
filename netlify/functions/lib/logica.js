@@ -204,7 +204,7 @@ function valuta(stato, a, now) {
   const voto = manuale != null ? manuale : escluso ? imp.votoEsclusione : (tetto && calcolato != null ? Math.min(calcolato, imp.tetto) : calcolato);
   // orale: interrogazione sui termini di tutti; finale = media scritto/orale (per gli esclusi solo l'orale, che per loro arriva al massimo a 5,5)
   // quiz: chi lo completa è ammesso all'interrogazione; chi non lo completa entro la scadenza resta senza voto
-  const rq = require('./orale'), qz = rq.riepilogoQuiz(a.quiz, rq.cfgQuiz(stato.config, classeDi(a)));
+  const rq = require('./orale'), qz = rq.riepilogoQuiz(a.quiz, rq.cfgQuiz(stato.config, classeDi(a), null, a));
   const or = a.orale && typeof a.orale.voto === 'number' ? a.orale : null;
   const finale = or ? (escluso ? arrotFinale(or.voto) : (voto != null ? arrotFinale((voto + or.voto) / 2) : null)) : null;
   return Object.assign(c, { orale: or ? { voto: or.voto, punti: or.punti, data: or.data, docente: or.docente, escluso: !!or.escluso, cambi: or.cambi || 0, nota: or.nota || '', termini: or.termini || [] } : null, finale, oraleInCorso: !!a.orale_bozza, quizStato: qz.stato, ammesso: qz.stato === 'superato',
@@ -314,7 +314,7 @@ function pacchetto(stato, chi) {
     const v = valuta(stato, chi._a || stato.alunni.find((a) => a.id === chi.id), now);
     out.voto = { voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, manuale: v.manuale != null, escluso: v.escluso, votoMax: v.votoMax, ereditati: v.ereditati,
       tetto: v.tetto, tettoValore: v.tettoValore, calcolato: v.calcolato, orale: v.orale ? { voto: v.orale.voto, punti: v.orale.punti, data: v.orale.data } : null, finale: v.finale,
-      quiz: (function () { const o = require('./orale'), aa = chi._a || stato.alunni.find((a) => a.id === chi.id), r = o.riepilogoQuiz(aa.quiz, o.cfgQuiz(stato.config, classeDi(aa))); return { stato: r.stato, indovinati: r.indovinati, soglia: r.soglia, scadenza: r.scadenza, superata: r.superata }; })(),
+      quiz: (function () { const o = require('./orale'), aa = chi._a || stato.alunni.find((a) => a.id === chi.id), r = o.riepilogoQuiz(aa.quiz, o.cfgQuiz(stato.config, classeDi(aa), null, aa)); return { stato: r.stato, indovinati: r.indovinati, soglia: r.soglia, scadenza: r.scadenza, superata: r.superata }; })(),
       errIt: v.it.errate, errEn: v.en.errate, invIt: v.it.inviate, invEn: v.en.inviate, errate: v.errate, corrette: v.corrette, inviate: v.inviate, ratio: ratio(imp) };
   }
   if (chi.ruolo === 'docente') {
@@ -326,7 +326,7 @@ function pacchetto(stato, chi) {
       scadenza: v.scadenza, proroga: v.proroga, bloccoRiass: v.bloccoRiass, rimandate: v.rimandate, riammesso: v.riammesso,
       scadenzaRicevuti: v.scadenzaRicevuti ? new Date(v.scadenzaRicevuti).toISOString() : null, mancaRicevuti: v.mancaRicevuti }));
     const P = chi.permessi || {};
-    // esercitazioni con il quiz della pagina pubblica: tabellone a parte, visibile a tutti i docenti
+    // quiz (pagina /quiz, seconda parte della prova): tabellone a parte, visibile a tutti i docenti
     out.quiz = require('./orale').tabelloneQuiz(stato);
     if (chi.admin || P.codici) {
       out.codiciAlunni = stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), codice: a.codice,

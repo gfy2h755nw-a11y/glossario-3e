@@ -41,6 +41,7 @@ const AZIONI = {
   // quiz di esercitazione (pagina pubblica, con il codice personale) e interrogazione orale (docenti con la facoltà «voti»)
   quizinizio: (d, p) => OR.quizInizio(d, p),
   quizrisposta: (d, p) => OR.quizRisposta(d, p),
+  quizproroga: (d, p) => OR.quizProroga(d, p),
   oralepesca: (d, p) => OR.oralePesca(d, p),
   oralecambia: (d, p) => OR.oraleCambia(d, p),
   oralesalva: (d, p) => OR.oraleSalva(d, p),

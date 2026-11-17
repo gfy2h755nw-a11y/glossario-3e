@@ -24,7 +24,7 @@ function paginaQuiz() {
   var sup = righe.filter(function (r) { return quizDi(r.id).superata; }).length, att = righe.filter(function (r) { return quizDi(r.id).sessioni > 0; }).length, fuori = righe.filter(function (r) { return quizDi(r.id).stato === 'scaduto'; }).length;
   var sg = righe.length ? quizDi(righe[0].id).soglia : 260;
   var h = '<section class="card stack" id="quizTab"><h2 style="margin:0;font-size:22px">Quiz: seconda parte della prova</h2>' +
-    '<p class="muted" style="margin:0">Il quiz è nella pagina pubblica del glossario: un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno <b>torna indietro di 5 termini</b>. ' +
+    '<p class="muted" style="margin:0">Il quiz ha una pagina a sé (<b>' + esc(location.host) + '/quiz</b>), separata dal glossario: un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno <b>torna indietro di 5 termini</b>. ' +
     'I progressi restano tra una sessione e l\'altra. Il quiz è <b>superato con ' + sg + ' termini indovinati</b> entro la scadenza: chi lo supera è ammesso all\'interrogazione, chi non lo completa resta senza voto. ' +
     'Soglia e scadenze si impostano in «Scadenze e valutazione».</p>' +
     '<div class="row">' + scadenzeQuiz() + '</div>' +
@@ -37,8 +37,9 @@ function paginaQuiz() {
       '<td class="n" style="font-weight:400">' + q.risposte + '</td><td class="n">' + q.corrette + (q.risposte ? ' <span class="muted" style="font-weight:400;font-size:13px">' + Math.round(q.corrette / q.risposte * 100) + '%</span>' : '') + '</td>' +
       '<td class="n">' + (q.errori || 0) + '</td><td class="n" style="font-weight:400">' + (q.persi || 0) + '</td>' +
       '<td style="min-width:150px"><b>' + q.indovinati + '</b> / ' + q.soglia + (q.massimo > q.indovinati ? ' <span class="muted" style="font-size:13px">(massimo ' + q.massimo + ')</span>' : '') + '<div class="bar" style="margin-top:4px"><span style="width:' + pc + '%;background:' + (q.superata ? 'var(--ok)' : 'var(--a1)') + '"></span></div></td>' +
-      '<td>' + chipQuiz(q) + '</td>' +
-      '<td>' + (q.sessioni ? '<button class="btn sec tb" aria-expanded="' + aperto + '" onclick="S.qzAperto=' + (aperto ? 'null' : '\'' + r.id + '\'') + ';vistaDocente()">' + (aperto ? 'Chiudi' : 'Sessioni') + '</button>' : '') + '</td></tr>';
+      '<td>' + chipQuiz(q) + (q.proroga ? '<br><span class="chip s-inviata" style="margin-top:4px">Proroga al ' + esc(oraIt(q.proroga)) + '</span>' : '') + '</td>' +
+      '<td><div class="row" style="gap:6px;flex-wrap:nowrap">' + (PUO('studenti') && !RO() && !q.superata && q.scadenzaClasse ? '<button class="btn sec tb" onclick="prorogaQuiz(\'' + r.id + '\')">' + (q.proroga ? 'Modifica proroga' : 'Proroga') + '</button>' : '') +
+        (q.sessioni ? '<button class="btn sec tb" aria-expanded="' + aperto + '" onclick="S.qzAperto=' + (aperto ? 'null' : '\'' + r.id + '\'') + ';vistaDocente()">' + (aperto ? 'Chiudi' : 'Sessioni') + '</button>' : '') + '</div></td></tr>';
     if (aperto) h += '<tr class="qz-det"><td colspan="11" style="background:#F6F8FA"><table class="tbl" style="margin:0"><thead><tr><th>Sessione</th><th>Inizio</th><th style="text-align:right">Tempo</th><th style="text-align:right">Risposte</th><th style="text-align:right">Corrette</th><th style="text-align:right">Errori</th><th style="text-align:right">di cui scadute</th><th style="text-align:right">Termini nuovi</th><th style="text-align:right">Termini persi</th></tr></thead><tbody>' +
       q.ultime.map(function (s, i) { return '<tr><td>' + (q.sessioni - q.ultime.length + i + 1) + '</td><td>' + esc(dataBreve(s.i)) + '</td><td class="n" style="font-weight:400">' + tempoMs(s.ms) + '</td><td class="n" style="font-weight:400">' + s.r + '</td><td class="n">' + s.c + '</td><td class="n">' + (s.e || 0) + '</td><td class="n" style="font-weight:400">' + s.s + '</td><td class="n">' + s.n + '</td><td class="n" style="font-weight:400">' + (s.p || 0) + '</td></tr>'; }).reverse().join('') +
       '</tbody></table>' + (q.sessioni > q.ultime.length ? '<p class="muted" style="margin:6px 0 0;font-size:13px">Sono mostrate le ultime ' + q.ultime.length + ' sessioni su ' + q.sessioni + '.</p>' : '') + '</td></tr>';
@@ -138,17 +139,17 @@ function bottoniAccessiQuiz() {
     '<p class="muted" style="margin:0;font-size:14px">Una pagina A4 per alunno con QR, indirizzo e codice personale per entrare nel quiz. Si apre la stampa: scegli «Salva come PDF» per avere il file.</p>';
 }
 function stampaAccessiQuiz(classe) {
-  var base = location.origin + '/glossario', logo = Poster.logo(22), ed = (S.d.config && S.d.config.edizione) || {};
+  var base = location.origin + '/quiz', logo = Poster.logo(22), ed = (S.d.config && S.d.config.edizione) || {};
   var lista = S.d.codiciAlunni.filter(function (a) { return !classe || classe === 'tutte' || (a.classe || '3E') === classe; });
   if (!lista.length) { toast('Nessun alunno in questa classe', true); return; }
   var pagine = lista.map(function (a) {
-    var link = base + '?quiz=' + encodeURIComponent(a.codice), qa = quizDi(a.id), sq = qa.scadenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).scadenze || {})[a.classe || '3E'];
+    var link = base + '?c=' + encodeURIComponent(a.codice), qa = quizDi(a.id), sq = qa.scadenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).scadenze || {})[a.classe || '3E'];
     return '<section class="pg">' +
       '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">Glossario odontotecnico · Classe ' + esc(a.classe || '3E') + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
       '<div class="tit">Quiz del glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
       '<div class="gr">Classe ' + esc(a.classe || '3E') + ' · accesso personale al quiz · seconda parte della prova</div>' +
       '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo quiz.</b></p></div>' +
-      '<div class="acc"><div><div class="lb">Indirizzo del quiz</div><div class="url">' + esc(base.replace(/^https?:\/\//, '')) + '</div><div class="pic">poi premi «Quiz: mettiti alla prova»</div></div>' +
+      '<div class="acc"><div><div class="lb">Indirizzo del quiz</div><div class="url">' + esc(base.replace(/^https?:\/\//, '')) + '</div><div class="pic">poi scrivi il tuo codice personale</div></div>' +
       '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
       '<ol><li>Compare un termine con <b>4 definizioni</b>: scegli quella giusta entro <b>60 secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
       '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di 5 termini</b>: per andare avanti devi studiare le definizioni.</li>' +
@@ -193,4 +194,21 @@ function salvaQuizImp(btn) {
   var sc = {}; CLASSI().forEach(function (c) { var v = $('qzSc_' + c).value; sc[c] = v ? new Date(v).toISOString() : ''; });
   btn.disabled = true;
   api('impostazioni', { quiz: { soglia: $('qzSoglia').value, scadenze: sc } }).then(function () { return ricarica('Regole del quiz salvate'); }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
+}
+
+/* proroga individuale del quiz: una data dopo la scadenza della classe; si può togliere */
+function prorogaQuiz(id) {
+  var q = quizDi(id), base = q.proroga || q.scadenzaClasse, def = new Date(Math.max(Date.parse(base), Date.now()) + 2 * 86400000);
+  S.qzPr = isoLocale(def.toISOString());
+  var scelte = [{ t: 'Concedi la proroga', f: function () {
+    if (!S.qzPr) { toast('Scegli la data della proroga.', true); return; }
+    api('quizproroga', { alunno: id, data: new Date(S.qzPr).toISOString() }).then(function (x) { return ricarica('Proroga del quiz per ' + nomeAlunno(id) + ' fino a ' + oraIt(x.proroga)); }).catch(function (e) { toast(errMsg(e), true); });
+  } }];
+  if (q.proroga) scelte.push({ t: 'Togli la proroga', warn: true, f: function () {
+    api('quizproroga', { alunno: id, data: null }).then(function () { return ricarica('Proroga del quiz tolta a ' + nomeAlunno(id)); }).catch(function (e) { toast(errMsg(e), true); });
+  } });
+  finestra('Proroga del quiz · ' + nomeAlunno(id),
+    '<p style="margin:0">Scadenza del quiz della classe: <b>' + esc(oraIt(q.scadenzaClasse)) + '</b>' + (q.proroga ? ' · proroga attuale: <b>' + esc(oraIt(q.proroga)) + '</b>' : '') + '. ' +
+    nomeAlunno(id) + ' è a <b>' + q.indovinati + ' termini su ' + q.soglia + '</b>: con la proroga può continuare da lì.</p>' +
+    '<div><label for="qzPrData">Nuova scadenza del quiz per questo alunno</label><input id="qzPrData" type="datetime-local" value="' + esc(S.qzPr) + '" oninput="S.qzPr=this.value"></div>', scelte);
 }

@@ -42,7 +42,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '17/11/2026 · 8';
+var VERSIONE = '17/11/2026 · 9';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -220,7 +220,7 @@ function avvisoMancanti(aree) {
 /* app dell'alunno: a che punto è con il quiz (compare solo quando il docente lo ha aperto) */
 function notaQuizAlunno(q) {
   if (!q || q.stato === 'chiuso') return '';
-  var link = '<a href="/glossario?quiz=1" target="_blank" rel="noopener">Apri il quiz</a>';
+  var link = '<a href="/quiz" target="_blank" rel="noopener">Apri il quiz</a>';
   if (q.stato === 'superato') return '<div class="note ok" id="notaQuiz"><b>Quiz superato:</b> sei ammesso all\'interrogazione orale.</div>';
   if (q.stato === 'scaduto') return '<div class="note warn" id="notaQuiz"><b>Quiz non completato entro la scadenza</b> (' + q.indovinati + ' termini su ' + q.soglia + '): non sei ammesso all\'interrogazione.</div>';
   return '<div class="note" id="notaQuiz"><b>Seconda parte della prova: il quiz.</b> Devi indovinare ' + q.soglia + ' termini entro ' + esc(oraIt(q.scadenza)) + ' per essere ammesso all\'interrogazione. Sei a <b>' + q.indovinati + ' su ' + q.soglia + '</b>. ' + link + '</div>';
@@ -749,7 +749,7 @@ function reportPdf() {
   var sogliaQ = PAN.length ? quizDi(PAN[0].id).soglia : 260, scadQ = CLASSI().map(function (c) { var d = (((S.d.admin || {}).impostazioni || {}).quiz || { scadenze: {} }).scadenze[c]; return d ? c + ': ' + gg(d) : ''; }).filter(Boolean).join(' · ');
   var interrogati = PAN.filter(function (r) { return (voti[r.id] || {}).orale; });
   var pag3 = '<section class="pg">' + testata(titoloCl) + '<h1>Quiz, interrogazione orale e voto finale</h1>' +
-    '<div class="box"><b>Come funziona.</b> <b>Quiz</b> (seconda parte della prova): nella pagina pubblica del glossario, con il codice personale; un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno torna indietro di 5 termini; i progressi restano tra una sessione e l\'altra. Il quiz è superato con ' + sogliaQ + ' termini indovinati entro la scadenza fissata dal docente' + (scadQ ? ' (' + scadQ + ')' : '') + '. ' +
+    '<div class="box"><b>Come funziona.</b> <b>Quiz</b> (seconda parte della prova): nella pagina del quiz (' + esc(location.host) + '/quiz), separata dal glossario, con il codice personale o il QR della scheda; un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno torna indietro di 5 termini; i progressi restano tra una sessione e l\'altra. Il quiz è superato con ' + sogliaQ + ' termini indovinati entro la scadenza fissata dal docente' + (scadQ ? ' (' + scadQ + ')' : '') + '. ' +
     '<b>Ammissione</b>: solo chi supera il quiz è ammesso all\'interrogazione; chi non lo completa non viene interrogato e resta senza voto (le sue definizioni restano sui cartelloni). ' +
     '<b>Interrogazione orale</b>: l\'app pesca 10 termini tra tutti quelli del glossario (mai quelli dell\'alunno, bilanciati sulle aree); risposta corretta 1 punto, parziale ½, sbagliata 0. Voto orale = 3 + ½ per punto (massimo 8); per gli alunni esclusi dallo scritto 3 + ¼ per punto (massimo 5,5). ' +
     '<b>Voto finale</b> = media tra scritto e orale (per gli esclusi vale il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</div>' +
@@ -782,7 +782,7 @@ function reportPdf() {
     return '<table class="tab riep"><thead><tr><th style="width:19%">Riepilogo</th><th class="c" style="width:13%">Valore</th><th style="width:34%">Dettaglio</th><th>Date</th></tr></thead><tbody>' +
       riga('Tempo in app', x.ultimo ? durata(x.minuti) : '—', (x.accessi || 0) + ' accessi · ' + (x.giorni || 0) + ' giorni attivi', x.ultimo ? 'primo accesso ' + ggmm(x.primo) + '<br>ultimo accesso ' + ggmm(x.ultimo) : '<span class="m">nessun accesso</span>') +
       riga('Tempo sul quiz', q.sessioni ? tq(q.ms) : '—', q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') + ' · ' + q.corrette + ' corrette e ' + (q.errori || 0) + ' errori su ' + q.risposte + ' risposte · ' + (q.persi || 0) + ' termini persi · ' + q.indovinati + ' / ' + q.soglia + ' indovinati' + (q.massimo > q.indovinati ? ' (massimo ' + q.massimo + ')' : ''),
-        (q.sessioni ? 'prima sessione ' + ggmm(q.prima) + '<br>ultima sessione ' + ggmm(q.ultima) : '<span class="m">nessuna sessione</span>') + (q.scadenza ? '<br>scadenza ' + ggmm(q.scadenza) : '')) +
+        (q.sessioni ? 'prima sessione ' + ggmm(q.prima) + '<br>ultima sessione ' + ggmm(q.ultima) : '<span class="m">nessuna sessione</span>') + (q.scadenza ? '<br>scadenza ' + ggmm(q.scadenza) + (q.proroga ? ' (proroga individuale)' : '') : '')) +
       riga('Ammissione all\'orale', q.stato === 'superato' ? '<span class="ok">ammesso</span>' : q.stato === 'scaduto' ? '<span class="no">non ammesso</span>' : '—',
         q.stato === 'superato' ? 'quiz superato: ' + q.indovinati + ' termini indovinati' : q.stato === 'scaduto' ? 'quiz non completato entro la scadenza: niente interrogazione e niente voto' : q.stato === 'chiuso' ? '<span class="m">quiz non ancora aperto</span>' : 'quiz da completare: ' + q.indovinati + ' / ' + q.soglia,
         q.superata ? 'quiz superato il ' + ggmm(q.superata) : '—') +
