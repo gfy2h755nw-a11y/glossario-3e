@@ -5,6 +5,7 @@
  */
 const logica = require('./lib/logica');
 const { db } = require('./lib/firestore');
+const SP = require('./lib/spazi');
 const ATT = require('./lib/attivita');
 const auto = require('./lib/automatico');
 const DBX = require('./lib/dropbox');
@@ -41,6 +42,7 @@ const AZIONI = {
   // quiz di esercitazione (pagina pubblica, con il codice personale) e interrogazione orale (docenti con la facoltà «voti»)
   quizinizio: (d, p) => OR.quizInizio(d, p),
   quizrisposta: (d, p) => OR.quizRisposta(d, p),
+  quizregole: (d, p) => OR.quizRegole(d, p),
   quizproroga: (d, p) => OR.quizProroga(d, p),
   oralepesca: (d, p) => OR.oralePesca(d, p),
   oralecambia: (d, p) => OR.oraleCambia(d, p),
@@ -50,7 +52,12 @@ const AZIONI = {
   // segnale di presenza (ogni minuto, app aperta in primo piano): serve solo al registro attività
   presenza: async () => ({}),
   // pagina pubblica /glossario: nessun codice richiesto, solo definizioni approvate
-  pubblico: (d, p) => ED.pubblico(d, { ed: p.ed }),
+  pubblico: async (d, p) => Object.assign(await ED.pubblico(d, { ed: p.ed }), { spazi: await SP.elencoPubblico(d), att: d.spazio }),
+  // attività parallele: nuova attività con classi, aree, termini e regole propri; elenco; rimozione dall'elenco (i dati restano in archivio)
+  nuovaattivita: (d, p) => SP.nuovaAttivita(d, p),
+  attivitaelenco: (d, p) => SP.elenco(d, p),
+  rimuoviattivita: (d, p) => SP.rimuovi(d, p),
+  salvaaree: (d, p) => SP.salvaAree(d, p),
   // solo prof. Cerrato: backup, ripristino, Dropbox
   backup: async (d, p) => { await logica.verificaAdmin(d, p.codice); return auto.backupDa(await d.backupGrezzo(true), Date.now()); },
   ripristina: async (d, p) => {
@@ -91,9 +98,9 @@ const AZIONI = {
     let dropbox = 'non collegato';
     const segreto = await d.leggiSegreto('dropbox');
     if (DBX.configurato() && segreto && segreto.refresh) {
-      try { await DBX.carica(await DBX.tokenAccesso(segreto), NOME_DROPBOX, buf); dropbox = 'ok'; } catch (e) { dropbox = 'errore: ' + String(e.message || e).slice(0, 200); }
+      try { await DBX.carica(await DBX.tokenAccesso(segreto), auto.cartella(d) + NOME_DROPBOX, buf); dropbox = 'ok'; } catch (e) { dropbox = 'errore: ' + String(e.message || e).slice(0, 200); }
     }
-    return { nome: 'Glossario_definizioni_approvate.docx', base64: buf.toString('base64'), dropbox, percorso: NOME_DROPBOX };
+    return { nome: 'Glossario_definizioni_approvate.docx', base64: buf.toString('base64'), dropbox, percorso: auto.cartella(d) + NOME_DROPBOX };
   },
   dropboxinvia: async (d, p) => {
     await logica.verificaAdmin(d, p.codice);
@@ -125,10 +132,12 @@ exports.handler = async (event) => {
   const fn = AZIONI[p.azione];
   if (!fn) return risposta(400, { errore: 'Azione sconosciuta.' });
   try {
-    const d = db();
-    if (p.azione !== 'setup') await logica.migra(d);
+    // attività: quella scelta dal docente (att) oppure, per gli alunni, quella del loro codice
+    const d = await SP.risolvi(db, p);
+    if (p.azione !== 'setup' && d.spazio === 'main') await logica.migra(d);
     if (p.azione === 'login' || p.azione === 'scegli') await logica.manutenzione(d);
     const dati = await fn(d, p);
+    if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: await SP.elencoDocente(d) });
     if (TRACCIA[p.azione] && p.codice) await traccia(d, p, event);
     return risposta(200, { ok: true, dati });
   } catch (e) {

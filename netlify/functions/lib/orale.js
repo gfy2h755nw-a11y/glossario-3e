@@ -17,6 +17,7 @@
 const L = require('./logica');
 const CAT = require('./catalogo');
 const DATI = require('./dati');
+const REG = require('./regole');
 
 const QUIZ = { secondi: 60, tolleranza: 4, soglia: 260, maxSessioni: 300, opzioni: 4, passo: 5 };
 const LETTERE = 'ABCDEFGH';
@@ -40,8 +41,9 @@ function cfgQuiz(config, classe, tot, alunno) {
   const n = Number(q.soglia), sc = (q.scadenze || {})[classe] || null;
   // proroga individuale: vale solo se la classe ha il quiz aperto e se è più tarda della scadenza della classe
   const pr = alunno && alunno.quiz_proroga && sc && Date.parse(alunno.quiz_proroga) > Date.parse(sc) ? alunno.quiz_proroga : null;
-  const scad = pr || sc;
-  return { soglia: n >= 1 ? Math.min(Math.round(n), totale) : totale, totale, scadenza: scad, scadenzaClasse: sc, proroga: pr, aperto: !!scad, scaduto: !!scad && Date.now() > Date.parse(scad), passo: QUIZ.passo };
+  const scad = pr || sc, R = REG.di(config).quiz;
+  return { soglia: n >= 1 ? Math.min(Math.round(n), totale) : totale, totale, scadenza: scad, scadenzaClasse: sc, proroga: pr, aperto: !!scad, scaduto: !!scad && Date.now() > Date.parse(scad),
+    passo: R.passo, secondi: R.secondi, opzioni: R.opzioni };
 }
 /* lettura leggera (configurazione + un alunno): il quiz fa una richiesta a ogni risposta e non deve rileggere tutto il glossario */
 async function contestoQuiz(db, codice) {
@@ -72,7 +74,7 @@ function riepilogoQuiz(q, cfg) {
     risposte: s.reduce((x, y) => x + (y.r || 0), 0), corrette: s.reduce((x, y) => x + (y.c || 0), 0), errori: s.reduce((x, y) => x + (y.e || 0), 0), persi: s.reduce((x, y) => x + (y.p || 0), 0),
     massimo: Math.max(ind, (q && q.max) || 0), ms: s.reduce((x, y) => x + (y.ms || 0), 0) };
 }
-function nuovaDomanda(cat, q, stessa) {
+function nuovaDomanda(cat, q, stessa, nOpz) {
   const tutti = tutte(cat), ok = q.ok || {}, prec = q.corrente ? chiave(q.corrente.a, q.corrente.k) : '';
   let t;
   if (stessa && q.corrente && cat[q.corrente.a] && cat[q.corrente.a][q.corrente.k] && !ok[prec]) t = { a: q.corrente.a, k: q.corrente.k }; // domanda lasciata a metà: si ripresenta lo stesso termine
@@ -88,13 +90,13 @@ function nuovaDomanda(cat, q, stessa) {
   const altri = voci.map((x, k) => k).filter((k) => k !== t.k && voci[k][1] !== voci[t.k][1]);
   for (let x = altri.length - 1; x > 0; x--) { const y = caso(x + 1); [altri[x], altri[y]] = [altri[y], altri[x]]; }
   const o = [t.k], testi = { [voci[t.k][1]]: 1 };
-  altri.forEach((k) => { if (o.length < QUIZ.opzioni && !testi[voci[k][1]]) { testi[voci[k][1]] = 1; o.push(k); } });
+  altri.forEach((k) => { if (o.length < (nOpz || QUIZ.opzioni) && !testi[voci[k][1]]) { testi[voci[k][1]] = 1; o.push(k); } });
   for (let x = o.length - 1; x > 0; x--) { const y = caso(x + 1); [o[x], o[y]] = [o[y], o[x]]; }
   return { a: t.a, k: t.k, o, g: LETTERE[o.indexOf(t.k)], t: Date.now() };
 }
-function vistaDomanda(cat, cur, n) {
-  const ar = DATI.AREE.find((x) => String(x.n) === String(cur.a)) || {};
-  const d = { n, area: cur.a, nomeArea: ar.it || '', colore: ar.colore || '', termine: cat[cur.a][cur.k][0], secondi: QUIZ.secondi, lettere: cur.o.map((k, i) => LETTERE[i]) };
+function vistaDomanda(cat, cur, n, cfg) {
+  const ar = CAT.aree().find((x) => String(x.n) === String(cur.a)) || {};
+  const d = { n, area: cur.a, nomeArea: ar.it || '', colore: ar.colore || '', termine: cat[cur.a][cur.k][0], secondi: (cfg && cfg.secondi) || QUIZ.secondi, lettere: cur.o.map((k, i) => LETTERE[i]) };
   cur.o.forEach((k, i) => { d[LETTERE[i]] = cat[cur.a][k][1]; });
   return d;
 }
@@ -105,9 +107,9 @@ async function quizInizio(db, { codice }) {
   const q = { ok: v.ok || {}, seq: v.seq || 0, max: v.max || 0, sessioni: (v.sessioni || []).slice(-(QUIZ.maxSessioni - 1)), superata: v.superata || null, corrente: v.corrente || null };
   const ora = new Date().toISOString();
   q.sessioni.push({ i: ora, f: ora, ms: 0, r: 0, c: 0, e: 0, s: 0, n: 0, p: 0 });
-  q.corrente = nuovaDomanda(cat, q, true);
+  q.corrente = nuovaDomanda(cat, q, true, cfg.opzioni);
   await db.sostituisciQuiz(a.id, q);
-  return { nome: L.nomePubblico(a.nome), stato: riepilogoQuiz(q, cfg), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: QUIZ.passo, domanda: vistaDomanda(cat, q.corrente, 1) };
+  return { nome: L.nomePubblico(a.nome), stato: riepilogoQuiz(q, cfg), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
 }
 async function quizRisposta(db, { codice, scelta, pausa }) {
   const { a, cat, cfg } = await contestoQuiz(db, codice);
@@ -116,11 +118,11 @@ async function quizRisposta(db, { codice, scelta, pausa }) {
   if (!q || !q.corrente || !q.sessioni || !q.sessioni.length || !cat[q.corrente.a] || !cat[q.corrente.a][q.corrente.k]) L.errore('Sessione scaduta: ricomincia il quiz.');
   // il tempo parte quando la domanda compare: si toglie la pausa passata a leggere l'esito della precedente (al massimo 15 secondi)
   const cur = q.corrente, ora = Date.now(), tempo = Math.max(0, ora - cur.t - Math.min(Math.max(Number(pausa) || 0, 0), 15000));
-  const scaduta = tempo > (QUIZ.secondi + QUIZ.tolleranza) * 1000 || !scelta || LETTERE.slice(0, (cur.o || [0, 1]).length).indexOf(scelta) < 0;
+  const scaduta = tempo > (cfg.secondi + QUIZ.tolleranza) * 1000 || !scelta || LETTERE.slice(0, (cur.o || [0, 1]).length).indexOf(scelta) < 0;
   const corretta = !scaduta && scelta === cur.g;
   const s = q.sessioni[q.sessioni.length - 1], kk = chiave(cur.a, cur.k);
   q.ok = q.ok || {};
-  s.r = (s.r || 0) + 1; s.ms = (s.ms || 0) + Math.min(tempo, (QUIZ.secondi + QUIZ.tolleranza) * 1000); s.f = new Date(ora).toISOString();
+  s.r = (s.r || 0) + 1; s.ms = (s.ms || 0) + Math.min(tempo, (cfg.secondi + QUIZ.tolleranza) * 1000); s.f = new Date(ora).toISOString();
   if (scaduta) s.s = (s.s || 0) + 1;
   let persi = 0;
   if (corretta) {
@@ -130,7 +132,7 @@ async function quizRisposta(db, { codice, scelta, pausa }) {
     s.e = (s.e || 0) + 1;
     // risposta sbagliata o non data: non si mostra quella giusta e si torna indietro di 5 termini (gli ultimi indovinati). A prova superata non si perde più nulla.
     if (!q.superata) {
-      const ultimi = Object.keys(q.ok).sort((x, y) => (q.ok[y] || 0) - (q.ok[x] || 0)).slice(0, QUIZ.passo);
+      const ultimi = Object.keys(q.ok).sort((x, y) => (q.ok[y] || 0) - (q.ok[x] || 0)).slice(0, cfg.passo);
       ultimi.forEach((k) => { delete q.ok[k]; }); persi = ultimi.length; s.p = (s.p || 0) + persi;
     }
   }
@@ -139,9 +141,17 @@ async function quizRisposta(db, { codice, scelta, pausa }) {
   if (!q.superata && ind >= cfg.soglia) q.superata = new Date(ora).toISOString();
   const esito = { corretta, scaduta, persi, termine: cat[cur.a][cur.k][0] };
   if (corretta) esito.giusta = cur.g; // la risposta giusta non si svela mai dopo un errore
-  q.corrente = nuovaDomanda(cat, q, false);
+  q.corrente = nuovaDomanda(cat, q, false, cfg.opzioni);
   await db.sostituisciQuiz(a.id, q);
-  return { esito, stato: riepilogoQuiz(q, cfg), sessione: { r: s.r, c: s.c, e: s.e || 0, n: s.n, p: s.p || 0, ms: s.ms }, domanda: vistaDomanda(cat, q.corrente, s.r + 1) };
+  return { esito, stato: riepilogoQuiz(q, cfg), sessione: { r: s.r, c: s.c, e: s.e || 0, n: s.n, p: s.p || 0, ms: s.ms }, domanda: vistaDomanda(cat, q.corrente, s.r + 1, cfg) };
+}
+/* regole del quiz per la pagina d'ingresso (dal codice): se il codice non c'è, quelle di sempre */
+async function quizRegole(db, { codice }) {
+  const c = String(codice == null ? '' : codice).trim().toUpperCase();
+  const config = await db.leggiConfig();
+  const a = c && config ? await db.leggiAlunnoCodice(c) : null;
+  const R = REG.di(a ? config : {}).quiz;
+  return { secondi: R.secondi, opzioni: R.opzioni, passo: R.passo };
 }
 /* tabellone del quiz per i docenti */
 function tabelloneQuiz(stato) {
@@ -151,7 +161,7 @@ function tabelloneQuiz(stato) {
 }
 
 /* ---------------- interrogazione orale ---------------- */
-function votoOrale(punti, escluso) { return Math.round((ORALE.base + (escluso ? ORALE.passoEsclusi : ORALE.passo) * punti) * 1000) / 1000; }
+function votoOrale(punti, escluso, config) { const O = REG.di(config).orale; return Math.round((O.base + (escluso ? O.passoEsclusi : O.passo) * punti) * 1000) / 1000; }
 function docenteVoti(stato, codice) { const chi = L.identifica(stato, codice); L.permesso(chi, 'voti'); return chi; }
 function alunno(stato, id) { const a = stato.alunni.find((x) => x.id === id); if (!a) L.errore('Alunno non trovato.'); return a; }
 function propri(stato, a) { const s = {}; stato.termini.filter((t) => t.alunno_id === a.id).forEach((t) => { s[chiave(t.area, L.indiceTermine(t))] = 1; }); return s; }
@@ -183,13 +193,14 @@ async function oralePesca(db, { codice, alunno: id, nuova }) {
   const aree = Object.keys(cat).map(Number).sort((x, y) => x - y), miei = propri(stato, a), freq = usciti(stato, a);
   // 10 domande: parti uguali per area, il resto alle aree a rotazione (cambia a ogni interrogazione della classe)
   const fatte = stato.alunni.filter((x) => L.classeDi(x) === L.classeDi(a) && (x.orale || x.orale_bozza) && x.id !== a.id).length;
-  const quota = aree.map(() => Math.floor(ORALE.domande / aree.length));
-  for (let i = 0, r = ORALE.domande - quota.reduce((x, y) => x + y, 0); i < r; i++) quota[(fatte + i) % aree.length]++;
+  const ND = REG.di(stato.config).orale.domande;
+  const quota = aree.map(() => Math.floor(ND / aree.length));
+  for (let i = 0, r = ND - quota.reduce((x, y) => x + y, 0); i < r; i++) quota[(fatte + i) % aree.length]++;
   let termini = []; const vietati = Object.assign({}, miei);
   aree.forEach((ar, i) => { const s = scegliIn(cat, ar, quota[i], vietati, freq); s.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; }); termini = termini.concat(s); });
   // se un'area non ha abbastanza termini non suoi, si completa con le altre
-  for (let i = 0; termini.length < ORALE.domande && i < aree.length * 3; i++) { const s = scegliIn(cat, aree[i % aree.length], 1, vietati, freq); s.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; termini.push(t); }); }
-  if (termini.length < ORALE.domande) L.errore('Non ci sono abbastanza termini per l\'interrogazione.');
+  for (let i = 0; termini.length < ND && i < aree.length * 3; i++) { const s = scegliIn(cat, aree[i % aree.length], 1, vietati, freq); s.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; termini.push(t); }); }
+  if (termini.length < ND) L.errore('Non ci sono abbastanza termini per l\'interrogazione.');
   for (let x = termini.length - 1; x > 0; x--) { const y = caso(x + 1); [termini[x], termini[y]] = [termini[y], termini[x]]; }
   const bozza = { data: new Date().toISOString(), termini, cambi: 0 };
   await db.scriviAlunno(a.id, { orale_bozza: bozza });
@@ -212,7 +223,7 @@ async function oraleSalva(db, { codice, alunno: id, esiti, nota }) {
   if (!b || !b.termini) L.errore('Interrogazione non trovata: pesca di nuovo i termini.');
   if (!Array.isArray(esiti) || esiti.length !== b.termini.length || esiti.some((e) => [0, 0.5, 1].indexOf(e) < 0)) L.errore('Segna l\'esito di tutte le risposte prima di salvare.');
   const escluso = L.valuta(stato, a, Date.now()).escluso, punti = esiti.reduce((x, y) => x + y, 0);
-  const orale = { data: new Date().toISOString(), docente: chi.nome, escluso, punti, voto: votoOrale(punti, escluso), cambi: b.cambi || 0, nota: String(nota || '').replace(/\s+/g, ' ').trim().slice(0, 300),
+  const orale = { data: new Date().toISOString(), docente: chi.nome, escluso, punti, voto: votoOrale(punti, escluso, stato.config), cambi: b.cambi || 0, nota: String(nota || '').replace(/\s+/g, ' ').trim().slice(0, 300),
     termini: b.termini.map((t, i) => ({ a: t.a, k: t.k, it: cat[t.a][t.k][0], e: esiti[i] })) };
   const storico = (a.orale_storico || []).concat(a.orale ? [a.orale] : []).slice(-5);
   await db.scriviAlunno(a.id, { orale, orale_bozza: null, orale_storico: storico });
@@ -239,4 +250,4 @@ async function quizProroga(db, { codice, alunno: id, data }) {
   return { alunno: a.id, proroga: iso };
 }
 
-module.exports = { quizProroga, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };
+module.exports = { quizRegole, quizProroga, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };

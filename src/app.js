@@ -12,12 +12,20 @@ function memo(k, v) { try { if (v === undefined) return localStorage.getItem(k);
 var AZ_LETTURA = ['login', 'archivioconsulta', 'archiviofile', 'pubblico', 'backup', 'presenza'];
 function api(azione, dati) {
   if (S.d && S.d.solaLettura && AZ_LETTURA.indexOf(azione) < 0) return Promise.reject(new Error('Stai consultando un\'edizione archiviata: è in sola lettura. Usa «Torna all\'edizione in corso» per lavorare.'));
-  var corpo = Object.assign({ azione: azione, codice: S.codice }, dati || {});
+  var corpo = Object.assign({ azione: azione, codice: S.codice }, S.att && S.att !== 'main' ? { att: S.att } : {}, dati || {});
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
     .catch(function () { throw new Error('Connessione assente: controlla internet e riprova.'); })
     .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server (' + r.status + ').' }; }); })
     .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
 }
+/* indirizzo della pagina pubblica dell'attività aperta (con ?att= per le attività parallele) */
+function urlPubblico() { return location.origin + '/glossario' + (S.d && S.d.att && S.d.att !== 'main' ? '?att=' + encodeURIComponent(S.d.att) : ''); }
+/* regole dell'attività aperta (scritto, quiz, interrogazione, voto finale): per la 3E e la 3F quelle di sempre */
+function RG() { var r = (S.d && S.d.regole) || {}; return { quiz: r.quiz || { secondi: 60, opzioni: 4, passo: 5 }, orale: r.orale || { domande: 10, base: 3, passo: 0.5, passoEsclusi: 0.25, max: 8, maxEsclusi: 5.5 }, finale: r.finale || { pesoScritto: 50 }, scritto: r.scritto || {} }; }
+function frz(x) { return x === 0.5 ? '½' : x === 0.25 ? '¼' : fv(x); }
+function nDef(n) { return n === 4 ? 'quattro definizioni' : n + ' definizioni'; }
+function regolaOrale() { var o = RG().orale; return 'Voto orale = ' + fv(o.base) + ' + ' + frz(o.passo) + ' per punto'; }
+function mediaTxt() { var p = RG().finale.pesoScritto; return p === 50 ? 'media tra scritto e orale' : 'media pesata tra scritto (' + p + ' %) e orale (' + (100 - p) + ' %)'; }
 function errMsg(e) { return e && e.message ? e.message : String(e); }
 var STATO_TXT = { '': 'Da scegliere', inviata: 'Inviata', correggere: 'Da rivedere', approvata: 'Approvata' };
 function chip(st) { return '<span class="chip s-' + (st || 'vuota') + '">' + STATO_TXT[st || ''] + '</span>'; }
@@ -42,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '17/11/2026 · 13';
+var VERSIONE = '18/11/2026 · 4';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -80,16 +88,34 @@ function vistaLogin(msg) {
   $('flogin').onsubmit = function (e) { e.preventDefault(); entra($('cod').value); };
   $('cod').focus();
 }
-function entra(codice) {
+/* attività su cui lavora il docente (3E-3F o un'attività parallela): ricordata per codice su questo dispositivo */
+function chiaveAtt() { return 'glossario_att_' + (S.codice || ''); }
+function entra(codice, riprova) {
   var b = $('bentra'); if (b) { b.disabled = true; b.textContent = 'Accesso…'; }
   S.codice = String(codice || '').trim().toUpperCase();
+  S.att = memo(chiaveAtt()) || null;
   api('login').then(function (d) {
+    if (d.utente.ruolo !== 'docente') { S.att = null; memo(chiaveAtt(), null); }
     S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
     if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: EN() ? d.utente.lingua || 'it' : 'it', classe: (S.filtro && S.filtro.classe) || 'tutte' };
     render();
-  }).catch(function (e) { memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e)); });
+  }).catch(function (e) {
+    // l'attività ricordata non c'è più: si torna a quella principale
+    if (S.att && !riprova && /non c'è più/.test(errMsg(e))) { memo(chiaveAtt(), null); S.att = null; return entra(codice, true); }
+    memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e));
+  });
 }
-function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; S.pag = null; ricordaPag(null); document.body.classList.remove('menu-on'); vistaLogin(); }
+function cambiaAttivita(id) {
+  var prec = S.att;
+  S.att = id && id !== 'main' ? id : null;
+  api('login').then(function (d) {
+    memo(chiaveAtt(), S.att); S.d = d; S.sel = {}; S.or = null; S.poster = null; S.datePerClasse = null;
+    S.filtro = { area: 'tutte', stato: 'inviata', lingua: 'it', classe: 'tutte' };
+    vistaDocente(); window.scrollTo(0, 0); toast('Attività: ' + nomeAttivita());
+  }).catch(function (e) { S.att = prec; toast(errMsg(e), true); vistaDocente(); });
+}
+function nomeAttivita() { var x = (S.d.spazi || []).filter(function (y) { return y.id === (S.d.att || 'main'); })[0]; return x ? x.nome : ''; }
+function esci() { memo(KEY_COD, null); S.codice = null; S.att = null; S.d = null; S.poster = null; S.pag = null; ricordaPag(null); document.body.classList.remove('menu-on'); vistaLogin(); }
 function ricarica() { api('login').then(function (d) { S.d = d; render(); toast('Dati aggiornati'); }).catch(function (e) { toast(errMsg(e), true); }); }
 function render() {
   clearInterval(S.timer);
@@ -167,7 +193,7 @@ function bloccoVoto() {
     (EN() ? '<div class="vls">' + mini('Italiano', v.votoIt, v.errIt, v.invIt) + mini('Inglese', v.votoEn, v.errEn, v.invEn) + '</div>'
       : '<div class="vls"><div class="vl"><div class="muted disp" style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px">Le tue risposte</div><div class="vl-n">' + (v.invIt || 0) + '</div><div class="muted" style="font-size:13px">' + (v.errIt === 1 ? '1 errata' : (v.errIt || 0) + ' errate') + '</div></div></div>') + '</div>' +
     (v.tetto && !v.manuale ? '<div class="note warn"><b>Voto dello scritto limitato a ' + v.tettoValore + '</b>: non hai risposto in tempo ai termini ricevuti' + (v.calcolato != null && v.calcolato > v.tettoValore ? ' (il calcolo darebbe ' + fv(v.calcolato) + ')' : '') + '.</div>' : '') +
-    (v.orale ? '<div class="note" id="notaOrale"><b>Interrogazione orale: ' + fv(v.orale.voto) + '</b> (' + fv(v.orale.punti) + ' punti su 10)' + (v.finale != null ? ' · <b>Voto finale (media tra scritto e orale): ' + fv(v.finale) + '</b>' : '') + '</div>' : '') +
+    (v.orale ? '<div class="note" id="notaOrale"><b>Interrogazione orale: ' + fv(v.orale.voto) + '</b> (' + fv(v.orale.punti) + ' punti su ' + RG().orale.domande + ')' + (v.finale != null ? ' · <b>Voto finale (' + mediaTxt() + '): ' + fv(v.finale) + '</b>' : '') + '</div>' : '') +
     '<p class="muted" style="margin:0;font-size:14px">' + esc(v.ratio) + '</p>' +
     notaQuizAlunno(v.quiz) + '</section>';
 }
@@ -236,8 +262,8 @@ function bloccoStampaPoster() {
     (RO() ? '' : '<div class="row"><button class="btn sec" onclick="apriTraduzioni()">Aggiungi termini e definizioni in inglese</button>' +
       '<span class="muted" style="font-size:14px">' + (mancano ? '<b style="color:#9A4A00">' + mancano + (mancano === 1 ? ' termine approvato è' : ' termini approvati sono') + ' ancora senza inglese</b>: sul cartellone bilingue resterebbero solo in italiano.' : 'Tutti i termini approvati hanno la versione inglese: puoi controllarla e correggerla.') + '</span></div>') +
     '<b>Stampa cartelloni in PDF (70×100)</b>' + avvisoMancanti() +
-    '<div class="row"><button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'it\')">I 4 cartelloni in italiano</button>' +
-    '<button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'iten\')">I 4 cartelloni in italiano e inglese</button>' +
+    '<div class="row"><button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'it\')">' + (S.d.aree.length === 1 ? 'Il cartellone' : 'I ' + S.d.aree.length + ' cartelloni') + ' in italiano</button>' +
+    '<button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'iten\')">' + (S.d.aree.length === 1 ? 'Il cartellone' : 'I ' + S.d.aree.length + ' cartelloni') + ' in italiano e inglese</button>' +
     '<button class="btn sec" onclick="stampaCartelloni(S.poster, $(\'pabb\').checked, S.posterLingua || \'it\')">Solo questo cartellone</button></div>' +
     '<label class="row" style="gap:8px;font-weight:400;cursor:pointer"><input type="checkbox" id="pabb" style="width:20px;height:20px"> Con abbondanza di 3 mm per la tipografia (706×1006 mm)</label>' +
     '<span class="muted" style="font-size:14px">Il testo si adatta da solo a quanti termini, definizioni e lingue ci sono. Generati con i dati di ' + (RO() ? 'questa edizione archiviata' : 'questa edizione') + '. Si aprono nella stampa: scegli «Salva come PDF» e, nelle opzioni, attiva «Grafica di sfondo».</span></div>';
@@ -246,7 +272,7 @@ function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
-  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario', as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: urlPubblico(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
   var scala = function () { var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth; sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px'; };
   Poster.adatta(sc); scala();
   // si riadatta quando i caratteri veri sono caricati: misurare con quelli di riserva fa uscire le voci dalle colonne
@@ -260,7 +286,7 @@ function vistaAlunno() {
   var miei = S.d.termini.filter(function (t) { return t.alunno === u.id; });
   var pn = a ? u.gruppo : (miei[0] ? miei[0].area : 1);
   // 3F: termini di tutte le aree
-  if (!a) a = { n: '', it: 'Termini di tutte e quattro le aree', en: '', colore: '#15212B', tutte: true };
+  if (!a) a = { n: '', it: 'Termini di tutte ' + (S.d.aree.length > 1 ? 'e ' + (['', '', 'due', 'tre', 'quattro', 'cinque', 'sei'][S.d.aree.length] || S.d.aree.length) + ' ' : '') + 'le aree', en: '', colore: '#15212B', tutte: true };
   var n = function (l) { return miei.filter(function (t) { return T(t, l, 'stato') === 'approvata'; }).length; };
   var h = testata(u.nome + ' · ' + (a.tutte ? 'Classe ' + u.classe : 'Classe ' + (u.classe || '3E') + ' · Gruppo ' + u.gruppo)) + '<main class="wrap stack">';
   h += '<section class="card" style="border-top:8px solid ' + a.colore + '"><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + (a.tutte ? 'Classe ' + esc(u.classe) : 'Area ' + a.n) + '</div>' +
@@ -456,10 +482,12 @@ function bloccoAdmin(quale) {
     (EN() ? '<div><label for="scEn">Scadenza inglese</label><input id="scEn" type="datetime-local" value="' + isoLocale(imp.scadenzaEn) + '"></div></div>' : '<div><label for="gIt">Termini ricevuti da un escluso: giorni per rispondere</label><input id="gIt" type="text" inputmode="numeric" value="' + imp.giorniIt + '"></div></div>') +
     (EN() ? '<div class="grid2"><div><label for="gIt">Termini ricevuti da un escluso: giorni per l\'italiano</label><input id="gIt" type="text" inputmode="numeric" value="' + imp.giorniIt + '"></div>' +
     '<div><label for="gEn">Termini ricevuti da un escluso: giorni per l\'inglese</label><input id="gEn" type="text" inputmode="numeric" value="' + imp.giorniEn + '"></div></div>' : '') +
+    // attività con regole proprie: la penalità è fissata alla creazione (scritto, quiz, interrogazione, voto finale)
+    (RG().scritto.penalita != null ? '<div class="note" style="margin:0"><b>Regole di questa attività</b>: scritto da ' + fv(imp.votoMax) + ', −' + fv(RG().scritto.penalita) + ' per errore, minimo ' + fv(imp.votoMin) + ', mancata consegna ' + fv(RG().scritto.votoEsclusione) + '. Quiz: ' + RG().quiz.secondi + ' secondi, ' + RG().quiz.opzioni + ' definizioni, −' + RG().quiz.passo + ' termini a ogni errore. ' + regolaOrale() + ' su ' + RG().orale.domande + ' termini (massimo ' + fv(RG().orale.max) + '). Voto finale: ' + mediaTxt() + '. Sono fissate alla creazione dell\'attività.</div>' : '' +
     '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Penalità per ogni risposta errata</legend>' +
     [['A', '−0,25 per errore: ' + errFino4(0.25) + ' errori per scendere da ' + fv(imp.votoMax) + ' a ' + imp.votoMin], ['B', '−0,50 per errore: ' + errFino4(0.5) + ' errori per scendere da ' + fv(imp.votoMax) + ' a ' + imp.votoMin]].map(function (o) {
       return '<label class="op' + (imp.proposta === o[0] ? ' on' : '') + '" for="pr' + o[0] + '"><input type="radio" name="prop" id="pr' + o[0] + '" value="' + o[0] + '"' + (imp.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>';
-    }).join('') + '</fieldset>' +
+    }).join('') + '</fieldset>') +
     '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli alunni esclusi</legend>' +
     [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe (uno solo a testa)'], ['manuale', 'Decido io: restano fermi finché non li passo a chi scelgo (pagina «Proroghe e passaggi»)']].map(function (o) {
       return '<label class="op' + (imp.riassegnazione === o[0] ? ' on' : '') + '" for="ri' + o[0] + '"><input type="radio" name="riass" id="ri' + o[0] + '" value="' + o[0] + '"' + (imp.riassegnazione === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + o[1] + '</span></label>';
@@ -487,7 +515,7 @@ function bloccoAdmin(quale) {
   h += '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Tabellone dei voti</h2>' + (ADM() ? '<span class="chip s-vuota">Solo prof. Cerrato</span>' : '') + '</div>' +
     (CLASSI().length > 1 ? '<div class="grid4">' + selClasse('fct', 'vistaDocente()') + '</div>' : '') +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th>' + (EN() ? '<th style="text-align:right">Voto IT</th><th style="text-align:right">Voto EN</th><th style="text-align:right">Media</th>' : '<th style="text-align:right">Errori</th>') + '<th style="text-align:right">' + (EN() ? 'Finale calcolato' : 'Voto calcolato') + '</th><th>Voto manuale</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th></tr></thead><tbody>' +
-    attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo. Il <b>finale</b> è la media tra scritto e orale (pagina «Interrogazioni orali»): oltre il mezzo voto sale all\'intero, sotto scende.</p>';
+    attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo. Il <b>finale</b> è la ' + mediaTxt() + ' (pagina «Interrogazioni orali»): oltre il mezzo voto sale all\'intero, sotto scende.</p>';
   if (esclusi.length) {
     h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th></th></tr></thead><tbody>' +
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + ((r.riassegnatiA || []).length ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : (r.bloccoRiass || A.impostazioni.riassegnazione === 'manuale' ? '<br><span class="muted" style="font-size:13px">Termini fermi: decidi tu (pagina «Proroghe e passaggi»)</span>' : '')) + '</td><td class="n"><b>' + fv(v.voto) + '</b></td><td class="n">' + (v.orale ? fv(v.orale.voto) : '—') + '</td><td class="n"><b>' + fv(v.finale) + '</b>' + (v.escluso && v.finale != null ? '<br><span class="muted" style="font-weight:400;font-size:13px">solo orale</span>' : '') + '</td>' +
@@ -545,7 +573,8 @@ function statisticheTarga() {
   };
 }
 function stampaTarga() {
-  var html = Poster.targa(S.d.aree.map(function (a) { return { n: a.n, it: a.it, colore: a.colore }; }), statisticheTarga(), location.origin + '/glossario');
+  Poster.targa.autori = (S.d.alunni || []).length; Poster.targa.classi = CLASSI().length;
+  var html = Poster.targa(S.d.aree.map(function (a) { return { n: a.n, it: a.it, colore: a.colore, numero: S.d.areeMie ? a.numero : undefined, tot: (S.d.termini || []).filter(function (t) { return t.area == a.n; }).length }; }), statisticheTarga(), location.origin + '/glossario' + (S.d.att && S.d.att !== 'main' ? '?att=' + encodeURIComponent(S.d.att) : ''));
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Targa introduttiva Glossario</title>' +
@@ -641,7 +670,7 @@ function reportPdf() {
   // da chi ha ricevuto i termini (alunni esclusi)
   var donatori = function (id) { var o = []; termDi(id).forEach(function (t) { if (t.ereditato && t.alunnoOrig && o.indexOf(t.alunnoOrig) < 0) o.push(t.alunnoOrig); }); return o; };
   var cognome = function (id) { return nomeAlunno(id).split(' ')[0]; };
-  var PEN = imp.proposta === 'A' ? 0.25 : 0.5, punti = function (n) { return n ? '−' + (n * PEN).toFixed(2).replace('.', ',') : '0'; };
+  var PEN = imp.penalita != null ? imp.penalita : (imp.proposta === 'A' ? 0.25 : 0.5), punti = function (n) { return n ? '−' + (n * PEN).toFixed(2).replace('.', ',') : '0'; };
 
   /* --- grafici SVG (statici, per la stampa) --- */
   var F = 'font-family:Arial,sans-serif';
@@ -749,10 +778,10 @@ function reportPdf() {
   var sogliaQ = PAN.length ? quizDi(PAN[0].id).soglia : 260, scadQ = CLASSI().map(function (c) { var d = (((S.d.admin || {}).impostazioni || {}).quiz || { scadenze: {} }).scadenze[c]; return d ? c + ': ' + gg(d) : ''; }).filter(Boolean).join(' · ');
   var interrogati = PAN.filter(function (r) { return (voti[r.id] || {}).orale; });
   var pag3 = '<section class="pg">' + testata(titoloCl) + '<h1>Quiz, interrogazione orale e voto finale</h1>' +
-    '<div class="box"><b>Come funziona.</b> <b>Quiz</b> (seconda parte della prova): nella pagina del quiz (' + esc(location.host) + '/quiz), separata dal glossario, con il codice personale o il QR della scheda; un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno torna indietro di 5 termini; i progressi restano tra una sessione e l\'altra. Il quiz è superato con ' + sogliaQ + ' termini indovinati entro la scadenza fissata dal docente' + (scadQ ? ' (' + scadQ + ')' : '') + '. ' +
+    '<div class="box"><b>Come funziona.</b> <b>Quiz</b> (seconda parte della prova): nella pagina del quiz (' + esc(location.host) + '/quiz), separata dal glossario, con il codice personale o il QR della scheda; un termine, ' + nDef(RG().quiz.opzioni) + ', ' + RG().quiz.secondi + ' secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno torna indietro di ' + RG().quiz.passo + ' termini; i progressi restano tra una sessione e l\'altra. Il quiz è superato con ' + sogliaQ + ' termini indovinati entro la scadenza fissata dal docente' + (scadQ ? ' (' + scadQ + ')' : '') + '. ' +
     '<b>Ammissione</b>: solo chi supera il quiz è ammesso all\'interrogazione; chi non lo completa non viene interrogato e resta senza voto (le sue definizioni restano sui cartelloni). ' +
-    '<b>Interrogazione orale</b>: l\'app pesca 10 termini tra tutti quelli del glossario (mai quelli dell\'alunno, bilanciati sulle aree); risposta corretta 1 punto, parziale ½, sbagliata 0. Voto orale = 3 + ½ per punto (massimo 8); per gli alunni esclusi dallo scritto 3 + ¼ per punto (massimo 5,5). ' +
-    '<b>Voto finale</b> = media tra scritto e orale (per gli esclusi vale il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</div>' +
+    '<b>Interrogazione orale</b>: l\'app pesca ' + RG().orale.domande + ' termini tra tutti quelli del glossario (mai quelli dell\'alunno, bilanciati sulle aree); risposta corretta 1 punto, parziale ½, sbagliata 0. ' + regolaOrale() + ' (massimo ' + fv(RG().orale.max) + '); per gli alunni esclusi dallo scritto ' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto (massimo ' + fv(RG().orale.maxEsclusi) + '). ' +
+    '<b>Voto finale</b> = ' + mediaTxt() + ' (per gli esclusi vale il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</div>' +
     '<table class="tab ora"><thead><tr><th style="width:19%">Alunno</th><th class="c" style="width:6%">Classe</th><th class="c">Scritto</th><th class="c">Sessioni quiz</th><th class="c">Tempo nel quiz</th><th class="c">Risposte</th><th class="c">Corrette</th><th class="c">Errori</th><th class="c">Termini persi</th><th class="c">Indovinati</th><th class="c" style="width:12%">Ammissione all\'orale</th><th class="c">Punti orale</th><th class="c">Orale</th><th class="c">Finale</th></tr></thead><tbody>' +
     PAN.map(function (r) {
       var v = voti[r.id] || {}, q = quizDi(r.id), o = v.orale;
@@ -764,7 +793,7 @@ function reportPdf() {
       '<table class="tab ora"><thead><tr><th style="width:17%">Alunno</th><th style="width:17%">Data e docente</th><th>Termini chiesti</th><th class="c" style="width:9%">Punti</th><th class="c" style="width:8%">Voto orale</th></tr></thead><tbody>' +
       interrogati.map(function (r) {
         var o = voti[r.id].orale;
-        return '<tr><td><b>' + esc(r.nome) + '</b>' + (o.escluso ? '<br><span class="m">escluso: massimo 5,5</span>' : '') + '</td><td>' + esc(gg(o.data)) + (o.docente ? '<br><span class="m">' + esc(o.docente) + '</span>' : '') + '</td>' +
+        return '<tr><td><b>' + esc(r.nome) + '</b>' + (o.escluso ? '<br><span class="m">escluso: massimo ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td>' + esc(gg(o.data)) + (o.docente ? '<br><span class="m">' + esc(o.docente) + '</span>' : '') + '</td>' +
           '<td>' + (o.termini || []).map(function (t) { return esc(t.it) + ' ' + (t.e === 1 ? '<span class="ok">✓</span>' : t.e === 0.5 ? '<b>½</b>' : '<span class="no">✗</span>'); }).join(' · ') +
           (o.cambi ? '<br><span class="m">Termini cambiati durante l\'interrogazione: ' + o.cambi + '</span>' : '') + (o.nota ? '<br><span class="m">Nota: ' + esc(o.nota) + '</span>' : '') + '</td>' +
           '<td class="c">' + fv(o.punti) + ' / 10</td><td class="c"><b>' + fv(o.voto) + '</b></td></tr>';
@@ -788,8 +817,8 @@ function reportPdf() {
         q.superata ? 'quiz superato il ' + ggmm(q.superata) : '—') +
       riga('Voto scritto', v.escluso ? '<span class="no">escluso</span>' : fv(v.voto), v.escluso ? esc(v.motivo || 'escluso dal compito') : r.errate + (r.errate === 1 ? ' risposta errata' : ' risposte errate') + ' · ' + r.approvate + ' / ' + r.termini + ' approvate' + (v.manuale != null ? ' · voto del docente' : ''),
         prima ? 'prima risposta ' + ggmm(prima) + '<br>ultima risposta ' + ggmm(ultima) : '<span class="m">nessuna risposta</span>') +
-      riga('Voto orale', o ? fv(o.voto) : '—', o ? fv(o.punti) + ' punti su 10' + (o.escluso ? ' · massimo 5,5' : '') + (o.docente ? ' · ' + esc(o.docente) : '') : '<span class="m">non ancora interrogato</span>', o ? 'interrogazione del ' + ggmm(o.data) : '—') +
-      riga('Voto finale', v.finale != null ? fv(v.finale) : '—', v.finale == null ? (q.stato === 'scaduto' ? '<span class="no">senza voto: quiz non completato</span>' : '<span class="m">manca l\'orale</span>') : v.escluso ? 'solo orale (escluso dallo scritto)' : 'media tra scritto ' + fv(v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv((v.voto + o.voto) / 2), v.finale != null ? 'definito il ' + ggmm(o.data) : '—') +
+      riga('Voto orale', o ? fv(o.voto) : '—', o ? fv(o.punti) + ' punti su ' + RG().orale.domande + (o.escluso ? ' · massimo ' + fv(RG().orale.maxEsclusi) : '') + (o.docente ? ' · ' + esc(o.docente) : '') : '<span class="m">non ancora interrogato</span>', o ? 'interrogazione del ' + ggmm(o.data) : '—') +
+      riga('Voto finale', v.finale != null ? fv(v.finale) : '—', v.finale == null ? (q.stato === 'scaduto' ? '<span class="no">senza voto: quiz non completato</span>' : '<span class="m">manca l\'orale</span>') : v.escluso ? 'solo orale (escluso dallo scritto)' : (RG().finale.pesoScritto === 50 ? 'media tra scritto ' + fv(v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv((v.voto + o.voto) / 2) : mediaTxt() + ': ' + fv(Math.round((v.voto * RG().finale.pesoScritto + o.voto * (100 - RG().finale.pesoScritto)) / 100 * 1000) / 1000)), v.finale != null ? 'definito il ' + ggmm(o.data) : '—') +
       '</tbody></table>';
   }
 
@@ -906,6 +935,7 @@ function bloccoBackup() {
   var stato = !D.configurato ? '<b>Dropbox non ancora configurato.</b> Servono le variabili DROPBOX_APP_KEY e DROPBOX_APP_SECRET su Netlify (vedi la guida).' :
     !D.collegato ? '<b>Dropbox non collegato.</b> Premi “Collega Dropbox” e autorizza l\'app con il tuo account.' :
     '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo (cartella <b>Backup</b>: risposte, tentativi, tempi, voti, codici, registro accessi e archivio delle edizioni), il report PDF e il Word <b>Glossario_definizioni_approvate.docx</b> (sempre lo stesso file, sovrascritto).' +
+      ((S.d.spazi || []).length > 1 ? ' Lo stesso vale per ogni attività in parallelo, ognuna nella sua cartella <b>Attivita › (nome dell\'attività)</b>.' : '') +
     '<br>Ultimo invio: ' + (D.ultimoInvio ? esc(quando(D.ultimoInvio)) + ' — ' + (D.esito === 'ok' ? '<span style="color:#1B6E20;font-weight:700">riuscito</span>' : '<span style="color:#B0304A;font-weight:700">' + esc(D.esito) + '</span>') : 'nessuno');
   return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Backup e report automatici</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">' + stato + '</p>' +

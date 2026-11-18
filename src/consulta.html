@@ -91,6 +91,7 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
 try { var vq = new URLSearchParams(location.search).get('quiz'); if (vq !== null) location.replace('/quiz' + (/^[A-Za-z0-9]{4,12}$/.test(vq) ? '?c=' + encodeURIComponent(vq) : '')); } catch (e) { /* niente */ }
 var G = null, AREA = 'tutte', Q = '';
 var ED = (function () { try { return new URLSearchParams(location.search).get('ed') || ''; } catch (e) { return ''; } })();
+var ATT = (function () { try { return new URLSearchParams(location.search).get('att') || ''; } catch (e) { return ''; } })();
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
 function evid(testo) {
@@ -113,16 +114,21 @@ function autori() {
 }
 function edizioni() {
   document.getElementById('sottotit').textContent = 'Prof. Danilo Cerrato · Laboratorio odontotecnico · a.s. ' + (G.anno || '');
-  var el = document.getElementById('edz'), E = G.edizioni || [];
+  var el = document.getElementById('edz'), E = G.edizioni || [], SP = G.spazi || [];
   var cur = (G.edizione || {}).id;
-  if (E.length < 2 && !G.archiviata) { el.innerHTML = ''; return; }
-  el.innerHTML = '<div class="edz"><label for="selEd">Edizione</label><select id="selEd">' + E.map(function (e) {
+  // attività in corso in parallelo (classi diverse, cartelloni diversi): si sceglie quale glossario consultare
+  var selAtt = SP.length > 1 ? '<label for="selAtt">Glossario</label><select id="selAtt">' + SP.map(function (x) {
+    return '<option value="' + esc(x.id) + '"' + (x.id === (G.att || 'main') ? ' selected' : '') + '>' + esc(x.nome) + ' · classi ' + esc((x.classi || []).join(', ')) + '</option>'; }).join('') + '</select>' : '';
+  var conEd = !(E.length < 2 && !G.archiviata);
+  if (!selAtt && !conEd) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="edz">' + selAtt + (conEd ? '<label for="selEd">Edizione</label><select id="selEd">' + E.map(function (e) {
     return '<option value="' + esc(e.id) + '"' + (e.id === cur ? ' selected' : '') + '>' + esc(e.nome) + ' · a.s. ' + esc(e.as) + (e.inCorso ? ' (in corso)' : '') + '</option>'; }).join('') + '</select>' +
-    (G.archiviata ? '<span class="arch">Edizione archiviata: la consulti com\'era a lavoro concluso.</span>' : '') + '</div>';
-  document.getElementById('selEd').onchange = function () {
+    (G.archiviata ? '<span class="arch">Edizione archiviata: la consulti com\'era a lavoro concluso.</span>' : '') : '') + '</div>';
+  if (conEd) document.getElementById('selEd').onchange = function () {
     var v = this.value, e = E.filter(function (x) { return x.id === v; })[0];
-    location.href = location.pathname + (e && e.inCorso ? '' : '?ed=' + encodeURIComponent(v));
+    location.href = location.pathname + (e && e.inCorso ? (ATT ? '?att=' + encodeURIComponent(ATT) : '') : '?ed=' + encodeURIComponent(v));
   };
+  if (selAtt) document.getElementById('selAtt').onchange = function () { location.href = location.pathname + (this.value !== 'main' ? '?att=' + encodeURIComponent(this.value) : ''); };
 }
 function tabs() {
   var h = '<button class="tab" data-a="tutte" aria-pressed="' + (AREA === 'tutte') + '">Tutti gli argomenti</button>' + G.aree.map(function (a) {
@@ -142,7 +148,7 @@ function lista() {
     if (!ts.length) return;
     vis += ts.length;
     var ok = a.termini.filter(function (t) { return t.def; }).length;
-    h += '<section id="area' + a.n + '" style="--c:' + esc(a.colore) + '"><h2><span class="num" style="background:' + esc(a.colore) + '">0' + a.n + '</span>' + esc(a.it) + '</h2>' +
+    h += '<section id="area' + a.n + '" style="--c:' + esc(a.colore) + '"><h2><span class="num" style="background:' + esc(a.colore) + '">' + esc(a.numero || ('0' + a.n)) + '</span>' + esc(a.it) + '</h2>' +
       '<p class="sub">' + a.termini.length + ' termini dalla A alla Z · ' + ok + ' definizioni approvate</p>' +
       ts.map(function (t) {
         var l = norm(t.termine).charAt(0).toUpperCase(), let = l !== ult ? '<div class="let" style="--c:' + esc(a.colore) + '"><b>' + esc(l) + '</b><i></i></div>' : ''; ult = l;
@@ -157,7 +163,7 @@ document.getElementById('q').addEventListener('input', function (e) { Q = e.targ
 window.addEventListener('resize', function () { if (G) autori(); });
 try { document.getElementById('logo').innerHTML = Poster.logo(11); } catch (e) {}
 try { AREA = localStorage.getItem('gl-area') || 'tutte'; } catch (e) {}
-fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'pubblico', ed: ED || undefined }) })
+fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'pubblico', ed: ED || undefined, att: ATT || undefined }) })
   .then(function (r) { return r.json(); })
   .then(function (r) {
     if (!r.ok) throw new Error(r.errore || 'errore');

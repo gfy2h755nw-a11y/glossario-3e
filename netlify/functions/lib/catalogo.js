@@ -17,8 +17,11 @@ function daDati() {
   return cat;
 }
 function imposta(config) {
-  attivo = config && config.catalogo ? { cat: config.catalogo, blocchi: config.blocchi || {} } : null;
+  attivo = config && config.catalogo ? { cat: config.catalogo, blocchi: config.blocchi || {}, aree: Array.isArray(config.aree) && config.aree.length ? config.aree : null } : null;
 }
+/* aree (una per cartellone) dell'attività: le 4 del laboratorio, oppure quelle scelte per un'attività nuova */
+function areeDi(config) { return config && Array.isArray(config.aree) && config.aree.length ? config.aree : DATI.AREE; }
+function aree() { return (attivo && attivo.aree) || DATI.AREE; }
 function corrente() { return attivo; }
 function ripristina(prec) { attivo = prec; }
 /* esegue fn (sincrona) con il catalogo di un'altra configurazione, poi rimette quello di prima */
@@ -63,4 +66,4 @@ function elencoTermini(config, dove) {
   return out;
 }
 
-module.exports = { termineEn, traduzionePronta, imposta, corrente, ripristina, con, lunghezza, definizione, blocco, materializza, elencoTermini, daDati };
+module.exports = { aree, areeDi, termineEn, traduzionePronta, imposta, corrente, ripristina, con, lunghezza, definizione, blocco, materializza, elencoTermini, daDati };

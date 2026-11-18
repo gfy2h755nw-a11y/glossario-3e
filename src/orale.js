@@ -3,7 +3,7 @@ function tempoMs(ms) { var s = Math.round((ms || 0) / 1000), h = Math.floor(s / 
 function quizDi(id) { return (S.d.quiz || []).filter(function (q) { return q.id === id; })[0] || { indovinati: 0, soglia: 260, sessioni: 0, risposte: 0, corrette: 0, errori: 0, persi: 0, massimo: 0, ms: 0, stato: 'chiuso', ultime: [] }; }
 function votiDi(id) { return ((S.d.admin && S.d.admin.voti) || []).filter(function (v) { return v.id === id; })[0] || {}; }
 function dataBreve(iso) { var d = new Date(iso); return d.getDate() + ' ' + MESI[d.getMonth()] + ', ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-function votoOraleDa(punti, escluso) { return Math.round((3 + (escluso ? 0.25 : 0.5) * punti) * 1000) / 1000; }
+function votoOraleDa(punti, escluso) { var o = RG().orale; return Math.round((o.base + (escluso ? o.passoEsclusi : o.passo) * punti) * 1000) / 1000; }
 
 /* stato del quiz di un alunno, come etichetta: da esso dipende l'ammissione all'interrogazione */
 function chipQuiz(q) {
@@ -24,7 +24,7 @@ function paginaQuiz() {
   var sup = righe.filter(function (r) { return quizDi(r.id).superata; }).length, att = righe.filter(function (r) { return quizDi(r.id).sessioni > 0; }).length, fuori = righe.filter(function (r) { return quizDi(r.id).stato === 'scaduto'; }).length;
   var sg = righe.length ? quizDi(righe[0].id).soglia : 260;
   var h = '<section class="card stack" id="quizTab"><h2 style="margin:0;font-size:22px">Quiz: seconda parte della prova</h2>' +
-    '<p class="muted" style="margin:0">Il quiz ha una pagina a sé (<b>' + esc(location.host) + '/quiz</b>), separata dal glossario: un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno <b>torna indietro di 5 termini</b>. ' +
+    '<p class="muted" style="margin:0">Il quiz ha una pagina a sé (<b>' + esc(location.host) + '/quiz</b>), separata dal glossario: un termine, ' + nDef(RG().quiz.opzioni) + ', ' + RG().quiz.secondi + ' secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno <b>torna indietro di ' + RG().quiz.passo + ' termini</b>. ' +
     'I progressi restano tra una sessione e l\'altra. Il quiz è <b>superato con ' + sg + ' termini indovinati</b> entro la scadenza: chi lo supera è ammesso all\'interrogazione, chi non lo completa resta senza voto. ' +
     'Soglia e scadenze si impostano in «Scadenze e valutazione».</p>' +
     '<div class="row">' + scadenzeQuiz() + '</div>' +
@@ -55,17 +55,17 @@ function paginaOrale() {
   var amm = righe.filter(function (r) { return quizDi(r.id).superata; }).length, fuori = righe.filter(function (r) { return quizDi(r.id).stato === 'scaduto'; }).length;
   var h = '<section class="card stack" id="oraleTab"><h2 style="margin:0;font-size:22px">Interrogazioni</h2>' +
     '<p class="muted" style="margin:0"><b>È ammesso all\'interrogazione solo chi ha superato il quiz</b> entro la scadenza: gli altri non vengono interrogati e restano senza voto (le loro definizioni restano sui cartelloni). ' +
-    'Per ogni alunno ammesso l\'app pesca <b>10 termini</b> tra tutti quelli del glossario (mai i suoi, bilanciati sulle aree, di preferenza i meno usciti nella classe). ' +
-    'Ogni risposta vale 1 punto se corretta, ½ se parziale, 0 se sbagliata. <b>Voto orale = 3 + ½ per punto</b> (massimo 8); per gli esclusi dallo scritto 3 + ¼ per punto (massimo 5,5). ' +
-    'Il <b>voto finale</b> è la media tra scritto e orale (per gli esclusi vale solo l\'orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</p>' +
+    'Per ogni alunno ammesso l\'app pesca <b>' + RG().orale.domande + ' termini</b> tra tutti quelli del glossario (mai i suoi, bilanciati sulle aree, di preferenza i meno usciti nella classe). ' +
+    'Ogni risposta vale 1 punto se corretta, ½ se parziale, 0 se sbagliata. <b>' + regolaOrale() + '</b> (massimo ' + fv(RG().orale.max) + '); per gli esclusi dallo scritto ' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto (massimo ' + fv(RG().orale.maxEsclusi) + '). ' +
+    'Il <b>voto finale</b> è la ' + mediaTxt() + ' (per gli esclusi vale solo l\'orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</p>' +
     '<div class="row"><span class="chip s-approvata">' + amm + ' su ' + righe.length + ' ammessi (quiz superato)</span><span class="chip s-vuota">' + fatte + ' interrogati</span>' + (fuori ? '<span class="chip s-correggere">' + fuori + ' non ammessi: senza voto</span>' : '') + scadenzeQuiz() + '</div>' +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th><th>Ammissione (quiz)</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th></th></tr></thead><tbody>';
   righe.forEach(function (r) {
     var v = votiDi(r.id), q = quizDi(r.id), o = v.orale;
-    h += '<tr data-orale="' + r.id + '"><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere">Escluso · max 5,5</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
+    h += '<tr data-orale="' + r.id + '"><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere">Escluso · max ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
       '<td>' + chipQuiz(q) + '</td>' +
       '<td class="n">' + (r.escluso ? '<span class="muted" style="font-weight:400">—</span>' : fv(v.voto)) + '</td>' +
-      '<td class="n">' + (o ? fv(o.voto) + '<br><span class="muted" style="font-weight:400;font-size:13px">' + fv(o.punti) + ' / 10 · ' + esc(dataBreve(o.data)) + '</span>' : '—') + '</td>' +
+      '<td class="n">' + (o ? fv(o.voto) + '<br><span class="muted" style="font-weight:400;font-size:13px">' + fv(o.punti) + ' / ' + RG().orale.domande + ' · ' + esc(dataBreve(o.data)) + '</span>' : '—') + '</td>' +
       '<td class="n">' + (v.finale != null ? '<b style="font-size:18px">' + fv(v.finale) + '</b>' : q.stato === 'scaduto' ? '<span class="muted" style="font-weight:400">senza voto</span>' : '<b style="font-size:18px">—</b>') + '</td>' +
       '<td>' + (!puo ? '' : q.superata ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ' + (o ? 'sec' : '') + ' tb" onclick="apriOrale(\'' + r.id + '\',this)">' + (v.oraleInCorso ? 'Riprendi' : o ? 'Ripeti' : 'Interroga') + '</button>' +
         (o ? '<button class="btn sec tb" onclick="annullaOrale(\'' + r.id + '\',this)">Annulla voto</button>' : '') + '</div>' : '<span class="muted" style="font-size:14px">' + (q.stato === 'scaduto' ? 'non interrogabile' : 'in attesa del quiz') + '</span>') + '</td></tr>';
@@ -89,7 +89,7 @@ function schedaOrale() {
     '<div><span class="kl">Tempo nel quiz</span><b>' + (q.sessioni ? tempoMs(q.ms) : '—') + '</b><small>' + (q.sessioni ? q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') : 'nessuna sessione') + '</small></div>' +
     '<div><span class="kl">Risposte nel quiz</span><b>' + q.corrette + ' / ' + q.risposte + '</b><small>' + (q.risposte ? Math.round(q.corrette / q.risposte * 100) + '% corrette · ' + (q.errori || 0) + ' errori' : 'nessuna risposta') + '</small></div>' +
     '<div><span class="kl">Termini indovinati</span><b>' + q.indovinati + ' / ' + q.soglia + '</b><small>' + (q.superata ? 'quiz superato il ' + esc(dataBreve(q.superata)) : 'quiz non superato') + '</small></div></div>' +
-    (r.escluso ? '<div class="note warn"><b>Alunno escluso dallo scritto:</b> all\'orale può arrivare al massimo a 5,5 (3 + ¼ per punto).</div>' : '') +
+    (r.escluso ? '<div class="note warn"><b>Alunno escluso dallo scritto:</b> all\'orale può arrivare al massimo a ' + fv(RG().orale.maxEsclusi) + ' (' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto).</div>' : '') +
     '</section><div class="or-punti" id="orPunti" aria-live="polite"><div><span class="kl">Risposte segnate</span><b>' + fatti + ' / ' + o.esiti.length + '</b></div><div><span class="kl">Punti</span><b>' + fv(punti) + ' / 10</b></div>' +
     '<div><span class="kl">Voto orale</span><b>' + (tutti ? fv(votoOraleDa(punti, r.escluso)) : '—') + '</b></div></div>';
   o.bozza.termini.forEach(function (t, i) {
@@ -151,12 +151,12 @@ function stampaAccessiQuiz(classe) {
       '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo quiz.</b></p></div>' +
       '<div class="acc"><div><div class="lb">Indirizzo del quiz</div><div class="url">' + esc(base.replace(/^https?:\/\//, '')) + '</div><div class="pic">poi scrivi il tuo codice personale</div></div>' +
       '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
-      '<ol><li>Compare un termine con <b>4 definizioni</b>: scegli quella giusta entro <b>60 secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
-      '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di 5 termini</b>: per andare avanti devi studiare le definizioni.</li>' +
+      '<ol><li>Compare un termine con <b>' + RG().quiz.opzioni + ' definizioni</b>: scegli quella giusta entro <b>' + RG().quiz.secondi + ' secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
+      '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di ' + RG().quiz.passo + ' termini</b>: per andare avanti devi studiare le definizioni.</li>' +
       '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi' + (sq ? ', <b>entro ' + esc(oraIt(sq)) + '</b>.' : ', entro la scadenza che ti dirà il docente.') + '</li>' +
       '<li>Il quiz è superato quando hai indovinato <b>' + (qa.soglia || 260) + ' termini</b>.</li></ol>' +
-      '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca 10 termini e tu dai la definizione. ' +
-      'Chi non completa il quiz entro la scadenza non viene interrogato e resta senza voto. Voto orale fino a 8; il voto finale è la media tra scritto e orale.</div>' +
+      '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca ' + RG().orale.domande + ' termini e tu dai la definizione. ' +
+      'Chi non completa il quiz entro la scadenza non viene interrogato e resta senza voto. Voto orale fino a ' + fv(RG().orale.max) + '; il voto finale è la ' + mediaTxt() + '.</div>' +
       '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: le sessioni fatte con il tuo codice risultano tue.</div>' +
       '<footer>Prof. Danilo Cerrato · Laboratorio odontotecnico</footer></section>';
   }).join('');
@@ -184,7 +184,7 @@ function bloccoQuizImp() {
   var q = (S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || { scadenze: {} }, tot = S.d.termini.length;
   return '<section class="card stack" id="quizImp"><h2 style="margin:0;font-size:22px">Quiz: seconda parte della prova</h2>' +
     '<p class="muted" style="margin:0">Il quiz di una classe <b>si apre quando ne fissi la scadenza</b> e si chiude a quell\'ora: finché il campo è vuoto gli alunni non possono entrare. ' +
-    'Chi indovina tutti i termini richiesti entro la scadenza è ammesso all\'interrogazione; gli altri restano senza voto. A ogni errore l\'alunno torna indietro di 5 termini e la risposta giusta non viene mostrata.</p>' +
+    'Chi indovina tutti i termini richiesti entro la scadenza è ammesso all\'interrogazione; gli altri restano senza voto. A ogni errore l\'alunno torna indietro di ' + RG().quiz.passo + ' termini e la risposta giusta non viene mostrata.</p>' +
     '<div class="grid4"><div><label for="qzSoglia">Termini da indovinare (su ' + tot + ')</label><input id="qzSoglia" type="number" min="10" max="' + tot + '" step="1" value="' + (q.soglia || tot) + '"></div>' +
     CLASSI().map(function (c) { var d = (q.scadenze || {})[c]; return '<div><label for="qzSc_' + c + '">Scadenza del quiz · ' + esc(c) + '</label><input id="qzSc_' + c + '" type="datetime-local" value="' + (d ? isoLocale(d) : '') + '">' +
       '<span class="muted" style="font-size:13px">' + (d ? (Date.now() > Date.parse(d) ? 'quiz chiuso: scadenza passata' : 'quiz aperto') : 'quiz non aperto') + '</span></div>'; }).join('') + '</div>' +

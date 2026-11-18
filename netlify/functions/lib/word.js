@@ -27,7 +27,7 @@ async function creaWord(stato, now) {
   now = now || Date.now();
   const imp = logica.impostazioni(stato.config);
   const classi = imp.classi.filter((c) => stato.alunni.some((a) => logica.classeDi(a) === c));
-  const aree = {}; DATI.AREE.forEach((a) => { aree[a.n] = a; });
+  const aree = {}; require('./catalogo').areeDi(stato.config).forEach((a) => { aree[a.n] = a; });
   const ord = (t) => Number(t.area) * 1000 + Number(String(t.id).slice(2));
   const tutti = stato.termini;
   const approvate = tutti.filter((x) => x.stato_it === 'approvata').length;

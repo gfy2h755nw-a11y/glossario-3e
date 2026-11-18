@@ -10,6 +10,7 @@ const DBX = require('./dropbox');
 const CAT = require('./catalogo');
 const SIM = require('./simili');
 const BANCA = require('./banca-termini');
+const REG = require('./regole');
 
 const N_OPZIONI = 8;
 const LETTERE = 'ABCDEFGH';
@@ -85,19 +86,22 @@ function permesso(chi, p) {
 /* ---------- impostazioni e valutazione ---------- */
 const PENALITA = { A: 0.25, B: 0.5 };
 function impostazioni(config) {
-  const sc = config.scadenze || {};
+  const sc = config.scadenze || {}, RS = REG.di(config).scritto;
+  const proposta = PENALITA[config.proposta] ? config.proposta : DATI.VALUTAZIONE.proposta;
   return {
     scadenzaIt: sc.it || DATI.SCADENZE.it,
     scadenzaEn: sc.en || DATI.SCADENZE.en,
-    proposta: PENALITA[config.proposta] ? config.proposta : DATI.VALUTAZIONE.proposta,
-    votoMax: DATI.VALUTAZIONE.votoMax,
-    votoMaxErede: DATI.VALUTAZIONE.votoMaxErede,
-    tetto: DATI.VALUTAZIONE.tettoEredeInRitardo,
+    proposta,
+    // punti tolti per errore: quelli della proposta, oppure quelli fissati nelle regole dell'attività
+    penalita: RS.penalita != null ? RS.penalita : PENALITA[proposta],
+    votoMax: RS.votoMax,
+    votoMaxErede: RS.votoMaxErede,
+    tetto: RS.tetto,
     giorniIt: Number(config.giorniIt) > 0 ? Number(config.giorniIt) : DATI.EREDITA.giorniIt,
     giorniEn: Number(config.giorniEn) > 0 ? Number(config.giorniEn) : DATI.EREDITA.giorniEn,
-    votoMin: DATI.VALUTAZIONE.votoMin,
+    votoMin: RS.votoMin,
     quiz: { soglia: config.quiz && Number(config.quiz.soglia) >= 1 ? Number(config.quiz.soglia) : null, scadenze: Object.assign({}, (config.quiz && config.quiz.scadenze) || {}) },
-    votoEsclusione: DATI.VALUTAZIONE.votoEsclusione,
+    votoEsclusione: RS.votoEsclusione,
     lingue: Array.isArray(config.lingue) && config.lingue.length ? (config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0).length ? config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0) : DATI.LINGUE.slice()) : DATI.LINGUE,
     partenza: config.partenza !== undefined ? config.partenza : DATI.PARTENZA,
     classi: Array.isArray(config.classi) && config.classi.length ? config.classi : DATI.CLASSI,
@@ -139,12 +143,13 @@ function arrot(x) { return Math.floor(x * 4 + 0.5 + 1e-9) / 4; }
 /* voto finale (media scritto/orale): oltre il mezzo voto si sale all'intero, sotto si scende, il mezzo resta (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7) */
 function arrotFinale(x) { const i = Math.floor(x + 1e-9), f = x - i; return f > 0.5 + 1e-9 ? i + 1 : (f >= 0.5 - 1e-9 ? i + 0.5 : i); }
 function ratio(imp) {
-  const p = String(PENALITA[imp.proposta]).replace('.', ',');
+  const p = String(imp.penalita).replace('.', ',');
+  const prop = imp.penalita === PENALITA[imp.proposta] ? ' (proposta ' + imp.proposta + ')' : '';
   if (!conInglese(imp)) {
     return 'Il voto si calcola sulle risposte in italiano: si parte da ' + fmtN(imp.votoMax) + ' e si tolgono ' + p +
-      ' punti per ogni risposta errata (proposta ' + imp.proposta + '), senza scendere sotto ' + imp.votoMin + '. ' +
+      ' punti per ogni risposta errata' + prop + ', senza scendere sotto ' + fmtN(imp.votoMin) + '. ' +
       'Il voto compare dalla prima risposta inviata. ' +
-      'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito e prende ' + imp.votoEsclusione + ' nello scritto per mancata consegna. ' +
+      'Chi non risponde a tutti i termini entro la scadenza viene escluso dal compito e prende ' + fmtN(imp.votoEsclusione) + ' nello scritto per mancata consegna. ' +
       (imp.riassegnazione === 'manuale' ? 'I termini dell\'alunno escluso passano ai compagni scelti dal docente: chi li riceve ha i giorni indicati dal docente (di norma ' + imp.giorniIt + ') per rispondere ' :
         'I termini dell\'alunno escluso passano automaticamente, a sorte, a un compagno della stessa classe: chi li riceve ha ' + imp.giorniIt + ' giorni per rispondere ') +
       'e il suo voto massimo sale da ' + fmtN(imp.votoMax) + ' a ' + fmtN(imp.votoMaxErede) + ', con le stesse penalità. ' +
@@ -195,7 +200,7 @@ function valuta(stato, a, now) {
   const ereditati = miei.filter((t) => t.ereditato).length;
   const max = ereditati ? imp.votoMaxErede : imp.votoMax;
   // un voto per lingua (solo se ci sono risposte in quella lingua), poi la media arrotondata
-  const votoLingua = (l) => c[l].inviate ? Math.max(imp.votoMin, Math.min(max, max - PENALITA[imp.proposta] * c[l].errate)) : null;
+  const votoLingua = (l) => c[l].inviate ? Math.max(imp.votoMin, Math.min(max, max - imp.penalita * c[l].errate)) : null;
   const votoIt = votoLingua('it'), votoEn = EN ? votoLingua('en') : null;
   // solo italiano: il voto finale è quello di italiano; con l'inglese, la media dei due
   const media = EN ? (votoIt != null && votoEn != null ? (votoIt + votoEn) / 2 : null) : votoIt;
@@ -206,7 +211,8 @@ function valuta(stato, a, now) {
   // quiz: chi lo completa è ammesso all'interrogazione; chi non lo completa entro la scadenza resta senza voto
   const rq = require('./orale'), qz = rq.riepilogoQuiz(a.quiz, rq.cfgQuiz(stato.config, classeDi(a), null, a));
   const or = a.orale && typeof a.orale.voto === 'number' ? a.orale : null;
-  const finale = or ? (escluso ? arrotFinale(or.voto) : (voto != null ? arrotFinale((voto + or.voto) / 2) : null)) : null;
+  const ps = REG.di(stato.config).finale.pesoScritto / 100;
+  const finale = or ? (escluso ? arrotFinale(or.voto) : (voto != null ? arrotFinale(voto * ps + or.voto * (1 - ps)) : null)) : null;
   return Object.assign(c, { orale: or ? { voto: or.voto, punti: or.punti, data: or.data, docente: or.docente, escluso: !!or.escluso, cambi: or.cambi || 0, nota: or.nota || '', termini: or.termini || [] } : null, finale, oraleInCorso: !!a.orale_bozza, quizStato: qz.stato, ammesso: qz.stato === 'superato',
     id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
     votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn, votoMax: max, ereditati,
@@ -223,7 +229,7 @@ function scadenzaTermine(t, l, imp, a) {
   const p = a && a.proroga ? Date.parse(a.proroga) : 0;
   return Math.max(base, p || 0);
 }
-function messaggioEsclusione() { return 'Non hai consegnato lo scritto e pertanto il tuo voto è 4. PUOI ANCORA FARE IL QUIZ E L’INTERROGAZIONE, CON VOTO FINALE MASSIMO 5,5.'; }
+function messaggioEsclusione(config) { const R = REG.di(config || {}); return 'Non hai consegnato lo scritto e pertanto il tuo voto è ' + fmtN(R.scritto.votoEsclusione) + '. PUOI ANCORA FARE IL QUIZ E L’INTERROGAZIONE, CON VOTO FINALE MASSIMO ' + fmtN(R.orale.maxEsclusi) + '.'; }
 
 /* ---------- cosa vede chi ---------- */
 function campo(t, l, nome) { return t[nome + '_' + l]; }
@@ -282,7 +288,7 @@ function pacchetto(stato, chi) {
   let imp = imp0;
   if (chi.ruolo === 'alunno') {
     const v = valuta(stato, chi._a, now);
-    if (v.escluso) return { utente: { ruolo: 'alunno', nome: chi.nome }, escluso: true, messaggio: messaggioEsclusione() };
+    if (v.escluso) return { utente: { ruolo: 'alunno', nome: chi.nome }, escluso: true, messaggio: messaggioEsclusione(stato.config) };
     // l'alunno vede partenza della sua classe e scadenza personale (classe o proroga)
     imp = Object.assign(impClasse(imp0, chi.classe), { scadenzaIt: new Date(scadenzaAlunno(imp0, chi._a)).toISOString() });
     const nMiei = stato.termini.filter((t) => t.alunno_id === chi.id && !t.ereditato).length || termPerAlunno(imp0, chi.classe);
@@ -294,7 +300,7 @@ function pacchetto(stato, chi) {
   if (chi.ruolo === 'alunno') {
     // la sua area, più le aree dei termini ricevuti da compagni esclusi (per l'anteprima dei cartelloni)
     // le aree dei suoi termini (per la 3E è la sua area; per la 3F sono tutte e quattro)
-    const aree = new Set((/^[1-4]$/.test(chi.gruppo) ? [chi.gruppo] : []).concat(termini.filter((t) => t.alunno_id === chi.id).map((t) => String(t.area))));
+    const aree = new Set((/^[1-9]$/.test(chi.gruppo) ? [chi.gruppo] : []).concat(termini.filter((t) => t.alunno_id === chi.id).map((t) => String(t.area))));
     termini = termini.filter((t) => aree.has(String(t.area)));
   }
   const out = {
@@ -305,7 +311,11 @@ function pacchetto(stato, chi) {
       riassegnazione: imp.riassegnazione,
       docenti: (stato.config.docenti || []).map((d) => d.nome) },
     ora: new Date(now).toISOString(),
-    aree: DATI.AREE,
+    aree: CAT.aree(),
+    regole: REG.di(stato.config),
+    areeStd: chi.ruolo === 'docente' ? DATI.AREE : undefined,
+    pacchetti: chi.ruolo === 'docente' ? (function () { const P = require('./pacchetti'); return Object.keys(P).map((id) => ({ id, nome: P[id].nome, aree: P[id].aree, termini: Object.fromEntries(Object.keys(P[id].termini).map((n) => [n, P[id].termini[n].length])) })); })() : undefined,
+    areeMie: !!(Array.isArray(stato.config.aree) && stato.config.aree.length),
     alunni: stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a) })),
     termini: termini.map((t) => vistaTermine(t, chi, imp.lingue))
   };
@@ -416,7 +426,7 @@ async function scegli(db, { codice, id, lingua: l, lettera }) {
     const chi = identifica(stato, codice);
     if (chi.ruolo !== 'alunno') errore('Solo gli alunni scelgono le definizioni.');
     const now = Date.now(), imp = impostazioni(stato.config);
-    if (valuta(stato, chi._a, now).escluso) errore(messaggioEsclusione());
+    if (valuta(stato, chi._a, now).escluso) errore(messaggioEsclusione(stato.config));
     if (!partito(impClasse(imp, chi.classe), now)) errore('Il compito non è ancora partito.');
     if (stato.config.chiusa) errore("L'app è chiusa: le scelte non sono più modificabili.");
     lingua(l, stato);
@@ -541,7 +551,7 @@ async function traduzioni(db, { codice }) {
   const stato = await db.leggiTutto();
   permesso(identifica(stato, codice), 'documenti');
   const nomi = {}; stato.alunni.forEach((a) => { nomi[a.id] = a.nome; });
-  const aree = DATI.AREE.map((a) => ({ n: a.n, it: a.it, en: a.en, voci: stato.termini.filter((t) => String(t.area) === String(a.n)).map((t) => {
+  const aree = CAT.areeDi(stato.config).map((a) => ({ n: a.n, it: a.it, en: a.en, voci: stato.termini.filter((t) => String(t.area) === String(a.n)).map((t) => {
     const k = indiceTermine(t), app = t.stato_it === 'approvata' && t.scelta_it != null, idxDef = app ? t.scelta_it : k;
     return { id: t.id, k, idxDef, approvata: app, it: t.termine_it, en: CAT.termineEn(t.area, k), defIt: testoDef(t.area, idxDef, 'it'), defEn: testoDef(t.area, idxDef, 'en'), alunno: nomi[t.alunno_orig || t.alunno_id] || '' };
   }).sort((x, y) => x.it.localeCompare(y.it, 'it')) }));
@@ -896,9 +906,9 @@ function pubblicoDa(stato) {
   const nomi = {}; stato.alunni.forEach((a) => { nomi[a.id] = nomePubblico(a.nome); });
   const classi = {};
   imp.classi.forEach((c) => { classi[c] = stato.alunni.filter((a) => classeDi(a) === c).sort((x, y) => x.nome.localeCompare(y.nome, 'it')).map((a) => nomePubblico(a.nome)); });
-  const aree = DATI.AREE.map((a) => {
+  const aree = CAT.areeDi(stato.config).map((a) => {
     const ts = stato.termini.filter((t) => String(t.area) === String(a.n)).sort((x, y) => Number(String(x.id).slice(2)) - Number(String(y.id).slice(2)));
-    return { n: a.n, it: a.it, colore: a.colore, termini: ts.map((t) => {
+    return { n: a.n, it: a.it, colore: a.colore, numero: a.numero || undefined, termini: ts.map((t) => {
       const ok = t.stato_it === 'approvata' && t.scelta_it != null;
       return { n: Number(String(t.id).slice(2)), termine: t.termine_it, def: ok ? testoDef(t.area, t.scelta_it, 'it') : '', autore: ok ? (nomi[t.alunno_id] || '') : '' };
     }) };
@@ -914,7 +924,7 @@ function statoClasse(stato, classe) {
   return Object.assign({}, stato, { alunni: stato.alunni.filter((a) => ids.has(a.id)), termini: stato.termini.filter((t) => ids.has(t.alunno_id)) });
 }
 function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k = classeDi(a); if (c.indexOf(k) < 0) c.push(k); }); return (c.length ? c.sort() : ['3E']).join(' e '); }
-function etichettaAl(a) { return /^[1-4]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
+function etichettaAl(a) { return /^[1-9]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
 module.exports = { messaggioEsclusione,
   indiceTermine, arrotFinale,
   traduzioni, salvaTraduzioni, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,

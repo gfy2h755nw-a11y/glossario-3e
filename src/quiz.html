@@ -92,18 +92,25 @@ var Quiz = (function () {
       '<div class="qz-prog" role="progressbar" aria-valuemin="0" aria-valuemax="' + st.soglia + '" aria-valuenow="' + Math.min(st.indovinati, st.soglia) + '" aria-label="Termini indovinati"><i style="width:' + pc + '%"></i></div>' +
       (st.scadenza && !st.superata ? '<p class="qz-area" id="qzScad" style="margin:-8px 0 10px">Da completare entro ' + esc(new Date(st.scadenza).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })) + '</p>' : '');
   }
+  var R = { secondi: 60, opzioni: 4, passo: 5 };
+  function regole(r) {
+    return '<li>Compare un termine con <b>' + (r.opzioni === 4 ? 'quattro' : r.opzioni) + ' definizioni</b>: scegli quella giusta entro <b>' + r.secondi + ' secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
+      '<li><b>Se sbagli</b> (o lasci scadere il tempo) la risposta giusta non viene mostrata' + (r.passo ? ' e <b>torni indietro di ' + r.passo + (r.passo === 1 ? ' termine' : ' termini') + '</b>' : '') + ': per andare avanti devi studiare le definizioni.</li>' +
+      '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi, entro la scadenza.</li>' +
+      '<li>Il quiz è superato quando hai indovinato tutti i termini richiesti: solo allora sei <b>ammesso all\'interrogazione</b>.</li>';
+  }
   function accesso(err) {
     stop(); dom = null;
     var salvato = ''; try { salvato = localStorage.getItem(KEY) || ''; } catch (e) { /* senza memoria si scrive il codice a mano */ }
     box().innerHTML = testa() + '<div class="qz-card"><label for="qzCod">Il tuo codice personale</label>' +
-      '<div class="qz-codice"><input id="qzCod" autocomplete="off" autocapitalize="characters" maxlength="12" value="' + esc(/^[A-Z0-9]{4,12}$/i.test(salvato) ? salvato : '') + '">' +
+      '<div class="qz-codice"><input id="qzCod" autocomplete="off" autocapitalize="characters" maxlength="12" value="' + esc(err && cod ? cod : /^[A-Z0-9]{4,12}$/i.test(salvato) ? salvato : '') + '">' +
       '<button class="qz-btn" id="qzVia" onclick="Quiz.via()">Inizia</button></div>' + (err ? '<p class="qz-err" role="alert">' + esc(err) + '</p>' : '') +
-      '<h2 class="qz-h">Come funziona</h2><ul class="qz-regole">' +
-      '<li>Compare un termine con <b>quattro definizioni</b>: scegli quella giusta entro <b>60 secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
-      '<li><b>Se sbagli</b> (o lasci scadere il tempo) la risposta giusta non viene mostrata e <b>torni indietro di 5 termini</b>: per andare avanti devi studiare le definizioni.</li>' +
-      '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi, entro la scadenza.</li>' +
-      '<li>Il quiz è superato quando hai indovinato tutti i termini richiesti: solo allora sei <b>ammesso all\'interrogazione</b>.</li></ul></div>';
+      '<h2 class="qz-h">Come funziona</h2><ul class="qz-regole" id="qzReg">' + regole(R) + '</ul></div>';
     var i = document.getElementById('qzCod'); i.onkeydown = function (e) { if (e.key === 'Enter') Quiz.via(); }; i.focus();
+    // le regole (secondi, definizioni, termini persi) sono quelle dell'attività del codice: si chiedono appena il codice è scritto
+    var ult = '', chiedi = function () { var c = String(i.value || '').trim().toUpperCase(); if (c.length < 6 || c === ult) return; ult = c;
+      chiama({ azione: 'quizregole', codice: c }).then(function (r) { if (r && r.secondi) { R = r; var u = document.getElementById('qzReg'); if (u) u.innerHTML = regole(R); } }).catch(function () { /* restano quelle di sempre */ }); };
+    i.oninput = chiedi; chiedi();
   }
   function via() {
     cod = String(document.getElementById('qzCod').value || '').trim().toUpperCase();

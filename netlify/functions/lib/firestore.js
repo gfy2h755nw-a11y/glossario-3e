@@ -16,29 +16,65 @@ function firestore() {
   return fs;
 }
 
-const COL = { config: 'config', alunni: 'alunni', termini: 'termini', attivita: 'attivita', segreti: 'segreti', archivio: 'archivio', parti: 'archivio_parti' };
+const COL0 = { config: 'config', alunni: 'alunni', termini: 'termini', attivita: 'attivita', segreti: 'segreti', archivio: 'archivio', parti: 'archivio_parti' };
 const PARTE = 300000; // caratteri per documento: anche con caratteri a 3 byte resta sotto il limite Firestore di 1 MiB
 const docs = (snap) => snap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
 
-function compone(cfgSnap, aluSnap, terSnap) {
+/* docenti: sono sempre quelli dell'attività principale (un solo elenco di codici e facoltà per tutte le attività) */
+function conDocenti(config, mainSnap) {
+  if (config && mainSnap && mainSnap.exists) config.docenti = (mainSnap.data() || {}).docenti || [];
+  return config;
+}
+function compone(cfgSnap, aluSnap, terSnap, mainSnap) {
   if (!cfgSnap.exists) throw Object.assign(new Error('Glossario non ancora configurato: apri la pagina /setup.html.'), { utente: true });
   const alunni = aluSnap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
   const termini = terSnap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
-  const config = cfgSnap.data();
+  const config = conDocenti(cfgSnap.data(), mainSnap);
   CAT.imposta(config); // catalogo dei termini dell'edizione in corso
   return { config, alunni, termini };
 }
 
-function db() {
+/* Attività parallele: «main» è l'attività di sempre (3E e 3F, collezioni con i nomi originali);
+   ogni altra attività ha la sua configurazione (config/<id>) e le sue collezioni (alunni__<id>, termini__<id>, attivita__<id>).
+   Segreti (Dropbox) e archivio sono comuni. L'elenco delle attività è in config/_attivita. */
+const REGISTRO = '_attivita';
+const ID_SPAZIO = /^[a-z0-9-]{1,40}$/;
+function db(spazio) {
+  const ns = spazio && spazio !== 'main' ? String(spazio) : 'main';
+  if (ns !== 'main' && (!ID_SPAZIO.test(ns) || ns === REGISTRO)) throw Object.assign(new Error('Attività non valida.'), { utente: true });
   const f = firestore();
-  const cfgRef = f.collection(COL.config).doc('main');
+  const COL = ns === 'main' ? COL0 : Object.assign({}, COL0, { alunni: COL0.alunni + '__' + ns, termini: COL0.termini + '__' + ns, attivita: COL0.attivita + '__' + ns });
+  const cfgRef = f.collection(COL.config).doc(ns), mainRef = f.collection(COL.config).doc('main');
+  const principale = ns === 'main';
+  const leggiMain = () => (principale ? Promise.resolve(null) : mainRef.get());
   return {
+    spazio: ns,
     async leggiTutto() {
-      const [c, a, t] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get()]);
-      return compone(c, a, t);
+      const [c, a, t, m] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get(), leggiMain()]);
+      return compone(c, a, t, m);
     },
-    async leggiConfig() { const c = await cfgRef.get(); if (c.exists) CAT.imposta(c.data()); return c.exists ? c.data() : null; },
-    async scriviConfig(mod) { await cfgRef.set(mod, { merge: true }); },
+    async leggiConfig() {
+      const [c, m] = await Promise.all([cfgRef.get(), leggiMain()]);
+      if (!c.exists) return null;
+      const cfg = conDocenti(c.data(), m); CAT.imposta(cfg); return cfg;
+    },
+    async scriviConfig(mod) {
+      if (!principale && mod && mod.docenti) { const { docenti, ...resto } = mod; await mainRef.set({ docenti }, { merge: true }); if (Object.keys(resto).length) await cfgRef.set(resto, { merge: true }); return; }
+      await cfgRef.set(mod, { merge: true });
+    },
+    /* elenco delle attività parallele (senza la principale) */
+    async leggiRegistro() { const s = await f.collection(COL.config).doc(REGISTRO).get(); return s.exists ? ((s.data() || {}).elenco || []) : []; },
+    async scriviRegistro(elenco) { await f.collection(COL.config).doc(REGISTRO).set({ elenco }); },
+    /* codici di tutti gli alunni di uno spazio (per tenerli unici tra le attività) */
+    async codiciAlunni() { return (await f.collection(COL.alunni).get()).docs.map((d) => (d.data() || {}).codice).filter(Boolean); },
+    /* codici degli alunni di tutte le altre attività */
+    async codiciAltriSpazi() {
+      const reg = await this.leggiRegistro(), out = [];
+      for (const x of ['main'].concat(reg.map((y) => y.id)).filter((y) => y !== ns)) out.push(...await db(x).codiciAlunni());
+      return out;
+    },
+    /* configurazione dell'attività principale così com'è (senza toccare il catalogo attivo) */
+    async configPrincipale() { const c = await mainRef.get(); return c.exists ? c.data() : null; },
     async scriviAlunno(id, mod) { await f.collection(COL.alunni).doc(String(id)).set(mod, { merge: true }); },
     /* il quiz si sostituisce per intero: con la fusione i termini «persi» resterebbero nella mappa */
     async sostituisciQuiz(id, quiz) { await f.collection(COL.alunni).doc(String(id)).update({ quiz }); },
@@ -85,9 +121,10 @@ function db() {
     async cancellaSegreto(nome) { await f.collection(COL.segreti).doc(nome).delete(); },
     /* ---- backup completo e ripristino ---- */
     async backupGrezzo(conArchivio) {
-      const [c, a, t, at] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get(), f.collection(COL.attivita).get()]);
-      if (c.exists) CAT.imposta(c.data());
-      const out = { config: c.exists ? c.data() : null, alunni: docs(a), termini: docs(t), attivita: docs(at) };
+      const [c, a, t, at, m] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get(), f.collection(COL.attivita).get(), leggiMain()]);
+      const cfg = c.exists ? conDocenti(c.data(), m) : null;
+      if (cfg) CAT.imposta(cfg);
+      const out = { config: cfg, alunni: docs(a), termini: docs(t), attivita: docs(at) };
       if (conArchivio) {
         const [m, p] = await Promise.all([f.collection(COL.archivio).get(), f.collection(COL.parti).get()]);
         out.archivio = docs(m); out.archivio_parti = docs(p);
@@ -139,13 +176,13 @@ function db() {
         const scritture = [];
         const ctx = {
           async leggiTutto() {
-            const [c, a, t] = await Promise.all([tx.get(cfgRef), tx.get(f.collection(COL.alunni)), tx.get(f.collection(COL.termini))]);
-            return compone(c, a, t);
+            const [c, a, t, m] = await Promise.all([tx.get(cfgRef), tx.get(f.collection(COL.alunni)), tx.get(f.collection(COL.termini)), principale ? null : tx.get(mainRef)]);
+            return compone(c, a, t, m);
           },
           // lettura leggera: config + alunni + un solo termine (≈18 letture invece di ≈97)
           async leggiTermine(id) {
-            const [c, a, t] = await Promise.all([tx.get(cfgRef), tx.get(f.collection(COL.alunni)), tx.get(f.collection(COL.termini).doc(String(id)))]);
-            const st = compone(c, a, { docs: [] });
+            const [c, a, t, m] = await Promise.all([tx.get(cfgRef), tx.get(f.collection(COL.alunni)), tx.get(f.collection(COL.termini).doc(String(id))), principale ? null : tx.get(mainRef)]);
+            const st = compone(c, a, { docs: [] }, m);
             if (t.exists) st.termini = [Object.assign({ id: t.id }, t.data())];
             return st;
           },
@@ -160,4 +197,4 @@ function db() {
   };
 }
 
-module.exports = { db };
+module.exports = { db, REGISTRO };

@@ -216,11 +216,12 @@ function bloccoEdizioni() {
       '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="scaricaArchivio(\'' + esc(m.id) + '\',\'word\',this)">Word</button>' +
       '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="scaricaArchivio(\'' + esc(m.id) + '\',\'json\',this)">Dati</button></div></td></tr>';
   }).join('');
-  return '<section class="card stack admin" id="edizioni"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Edizioni e archivio</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+  var principale = !S.d.att || S.d.att === 'main';
+  return bloccoAttivitaParallele() + '<section class="card stack admin" id="edizioni"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Edizioni e archivio</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">Edizione in corso: <b>' + esc(ed.nome) + '</b> · a.s. ' + esc(ed.as) + ' · classi ' + esc(CLASSI().join(', ')) + (arch ? ' <span class="chip s-approvata">in archivio</span>' : '') + '</p>' +
     (!arch ? '<div class="stack" style="gap:8px"><div class="row">' +
-      '<button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button>' +
-      '<button class="btn sec" onclick="apriWizard(\'classe\')">Aggiungi una classe a questa edizione</button>' +
+      (principale ? '<button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button>' : '') +
+      '<button class="btn sec" onclick="apriWizard(\'classe\')">Aggiungi una classe a questa ' + (principale ? 'edizione' : 'attività') + '</button>' +
       '<button class="btn sec" onclick="archiviaEdizione(false,this)"' + (chiusa ? '' : ' disabled') + '>Archivia questa edizione</button></div>' +
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi; l\'edizione in corso viene chiusa agli alunni e archiviata in automatico. ' +
       '<b>Aggiungi una classe</b>: nuova classe con i suoi alunni, termini nuovi (mai usati prima) e date proprie; le sue definizioni vanno sugli stessi cartelloni. ' +
@@ -230,6 +231,44 @@ function bloccoEdizioni() {
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi. Gli alunni che riprendi tengono il loro codice.</p>') +
     (lista ? '<h3 style="margin:8px 0 0;font-size:18px">Archivio</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Edizione</th><th>a.s.</th><th>Classi</th><th style="text-align:right">Alunni</th><th style="text-align:right">Approvate</th><th style="text-align:right">Media</th><th></th></tr></thead><tbody>' + lista + '</tbody></table></div>'
       : '<p class="muted" style="margin:0;font-size:14px">Archivio vuoto: nessuna edizione conclusa finora.</p>') + '</section>';
+}
+/* cartelloni di un'attività con aree proprie: nome, colore, numero in alto e motto, modificabili anche dopo la creazione */
+function bloccoAreeMie() {
+  return '<section class="card stack admin" id="areeMie"><details' + (S.areeAperte ? ' open' : '') + ' ontoggle="S.areeAperte=this.open"><summary style="cursor:pointer;font-weight:800;font-size:18px">Nomi, numeri e motti dei cartelloni</summary>' +
+    '<p class="muted" style="margin:6px 0;font-size:14px">Il <b>numero</b> è quello grande nella testata del cartellone (fino a 3 caratteri: 01, 7, A1…); il <b>motto</b> è la parola o la frase in grande sopra il nastro colorato, in basso. Lascia il motto vuoto per non metterlo.</p><div class="stack" style="gap:8px">' +
+    S.d.aree.map(function (a, i) {
+      return '<div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap"><div style="flex:1;min-width:180px"><label for="amN' + i + '">Area ' + (i + 1) + '</label><input id="amN' + i + '" type="text" maxlength="60" value="' + esc(a.it) + '"></div>' +
+        '<div><label for="amC' + i + '">Colore</label><input id="amC' + i + '" type="color" value="' + esc(a.colore) + '" style="width:56px;height:44px;padding:2px"></div>' +
+        '<div style="width:96px"><label for="amU' + i + '">Numero</label><input id="amU' + i + '" type="text" maxlength="3" value="' + esc(a.numero || '') + '"></div>' +
+        '<div style="flex:2;min-width:220px"><label for="amM' + i + '">Motto</label><input id="amM' + i + '" type="text" maxlength="60" value="' + esc(a.motto || '') + '"></div></div>';
+    }).join('') + '<div><button class="btn" id="amSalva" onclick="salvaAreeMie(this)">Salva i cartelloni</button></div></div></details></section>';
+}
+function salvaAreeMie(btn) {
+  var aree = S.d.aree.map(function (a, i) { return { it: $('amN' + i).value, colore: $('amC' + i).value, numero: $('amU' + i).value, motto: $('amM' + i).value }; });
+  btn.disabled = true;
+  api('salvaaree', { aree: aree }).then(function () { return ricarica('Cartelloni aggiornati'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+/* attività parallele: elenco, nuova attività, apertura, rimozione dall'elenco (con archiviazione) */
+function bloccoAttivitaParallele() {
+  var sp = S.d.spazi || [], cur = S.d.att || 'main';
+  var righe = sp.map(function (x) {
+    return '<tr><td><b>' + esc(x.nome) + '</b>' + (x.id === cur ? ' <span class="chip s-approvata">aperta</span>' : '') + (x.id === 'main' ? '<br><span class="muted" style="font-size:13px">attività principale</span>' : '') + '</td><td>' + esc(x.as || '') + '</td><td>' + esc((x.classi || []).join(', ')) + '</td>' +
+      '<td><div class="row" style="gap:6px;flex-wrap:wrap">' + (x.id !== cur ? '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="cambiaAttivita(\'' + esc(x.id) + '\')">Apri</button>' : '') +
+      '<a class="btn sec" style="min-height:36px;padding:0 10px;display:inline-flex;align-items:center" href="/glossario' + (x.id !== 'main' ? '?att=' + encodeURIComponent(x.id) : '') + '" target="_blank" rel="noopener">Pagina pubblica</a>' +
+      (x.id !== 'main' ? '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="togliAttivita(\'' + esc(x.id) + '\',this)">Chiudi e archivia</button>' : '') + '</div></td></tr>';
+  }).join('');
+  return '<section class="card stack admin" id="attivitaPar"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Attività in parallelo</h2><button class="btn" onclick="apriWizard(\'attivita\')">+ Nuova attività</button></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Ogni attività ha classi, alunni, cartelloni (aree), termini e regole propri per scritto, quiz, interrogazione e voto finale, e non tocca le altre. Nella barra a sinistra scegli su quale lavorare; gli alunni entrano con il loro codice e finiscono nella loro attività.</p>' +
+    (sp.length > 1 ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Attività</th><th>a.s.</th><th>Classi</th><th></th></tr></thead><tbody>' + righe + '</tbody></table></div>' : '<p class="muted" style="margin:0;font-size:14px">Per ora c\'è solo l\'attività principale (' + esc(((sp[0] || {}).nome) || '') + ').</p>') + '</section>';
+}
+function togliAttivita(id, btn) {
+  var x = (S.d.spazi || []).filter(function (y) { return y.id === id; })[0] || { nome: id };
+  finestra('Chiudi e archivia l\'attività', '<p style="margin:0"><b>' + esc(x.nome) + '</b> viene chiusa agli alunni, archiviata (risposte, voti, definizioni, registro) e tolta dall\'elenco delle attività. Resta consultabile in «Archivio» e nella pagina pubblica.</p><p class="note warn" style="margin:0">I codici dei suoi alunni non funzioneranno più.</p>',
+    [{ t: 'Chiudi e archivia', warn: true, f: function () {
+      btn.disabled = true;
+      api('rimuoviattivita', { id: id }).then(function () { if (S.d.att === id) { cambiaAttivita('main'); return; } return ricarica('Attività archiviata e tolta dall\'elenco'); })
+        .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+    } }]);
 }
 function archiviaEdizione(sovrascrivi, btn) {
   var ed = S.d.admin.impostazioni.edizione;
@@ -263,19 +302,24 @@ function bannerArchivio() {
 
 /* ---------- procedura guidata: classe aggiunta o nuova edizione ---------- */
 var AREE_N = ['1', '2', '3', '4'];
-function pianoClient(c) {
-  var n = c.alunni.length, tpa = Number(c.tpa) || 0, base = Math.floor(n / 4), extra = n % 4, gruppo = [], i = 0;
-  for (var g = 0; g < 4; g++) for (var k = 0; k < base + (g < extra ? 1 : 0); k++, i++) gruppo[i] = g + 1;
+var AREE_STD = [];
+/* aree della procedura in corso: quelle scelte per una nuova attività, altrimenti quelle dell'attività aperta */
+function wzAreeN() { var w = S.wz; if (w && w.tipo === 'attivita' && w.areeMie) return w.aree.map(function (a, i) { return String(i + 1); }); if (w && w.tipo === 'attivita') return AREE_N; return (S.d.aree || []).map(function (a) { return String(a.n); }); }
+function wzArea(n) { var w = S.wz; if (w && w.tipo === 'attivita' && w.areeMie) { var a = w.aree[Number(n) - 1] || {}; return { n: n, it: a.it || ('Area ' + n), colore: a.colore || '#15212B' }; } if (w && w.tipo === 'attivita') return AREE_STD[Number(n) - 1]; return area(n); }
+function pianoClient(c, AR) {
+  AR = AR || wzAreeN(); var NA = AR.length;
+  var n = c.alunni.length, tpa = Number(c.tpa) || 0, base = Math.floor(n / NA), extra = n % NA, gruppo = [], i = 0;
+  for (var g = 0; g < NA; g++) for (var k = 0; k < base + (g < extra ? 1 : 0); k++, i++) gruppo[i] = g + 1;
   return c.alunni.map(function (al, j) {
-    var aree = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    var aree = {}; AR.forEach(function (a) { aree[a] = 0; });
     if (c.modo === 'gruppi') aree[gruppo[j]] = tpa;
-    else { var b = Math.floor(tpa / 4), r = tpa % 4; AREE_N.forEach(function (a) { aree[a] = b; }); for (var q = 0; q < r; q++) aree[((j + q) % 4) + 1]++; }
+    else { var b = Math.floor(tpa / NA), r = tpa % NA; AR.forEach(function (a) { aree[a] = b; }); for (var q = 0; q < r; q++) aree[((j + q) % NA) + 1]++; }
     return aree;
   });
 }
 function fabbisognoClient(classi) {
-  var tot = { 1: 0, 2: 0, 3: 0, 4: 0 };
-  classi.forEach(function (c) { pianoClient(c).forEach(function (p) { AREE_N.forEach(function (a) { tot[a] += p[a]; }); }); });
+  var AR = wzAreeN(), tot = {}; AR.forEach(function (a) { tot[a] = 0; });
+  classi.forEach(function (c) { pianoClient(c, AR).forEach(function (p) { AR.forEach(function (a) { tot[a] += p[a]; }); }); });
   return tot;
 }
 function nomiDaTesto(t) { return String(t || '').split(/\n+/).map(function (x) { return x.replace(/\s+/g, ' ').trim(); }).filter(Boolean); }
@@ -323,27 +367,37 @@ function caricaElenco(i, inp) {
     var r = new FileReader(); r.onload = function () { fine(nomiDaRighe(righeCsv(r.result))); }; r.readAsText(f);
   }
 }
+var HASH_WZ = { edizione: '#nuova-edizione', attivita: '#nuova-attivita' };
 function apriWizard(tipo) {
-  if (tipo === 'edizione' && location.hash !== '#nuova-edizione') { S.wzApri = true; location.hash = 'nuova-edizione'; return; }
+  if (HASH_WZ[tipo] && location.hash !== HASH_WZ[tipo]) { S.wzApri = true; location.hash = HASH_WZ[tipo].slice(1); return; }
+  AREE_STD = S.d.areeStd || S.d.aree || [];
   var ed = S.d.admin.impostazioni.edizione, as = ed.as;
   var prossimo = /^(\d{4})\/(\d{2})$/.exec(as) ? (Number(as.slice(0, 4)) + 1) + '/' + ('0' + ((Number(as.slice(5)) + 1) % 100)).slice(-2) : '';
   var I = S.d.admin.impostazioni;
   S.wz = { tipo: tipo, passo: 1, nome: '', as: prossimo, classi: [nuovaClasseWz()], termini: null, scartati: [], riassegnazione: I.riassegnazione, proposta: I.proposta, giorniIt: I.giorniIt,
     colleghi: (S.d.admin.colleghi || []).map(function (c) { return { nome: c.nome, codice: c.codice, permessi: Object.assign({}, c.permessi) }; }) };
   if (tipo === 'edizione') S.wz.nome = 'Glossario odontotecnico ' + prossimo;
+  if (tipo === 'attivita') {
+    // nuova attività parallela: stesso anno, aree e regole proprie (si parte da quelle di sempre)
+    var Rg = S.d.regole || {};
+    Object.assign(S.wz, { nome: '', as: as, areeMie: false, aree: [{ it: '', colore: '#2E6DB4' }, { it: '', colore: '#1F8A70' }, { it: '', colore: '#B5532A' }],
+      regole: { scritto: { votoMax: 7.5, penalita: 0.5, votoMin: 4, votoEsclusione: 4, votoMaxErede: 9.5, tetto: 6 }, quiz: { secondi: 60, opzioni: 4, passo: 5 }, orale: { domande: 10, base: 3, passo: 0.5, passoEsclusi: 0.25 }, finale: { pesoScritto: 50 } } });
+    if (Rg.scritto) { S.wz.regole.scritto.votoMaxErede = Rg.scritto.votoMaxErede; S.wz.regole.scritto.tetto = Rg.scritto.tetto; }
+  }
   disegnaWizard();
 }
 function chiudiWizard() {
-  var pagina = S.wz && S.wz.tipo === 'edizione';
+  var pagina = S.wz && HASH_WZ[S.wz.tipo];
   S.wz = null;
-  if (pagina) { if (location.hash === '#nuova-edizione') history.replaceState(null, '', location.pathname + location.search); vistaDocente(); window.scrollTo(0, 0); return; }
+  if (pagina) { if (location.hash === '#nuova-edizione' || location.hash === '#nuova-attivita') history.replaceState(null, '', location.pathname + location.search); vistaDocente(); window.scrollTo(0, 0); return; }
   var o = $('wz'); if (o) o.remove();
 }
 // la pagina della nuova edizione si apre e si chiude anche con i tasti avanti/indietro del browser
 window.addEventListener('hashchange', function () {
   if (!S.d || !S.d.admin || RO()) return;
-  if (location.hash === '#nuova-edizione' && !(S.wz && S.wz.tipo === 'edizione')) { S.wzApri = false; apriWizard('edizione'); }
-  else if (location.hash !== '#nuova-edizione' && S.wz && S.wz.tipo === 'edizione') { S.wz = null; vistaDocente(); }
+  if (location.hash === '#nuova-edizione' && !(S.wz && S.wz.tipo === 'edizione')) { if (!ADM()) return; S.wzApri = false; apriWizard('edizione'); }
+  else if (location.hash === '#nuova-attivita' && !(S.wz && S.wz.tipo === 'attivita')) { if (!ADM()) return; S.wzApri = false; apriWizard('attivita'); }
+  else if (location.hash !== '#nuova-edizione' && location.hash !== '#nuova-attivita' && S.wz && HASH_WZ[S.wz.tipo]) { S.wz = null; vistaDocente(); }
 });
 function leggiPasso1() {
   var w = S.wz;
@@ -353,6 +407,20 @@ function leggiPasso1() {
     var pp = document.querySelector('input[name="wzPr"]:checked'); w.proposta = pp ? pp.value : w.proposta;
     w.giorniIt = Number($('wzG').value);
     w.colleghi = leggiColleghi('wzc', w.colleghi);
+  }
+  if (w.tipo === 'attivita') {
+    w.nome = $('wzNome').value; w.as = $('wzAs').value.trim();
+    var rr2 = document.querySelector('input[name="wzRi"]:checked'); w.riassegnazione = rr2 ? rr2.value : w.riassegnazione;
+    w.giorniIt = Number($('wzG').value);
+    var am = document.querySelector('input[name="wzAm"]:checked'); w.areeMie = !!(am && am.value === 'mie');
+    if (!w.areeMie) w.pacchetto = null;
+    if (w.areeMie) w.aree = w.aree.map(function (a, i) { return { it: ($('wzAn' + i) || {}).value || '', colore: ($('wzAc' + i) || {}).value || a.colore, numero: ($('wzAnum' + i) || { value: a.numero }).value, motto: ($('wzAmot' + i) || { value: a.motto }).value }; });
+    var R = w.regole, num = function (id, def) { var e = $(id); if (!e) return def; var v = Number(String(e.value).replace(',', '.')); return isFinite(v) && e.value !== '' ? v : def; };
+    R.scritto.votoMax = num('wzRvm', R.scritto.votoMax); R.scritto.penalita = num('wzRpe', R.scritto.penalita); R.scritto.votoEsclusione = num('wzRve', R.scritto.votoEsclusione); R.scritto.votoMin = num('wzRmi', R.scritto.votoMin);
+    R.scritto.votoMaxErede = Math.max(R.scritto.votoMax, R.scritto.votoMaxErede);
+    R.quiz.secondi = num('wzRqs', R.quiz.secondi); R.quiz.opzioni = num('wzRqo', R.quiz.opzioni); R.quiz.passo = num('wzRqp', R.quiz.passo);
+    R.orale.domande = num('wzRod', R.orale.domande); R.orale.base = num('wzRob', R.orale.base); R.orale.passo = num('wzRop', R.orale.passo); R.orale.passoEsclusi = num('wzRoe', R.orale.passoEsclusi);
+    R.finale.pesoScritto = num('wzRfp', R.finale.pesoScritto);
   }
   w.classi.forEach(function (c, i) {
     c.nome = ($('wzC' + i).value || '').trim().toUpperCase().replace(/\s+/g, '');
@@ -372,7 +440,7 @@ function riprendiClasse(i, cl) {
 }
 function disegnaWizard() {
   var w = S.wz; if (!w) return;
-  if (w.tipo === 'edizione') return paginaNuovaEdizione();
+  if (w.tipo === 'edizione' || w.tipo === 'attivita') return paginaNuovaEdizione();
   var o = $('wz');
   if (!o) { o = document.createElement('div'); o.id = 'wz'; o.setAttribute('style', 'position:fixed;inset:0;background:rgba(21,33,43,.6);z-index:40;overflow:auto;padding:16px'); document.body.appendChild(o); }
   var titolo = w.tipo === 'edizione' ? 'Nuova edizione del glossario' : 'Aggiungi una classe a questa edizione';
@@ -384,14 +452,65 @@ function disegnaWizard() {
   o.innerHTML = h + '</div>';
 }
 function paginaNuovaEdizione() {
-  var w = S.wz, passi = ['Edizione, regole, classi e alunni', 'Termini', 'Conferma'];
-  var h = testata('Nuova edizione del glossario') + '<main class="wrap stack"><div id="wz" class="stack">' +
-    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:28px">Nuova edizione del glossario</h1><button class="btn sec" onclick="chiudiWizard()">Torna all\'area docenti</button></div>' +
+  var w = S.wz, att = w.tipo === 'attivita', passi = [att ? 'Attività, aree, regole, classi e alunni' : 'Edizione, regole, classi e alunni', 'Termini', 'Conferma'];
+  var tit = att ? 'Nuova attività' : 'Nuova edizione del glossario';
+  var h = testata(tit) + '<main class="wrap stack"><div id="wz" class="stack">' +
+    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:28px">' + tit + '</h1><button class="btn sec" onclick="chiudiWizard()">Torna all\'area docenti</button></div>' +
+    (att ? '<p class="muted" style="margin:0">Un\'attività nuova che <b>corre in parallelo</b> a quelle in corso, senza toccarle: classi e alunni propri, aree e cartelloni propri, termini propri, regole proprie per scritto, quiz, interrogazione e voto finale. Nell\'area docenti la scegli dal menu «Attività» in alto a sinistra; gli alunni entrano con il loro codice e finiscono da soli nella loro attività.</p>' :
     '<p class="muted" style="margin:0">Qui decidi tutto: nome e anno, regole di valutazione, classi, alunni, termini a testa, partenza e scadenze. ' +
-    (S.d.admin.archiviata === S.d.admin.impostazioni.edizione.id ? 'L\'edizione precedente è già in archivio.' : 'Quando confermi, l\'edizione in corso (' + esc(S.d.admin.impostazioni.edizione.nome) + ') viene chiusa agli alunni e archiviata.') + '</p>' +
+    (S.d.admin.archiviata === S.d.admin.impostazioni.edizione.id ? 'L\'edizione precedente è già in archivio.' : 'Quando confermi, l\'edizione in corso (' + esc(S.d.admin.impostazioni.edizione.nome) + ') viene chiusa agli alunni e archiviata.') + '</p>') +
     '<div class="row" style="gap:6px">' + passi.map(function (p, i) { return '<span class="chip ' + (w.passo === i + 1 ? 's-approvata' : 's-vuota') + '">' + (i + 1) + '. ' + p + '</span>'; }).join('') + '</div></section>' +
     '<section class="card stack">' + (w.passo === 1 ? passo1Html() : w.passo === 2 ? passo2Html() : passo3Html()) + '</section></div></main>';
   $('app').innerHTML = h;
+}
+function sceltaPacchetto(id) {
+  leggiPasso1();
+  var w = S.wz, p = (S.d.pacchetti || []).filter(function (x) { return x.id === id; })[0];
+  w.pacchetto = p ? p.id : null; w.termini = null;
+  if (p) w.aree = p.aree.map(function (a, i) { return { it: a.it, colore: a.colore, numero: String(i + 1).padStart(2, '0'), motto: '' }; });
+  disegnaWizard();
+}
+function passo1AttivitaHtml() {
+  var w = S.wz, R = w.regole, inp = function (id, lab, v, min, max, step, nota) { return '<div><label for="' + id + '">' + lab + '</label><input id="' + id + '" type="text" inputmode="decimal" value="' + esc(String(v).replace('.', ',')) + '">' + (nota ? '<small class="muted" style="font-size:13px">' + nota + '</small>' : '') + '</div>'; };
+  var oMax = Math.round((R.orale.base + R.orale.passo * R.orale.domande) * 1000) / 1000, oEx = Math.round((R.orale.base + R.orale.passoEsclusi * R.orale.domande) * 1000) / 1000;
+  var h = '<h2 style="margin:0;font-size:21px">Attività</h2><div class="grid2"><div><label for="wzNome">Nome dell\'attività</label><input id="wzNome" type="text" placeholder="es. Glossario di protesi 4E" value="' + esc(w.nome) + '"></div><div><label for="wzAs">Anno scolastico</label><input id="wzAs" type="text" placeholder="2026/27" value="' + esc(w.as) + '"></div></div>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Aree e cartelloni</h2>' +
+    '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Un cartellone per area</legend>' +
+    [['std', 'Le 4 aree del laboratorio (anatomia, occlusione, materiali, laboratorio): termini proposti dalla banca, che puoi cambiare'], ['mie', 'Aree mie, da 1 a 6: scelgo nomi e colori e scrivo io i termini (o li incollo)']].map(function (x) {
+      var on = (x[0] === 'mie') === !!w.areeMie;
+      return '<label class="op' + (on ? ' on' : '') + '"><input type="radio" name="wzAm" value="' + x[0] + '"' + (on ? ' checked' : '') + ' onchange="leggiPasso1();disegnaWizard()"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>';
+  if (w.areeMie) {
+    var PK = S.d.pacchetti || [];
+    // elenchi pronti di termini e definizioni (aree, colori e termini già preparati, sostituibili uno per uno)
+    if (PK.length) h += '<div><label for="wzPk">Termini e definizioni</label><select id="wzPk" onchange="sceltaPacchetto(this.value)"><option value="">Li scrivo o li incollo io</option>' +
+      PK.map(function (p) { var tot = 0; Object.keys(p.termini).forEach(function (n) { tot += p.termini[n]; }); return '<option value="' + esc(p.id) + '"' + (w.pacchetto === p.id ? ' selected' : '') + '>Elenco pronto: ' + esc(p.nome) + ' (' + tot + ' termini)</option>'; }).join('') + '</select>' +
+      (w.pacchetto ? '<small class="muted" style="font-size:13px">Aree e termini vengono dall\'elenco pronto: nel passo 2 li vedi già distribuiti e puoi sostituirli uno per uno. Nomi, colori, numeri e motti li puoi cambiare qui.</small>' : '') + '</div>';
+    h += '<div class="stack" style="gap:8px">' + w.aree.map(function (a, i) {
+      return '<div class="row" style="gap:8px;align-items:flex-end"><b style="width:28px;font-size:18px">' + (i + 1) + '.</b><div style="flex:1;min-width:180px"><label for="wzAn' + i + '">Nome dell\'area ' + (i + 1) + '</label><input id="wzAn' + i + '" type="text" maxlength="60" placeholder="es. Protesi mobile" value="' + esc(a.it) + '"></div>' +
+        '<div><label for="wzAc' + i + '">Colore</label><input id="wzAc' + i + '" type="color" value="' + esc(a.colore) + '" style="width:56px;height:44px;padding:2px"></div>' +
+        '<div style="width:96px"><label for="wzAnum' + i + '">Numero in alto</label><input id="wzAnum' + i + '" type="text" maxlength="3" value="' + esc(a.numero != null ? a.numero : String(i + 1).padStart(2, '0')) + '"></div>' +
+        '<div style="flex:1;min-width:200px"><label for="wzAmot' + i + '">Motto del cartellone</label><input id="wzAmot' + i + '" type="text" maxlength="60" placeholder="una parola o una frase (facoltativo)" value="' + esc(a.motto || '') + '"></div>' +
+        (w.aree.length > 1 && !w.pacchetto ? '<button class="btn sec" style="min-height:44px" onclick="leggiPasso1();S.wz.aree.splice(' + i + ',1);disegnaWizard()" aria-label="Togli l\'area ' + (i + 1) + '">Togli</button>' : '') + '</div>';
+    }).join('') + (w.aree.length < 6 && !w.pacchetto ? '<div><button class="btn sec" onclick="leggiPasso1();S.wz.aree.push({ it: \'\', colore: [\'#7A4FA0\',\'#C2185B\',\'#5D6D2E\',\'#2E6DB4\',\'#1F8A70\',\'#B5532A\'][S.wz.aree.length % 6] });disegnaWizard()">+ Aggiungi un\'area</button></div>' : '') +
+      '<p class="muted" style="margin:0;font-size:14px">Ogni area deve avere almeno 8 termini (servono per le 8 alternative dello scritto).</p></div>';
+  }
+  h += '<h2 style="margin:8px 0 0;font-size:21px">Regole dello scritto</h2><div class="grid4">' +
+    inp('wzRvm', 'Voto di partenza (massimo)', R.scritto.votoMax, 1, 10, 0.25) + inp('wzRpe', 'Punti tolti per ogni errore', R.scritto.penalita, 0, 3, 0.05) +
+    inp('wzRmi', 'Voto minimo', R.scritto.votoMin, 1, 10, 0.25) + inp('wzRve', 'Voto per mancata consegna', R.scritto.votoEsclusione, 1, 10, 0.25) + '</div>' +
+    '<div class="grid2"><div><label for="wzG">Termini ricevuti da un escluso: giorni per rispondere</label><input id="wzG" type="number" min="1" max="30" value="' + esc(w.giorniIt) + '"></div></div>' +
+    '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli esclusi</legend>' +
+    [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe'], ['manuale', 'Decido io a chi passarli']].map(function (x) { return '<label class="op' + (w.riassegnazione === x[0] ? ' on' : '') + '"><input type="radio" name="wzRi" value="' + x[0] + '"' + (w.riassegnazione === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Regole del quiz</h2><div class="grid4">' +
+    inp('wzRqs', 'Secondi per rispondere', R.quiz.secondi, 10, 300, 1) + inp('wzRqo', 'Definizioni proposte', R.quiz.opzioni, 2, 6, 1) + inp('wzRqp', 'Termini persi a ogni errore', R.quiz.passo, 0, 50, 1) + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Quanti termini servono per superarlo e la scadenza li fissi dopo, nella pagina «Scadenze e valutazione», come per la 3E e la 3F.</p>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Regole dell\'interrogazione</h2><div class="grid4">' +
+    inp('wzRod', 'Termini chiesti', R.orale.domande, 1, 40, 1) + inp('wzRob', 'Voto di partenza', R.orale.base, 0, 10, 0.25) + inp('wzRop', 'Valore di un punto', R.orale.passo, 0.05, 5, 0.05, 'corretta 1 punto, parziale ½') +
+    inp('wzRoe', 'Valore di un punto per chi non ha consegnato lo scritto', R.orale.passoEsclusi, 0, 5, 0.05) + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px" id="wzOrTxt">Con queste regole: massimo <b>' + fv(oMax) + '</b>; chi non ha consegnato lo scritto arriva al massimo a <b>' + fv(oEx) + '</b>.' + (oMax > 10 ? ' <b style="color:var(--err)">Supera il 10: riduci i termini o il valore del punto.</b>' : '') + '</p>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Voto finale</h2><div class="grid4">' + inp('wzRfp', 'Peso dello scritto (%)', R.finale.pesoScritto, 0, 100, 5, 'il resto è l\'orale; 50 = media semplice') + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Arrotondamento come sempre: oltre il mezzo voto si sale, sotto si scende, il mezzo resta. Chi non ha consegnato lo scritto ha come voto finale quello dell\'orale.</p>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Classi e alunni</h2>';
+  return h;
 }
 function passo1Html() {
   var w = S.wz, h = '';
@@ -409,7 +528,8 @@ function passo1Html() {
       '<div id="wzcBox">' + editorColleghi('wzc', w.colleghi) + '</div>' +
       '<h2 style="margin:8px 0 0;font-size:21px">Classi e alunni</h2>';
   }
-  var correnti = CLASSI();
+  if (w.tipo === 'attivita') h += passo1AttivitaHtml();
+  var correnti = CLASSI(), NA = wzAreeN().length, NAW = ['zero', 'una', 'due', 'tre', 'quattro', 'cinque', 'sei'][NA] || NA;
   w.classi.forEach(function (c, i) {
     h += '<fieldset style="border:2px solid var(--line);border-radius:12px;padding:12px 14px" class="stack"><legend style="font-weight:800;padding:0 6px">Classe ' + (w.classi.length > 1 ? i + 1 : '') + '</legend>' +
       '<div class="grid4"><div><label for="wzC' + i + '">Nome (es. 4E)</label><input id="wzC' + i + '" type="text" maxlength="6" value="' + esc(c.nome) + '"></div>' +
@@ -417,20 +537,28 @@ function passo1Html() {
       '<div><label for="wzP' + i + '">Partenza</label><input id="wzP' + i + '" type="datetime-local" value="' + esc(c.partenza) + '"></div>' +
       '<div><label for="wzS' + i + '">Scadenza</label><input id="wzS' + i + '" type="datetime-local" value="' + esc(c.scadenza) + '"></div></div>' +
       '<fieldset class="ops" style="gap:6px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Come distribuire i termini</legend>' +
-      [['misto', 'Ognuno riceve termini di tutte e quattro le aree (come la 3F)'], ['gruppi', 'Alunni divisi in 4 gruppi, uno per area (come la 3E)']].map(function (x) { return '<label class="op' + (c.modo === x[0] ? ' on' : '') + '"><input type="radio" name="wzM' + i + '" value="' + x[0] + '"' + (c.modo === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
+      [['misto', NA > 1 ? 'Ognuno riceve termini di tutte e ' + NAW + ' le aree (come la 3F)' : 'Tutti i termini della stessa area'], ['gruppi', 'Alunni divisi in ' + NA + (NA === 1 ? ' gruppo' : ' gruppi') + ', uno per area (come la 3E)']].map(function (x) { return '<label class="op' + (c.modo === x[0] ? ' on' : '') + '"><input type="radio" name="wzM' + i + '" value="' + x[0] + '"' + (c.modo === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
       '<div class="row" style="gap:8px"><label class="btn sec" style="min-height:38px;cursor:pointer;display:inline-flex;align-items:center" for="wzF' + i + '">Carica l\'elenco da Excel o CSV</label><input id="wzF' + i + '" type="file" accept=".xlsx,.xls,.ods,.csv,.txt" style="display:none" onchange="caricaElenco(' + i + ',this)"><span class="muted" style="font-size:14px">colonne <b>Cognome</b> e <b>Nome</b> (o una colonna con il nominativo)</span></div>' +
       '<div><label for="wzA' + i + '">Alunni (uno per riga, «Cognome Nome»)</label><textarea id="wzA' + i + '" rows="8" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px">' + esc(c.testo) + '</textarea></div>' +
       (w.tipo === 'edizione' ? '<div class="row" style="gap:6px"><span class="muted" style="font-size:14px">Riprendi gli alunni (stesso codice) della classe:</span>' + correnti.map(function (cl) { return '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="riprendiClasse(' + i + ',\'' + esc(cl) + '\')">' + esc(cl) + '</button>'; }).join('') + '</div>' +
         (Object.keys(c.riprendi).length ? '<span class="muted" style="font-size:14px">I nomi che restano uguali a quelli ripresi tengono il loro codice; quelli nuovi o modificati ricevono un codice nuovo.</span>' : '') +
         (w.classi.length > 1 ? '<div><button class="btn sec" style="min-height:36px" onclick="leggiPasso1();S.wz.classi.splice(' + i + ',1);disegnaWizard()">Togli questa classe</button></div>' : '') : '') +
+      (w.tipo === 'attivita' && w.classi.length > 1 ? '<div><button class="btn sec" style="min-height:36px" onclick="leggiPasso1();S.wz.classi.splice(' + i + ',1);disegnaWizard()">Togli questa classe</button></div>' : '') +
       '<span class="muted" style="font-size:14px">Senza partenza gli alunni entrano ma vedono il conto alla rovescia solo quando la fissi (pagina «Scadenze e valutazione»).</span></fieldset>';
   });
-  if (w.tipo === 'edizione') h += '<div><button class="btn sec" onclick="leggiPasso1();S.wz.classi.push(nuovaClasseWz());disegnaWizard()">+ Aggiungi un\'altra classe</button></div>';
+  if (w.tipo === 'edizione' || w.tipo === 'attivita') h += '<div><button class="btn sec" onclick="leggiPasso1();S.wz.classi.push(nuovaClasseWz());disegnaWizard()">+ Aggiungi un\'altra classe</button></div>';
   return h + '<div class="row" style="justify-content:flex-end"><button class="btn" onclick="wzAvanti1(this)">Avanti: proponi i termini</button></div>';
 }
 function wzAvanti1(btn) {
   leggiPasso1();
   var w = S.wz, errs = [];
+  if (w.tipo === 'attivita') {
+    if (!w.nome.trim()) errs.push('Dai un nome all\'attività.');
+    if (!/^\d{4}\/\d{2}$/.test(w.as)) errs.push('Anno scolastico nel formato 2026/27.');
+    if (w.areeMie) w.aree.forEach(function (a, i) { if (!String(a.it).trim()) errs.push('Dai un nome all\'area ' + (i + 1) + '.'); });
+    var Ro = w.regole.orale; if (Ro.base + Ro.passo * Ro.domande > 10 + 1e-9) errs.push('Interrogazione: con queste regole si supera il 10.');
+    if (w.regole.scritto.votoMin > w.regole.scritto.votoMax) errs.push('Il voto minimo dello scritto supera il massimo.');
+  }
   if (w.tipo === 'edizione') { if (!w.nome.trim()) errs.push('Dai un nome all\'edizione.'); if (!/^\d{4}\/\d{2}$/.test(w.as)) errs.push('Anno scolastico nel formato 2027/28.'); if (!(w.giorniIt >= 1 && w.giorniIt <= 30)) errs.push('Giorni per i termini ricevuti: da 1 a 30.'); }
   var nomi = {};
   w.classi.forEach(function (c) {
@@ -445,10 +573,15 @@ function wzAvanti1(btn) {
   });
   if (errs.length) { toast(errs[0], true); return; }
   w.fab = fabbisognoClient(w.classi);
+  if (w.tipo === 'attivita' && w.areeMie && !w.pacchetto) {
+    // aree mie: i termini li scrive (o li incolla) il docente, area per area
+    var vecchi = w.termini || {}; w.termini = {}; wzAreeN().forEach(function (n) { w.termini[n] = vecchi[n] || []; });
+    w.ridotto = null; w.passo = 2; disegnaWizard(); return;
+  }
   btn.disabled = true; btn.textContent = 'Cerco termini nuovi…';
   w.ridotto = null;
-  api('generatermini', { richiesta: w.fab, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
-    w.termini = {}; AREE_N.forEach(function (n) { w.termini[n] = x.aree[n].map(function (y) { return { t: y[0], d: y[1], o: 'banca' }; }); });
+  api('generatermini', { richiesta: w.fab, pacchetto: w.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+    w.termini = {}; wzAreeN().forEach(function (n) { w.termini[n] = x.aree[n].map(function (y) { return { t: y[0], d: y[1], o: 'banca' }; }); });
     w.disp = x.disponibili;
     // massimo a testa: se la banca non basta, ognuno ne riceve meno (lo stesso numero per tutti, almeno 4)
     if (Object.keys(x.mancano || {}).length) adattaMassimo();
@@ -458,9 +591,11 @@ function wzAvanti1(btn) {
 function passo2Html() {
   var w = S.wz, ok = true;
   var h = (w.ridotto ? '<div class="note warn" style="margin:0">La banca non ha abbastanza termini nuovi per ' + w.ridotto.da + ' a testa: ognuno ne riceve <b>' + w.ridotto.a + '</b>. Se vuoi arrivare a ' + w.ridotto.da + ', <button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="tornaAlMassimo()">torna a ' + w.ridotto.da + ' a testa</button> e aggiungi i termini mancanti scritti da te.</div>' : '') +
-    '<p style="margin:0">Termini nuovi proposti per area, già controllati: nessuno è uguale o simile a quelli dell\'edizione in corso, del 2026/27 e delle edizioni in archivio. Puoi sostituirli uno per uno, toglierli o aggiungere termini tuoi.</p>';
-  AREE_N.forEach(function (n) {
-    var a = area(n) || { it: 'Area ' + n, colore: '#15212B' }, lista = w.termini[n], serve = w.fab[n];
+    (w.tipo === 'attivita' && w.areeMie && !w.pacchetto ? '<p style="margin:0">Scrivi o incolla i termini di ogni area, uno per riga: <i>termine | definizione corretta</i> (va bene anche copiare due colonne da Excel). Servono esattamente i termini indicati per ogni area; ogni area ne ha almeno 8.</p>' :
+    '<p style="margin:0">Termini nuovi proposti per area, già controllati: nessuno è uguale o simile a quelli dell\'edizione in corso, del 2026/27 e delle edizioni in archivio. Puoi sostituirli uno per uno, toglierli o aggiungere termini tuoi.</p>');
+  var mie = w.tipo === 'attivita' && w.areeMie && !w.pacchetto;
+  wzAreeN().forEach(function (n) {
+    var a = wzArea(n) || { it: 'Area ' + n, colore: '#15212B' }, lista = w.termini[n], serve = w.fab[n];
     if (!serve) return;
     if (lista.length !== serve) ok = false;
     h += '<section class="stack" style="gap:6px;border-left:6px solid ' + esc(a.colore) + ';padding-left:12px"><div class="row" style="justify-content:space-between"><h3 style="margin:0;font-size:18px">' + n + '. ' + esc(a.it) + '</h3>' +
@@ -470,9 +605,9 @@ function passo2Html() {
           '<div class="row" style="gap:6px;margin-top:4px">' + (x.o === 'banca' ? '<button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzSostituisci(\'' + n + '\',' + k + ',this)">Sostituisci</button>' : '') +
           '<button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzTogli(\'' + n + '\',' + k + ')">Togli</button></div></li>';
       }).join('') + '</ol>' +
-      (lista.length < serve ? '<div class="note warn" style="margin:0">Mancano ' + (serve - lista.length) + ' termini. <button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzAltri(\'' + n + '\',this)">Proponi altri dalla banca</button></div>' : '') +
+      (lista.length < serve ? '<div class="note warn" style="margin:0">Mancano ' + (serve - lista.length) + ' termini.' + (mie ? '' : ' <button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzAltri(\'' + n + '\',this)">Proponi altri dalla banca</button>') + '</div>' : '') +
       (lista.length > serve ? '<div class="note warn" style="margin:0">Ce ne sono ' + (lista.length - serve) + ' in più: togline qualcuno.</div>' : '') +
-      '<details><summary style="cursor:pointer;font-weight:700">Aggiungi termini tuoi</summary><div class="stack" style="gap:6px;margin-top:6px"><label for="wzX' + n + '">Uno per riga: <i>termine | definizione corretta</i></label>' +
+      '<details' + (mie && lista.length < serve ? ' open' : '') + '><summary style="cursor:pointer;font-weight:700">Aggiungi termini tuoi</summary><div class="stack" style="gap:6px;margin-top:6px"><label for="wzX' + n + '">Uno per riga: <i>termine | definizione corretta</i></label>' +
       '<textarea id="wzX' + n + '" rows="4" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px" placeholder="Ponte su impianti | Protesi fissa che poggia su due o più impianti."></textarea>' +
       '<div><button class="btn sec" style="min-height:36px" onclick="wzMiei(\'' + n + '\',this)">Controlla e aggiungi</button></div></div></details></section>';
   });
@@ -483,13 +618,13 @@ function wzcAggiungi() { leggiPasso1(); S.wz.colleghi.push({ nome: '', codice: n
 function wzcTogli(i) { leggiPasso1(); S.wz.colleghi.splice(i, 1); disegnaWizard(); }
 function adattaMassimo() {
   var w = S.wz, max = Math.max.apply(null, w.classi.map(function (c) { return c.max; }));
-  var regge = function (t) { var cl = w.classi.map(function (c) { return Object.assign({}, c, { tpa: Math.min(c.max, t) }); }); var f = fabbisognoClient(cl); return AREE_N.every(function (n) { return f[n] <= w.disp[n]; }) ? cl : null; };
+  var regge = function (t) { var cl = w.classi.map(function (c) { return Object.assign({}, c, { tpa: Math.min(c.max, t) }); }); var f = fabbisognoClient(cl); return wzAreeN().every(function (n) { return f[n] <= w.disp[n]; }) ? cl : null; };
   for (var t = max - 1; t >= 4; t--) {
     var cl = regge(t);
     if (cl) {
       w.classi.forEach(function (c, i) { c.tpa = cl[i].tpa; });
       w.fab = fabbisognoClient(w.classi);
-      AREE_N.forEach(function (n) { w.termini[n] = w.termini[n].slice(0, w.fab[n]); });
+      wzAreeN().forEach(function (n) { w.termini[n] = w.termini[n].slice(0, w.fab[n]); });
       w.ridotto = { da: max, a: t };
       return;
     }
@@ -498,12 +633,12 @@ function adattaMassimo() {
 function tornaAlMassimo() {
   var w = S.wz; w.classi.forEach(function (c) { c.tpa = c.max; }); w.fab = fabbisognoClient(w.classi); w.ridotto = null; disegnaWizard();
 }
-function escludiWz() { var w = S.wz, e = w.scartati.slice(); AREE_N.forEach(function (n) { w.termini[n].forEach(function (x) { e.push(x.t); }); }); return e; }
+function escludiWz() { var w = S.wz, e = w.scartati.slice(); wzAreeN().forEach(function (n) { w.termini[n].forEach(function (x) { e.push(x.t); }); }); return e; }
 function wzSostituisci(n, k, btn) {
   var w = S.wz, vecchio = w.termini[n][k];
   btn.disabled = true;
   var ric = {}; ric[n] = 1;
-  api('generatermini', { richiesta: ric, escludi: escludiWz(), seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
     if (!x.aree[n].length) { btn.disabled = false; toast('La banca non ha altri termini liberi per quest\'area: aggiungine uno tuo.', true); return; }
     w.scartati.push(vecchio.t); w.termini[n][k] = { t: x.aree[n][0][0], d: x.aree[n][0][1], o: 'banca' }; disegnaWizard();
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
@@ -512,7 +647,7 @@ function wzTogli(n, k) { var x = S.wz.termini[n].splice(k, 1)[0]; if (x && x.o =
 function wzAltri(n, btn) {
   var w = S.wz, ric = {}; ric[n] = w.fab[n] - w.termini[n].length;
   btn.disabled = true;
-  api('generatermini', { richiesta: ric, escludi: escludiWz(), seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
     x.aree[n].forEach(function (y) { w.termini[n].push({ t: y[0], d: y[1], o: 'banca' }); });
     if (x.mancano[n]) toast('La banca non ha abbastanza termini liberi in quest\'area: ne mancano ' + x.mancano[n] + ', aggiungili tu.', true);
     disegnaWizard();
@@ -521,9 +656,10 @@ function wzAltri(n, btn) {
 function wzMiei(n, btn) {
   var righe = String($('wzX' + n).value || '').split(/\n+/).map(function (r) { return r.trim(); }).filter(Boolean);
   if (!righe.length) { toast('Scrivi almeno un termine: «termine | definizione».', true); return; }
-  var voci = righe.map(function (r) { var p = r.split('|'); return { area: n, termine: (p[0] || '').trim(), def: p.slice(1).join('|').trim() }; });
+  // «termine | definizione» oppure due colonne copiate da Excel (separate da tabulazione)
+  var voci = righe.map(function (r) { var tab = r.indexOf('\t') >= 0, p = tab ? r.split('\t') : r.split('|'); return { area: n, termine: (p[0] || '').trim(), def: p.slice(1).join(tab ? ' ' : '|').trim() }; });
   // controllo anche contro i termini già in lista
-  var w = S.wz, tutti = []; AREE_N.forEach(function (m) { w.termini[m].forEach(function (x) { tutti.push({ area: m, termine: x.t, def: x.d }); }); });
+  var w = S.wz, tutti = []; wzAreeN().forEach(function (m) { w.termini[m].forEach(function (x) { tutti.push({ area: m, termine: x.t, def: x.d }); }); });
   btn.disabled = true;
   api('verificatermini', { termini: tutti.concat(voci) }).then(function (x) {
     btn.disabled = false;
@@ -539,28 +675,49 @@ function wzMiei(n, btn) {
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 function passo3Html() {
-  var w = S.wz, tot = 0; AREE_N.forEach(function (n) { tot += w.termini[n].length; });
+  var w = S.wz, tot = 0; wzAreeN().forEach(function (n) { tot += w.termini[n].length; });
   var righe = w.classi.map(function (c) {
     var ripresi = c.alunni.filter(function (a) { return a.riprendi; }).length;
-    return '<tr><td><b>' + esc(c.nome) + '</b></td><td class="n">' + c.alunni.length + (ripresi ? '<br><span class="muted" style="font-size:13px">' + ripresi + ' ripresi</span>' : '') + '</td><td class="n">' + c.tpa + (c.max && c.max !== c.tpa ? '<br><span class="muted" style="font-size:13px">massimo ' + c.max + '</span>' : '') + '</td><td>' + (c.modo === 'gruppi' ? '4 gruppi, uno per area' : 'tutte le aree') + '</td>' +
+    return '<tr><td><b>' + esc(c.nome) + '</b></td><td class="n">' + c.alunni.length + (ripresi ? '<br><span class="muted" style="font-size:13px">' + ripresi + ' ripresi</span>' : '') + '</td><td class="n">' + c.tpa + (c.max && c.max !== c.tpa ? '<br><span class="muted" style="font-size:13px">massimo ' + c.max + '</span>' : '') + '</td><td>' + (c.modo === 'gruppi' ? wzAreeN().length + ' gruppi, uno per area' : 'tutte le aree') + '</td>' +
       '<td>' + (c.partenza ? esc(oraIt(new Date(c.partenza).toISOString())) : '<span class="muted">da fissare</span>') + '</td><td>' + esc(oraIt(new Date(c.scadenza).toISOString())) + '</td></tr>';
   }).join('');
   var avvisi = [];
   if (w.tipo === 'edizione' && S.d.admin.archiviata !== S.d.admin.impostazioni.edizione.id) avvisi.push('L\'edizione in corso (' + S.d.admin.impostazioni.edizione.nome + ') verrà chiusa agli alunni e archiviata: resta consultabile nell\'archivio e nella pagina pubblica.');
-  if (w.tipo === 'edizione') avvisi.push('L\'app passa alla nuova edizione: gli alunni dell\'edizione archiviata non ripresi non potranno più entrare (i loro dati restano nell\'archivio). Il tuo codice docente resta lo stesso.');
-  else avvisi.push('Le definizioni della nuova classe vanno sugli stessi quattro cartelloni. Le domande già assegnate alle altre classi non cambiano.');
+  if (w.tipo === 'attivita') {
+    avvisi.push('L\'attività parte in parallelo: quelle in corso (' + (S.d.spazi || []).map(function (x) { return x.nome; }).join(', ') + ') non cambiano.');
+    avvisi.push('Gli alunni ricevono codici nuovi, diversi da tutti quelli già in uso: con il codice entrano da soli nella loro attività, anche nella pagina del quiz.');
+  }
+  else if (w.tipo === 'edizione') avvisi.push('L\'app passa alla nuova edizione: gli alunni dell\'edizione archiviata non ripresi non potranno più entrare (i loro dati restano nell\'archivio). Il tuo codice docente resta lo stesso.');
+  else avvisi.push('Le definizioni della nuova classe vanno sugli stessi cartelloni di questa attività. Le domande già assegnate alle altre classi non cambiano.');
   avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel pagina «Codici e schede QR».');
   return '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Classe</th><th style="text-align:right">Alunni</th><th style="text-align:right">Termini a testa</th><th>Distribuzione</th><th>Partenza</th><th>Scadenza</th></tr></thead><tbody>' + righe + '</tbody></table></div>' +
-    '<p style="margin:0">Termini nuovi: <b>' + tot + '</b> (' + AREE_N.filter(function (n) { return w.fab[n]; }).map(function (n) { return 'area ' + n + ': ' + w.termini[n].length; }).join(', ') + ').' +
+    '<p style="margin:0">Termini nuovi: <b>' + tot + '</b> (' + wzAreeN().filter(function (n) { return w.fab[n]; }).map(function (n) { return 'area ' + n + ': ' + w.termini[n].length; }).join(', ') + ').' +
     (w.tipo === 'edizione' ? ' Edizione: <b>' + esc(w.nome) + '</b>, a.s. ' + esc(w.as) + '. Colleghi: ' + (w.colleghi.length ? w.colleghi.map(function (c) { return esc(c.nome) + ' (' + FACOLTA.filter(function (f) { return c.permessi[f[0]]; }).map(function (f) { return f[1].toLowerCase(); }).join(', ') + ')'; }).join('; ') : 'nessuno') + '. Penalità: proposta ' + w.proposta + ' (' + (w.proposta === 'A' ? '−0,25' : '−0,50') + ' per errore). Termini ricevuti: ' + w.giorniIt + ' giorni. Termini degli esclusi: ' + (w.riassegnazione === 'manuale' ? 'decidi tu.' : 'in automatico, a sorte.') : '') + '</p>' +
+    (w.tipo === 'attivita' ? riepilogoRegoleWz() : '') +
     avvisi.map(function (a) { return '<p class="note" style="margin:0">' + esc(a) + '</p>'; }).join('') +
-    '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=2;disegnaWizard()">Indietro</button><button class="btn ok" onclick="wzCrea(this)">' + (w.tipo === 'edizione' ? 'Crea la nuova edizione' : 'Aggiungi la classe') + '</button></div>';
+    '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=2;disegnaWizard()">Indietro</button><button class="btn ok" onclick="wzCrea(this)">' + (w.tipo === 'edizione' ? 'Crea la nuova edizione' : w.tipo === 'attivita' ? 'Crea l\'attività' : 'Aggiungi la classe') + '</button></div>';
+}
+function riepilogoRegoleWz() {
+  var R = S.wz.regole, w = S.wz, oMax = Math.round((R.orale.base + R.orale.passo * R.orale.domande) * 1000) / 1000, oEx = Math.round((R.orale.base + R.orale.passoEsclusi * R.orale.domande) * 1000) / 1000;
+  return '<div class="stack" style="gap:4px"><b>Attività: ' + esc(w.nome) + ' · a.s. ' + esc(w.as) + '</b>' +
+    '<span>Cartelloni: ' + (w.areeMie ? w.aree.map(function (a, i) { return (a.numero || (i + 1)) + '. ' + esc(a.it) + (a.motto ? ' («' + esc(a.motto) + '»)' : ''); }).join(' · ') : 'le 4 aree del laboratorio') + '</span>' +
+    '<span>Scritto: da ' + fv(R.scritto.votoMax) + ', −' + fv(R.scritto.penalita) + ' per errore, minimo ' + fv(R.scritto.votoMin) + '; mancata consegna ' + fv(R.scritto.votoEsclusione) + '.</span>' +
+    '<span>Quiz: ' + R.quiz.secondi + ' secondi, ' + R.quiz.opzioni + ' definizioni, −' + R.quiz.passo + ' termini a ogni errore.</span>' +
+    '<span>Interrogazione: ' + R.orale.domande + ' termini, ' + fv(R.orale.base) + ' + ' + fv(R.orale.passo) + ' per punto (massimo ' + fv(oMax) + '; senza scritto ' + fv(R.orale.passoEsclusi) + ' per punto, massimo ' + fv(oEx) + ').</span>' +
+    '<span>Voto finale: ' + (R.finale.pesoScritto === 50 ? 'media tra scritto e orale' : 'scritto ' + R.finale.pesoScritto + ' %, orale ' + (100 - R.finale.pesoScritto) + ' %') + '.</span></div>';
 }
 function wzCrea(btn) {
   var w = S.wz;
-  var termini = {}; AREE_N.forEach(function (n) { termini[n] = w.termini[n].map(function (x) { return [x.t, x.d]; }); });
+  var termini = {}; wzAreeN().forEach(function (n) { termini[n] = w.termini[n].map(function (x) { return [x.t, x.d]; }); });
   var classi = w.classi.map(function (c) { return { nome: c.nome, tpa: c.tpa, modo: c.modo, partenza: c.partenza ? new Date(c.partenza).toISOString() : null, scadenza: new Date(c.scadenza).toISOString(), alunni: c.alunni }; });
   btn.disabled = true; btn.textContent = 'Creazione in corso…';
+  if (w.tipo === 'attivita') {
+    var aree = w.areeMie ? w.aree.map(function (a) { return { it: String(a.it).trim(), colore: a.colore, numero: String(a.numero || '').trim(), motto: String(a.motto || '').trim() }; }) : null;
+    api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt }).then(function (x) {
+      chiudiWizard(); toast('Attività creata: ' + x.alunni + ' alunni, ' + x.termini + ' termini'); cambiaAttivita(x.id);
+    }).catch(function (e) { btn.disabled = false; btn.textContent = 'Crea l\'attività'; toast(errMsg(e), true); });
+    return;
+  }
   var p = w.tipo === 'edizione' ? api('nuovaedizione', { nome: w.nome, as: w.as, classi: classi, termini: termini, riassegnazione: w.riassegnazione, proposta: w.proposta, giorniIt: w.giorniIt, colleghi: w.colleghi.filter(function (c) { return String(c.nome).trim(); }) }) : api('aggiungiclasse', { classe: classi[0], termini: termini });
   p.then(function (x) {
     chiudiWizard();
@@ -581,7 +738,7 @@ function stampaCartelloni(quali, abbondanza, lingua) {
   // si impaginano qui (stessi caratteri) per calcolare la dimensione del testo, poi si passano alla finestra di stampa
   var scatole = aree.map(function (a) {
     var b = document.createElement('div'); b.style.cssText = 'position:absolute;left:-30000px;top:0;width:700mm';
-    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { soloApprovate: true, qr: location.origin + '/glossario', as: as, en: bil });
+    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, qr: urlPubblico(), as: as, en: bil });
     document.body.appendChild(b); return b;
   });
   caratteriPronti().then(function () {

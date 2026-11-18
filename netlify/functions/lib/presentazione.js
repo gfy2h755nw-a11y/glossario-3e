@@ -4,6 +4,7 @@
  */
 const PptxGenJS = require('pptxgenjs');
 const DATI = require('./dati');
+const CAT = require('./catalogo');
 const logica = require('./logica');
 const OR = require('./orale');
 const { righeAlunni } = require('./report');
@@ -17,8 +18,15 @@ const THEME = {
     accent4: 'B4511A', accent5: '2E7D32', accent6: 'D9A21B', hlink: '1F5FA8', folHlink: '6B4FA0' }
 };
 const K = { navy: '15212B', ink: '2B3A47', grey: '5B6976', line: 'DDE4EA', light: 'EEF2F5', red: 'EA3628', ok: '2E7D32', warn: 'D9A21B', bad: 'B0304A', empty: 'C3CED7' };
-const AREA_COL = DATI.AREE.map((a) => a.colore.replace('#', ''));
-const AREA_BREVE = ['Anatomia', 'Occlusione', 'Materiali', 'Laboratorio'];
+// colori e nomi brevi delle aree: quelli dell'attività (impostati a ogni lettura dei dati)
+let AREA_COL = DATI.AREE.map((a) => a.colore.replace('#', ''));
+let AREA_BREVE = ['Anatomia', 'Occlusione', 'Materiali', 'Laboratorio'];
+function impostaAree(config) {
+  const ar = CAT.areeDi(config);
+  AREA_COL = ar.map((a) => a.colore.replace('#', ''));
+  AREA_BREVE = ar === DATI.AREE ? ['Anatomia', 'Occlusione', 'Materiali', 'Laboratorio'] : ar.map((a) => a.it.split(' ').slice(0, 2).join(' '));
+  return ar;
+}
 let CLS = 'Classe 3E';
 const FOOT = (en) => 'Glossario odontotecnico' + (en ? ' bilingue' : '') + ' · ' + CLS + ' · Istituto Barsanti - sede Salvetti';
 
@@ -38,7 +46,7 @@ const campo = (t, l, n) => t[n + '_' + l];
 function calcola(stato, attivita, now) {
   const righe = righeAlunni(stato, attivita, now);
   const imp = logica.impostazioni(stato.config);
-  const aree = DATI.AREE.map((a) => String(a.n));
+  const aree = impostaAree(stato.config).map((a) => String(a.n));
   const STATI = [['approvata', 'Approvata'], ['inviata', 'Da approvare'], ['correggere', 'Da rivedere'], ['', 'Senza risposta']];
   const avanz = {};
   const EN = imp.lingue.indexOf('en') >= 0;
@@ -116,7 +124,7 @@ async function creaPresentazione(stato, attivita, now) {
   // termini a testa: il valore più frequente tra gli alunni (le classi aggiunte possono averne un numero diverso)
   const conti = {}; stato.alunni.forEach((a) => { const n = stato.termini.filter((t) => (t.alunno_orig || t.alunno_id) === a.id).length; if (n) conti[n] = (conti[n] || 0) + 1; });
   const TPA = Number(Object.keys(conti).sort((x, y) => conti[y] - conti[x])[0]) || DATI.TERMINI_PER_ALUNNO;
-  const perArea = DATI.AREE.map((a) => stato.termini.filter((t) => String(t.area) === String(a.n)).length);
+  const perArea = CAT.areeDi(stato.config).map((a) => stato.termini.filter((t) => String(t.area) === String(a.n)).length);
   const PERAREA = Math.max.apply(null, perArea.concat([1])), UGUALI = perArea.every((x) => x === perArea[0]);
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_16x9';

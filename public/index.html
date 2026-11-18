@@ -134,6 +134,8 @@ details summary{cursor:pointer;font-weight:700;font-family:'Archivo',system-ui,s
 .seg{display:flex;background:#0E171F;border-radius:10px;padding:3px;gap:3px;margin-top:8px}
 .seg button{flex:1;border:0;background:none;padding:6px 0;border-radius:8px;font:700 13px 'Archivo',system-ui,sans-serif;color:#AFC0CE;cursor:pointer}
 .seg button.on{background:#fff;color:var(--ink)}
+.satt{display:block;margin-top:8px}.satt span{display:block;font:700 10.5px 'Archivo',system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8FA3B4;margin-bottom:3px}.satt select{width:100%;min-height:40px;border-radius:8px;border:1px solid #33475A;background:#0E171F;color:#fff;font:600 13px 'Archivo',system-ui,sans-serif;padding:6px 8px}
+.snuovaatt{display:block;width:100%;margin-top:6px;min-height:36px;border:1px dashed #4A5F72;background:none;color:#AFC0CE;border-radius:8px;font:700 12.5px 'Archivo',system-ui,sans-serif;cursor:pointer}.snuovaatt:hover{color:#fff;border-color:#8FA3B4}
 .snav{display:flex;flex-direction:column;gap:1px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#3A4C5B transparent}
 .sgr{font:800 11px 'Archivo',system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#7F93A5;padding:8px 10px 3px}
 .sit{display:flex;align-items:center;gap:11px;padding:7px 10px;border-radius:10px;font:700 14.5px 'Archivo',system-ui,sans-serif;color:#DCE3E9;background:none;border:0;text-align:left;cursor:pointer;width:100%}
@@ -2570,6 +2572,10 @@ var Poster = (function () {
         '<path d="M50 32H58.5" fill="none" stroke="' + c + '" stroke-width="1.6" stroke-linecap="round"/><circle cx="59.2" cy="32" r="2.1" fill="' + c + '"/></g>' +
         '<path d="M46 50l1.4 3 3 1.4-3 1.4-1.4 3-1.4-3-3-1.4 3-1.4z" fill="' + c + '" fill-opacity="0.7"/>'
     };
+    // aree scelte dal docente (attività nuove): icona generica, un libro aperto
+    if (!I[n] || icona2.generica) I[n] = '<path d="M10 18c8-3 15-3 22 2v30c-7-5-14-5-22-2z" fill="#fff" ' + st + '/><path d="M10 18c8-3 15-3 22 2v30c-7-5-14-5-22-2z" ' + t + '/>' +
+      '<path d="M54 18c-8-3-15-3-22 2v30c7-5 14-5 22-2z" fill="#fff" ' + st + '/><path d="M54 18c-8-3-15-3-22 2v30c7-5 14-5 22-2z" ' + t + '/>' +
+      '<path d="M16 26c4-1 8-1 11 1M16 32c4-1 8-1 11 1M37 27c3-2 7-2 11-1M37 33c3-2 7-2 11-1" fill="none" ' + st + ' stroke-width="1.2"/>';
     return '<svg width="64mm" height="64mm" viewBox="0 0 80 80" aria-hidden="true" style="flex:none">' +
       '<circle cx="40" cy="41.2" r="37" fill="#000" fill-opacity="0.16"/><circle cx="40" cy="40" r="37" fill="#fff"/>' +
       '<circle cx="40" cy="40" r="33" fill="none" stroke="' + c + '" stroke-opacity="0.25" stroke-width="0.8"/>' +
@@ -2927,7 +2933,8 @@ var Poster = (function () {
   }
   function alfa(area, termini, alunni, opz) {
     opz = opz || {};
-    var col = area.colore, n = Number(area.n), nomi = {}, clDi = {};
+    var col = area.colore, n = Number(area.n), nomi = {}, clDi = {}, NA = opz.nAree || 4;
+    icona2.generica = !!opz.areeMie;
     (alunni || []).forEach(function (a) { nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
     var perCl = {}, visti = {};
     termini.forEach(function (t) { if (!t.alunno || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
@@ -2945,7 +2952,11 @@ var Poster = (function () {
           : '<p class="pa-vuota">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</p>') + '</div>';
     });
     var AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function (l) { return '<span style="flex:1;text-align:center;' + A + 'font-weight:800;font-size:9mm;line-height:1;color:' + (lettere[l] ? col : '#C9D1D8') + '">' + l + '</span>'; }).join('');
-    var MOTTO = ['Nomina…', 'sunt…', 'consequentia…', 'rerum.'];
+    // il motto si legge sui quattro cartelloni affiancati: solo con le 4 aree del laboratorio
+    var MOTTO = opz.areeMie || NA !== 4 ? [] : ['Nomina…', 'sunt…', 'consequentia…', 'rerum.'];
+    // attività nuove: motto e numero in alto scelti dal docente per ogni cartellone
+    var MT = opz.areeMie ? String(area.motto || '') : (MOTTO[n - 1] || ''), NUM = area.numero ? String(area.numero) : '0' + n;
+    var fsM = Math.max(16, Math.min(46, Math.floor(1150 / Math.max(1, MT.length))));
     var css = '<style>' +
       '.pa-foglio{--k:1}' +
       // tre colonne vere (non colonne automatiche del browser): le voci le distribuisce adatta(), uguale in ogni browser
@@ -2967,12 +2978,12 @@ var Poster = (function () {
     var lab = A + 'font-weight:800;letter-spacing:0.6mm;text-transform:uppercase;font-size:4.8mm';
     return '<div class="poster-foglio pa-foglio" style="width:700mm;height:1000mm;position:relative;overflow:hidden;background:#FBFAF7;color:#15212B;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;box-sizing:border-box">' + css +
       '<div class="pa-testata" style="position:relative;height:172mm;box-sizing:border-box;background:linear-gradient(135deg,' + col + ' 0%,' + scuro(col, 0.72) + ' 100%);color:#fff;padding:15mm 34mm 0;overflow:hidden">' +
-        '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">0' + n + '</div>' +
+        '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">' + esc(NUM) + '</div>' +
         '<div style="position:relative;display:flex;justify-content:space-between;align-items:center">' +
           '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa · Laboratorio odontotecnico</div></div></div>' +
-          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">Glossario odontotecnico' + (opz.en ? ' · Dental technology glossary' : '') + '<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
+          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">Glossario odontotecnico' + (opz.en ? ' · Dental technology glossary' : '') + '<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
         '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:' + (opz.en ? 6 : 12) + 'mm">' + icona2(n, col).replace('width="64mm" height="64mm"', opz.en ? 'width="64mm" height="64mm"' : 'width="74mm" height="74mm"') +
-          '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">Area 0' + n + ' di 04 · ' + termini.length + ' termini dalla A alla Z</div>' +
+          '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area 0' + n + ' di 0' + NA) + ' · ' + termini.length + ' termini dalla A alla Z</div>' +
           '<div style="' + A + 'font-weight:900;font-size:' + (opz.en ? (area.it.length > 30 ? 26 : 33) : (area.it.length > 30 ? 32 : 40)) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div>' + (opz.en && area.en ? '<div lang="en" style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-style:italic;font-weight:700;font-size:9mm;opacity:.9;margin-top:1.5mm">' + esc(area.en) + '</div>' : '') + '</div></div>' +
         '<div class="pa-aut" style="position:relative;margin-top:' + (opz.en ? 6 : 10) + 'mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
           '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + ':</b> ' + (perCl[c] || []).join(' · '); }).join(' &nbsp;|&nbsp; ') +
@@ -2982,12 +2993,12 @@ var Poster = (function () {
       (opz.firme === false ? '' : '<div style="position:absolute;left:34mm;right:34mm;bottom:128mm;height:22mm;border:0.7mm solid ' + col + ';border-radius:3mm;background:' + tinta(col, 0.07) + '">' +
         '<div style="position:absolute;left:6mm;top:-3.8mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;' + A + 'font-size:4.2mm;font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div></div>') +
       '<div style="position:absolute;left:0;right:0;bottom:64mm;height:56mm">' + nastroAlfa(n) +
-        '<div style="position:absolute;left:0;right:0;top:4mm;text-align:center;' + S + 'font-weight:600;font-size:46mm;line-height:1;color:#15212B;-webkit-text-stroke:2.4mm #FBFAF7;paint-order:stroke fill">' + (MOTTO[n - 1] || '') + '</div></div>' +
+        '<div style="position:absolute;left:0;right:0;top:4mm;text-align:center;' + S + 'font-weight:600;font-size:' + fsM + 'mm;line-height:1;color:#15212B;-webkit-text-stroke:2.4mm #FBFAF7;paint-order:stroke fill">' + esc(MT) + '</div></div>' +
       '<div style="position:absolute;left:34mm;right:34mm;bottom:14mm;height:46mm;box-sizing:border-box;border-top:0.6mm solid #15212B;padding-top:5mm;display:flex;align-items:center;gap:9mm;font-size:5mm;line-height:1.35;color:#2C3A47">' +
         (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
           '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '')) + '</div>' : '') +
         '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
-        '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>Classi ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + n + ' di 4</div></div>' +
+        '<div style="text-align:right">Istituto Barsanti - sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
       '</div>';
   }
   /* Distribuisce le voci nelle tre colonne e sceglie il carattere più grande con cui stanno tutte; restituisce la scala usata.
@@ -3047,9 +3058,9 @@ var Poster = (function () {
     var ic = function (a) { return icona2(Number(a.n), a.colore).replace('width="64mm" height="64mm"', 'width="44mm" height="44mm"'); };
     var area = function (a) { return '<div style="display:flex;align-items:center;gap:6mm;background:#F4F6F8;border-radius:5mm;padding:8mm 7mm;border-left:3mm solid ' + a.colore + '">' +
       '<div style="background:' + a.colore + ';border-radius:50%;padding:2mm;flex:none">' + ic(a) + '</div>' +
-      '<div><div style="' + F + 'font-weight:900;font-size:15mm;line-height:1;color:' + a.colore + '">0' + a.n + '</div>' +
+      '<div><div style="' + F + 'font-weight:900;font-size:15mm;line-height:1;color:' + a.colore + '">' + esc(a.numero || ('0' + a.n)) + '</div>' +
       '<div style="' + F + 'font-weight:800;font-size:8.6mm;line-height:1.1;color:#15212B;margin-top:1.5mm">' + esc(a.it) + '</div>' +
-      '<div style="' + T + 'font-size:5.6mm;color:#5B6976;margin-top:1.5mm">65 termini · cartellone ' + a.n + ' di 4</div></div></div>'; };
+      '<div style="' + T + 'font-size:5.6mm;color:#5B6976;margin-top:1.5mm">' + (a.tot != null ? a.tot : 65) + ' termini · cartellone ' + a.n + ' di ' + aree.length + '</div></div></div>'; };
     var racconto, cifre;
     if (s) {
       racconto = 'Per <b>' + s.giorniParola + ' giorni</b>, ' + s.periodo + ', <b>' + s.autoriParola + ' studenti</b> delle classi ' + s.classi + ' hanno dato voce al linguaggio del loro mestiere. ' +
@@ -3058,8 +3069,9 @@ var Poster = (function () {
         'Delle ' + s.totale + ' definizioni, <b>' + s.approvate + '</b> hanno superato il vaglio del docente' + (s.voto ? '; il voto medio delle due classi è <b>' + s.voto + '</b>' : '') + '.';
       cifre = [[s.oreBreve, 'di lavoro'], [s.mediaBreve, 'a studente'], [String(s.risposte), 'risposte'], [s.voto || '—', 'voto medio']];
     } else {
-      racconto = 'Ogni termine di questo glossario è stato affidato a uno studente, che tra otto definizioni ha individuato quella corretta; il docente l’ha verificata e approvata. Ne sono nati quattro cartelloni, uno per area, firmati dai loro autori.';
-      cifre = [['260', 'termini'], ['26', 'autori'], ['4', 'aree'], ['2', 'classi']];
+      var NW = ['zero', 'un', 'due', 'tre', 'quattro', 'cinque', 'sei'][aree.length] || aree.length, tot = aree.reduce(function (x, a) { return x + (a.tot != null ? a.tot : 65); }, 0);
+      racconto = 'Ogni termine di questo glossario è stato affidato a uno studente, che tra otto definizioni ha individuato quella corretta; il docente l’ha verificata e approvata. Ne ' + (aree.length === 1 ? 'è nato un cartellone, firmato dai suoi autori.' : 'sono nati ' + NW + ' cartelloni, uno per area, firmati dai loro autori.');
+      cifre = [[String(tot), 'termini'], [String(targa.autori || 26), 'autori'], [String(aree.length), aree.length === 1 ? 'area' : 'aree'], [String(targa.classi || 2), 'classi']];
     }
     return '<div style="width:500mm;height:700mm;display:flex;flex-direction:column;color:#15212B;background:#fff;' + T + '">' +
       '<div style="background:#15212B;color:#fff;padding:13mm 30mm 11mm;display:flex;align-items:center;justify-content:space-between">' +
@@ -3104,12 +3116,20 @@ function memo(k, v) { try { if (v === undefined) return localStorage.getItem(k);
 var AZ_LETTURA = ['login', 'archivioconsulta', 'archiviofile', 'pubblico', 'backup', 'presenza'];
 function api(azione, dati) {
   if (S.d && S.d.solaLettura && AZ_LETTURA.indexOf(azione) < 0) return Promise.reject(new Error('Stai consultando un\'edizione archiviata: è in sola lettura. Usa «Torna all\'edizione in corso» per lavorare.'));
-  var corpo = Object.assign({ azione: azione, codice: S.codice }, dati || {});
+  var corpo = Object.assign({ azione: azione, codice: S.codice }, S.att && S.att !== 'main' ? { att: S.att } : {}, dati || {});
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
     .catch(function () { throw new Error('Connessione assente: controlla internet e riprova.'); })
     .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server (' + r.status + ').' }; }); })
     .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
 }
+/* indirizzo della pagina pubblica dell'attività aperta (con ?att= per le attività parallele) */
+function urlPubblico() { return location.origin + '/glossario' + (S.d && S.d.att && S.d.att !== 'main' ? '?att=' + encodeURIComponent(S.d.att) : ''); }
+/* regole dell'attività aperta (scritto, quiz, interrogazione, voto finale): per la 3E e la 3F quelle di sempre */
+function RG() { var r = (S.d && S.d.regole) || {}; return { quiz: r.quiz || { secondi: 60, opzioni: 4, passo: 5 }, orale: r.orale || { domande: 10, base: 3, passo: 0.5, passoEsclusi: 0.25, max: 8, maxEsclusi: 5.5 }, finale: r.finale || { pesoScritto: 50 }, scritto: r.scritto || {} }; }
+function frz(x) { return x === 0.5 ? '½' : x === 0.25 ? '¼' : fv(x); }
+function nDef(n) { return n === 4 ? 'quattro definizioni' : n + ' definizioni'; }
+function regolaOrale() { var o = RG().orale; return 'Voto orale = ' + fv(o.base) + ' + ' + frz(o.passo) + ' per punto'; }
+function mediaTxt() { var p = RG().finale.pesoScritto; return p === 50 ? 'media tra scritto e orale' : 'media pesata tra scritto (' + p + ' %) e orale (' + (100 - p) + ' %)'; }
 function errMsg(e) { return e && e.message ? e.message : String(e); }
 var STATO_TXT = { '': 'Da scegliere', inviata: 'Inviata', correggere: 'Da rivedere', approvata: 'Approvata' };
 function chip(st) { return '<span class="chip s-' + (st || 'vuota') + '">' + STATO_TXT[st || ''] + '</span>'; }
@@ -3134,7 +3154,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '17/11/2026 · 13';
+var VERSIONE = '18/11/2026 · 4';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3172,16 +3192,34 @@ function vistaLogin(msg) {
   $('flogin').onsubmit = function (e) { e.preventDefault(); entra($('cod').value); };
   $('cod').focus();
 }
-function entra(codice) {
+/* attività su cui lavora il docente (3E-3F o un'attività parallela): ricordata per codice su questo dispositivo */
+function chiaveAtt() { return 'glossario_att_' + (S.codice || ''); }
+function entra(codice, riprova) {
   var b = $('bentra'); if (b) { b.disabled = true; b.textContent = 'Accesso…'; }
   S.codice = String(codice || '').trim().toUpperCase();
+  S.att = memo(chiaveAtt()) || null;
   api('login').then(function (d) {
+    if (d.utente.ruolo !== 'docente') { S.att = null; memo(chiaveAtt(), null); }
     S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
     if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: EN() ? d.utente.lingua || 'it' : 'it', classe: (S.filtro && S.filtro.classe) || 'tutte' };
     render();
-  }).catch(function (e) { memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e)); });
+  }).catch(function (e) {
+    // l'attività ricordata non c'è più: si torna a quella principale
+    if (S.att && !riprova && /non c'è più/.test(errMsg(e))) { memo(chiaveAtt(), null); S.att = null; return entra(codice, true); }
+    memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e));
+  });
 }
-function esci() { memo(KEY_COD, null); S.codice = null; S.d = null; S.poster = null; S.pag = null; ricordaPag(null); document.body.classList.remove('menu-on'); vistaLogin(); }
+function cambiaAttivita(id) {
+  var prec = S.att;
+  S.att = id && id !== 'main' ? id : null;
+  api('login').then(function (d) {
+    memo(chiaveAtt(), S.att); S.d = d; S.sel = {}; S.or = null; S.poster = null; S.datePerClasse = null;
+    S.filtro = { area: 'tutte', stato: 'inviata', lingua: 'it', classe: 'tutte' };
+    vistaDocente(); window.scrollTo(0, 0); toast('Attività: ' + nomeAttivita());
+  }).catch(function (e) { S.att = prec; toast(errMsg(e), true); vistaDocente(); });
+}
+function nomeAttivita() { var x = (S.d.spazi || []).filter(function (y) { return y.id === (S.d.att || 'main'); })[0]; return x ? x.nome : ''; }
+function esci() { memo(KEY_COD, null); S.codice = null; S.att = null; S.d = null; S.poster = null; S.pag = null; ricordaPag(null); document.body.classList.remove('menu-on'); vistaLogin(); }
 function ricarica() { api('login').then(function (d) { S.d = d; render(); toast('Dati aggiornati'); }).catch(function (e) { toast(errMsg(e), true); }); }
 function render() {
   clearInterval(S.timer);
@@ -3259,7 +3297,7 @@ function bloccoVoto() {
     (EN() ? '<div class="vls">' + mini('Italiano', v.votoIt, v.errIt, v.invIt) + mini('Inglese', v.votoEn, v.errEn, v.invEn) + '</div>'
       : '<div class="vls"><div class="vl"><div class="muted disp" style="font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px">Le tue risposte</div><div class="vl-n">' + (v.invIt || 0) + '</div><div class="muted" style="font-size:13px">' + (v.errIt === 1 ? '1 errata' : (v.errIt || 0) + ' errate') + '</div></div></div>') + '</div>' +
     (v.tetto && !v.manuale ? '<div class="note warn"><b>Voto dello scritto limitato a ' + v.tettoValore + '</b>: non hai risposto in tempo ai termini ricevuti' + (v.calcolato != null && v.calcolato > v.tettoValore ? ' (il calcolo darebbe ' + fv(v.calcolato) + ')' : '') + '.</div>' : '') +
-    (v.orale ? '<div class="note" id="notaOrale"><b>Interrogazione orale: ' + fv(v.orale.voto) + '</b> (' + fv(v.orale.punti) + ' punti su 10)' + (v.finale != null ? ' · <b>Voto finale (media tra scritto e orale): ' + fv(v.finale) + '</b>' : '') + '</div>' : '') +
+    (v.orale ? '<div class="note" id="notaOrale"><b>Interrogazione orale: ' + fv(v.orale.voto) + '</b> (' + fv(v.orale.punti) + ' punti su ' + RG().orale.domande + ')' + (v.finale != null ? ' · <b>Voto finale (' + mediaTxt() + '): ' + fv(v.finale) + '</b>' : '') + '</div>' : '') +
     '<p class="muted" style="margin:0;font-size:14px">' + esc(v.ratio) + '</p>' +
     notaQuizAlunno(v.quiz) + '</section>';
 }
@@ -3328,8 +3366,8 @@ function bloccoStampaPoster() {
     (RO() ? '' : '<div class="row"><button class="btn sec" onclick="apriTraduzioni()">Aggiungi termini e definizioni in inglese</button>' +
       '<span class="muted" style="font-size:14px">' + (mancano ? '<b style="color:#9A4A00">' + mancano + (mancano === 1 ? ' termine approvato è' : ' termini approvati sono') + ' ancora senza inglese</b>: sul cartellone bilingue resterebbero solo in italiano.' : 'Tutti i termini approvati hanno la versione inglese: puoi controllarla e correggerla.') + '</span></div>') +
     '<b>Stampa cartelloni in PDF (70×100)</b>' + avvisoMancanti() +
-    '<div class="row"><button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'it\')">I 4 cartelloni in italiano</button>' +
-    '<button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'iten\')">I 4 cartelloni in italiano e inglese</button>' +
+    '<div class="row"><button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'it\')">' + (S.d.aree.length === 1 ? 'Il cartellone' : 'I ' + S.d.aree.length + ' cartelloni') + ' in italiano</button>' +
+    '<button class="btn" onclick="stampaCartelloni(\'tutti\', $(\'pabb\').checked, \'iten\')">' + (S.d.aree.length === 1 ? 'Il cartellone' : 'I ' + S.d.aree.length + ' cartelloni') + ' in italiano e inglese</button>' +
     '<button class="btn sec" onclick="stampaCartelloni(S.poster, $(\'pabb\').checked, S.posterLingua || \'it\')">Solo questo cartellone</button></div>' +
     '<label class="row" style="gap:8px;font-weight:400;cursor:pointer"><input type="checkbox" id="pabb" style="width:20px;height:20px"> Con abbondanza di 3 mm per la tipografia (706×1006 mm)</label>' +
     '<span class="muted" style="font-size:14px">Il testo si adatta da solo a quanti termini, definizioni e lingue ci sono. Generati con i dati di ' + (RO() ? 'questa edizione archiviata' : 'questa edizione') + '. Si aprono nella stampa: scegli «Salva come PDF» e, nelle opzioni, attiva «Grafica di sfondo».</span></div>';
@@ -3338,7 +3376,7 @@ function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
-  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: location.origin + '/glossario', as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: urlPubblico(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
   var scala = function () { var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth; sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px'; };
   Poster.adatta(sc); scala();
   // si riadatta quando i caratteri veri sono caricati: misurare con quelli di riserva fa uscire le voci dalle colonne
@@ -3352,7 +3390,7 @@ function vistaAlunno() {
   var miei = S.d.termini.filter(function (t) { return t.alunno === u.id; });
   var pn = a ? u.gruppo : (miei[0] ? miei[0].area : 1);
   // 3F: termini di tutte le aree
-  if (!a) a = { n: '', it: 'Termini di tutte e quattro le aree', en: '', colore: '#15212B', tutte: true };
+  if (!a) a = { n: '', it: 'Termini di tutte ' + (S.d.aree.length > 1 ? 'e ' + (['', '', 'due', 'tre', 'quattro', 'cinque', 'sei'][S.d.aree.length] || S.d.aree.length) + ' ' : '') + 'le aree', en: '', colore: '#15212B', tutte: true };
   var n = function (l) { return miei.filter(function (t) { return T(t, l, 'stato') === 'approvata'; }).length; };
   var h = testata(u.nome + ' · ' + (a.tutte ? 'Classe ' + u.classe : 'Classe ' + (u.classe || '3E') + ' · Gruppo ' + u.gruppo)) + '<main class="wrap stack">';
   h += '<section class="card" style="border-top:8px solid ' + a.colore + '"><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + (a.tutte ? 'Classe ' + esc(u.classe) : 'Area ' + a.n) + '</div>' +
@@ -3548,10 +3586,12 @@ function bloccoAdmin(quale) {
     (EN() ? '<div><label for="scEn">Scadenza inglese</label><input id="scEn" type="datetime-local" value="' + isoLocale(imp.scadenzaEn) + '"></div></div>' : '<div><label for="gIt">Termini ricevuti da un escluso: giorni per rispondere</label><input id="gIt" type="text" inputmode="numeric" value="' + imp.giorniIt + '"></div></div>') +
     (EN() ? '<div class="grid2"><div><label for="gIt">Termini ricevuti da un escluso: giorni per l\'italiano</label><input id="gIt" type="text" inputmode="numeric" value="' + imp.giorniIt + '"></div>' +
     '<div><label for="gEn">Termini ricevuti da un escluso: giorni per l\'inglese</label><input id="gEn" type="text" inputmode="numeric" value="' + imp.giorniEn + '"></div></div>' : '') +
+    // attività con regole proprie: la penalità è fissata alla creazione (scritto, quiz, interrogazione, voto finale)
+    (RG().scritto.penalita != null ? '<div class="note" style="margin:0"><b>Regole di questa attività</b>: scritto da ' + fv(imp.votoMax) + ', −' + fv(RG().scritto.penalita) + ' per errore, minimo ' + fv(imp.votoMin) + ', mancata consegna ' + fv(RG().scritto.votoEsclusione) + '. Quiz: ' + RG().quiz.secondi + ' secondi, ' + RG().quiz.opzioni + ' definizioni, −' + RG().quiz.passo + ' termini a ogni errore. ' + regolaOrale() + ' su ' + RG().orale.domande + ' termini (massimo ' + fv(RG().orale.max) + '). Voto finale: ' + mediaTxt() + '. Sono fissate alla creazione dell\'attività.</div>' : '' +
     '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Penalità per ogni risposta errata</legend>' +
     [['A', '−0,25 per errore: ' + errFino4(0.25) + ' errori per scendere da ' + fv(imp.votoMax) + ' a ' + imp.votoMin], ['B', '−0,50 per errore: ' + errFino4(0.5) + ' errori per scendere da ' + fv(imp.votoMax) + ' a ' + imp.votoMin]].map(function (o) {
       return '<label class="op' + (imp.proposta === o[0] ? ' on' : '') + '" for="pr' + o[0] + '"><input type="radio" name="prop" id="pr' + o[0] + '" value="' + o[0] + '"' + (imp.proposta === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span class="lt">' + o[0] + '</span><span>Proposta ' + o[0] + ': ' + o[1] + '</span></label>';
-    }).join('') + '</fieldset>' +
+    }).join('') + '</fieldset>') +
     '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli alunni esclusi</legend>' +
     [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe (uno solo a testa)'], ['manuale', 'Decido io: restano fermi finché non li passo a chi scelgo (pagina «Proroghe e passaggi»)']].map(function (o) {
       return '<label class="op' + (imp.riassegnazione === o[0] ? ' on' : '') + '" for="ri' + o[0] + '"><input type="radio" name="riass" id="ri' + o[0] + '" value="' + o[0] + '"' + (imp.riassegnazione === o[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + o[1] + '</span></label>';
@@ -3579,7 +3619,7 @@ function bloccoAdmin(quale) {
   h += '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Tabellone dei voti</h2>' + (ADM() ? '<span class="chip s-vuota">Solo prof. Cerrato</span>' : '') + '</div>' +
     (CLASSI().length > 1 ? '<div class="grid4">' + selClasse('fct', 'vistaDocente()') + '</div>' : '') +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th>' + (EN() ? '<th style="text-align:right">Voto IT</th><th style="text-align:right">Voto EN</th><th style="text-align:right">Media</th>' : '<th style="text-align:right">Errori</th>') + '<th style="text-align:right">' + (EN() ? 'Finale calcolato' : 'Voto calcolato') + '</th><th>Voto manuale</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th></tr></thead><tbody>' +
-    attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo. Il <b>finale</b> è la media tra scritto e orale (pagina «Interrogazioni orali»): oltre il mezzo voto sale all\'intero, sotto scende.</p>';
+    attivi.map(row).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Il voto manuale sostituisce quello calcolato e lo vede anche l\'alunno. Lascia vuoto e salva per tornare al calcolo. Il <b>finale</b> è la ' + mediaTxt() + ' (pagina «Interrogazioni orali»): oltre il mezzo voto sale all\'intero, sotto scende.</p>';
   if (esclusi.length) {
     h += '<h3 style="margin:8px 0 0">Esclusi per mancato rispetto della scadenza</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Motivo</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th></th></tr></thead><tbody>' +
       esclusi.map(function (v) { var r = nomi[v.id]; return '<tr><td>' + esc(r.nome) + (v.riammesso ? ' <span class="chip s-approvata">Riammesso</span>' : '') + '</td><td>' + esc(v.motivo || r.motivo || '') + ((r.riassegnatiA || []).length ? '<br><span class="muted" style="font-size:13px">Termini passati a ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : (r.bloccoRiass || A.impostazioni.riassegnazione === 'manuale' ? '<br><span class="muted" style="font-size:13px">Termini fermi: decidi tu (pagina «Proroghe e passaggi»)</span>' : '')) + '</td><td class="n"><b>' + fv(v.voto) + '</b></td><td class="n">' + (v.orale ? fv(v.orale.voto) : '—') + '</td><td class="n"><b>' + fv(v.finale) + '</b>' + (v.escluso && v.finale != null ? '<br><span class="muted" style="font-weight:400;font-size:13px">solo orale</span>' : '') + '</td>' +
@@ -3637,7 +3677,8 @@ function statisticheTarga() {
   };
 }
 function stampaTarga() {
-  var html = Poster.targa(S.d.aree.map(function (a) { return { n: a.n, it: a.it, colore: a.colore }; }), statisticheTarga(), location.origin + '/glossario');
+  Poster.targa.autori = (S.d.alunni || []).length; Poster.targa.classi = CLASSI().length;
+  var html = Poster.targa(S.d.aree.map(function (a) { return { n: a.n, it: a.it, colore: a.colore, numero: S.d.areeMie ? a.numero : undefined, tot: (S.d.termini || []).filter(function (t) { return t.area == a.n; }).length }; }), statisticheTarga(), location.origin + '/glossario' + (S.d.att && S.d.att !== 'main' ? '?att=' + encodeURIComponent(S.d.att) : ''));
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Targa introduttiva Glossario</title>' +
@@ -3733,7 +3774,7 @@ function reportPdf() {
   // da chi ha ricevuto i termini (alunni esclusi)
   var donatori = function (id) { var o = []; termDi(id).forEach(function (t) { if (t.ereditato && t.alunnoOrig && o.indexOf(t.alunnoOrig) < 0) o.push(t.alunnoOrig); }); return o; };
   var cognome = function (id) { return nomeAlunno(id).split(' ')[0]; };
-  var PEN = imp.proposta === 'A' ? 0.25 : 0.5, punti = function (n) { return n ? '−' + (n * PEN).toFixed(2).replace('.', ',') : '0'; };
+  var PEN = imp.penalita != null ? imp.penalita : (imp.proposta === 'A' ? 0.25 : 0.5), punti = function (n) { return n ? '−' + (n * PEN).toFixed(2).replace('.', ',') : '0'; };
 
   /* --- grafici SVG (statici, per la stampa) --- */
   var F = 'font-family:Arial,sans-serif';
@@ -3841,10 +3882,10 @@ function reportPdf() {
   var sogliaQ = PAN.length ? quizDi(PAN[0].id).soglia : 260, scadQ = CLASSI().map(function (c) { var d = (((S.d.admin || {}).impostazioni || {}).quiz || { scadenze: {} }).scadenze[c]; return d ? c + ': ' + gg(d) : ''; }).filter(Boolean).join(' · ');
   var interrogati = PAN.filter(function (r) { return (voti[r.id] || {}).orale; });
   var pag3 = '<section class="pg">' + testata(titoloCl) + '<h1>Quiz, interrogazione orale e voto finale</h1>' +
-    '<div class="box"><b>Come funziona.</b> <b>Quiz</b> (seconda parte della prova): nella pagina del quiz (' + esc(location.host) + '/quiz), separata dal glossario, con il codice personale o il QR della scheda; un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno torna indietro di 5 termini; i progressi restano tra una sessione e l\'altra. Il quiz è superato con ' + sogliaQ + ' termini indovinati entro la scadenza fissata dal docente' + (scadQ ? ' (' + scadQ + ')' : '') + '. ' +
+    '<div class="box"><b>Come funziona.</b> <b>Quiz</b> (seconda parte della prova): nella pagina del quiz (' + esc(location.host) + '/quiz), separata dal glossario, con il codice personale o il QR della scheda; un termine, ' + nDef(RG().quiz.opzioni) + ', ' + RG().quiz.secondi + ' secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno torna indietro di ' + RG().quiz.passo + ' termini; i progressi restano tra una sessione e l\'altra. Il quiz è superato con ' + sogliaQ + ' termini indovinati entro la scadenza fissata dal docente' + (scadQ ? ' (' + scadQ + ')' : '') + '. ' +
     '<b>Ammissione</b>: solo chi supera il quiz è ammesso all\'interrogazione; chi non lo completa non viene interrogato e resta senza voto (le sue definizioni restano sui cartelloni). ' +
-    '<b>Interrogazione orale</b>: l\'app pesca 10 termini tra tutti quelli del glossario (mai quelli dell\'alunno, bilanciati sulle aree); risposta corretta 1 punto, parziale ½, sbagliata 0. Voto orale = 3 + ½ per punto (massimo 8); per gli alunni esclusi dallo scritto 3 + ¼ per punto (massimo 5,5). ' +
-    '<b>Voto finale</b> = media tra scritto e orale (per gli esclusi vale il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</div>' +
+    '<b>Interrogazione orale</b>: l\'app pesca ' + RG().orale.domande + ' termini tra tutti quelli del glossario (mai quelli dell\'alunno, bilanciati sulle aree); risposta corretta 1 punto, parziale ½, sbagliata 0. ' + regolaOrale() + ' (massimo ' + fv(RG().orale.max) + '); per gli alunni esclusi dallo scritto ' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto (massimo ' + fv(RG().orale.maxEsclusi) + '). ' +
+    '<b>Voto finale</b> = ' + mediaTxt() + ' (per gli esclusi vale il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</div>' +
     '<table class="tab ora"><thead><tr><th style="width:19%">Alunno</th><th class="c" style="width:6%">Classe</th><th class="c">Scritto</th><th class="c">Sessioni quiz</th><th class="c">Tempo nel quiz</th><th class="c">Risposte</th><th class="c">Corrette</th><th class="c">Errori</th><th class="c">Termini persi</th><th class="c">Indovinati</th><th class="c" style="width:12%">Ammissione all\'orale</th><th class="c">Punti orale</th><th class="c">Orale</th><th class="c">Finale</th></tr></thead><tbody>' +
     PAN.map(function (r) {
       var v = voti[r.id] || {}, q = quizDi(r.id), o = v.orale;
@@ -3856,7 +3897,7 @@ function reportPdf() {
       '<table class="tab ora"><thead><tr><th style="width:17%">Alunno</th><th style="width:17%">Data e docente</th><th>Termini chiesti</th><th class="c" style="width:9%">Punti</th><th class="c" style="width:8%">Voto orale</th></tr></thead><tbody>' +
       interrogati.map(function (r) {
         var o = voti[r.id].orale;
-        return '<tr><td><b>' + esc(r.nome) + '</b>' + (o.escluso ? '<br><span class="m">escluso: massimo 5,5</span>' : '') + '</td><td>' + esc(gg(o.data)) + (o.docente ? '<br><span class="m">' + esc(o.docente) + '</span>' : '') + '</td>' +
+        return '<tr><td><b>' + esc(r.nome) + '</b>' + (o.escluso ? '<br><span class="m">escluso: massimo ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td>' + esc(gg(o.data)) + (o.docente ? '<br><span class="m">' + esc(o.docente) + '</span>' : '') + '</td>' +
           '<td>' + (o.termini || []).map(function (t) { return esc(t.it) + ' ' + (t.e === 1 ? '<span class="ok">✓</span>' : t.e === 0.5 ? '<b>½</b>' : '<span class="no">✗</span>'); }).join(' · ') +
           (o.cambi ? '<br><span class="m">Termini cambiati durante l\'interrogazione: ' + o.cambi + '</span>' : '') + (o.nota ? '<br><span class="m">Nota: ' + esc(o.nota) + '</span>' : '') + '</td>' +
           '<td class="c">' + fv(o.punti) + ' / 10</td><td class="c"><b>' + fv(o.voto) + '</b></td></tr>';
@@ -3880,8 +3921,8 @@ function reportPdf() {
         q.superata ? 'quiz superato il ' + ggmm(q.superata) : '—') +
       riga('Voto scritto', v.escluso ? '<span class="no">escluso</span>' : fv(v.voto), v.escluso ? esc(v.motivo || 'escluso dal compito') : r.errate + (r.errate === 1 ? ' risposta errata' : ' risposte errate') + ' · ' + r.approvate + ' / ' + r.termini + ' approvate' + (v.manuale != null ? ' · voto del docente' : ''),
         prima ? 'prima risposta ' + ggmm(prima) + '<br>ultima risposta ' + ggmm(ultima) : '<span class="m">nessuna risposta</span>') +
-      riga('Voto orale', o ? fv(o.voto) : '—', o ? fv(o.punti) + ' punti su 10' + (o.escluso ? ' · massimo 5,5' : '') + (o.docente ? ' · ' + esc(o.docente) : '') : '<span class="m">non ancora interrogato</span>', o ? 'interrogazione del ' + ggmm(o.data) : '—') +
-      riga('Voto finale', v.finale != null ? fv(v.finale) : '—', v.finale == null ? (q.stato === 'scaduto' ? '<span class="no">senza voto: quiz non completato</span>' : '<span class="m">manca l\'orale</span>') : v.escluso ? 'solo orale (escluso dallo scritto)' : 'media tra scritto ' + fv(v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv((v.voto + o.voto) / 2), v.finale != null ? 'definito il ' + ggmm(o.data) : '—') +
+      riga('Voto orale', o ? fv(o.voto) : '—', o ? fv(o.punti) + ' punti su ' + RG().orale.domande + (o.escluso ? ' · massimo ' + fv(RG().orale.maxEsclusi) : '') + (o.docente ? ' · ' + esc(o.docente) : '') : '<span class="m">non ancora interrogato</span>', o ? 'interrogazione del ' + ggmm(o.data) : '—') +
+      riga('Voto finale', v.finale != null ? fv(v.finale) : '—', v.finale == null ? (q.stato === 'scaduto' ? '<span class="no">senza voto: quiz non completato</span>' : '<span class="m">manca l\'orale</span>') : v.escluso ? 'solo orale (escluso dallo scritto)' : (RG().finale.pesoScritto === 50 ? 'media tra scritto ' + fv(v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv((v.voto + o.voto) / 2) : mediaTxt() + ': ' + fv(Math.round((v.voto * RG().finale.pesoScritto + o.voto * (100 - RG().finale.pesoScritto)) / 100 * 1000) / 1000)), v.finale != null ? 'definito il ' + ggmm(o.data) : '—') +
       '</tbody></table>';
   }
 
@@ -3998,6 +4039,7 @@ function bloccoBackup() {
   var stato = !D.configurato ? '<b>Dropbox non ancora configurato.</b> Servono le variabili DROPBOX_APP_KEY e DROPBOX_APP_SECRET su Netlify (vedi la guida).' :
     !D.collegato ? '<b>Dropbox non collegato.</b> Premi “Collega Dropbox” e autorizza l\'app con il tuo account.' :
     '<b>Collegato</b>' + (D.account ? ' a ' + esc(D.account) : '') + '. Ogni giorno alle 23:59 arrivano nel tuo Dropbox, cartella <b>App › (nome della tua app)</b>, il backup completo (cartella <b>Backup</b>: risposte, tentativi, tempi, voti, codici, registro accessi e archivio delle edizioni), il report PDF e il Word <b>Glossario_definizioni_approvate.docx</b> (sempre lo stesso file, sovrascritto).' +
+      ((S.d.spazi || []).length > 1 ? ' Lo stesso vale per ogni attività in parallelo, ognuna nella sua cartella <b>Attivita › (nome dell\'attività)</b>.' : '') +
     '<br>Ultimo invio: ' + (D.ultimoInvio ? esc(quando(D.ultimoInvio)) + ' — ' + (D.esito === 'ok' ? '<span style="color:#1B6E20;font-weight:700">riuscito</span>' : '<span style="color:#B0304A;font-weight:700">' + esc(D.esito) + '</span>') : 'nessuno');
   return '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Backup e report automatici</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">' + stato + '</p>' +
@@ -4338,11 +4380,12 @@ function bloccoEdizioni() {
       '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="scaricaArchivio(\'' + esc(m.id) + '\',\'word\',this)">Word</button>' +
       '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="scaricaArchivio(\'' + esc(m.id) + '\',\'json\',this)">Dati</button></div></td></tr>';
   }).join('');
-  return '<section class="card stack admin" id="edizioni"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Edizioni e archivio</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
+  var principale = !S.d.att || S.d.att === 'main';
+  return bloccoAttivitaParallele() + '<section class="card stack admin" id="edizioni"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Edizioni e archivio</h2><span class="chip s-vuota">Solo prof. Cerrato</span></div>' +
     '<p style="margin:0">Edizione in corso: <b>' + esc(ed.nome) + '</b> · a.s. ' + esc(ed.as) + ' · classi ' + esc(CLASSI().join(', ')) + (arch ? ' <span class="chip s-approvata">in archivio</span>' : '') + '</p>' +
     (!arch ? '<div class="stack" style="gap:8px"><div class="row">' +
-      '<button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button>' +
-      '<button class="btn sec" onclick="apriWizard(\'classe\')">Aggiungi una classe a questa edizione</button>' +
+      (principale ? '<button class="btn" onclick="apriWizard(\'edizione\')">Nuova edizione</button>' : '') +
+      '<button class="btn sec" onclick="apriWizard(\'classe\')">Aggiungi una classe a questa ' + (principale ? 'edizione' : 'attività') + '</button>' +
       '<button class="btn sec" onclick="archiviaEdizione(false,this)"' + (chiusa ? '' : ' disabled') + '>Archivia questa edizione</button></div>' +
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi; l\'edizione in corso viene chiusa agli alunni e archiviata in automatico. ' +
       '<b>Aggiungi una classe</b>: nuova classe con i suoi alunni, termini nuovi (mai usati prima) e date proprie; le sue definizioni vanno sugli stessi cartelloni. ' +
@@ -4352,6 +4395,44 @@ function bloccoEdizioni() {
       '<p class="muted" style="margin:0;font-size:14px"><b>Nuova edizione</b>: stesse classi o classi nuove, termini nuovi che escludono quelli già fatti, periodi e scadenze nuovi. Gli alunni che riprendi tengono il loro codice.</p>') +
     (lista ? '<h3 style="margin:8px 0 0;font-size:18px">Archivio</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Edizione</th><th>a.s.</th><th>Classi</th><th style="text-align:right">Alunni</th><th style="text-align:right">Approvate</th><th style="text-align:right">Media</th><th></th></tr></thead><tbody>' + lista + '</tbody></table></div>'
       : '<p class="muted" style="margin:0;font-size:14px">Archivio vuoto: nessuna edizione conclusa finora.</p>') + '</section>';
+}
+/* cartelloni di un'attività con aree proprie: nome, colore, numero in alto e motto, modificabili anche dopo la creazione */
+function bloccoAreeMie() {
+  return '<section class="card stack admin" id="areeMie"><details' + (S.areeAperte ? ' open' : '') + ' ontoggle="S.areeAperte=this.open"><summary style="cursor:pointer;font-weight:800;font-size:18px">Nomi, numeri e motti dei cartelloni</summary>' +
+    '<p class="muted" style="margin:6px 0;font-size:14px">Il <b>numero</b> è quello grande nella testata del cartellone (fino a 3 caratteri: 01, 7, A1…); il <b>motto</b> è la parola o la frase in grande sopra il nastro colorato, in basso. Lascia il motto vuoto per non metterlo.</p><div class="stack" style="gap:8px">' +
+    S.d.aree.map(function (a, i) {
+      return '<div class="row" style="gap:8px;align-items:flex-end;flex-wrap:wrap"><div style="flex:1;min-width:180px"><label for="amN' + i + '">Area ' + (i + 1) + '</label><input id="amN' + i + '" type="text" maxlength="60" value="' + esc(a.it) + '"></div>' +
+        '<div><label for="amC' + i + '">Colore</label><input id="amC' + i + '" type="color" value="' + esc(a.colore) + '" style="width:56px;height:44px;padding:2px"></div>' +
+        '<div style="width:96px"><label for="amU' + i + '">Numero</label><input id="amU' + i + '" type="text" maxlength="3" value="' + esc(a.numero || '') + '"></div>' +
+        '<div style="flex:2;min-width:220px"><label for="amM' + i + '">Motto</label><input id="amM' + i + '" type="text" maxlength="60" value="' + esc(a.motto || '') + '"></div></div>';
+    }).join('') + '<div><button class="btn" id="amSalva" onclick="salvaAreeMie(this)">Salva i cartelloni</button></div></div></details></section>';
+}
+function salvaAreeMie(btn) {
+  var aree = S.d.aree.map(function (a, i) { return { it: $('amN' + i).value, colore: $('amC' + i).value, numero: $('amU' + i).value, motto: $('amM' + i).value }; });
+  btn.disabled = true;
+  api('salvaaree', { aree: aree }).then(function () { return ricarica('Cartelloni aggiornati'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+/* attività parallele: elenco, nuova attività, apertura, rimozione dall'elenco (con archiviazione) */
+function bloccoAttivitaParallele() {
+  var sp = S.d.spazi || [], cur = S.d.att || 'main';
+  var righe = sp.map(function (x) {
+    return '<tr><td><b>' + esc(x.nome) + '</b>' + (x.id === cur ? ' <span class="chip s-approvata">aperta</span>' : '') + (x.id === 'main' ? '<br><span class="muted" style="font-size:13px">attività principale</span>' : '') + '</td><td>' + esc(x.as || '') + '</td><td>' + esc((x.classi || []).join(', ')) + '</td>' +
+      '<td><div class="row" style="gap:6px;flex-wrap:wrap">' + (x.id !== cur ? '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="cambiaAttivita(\'' + esc(x.id) + '\')">Apri</button>' : '') +
+      '<a class="btn sec" style="min-height:36px;padding:0 10px;display:inline-flex;align-items:center" href="/glossario' + (x.id !== 'main' ? '?att=' + encodeURIComponent(x.id) : '') + '" target="_blank" rel="noopener">Pagina pubblica</a>' +
+      (x.id !== 'main' ? '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="togliAttivita(\'' + esc(x.id) + '\',this)">Chiudi e archivia</button>' : '') + '</div></td></tr>';
+  }).join('');
+  return '<section class="card stack admin" id="attivitaPar"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Attività in parallelo</h2><button class="btn" onclick="apriWizard(\'attivita\')">+ Nuova attività</button></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Ogni attività ha classi, alunni, cartelloni (aree), termini e regole propri per scritto, quiz, interrogazione e voto finale, e non tocca le altre. Nella barra a sinistra scegli su quale lavorare; gli alunni entrano con il loro codice e finiscono nella loro attività.</p>' +
+    (sp.length > 1 ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Attività</th><th>a.s.</th><th>Classi</th><th></th></tr></thead><tbody>' + righe + '</tbody></table></div>' : '<p class="muted" style="margin:0;font-size:14px">Per ora c\'è solo l\'attività principale (' + esc(((sp[0] || {}).nome) || '') + ').</p>') + '</section>';
+}
+function togliAttivita(id, btn) {
+  var x = (S.d.spazi || []).filter(function (y) { return y.id === id; })[0] || { nome: id };
+  finestra('Chiudi e archivia l\'attività', '<p style="margin:0"><b>' + esc(x.nome) + '</b> viene chiusa agli alunni, archiviata (risposte, voti, definizioni, registro) e tolta dall\'elenco delle attività. Resta consultabile in «Archivio» e nella pagina pubblica.</p><p class="note warn" style="margin:0">I codici dei suoi alunni non funzioneranno più.</p>',
+    [{ t: 'Chiudi e archivia', warn: true, f: function () {
+      btn.disabled = true;
+      api('rimuoviattivita', { id: id }).then(function () { if (S.d.att === id) { cambiaAttivita('main'); return; } return ricarica('Attività archiviata e tolta dall\'elenco'); })
+        .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+    } }]);
 }
 function archiviaEdizione(sovrascrivi, btn) {
   var ed = S.d.admin.impostazioni.edizione;
@@ -4385,19 +4466,24 @@ function bannerArchivio() {
 
 /* ---------- procedura guidata: classe aggiunta o nuova edizione ---------- */
 var AREE_N = ['1', '2', '3', '4'];
-function pianoClient(c) {
-  var n = c.alunni.length, tpa = Number(c.tpa) || 0, base = Math.floor(n / 4), extra = n % 4, gruppo = [], i = 0;
-  for (var g = 0; g < 4; g++) for (var k = 0; k < base + (g < extra ? 1 : 0); k++, i++) gruppo[i] = g + 1;
+var AREE_STD = [];
+/* aree della procedura in corso: quelle scelte per una nuova attività, altrimenti quelle dell'attività aperta */
+function wzAreeN() { var w = S.wz; if (w && w.tipo === 'attivita' && w.areeMie) return w.aree.map(function (a, i) { return String(i + 1); }); if (w && w.tipo === 'attivita') return AREE_N; return (S.d.aree || []).map(function (a) { return String(a.n); }); }
+function wzArea(n) { var w = S.wz; if (w && w.tipo === 'attivita' && w.areeMie) { var a = w.aree[Number(n) - 1] || {}; return { n: n, it: a.it || ('Area ' + n), colore: a.colore || '#15212B' }; } if (w && w.tipo === 'attivita') return AREE_STD[Number(n) - 1]; return area(n); }
+function pianoClient(c, AR) {
+  AR = AR || wzAreeN(); var NA = AR.length;
+  var n = c.alunni.length, tpa = Number(c.tpa) || 0, base = Math.floor(n / NA), extra = n % NA, gruppo = [], i = 0;
+  for (var g = 0; g < NA; g++) for (var k = 0; k < base + (g < extra ? 1 : 0); k++, i++) gruppo[i] = g + 1;
   return c.alunni.map(function (al, j) {
-    var aree = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    var aree = {}; AR.forEach(function (a) { aree[a] = 0; });
     if (c.modo === 'gruppi') aree[gruppo[j]] = tpa;
-    else { var b = Math.floor(tpa / 4), r = tpa % 4; AREE_N.forEach(function (a) { aree[a] = b; }); for (var q = 0; q < r; q++) aree[((j + q) % 4) + 1]++; }
+    else { var b = Math.floor(tpa / NA), r = tpa % NA; AR.forEach(function (a) { aree[a] = b; }); for (var q = 0; q < r; q++) aree[((j + q) % NA) + 1]++; }
     return aree;
   });
 }
 function fabbisognoClient(classi) {
-  var tot = { 1: 0, 2: 0, 3: 0, 4: 0 };
-  classi.forEach(function (c) { pianoClient(c).forEach(function (p) { AREE_N.forEach(function (a) { tot[a] += p[a]; }); }); });
+  var AR = wzAreeN(), tot = {}; AR.forEach(function (a) { tot[a] = 0; });
+  classi.forEach(function (c) { pianoClient(c, AR).forEach(function (p) { AR.forEach(function (a) { tot[a] += p[a]; }); }); });
   return tot;
 }
 function nomiDaTesto(t) { return String(t || '').split(/\n+/).map(function (x) { return x.replace(/\s+/g, ' ').trim(); }).filter(Boolean); }
@@ -4445,27 +4531,37 @@ function caricaElenco(i, inp) {
     var r = new FileReader(); r.onload = function () { fine(nomiDaRighe(righeCsv(r.result))); }; r.readAsText(f);
   }
 }
+var HASH_WZ = { edizione: '#nuova-edizione', attivita: '#nuova-attivita' };
 function apriWizard(tipo) {
-  if (tipo === 'edizione' && location.hash !== '#nuova-edizione') { S.wzApri = true; location.hash = 'nuova-edizione'; return; }
+  if (HASH_WZ[tipo] && location.hash !== HASH_WZ[tipo]) { S.wzApri = true; location.hash = HASH_WZ[tipo].slice(1); return; }
+  AREE_STD = S.d.areeStd || S.d.aree || [];
   var ed = S.d.admin.impostazioni.edizione, as = ed.as;
   var prossimo = /^(\d{4})\/(\d{2})$/.exec(as) ? (Number(as.slice(0, 4)) + 1) + '/' + ('0' + ((Number(as.slice(5)) + 1) % 100)).slice(-2) : '';
   var I = S.d.admin.impostazioni;
   S.wz = { tipo: tipo, passo: 1, nome: '', as: prossimo, classi: [nuovaClasseWz()], termini: null, scartati: [], riassegnazione: I.riassegnazione, proposta: I.proposta, giorniIt: I.giorniIt,
     colleghi: (S.d.admin.colleghi || []).map(function (c) { return { nome: c.nome, codice: c.codice, permessi: Object.assign({}, c.permessi) }; }) };
   if (tipo === 'edizione') S.wz.nome = 'Glossario odontotecnico ' + prossimo;
+  if (tipo === 'attivita') {
+    // nuova attività parallela: stesso anno, aree e regole proprie (si parte da quelle di sempre)
+    var Rg = S.d.regole || {};
+    Object.assign(S.wz, { nome: '', as: as, areeMie: false, aree: [{ it: '', colore: '#2E6DB4' }, { it: '', colore: '#1F8A70' }, { it: '', colore: '#B5532A' }],
+      regole: { scritto: { votoMax: 7.5, penalita: 0.5, votoMin: 4, votoEsclusione: 4, votoMaxErede: 9.5, tetto: 6 }, quiz: { secondi: 60, opzioni: 4, passo: 5 }, orale: { domande: 10, base: 3, passo: 0.5, passoEsclusi: 0.25 }, finale: { pesoScritto: 50 } } });
+    if (Rg.scritto) { S.wz.regole.scritto.votoMaxErede = Rg.scritto.votoMaxErede; S.wz.regole.scritto.tetto = Rg.scritto.tetto; }
+  }
   disegnaWizard();
 }
 function chiudiWizard() {
-  var pagina = S.wz && S.wz.tipo === 'edizione';
+  var pagina = S.wz && HASH_WZ[S.wz.tipo];
   S.wz = null;
-  if (pagina) { if (location.hash === '#nuova-edizione') history.replaceState(null, '', location.pathname + location.search); vistaDocente(); window.scrollTo(0, 0); return; }
+  if (pagina) { if (location.hash === '#nuova-edizione' || location.hash === '#nuova-attivita') history.replaceState(null, '', location.pathname + location.search); vistaDocente(); window.scrollTo(0, 0); return; }
   var o = $('wz'); if (o) o.remove();
 }
 // la pagina della nuova edizione si apre e si chiude anche con i tasti avanti/indietro del browser
 window.addEventListener('hashchange', function () {
   if (!S.d || !S.d.admin || RO()) return;
-  if (location.hash === '#nuova-edizione' && !(S.wz && S.wz.tipo === 'edizione')) { S.wzApri = false; apriWizard('edizione'); }
-  else if (location.hash !== '#nuova-edizione' && S.wz && S.wz.tipo === 'edizione') { S.wz = null; vistaDocente(); }
+  if (location.hash === '#nuova-edizione' && !(S.wz && S.wz.tipo === 'edizione')) { if (!ADM()) return; S.wzApri = false; apriWizard('edizione'); }
+  else if (location.hash === '#nuova-attivita' && !(S.wz && S.wz.tipo === 'attivita')) { if (!ADM()) return; S.wzApri = false; apriWizard('attivita'); }
+  else if (location.hash !== '#nuova-edizione' && location.hash !== '#nuova-attivita' && S.wz && HASH_WZ[S.wz.tipo]) { S.wz = null; vistaDocente(); }
 });
 function leggiPasso1() {
   var w = S.wz;
@@ -4475,6 +4571,20 @@ function leggiPasso1() {
     var pp = document.querySelector('input[name="wzPr"]:checked'); w.proposta = pp ? pp.value : w.proposta;
     w.giorniIt = Number($('wzG').value);
     w.colleghi = leggiColleghi('wzc', w.colleghi);
+  }
+  if (w.tipo === 'attivita') {
+    w.nome = $('wzNome').value; w.as = $('wzAs').value.trim();
+    var rr2 = document.querySelector('input[name="wzRi"]:checked'); w.riassegnazione = rr2 ? rr2.value : w.riassegnazione;
+    w.giorniIt = Number($('wzG').value);
+    var am = document.querySelector('input[name="wzAm"]:checked'); w.areeMie = !!(am && am.value === 'mie');
+    if (!w.areeMie) w.pacchetto = null;
+    if (w.areeMie) w.aree = w.aree.map(function (a, i) { return { it: ($('wzAn' + i) || {}).value || '', colore: ($('wzAc' + i) || {}).value || a.colore, numero: ($('wzAnum' + i) || { value: a.numero }).value, motto: ($('wzAmot' + i) || { value: a.motto }).value }; });
+    var R = w.regole, num = function (id, def) { var e = $(id); if (!e) return def; var v = Number(String(e.value).replace(',', '.')); return isFinite(v) && e.value !== '' ? v : def; };
+    R.scritto.votoMax = num('wzRvm', R.scritto.votoMax); R.scritto.penalita = num('wzRpe', R.scritto.penalita); R.scritto.votoEsclusione = num('wzRve', R.scritto.votoEsclusione); R.scritto.votoMin = num('wzRmi', R.scritto.votoMin);
+    R.scritto.votoMaxErede = Math.max(R.scritto.votoMax, R.scritto.votoMaxErede);
+    R.quiz.secondi = num('wzRqs', R.quiz.secondi); R.quiz.opzioni = num('wzRqo', R.quiz.opzioni); R.quiz.passo = num('wzRqp', R.quiz.passo);
+    R.orale.domande = num('wzRod', R.orale.domande); R.orale.base = num('wzRob', R.orale.base); R.orale.passo = num('wzRop', R.orale.passo); R.orale.passoEsclusi = num('wzRoe', R.orale.passoEsclusi);
+    R.finale.pesoScritto = num('wzRfp', R.finale.pesoScritto);
   }
   w.classi.forEach(function (c, i) {
     c.nome = ($('wzC' + i).value || '').trim().toUpperCase().replace(/\s+/g, '');
@@ -4494,7 +4604,7 @@ function riprendiClasse(i, cl) {
 }
 function disegnaWizard() {
   var w = S.wz; if (!w) return;
-  if (w.tipo === 'edizione') return paginaNuovaEdizione();
+  if (w.tipo === 'edizione' || w.tipo === 'attivita') return paginaNuovaEdizione();
   var o = $('wz');
   if (!o) { o = document.createElement('div'); o.id = 'wz'; o.setAttribute('style', 'position:fixed;inset:0;background:rgba(21,33,43,.6);z-index:40;overflow:auto;padding:16px'); document.body.appendChild(o); }
   var titolo = w.tipo === 'edizione' ? 'Nuova edizione del glossario' : 'Aggiungi una classe a questa edizione';
@@ -4506,14 +4616,65 @@ function disegnaWizard() {
   o.innerHTML = h + '</div>';
 }
 function paginaNuovaEdizione() {
-  var w = S.wz, passi = ['Edizione, regole, classi e alunni', 'Termini', 'Conferma'];
-  var h = testata('Nuova edizione del glossario') + '<main class="wrap stack"><div id="wz" class="stack">' +
-    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:28px">Nuova edizione del glossario</h1><button class="btn sec" onclick="chiudiWizard()">Torna all\'area docenti</button></div>' +
+  var w = S.wz, att = w.tipo === 'attivita', passi = [att ? 'Attività, aree, regole, classi e alunni' : 'Edizione, regole, classi e alunni', 'Termini', 'Conferma'];
+  var tit = att ? 'Nuova attività' : 'Nuova edizione del glossario';
+  var h = testata(tit) + '<main class="wrap stack"><div id="wz" class="stack">' +
+    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:28px">' + tit + '</h1><button class="btn sec" onclick="chiudiWizard()">Torna all\'area docenti</button></div>' +
+    (att ? '<p class="muted" style="margin:0">Un\'attività nuova che <b>corre in parallelo</b> a quelle in corso, senza toccarle: classi e alunni propri, aree e cartelloni propri, termini propri, regole proprie per scritto, quiz, interrogazione e voto finale. Nell\'area docenti la scegli dal menu «Attività» in alto a sinistra; gli alunni entrano con il loro codice e finiscono da soli nella loro attività.</p>' :
     '<p class="muted" style="margin:0">Qui decidi tutto: nome e anno, regole di valutazione, classi, alunni, termini a testa, partenza e scadenze. ' +
-    (S.d.admin.archiviata === S.d.admin.impostazioni.edizione.id ? 'L\'edizione precedente è già in archivio.' : 'Quando confermi, l\'edizione in corso (' + esc(S.d.admin.impostazioni.edizione.nome) + ') viene chiusa agli alunni e archiviata.') + '</p>' +
+    (S.d.admin.archiviata === S.d.admin.impostazioni.edizione.id ? 'L\'edizione precedente è già in archivio.' : 'Quando confermi, l\'edizione in corso (' + esc(S.d.admin.impostazioni.edizione.nome) + ') viene chiusa agli alunni e archiviata.') + '</p>') +
     '<div class="row" style="gap:6px">' + passi.map(function (p, i) { return '<span class="chip ' + (w.passo === i + 1 ? 's-approvata' : 's-vuota') + '">' + (i + 1) + '. ' + p + '</span>'; }).join('') + '</div></section>' +
     '<section class="card stack">' + (w.passo === 1 ? passo1Html() : w.passo === 2 ? passo2Html() : passo3Html()) + '</section></div></main>';
   $('app').innerHTML = h;
+}
+function sceltaPacchetto(id) {
+  leggiPasso1();
+  var w = S.wz, p = (S.d.pacchetti || []).filter(function (x) { return x.id === id; })[0];
+  w.pacchetto = p ? p.id : null; w.termini = null;
+  if (p) w.aree = p.aree.map(function (a, i) { return { it: a.it, colore: a.colore, numero: String(i + 1).padStart(2, '0'), motto: '' }; });
+  disegnaWizard();
+}
+function passo1AttivitaHtml() {
+  var w = S.wz, R = w.regole, inp = function (id, lab, v, min, max, step, nota) { return '<div><label for="' + id + '">' + lab + '</label><input id="' + id + '" type="text" inputmode="decimal" value="' + esc(String(v).replace('.', ',')) + '">' + (nota ? '<small class="muted" style="font-size:13px">' + nota + '</small>' : '') + '</div>'; };
+  var oMax = Math.round((R.orale.base + R.orale.passo * R.orale.domande) * 1000) / 1000, oEx = Math.round((R.orale.base + R.orale.passoEsclusi * R.orale.domande) * 1000) / 1000;
+  var h = '<h2 style="margin:0;font-size:21px">Attività</h2><div class="grid2"><div><label for="wzNome">Nome dell\'attività</label><input id="wzNome" type="text" placeholder="es. Glossario di protesi 4E" value="' + esc(w.nome) + '"></div><div><label for="wzAs">Anno scolastico</label><input id="wzAs" type="text" placeholder="2026/27" value="' + esc(w.as) + '"></div></div>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Aree e cartelloni</h2>' +
+    '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Un cartellone per area</legend>' +
+    [['std', 'Le 4 aree del laboratorio (anatomia, occlusione, materiali, laboratorio): termini proposti dalla banca, che puoi cambiare'], ['mie', 'Aree mie, da 1 a 6: scelgo nomi e colori e scrivo io i termini (o li incollo)']].map(function (x) {
+      var on = (x[0] === 'mie') === !!w.areeMie;
+      return '<label class="op' + (on ? ' on' : '') + '"><input type="radio" name="wzAm" value="' + x[0] + '"' + (on ? ' checked' : '') + ' onchange="leggiPasso1();disegnaWizard()"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>';
+  if (w.areeMie) {
+    var PK = S.d.pacchetti || [];
+    // elenchi pronti di termini e definizioni (aree, colori e termini già preparati, sostituibili uno per uno)
+    if (PK.length) h += '<div><label for="wzPk">Termini e definizioni</label><select id="wzPk" onchange="sceltaPacchetto(this.value)"><option value="">Li scrivo o li incollo io</option>' +
+      PK.map(function (p) { var tot = 0; Object.keys(p.termini).forEach(function (n) { tot += p.termini[n]; }); return '<option value="' + esc(p.id) + '"' + (w.pacchetto === p.id ? ' selected' : '') + '>Elenco pronto: ' + esc(p.nome) + ' (' + tot + ' termini)</option>'; }).join('') + '</select>' +
+      (w.pacchetto ? '<small class="muted" style="font-size:13px">Aree e termini vengono dall\'elenco pronto: nel passo 2 li vedi già distribuiti e puoi sostituirli uno per uno. Nomi, colori, numeri e motti li puoi cambiare qui.</small>' : '') + '</div>';
+    h += '<div class="stack" style="gap:8px">' + w.aree.map(function (a, i) {
+      return '<div class="row" style="gap:8px;align-items:flex-end"><b style="width:28px;font-size:18px">' + (i + 1) + '.</b><div style="flex:1;min-width:180px"><label for="wzAn' + i + '">Nome dell\'area ' + (i + 1) + '</label><input id="wzAn' + i + '" type="text" maxlength="60" placeholder="es. Protesi mobile" value="' + esc(a.it) + '"></div>' +
+        '<div><label for="wzAc' + i + '">Colore</label><input id="wzAc' + i + '" type="color" value="' + esc(a.colore) + '" style="width:56px;height:44px;padding:2px"></div>' +
+        '<div style="width:96px"><label for="wzAnum' + i + '">Numero in alto</label><input id="wzAnum' + i + '" type="text" maxlength="3" value="' + esc(a.numero != null ? a.numero : String(i + 1).padStart(2, '0')) + '"></div>' +
+        '<div style="flex:1;min-width:200px"><label for="wzAmot' + i + '">Motto del cartellone</label><input id="wzAmot' + i + '" type="text" maxlength="60" placeholder="una parola o una frase (facoltativo)" value="' + esc(a.motto || '') + '"></div>' +
+        (w.aree.length > 1 && !w.pacchetto ? '<button class="btn sec" style="min-height:44px" onclick="leggiPasso1();S.wz.aree.splice(' + i + ',1);disegnaWizard()" aria-label="Togli l\'area ' + (i + 1) + '">Togli</button>' : '') + '</div>';
+    }).join('') + (w.aree.length < 6 && !w.pacchetto ? '<div><button class="btn sec" onclick="leggiPasso1();S.wz.aree.push({ it: \'\', colore: [\'#7A4FA0\',\'#C2185B\',\'#5D6D2E\',\'#2E6DB4\',\'#1F8A70\',\'#B5532A\'][S.wz.aree.length % 6] });disegnaWizard()">+ Aggiungi un\'area</button></div>' : '') +
+      '<p class="muted" style="margin:0;font-size:14px">Ogni area deve avere almeno 8 termini (servono per le 8 alternative dello scritto).</p></div>';
+  }
+  h += '<h2 style="margin:8px 0 0;font-size:21px">Regole dello scritto</h2><div class="grid4">' +
+    inp('wzRvm', 'Voto di partenza (massimo)', R.scritto.votoMax, 1, 10, 0.25) + inp('wzRpe', 'Punti tolti per ogni errore', R.scritto.penalita, 0, 3, 0.05) +
+    inp('wzRmi', 'Voto minimo', R.scritto.votoMin, 1, 10, 0.25) + inp('wzRve', 'Voto per mancata consegna', R.scritto.votoEsclusione, 1, 10, 0.25) + '</div>' +
+    '<div class="grid2"><div><label for="wzG">Termini ricevuti da un escluso: giorni per rispondere</label><input id="wzG" type="number" min="1" max="30" value="' + esc(w.giorniIt) + '"></div></div>' +
+    '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Termini degli esclusi</legend>' +
+    [['auto', 'Passano in automatico, a sorte, a un compagno della stessa classe'], ['manuale', 'Decido io a chi passarli']].map(function (x) { return '<label class="op' + (w.riassegnazione === x[0] ? ' on' : '') + '"><input type="radio" name="wzRi" value="' + x[0] + '"' + (w.riassegnazione === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Regole del quiz</h2><div class="grid4">' +
+    inp('wzRqs', 'Secondi per rispondere', R.quiz.secondi, 10, 300, 1) + inp('wzRqo', 'Definizioni proposte', R.quiz.opzioni, 2, 6, 1) + inp('wzRqp', 'Termini persi a ogni errore', R.quiz.passo, 0, 50, 1) + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Quanti termini servono per superarlo e la scadenza li fissi dopo, nella pagina «Scadenze e valutazione», come per la 3E e la 3F.</p>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Regole dell\'interrogazione</h2><div class="grid4">' +
+    inp('wzRod', 'Termini chiesti', R.orale.domande, 1, 40, 1) + inp('wzRob', 'Voto di partenza', R.orale.base, 0, 10, 0.25) + inp('wzRop', 'Valore di un punto', R.orale.passo, 0.05, 5, 0.05, 'corretta 1 punto, parziale ½') +
+    inp('wzRoe', 'Valore di un punto per chi non ha consegnato lo scritto', R.orale.passoEsclusi, 0, 5, 0.05) + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px" id="wzOrTxt">Con queste regole: massimo <b>' + fv(oMax) + '</b>; chi non ha consegnato lo scritto arriva al massimo a <b>' + fv(oEx) + '</b>.' + (oMax > 10 ? ' <b style="color:var(--err)">Supera il 10: riduci i termini o il valore del punto.</b>' : '') + '</p>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Voto finale</h2><div class="grid4">' + inp('wzRfp', 'Peso dello scritto (%)', R.finale.pesoScritto, 0, 100, 5, 'il resto è l\'orale; 50 = media semplice') + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Arrotondamento come sempre: oltre il mezzo voto si sale, sotto si scende, il mezzo resta. Chi non ha consegnato lo scritto ha come voto finale quello dell\'orale.</p>' +
+    '<h2 style="margin:8px 0 0;font-size:21px">Classi e alunni</h2>';
+  return h;
 }
 function passo1Html() {
   var w = S.wz, h = '';
@@ -4531,7 +4692,8 @@ function passo1Html() {
       '<div id="wzcBox">' + editorColleghi('wzc', w.colleghi) + '</div>' +
       '<h2 style="margin:8px 0 0;font-size:21px">Classi e alunni</h2>';
   }
-  var correnti = CLASSI();
+  if (w.tipo === 'attivita') h += passo1AttivitaHtml();
+  var correnti = CLASSI(), NA = wzAreeN().length, NAW = ['zero', 'una', 'due', 'tre', 'quattro', 'cinque', 'sei'][NA] || NA;
   w.classi.forEach(function (c, i) {
     h += '<fieldset style="border:2px solid var(--line);border-radius:12px;padding:12px 14px" class="stack"><legend style="font-weight:800;padding:0 6px">Classe ' + (w.classi.length > 1 ? i + 1 : '') + '</legend>' +
       '<div class="grid4"><div><label for="wzC' + i + '">Nome (es. 4E)</label><input id="wzC' + i + '" type="text" maxlength="6" value="' + esc(c.nome) + '"></div>' +
@@ -4539,20 +4701,28 @@ function passo1Html() {
       '<div><label for="wzP' + i + '">Partenza</label><input id="wzP' + i + '" type="datetime-local" value="' + esc(c.partenza) + '"></div>' +
       '<div><label for="wzS' + i + '">Scadenza</label><input id="wzS' + i + '" type="datetime-local" value="' + esc(c.scadenza) + '"></div></div>' +
       '<fieldset class="ops" style="gap:6px"><legend style="font-weight:700;font-size:15px;margin-bottom:6px">Come distribuire i termini</legend>' +
-      [['misto', 'Ognuno riceve termini di tutte e quattro le aree (come la 3F)'], ['gruppi', 'Alunni divisi in 4 gruppi, uno per area (come la 3E)']].map(function (x) { return '<label class="op' + (c.modo === x[0] ? ' on' : '') + '"><input type="radio" name="wzM' + i + '" value="' + x[0] + '"' + (c.modo === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
+      [['misto', NA > 1 ? 'Ognuno riceve termini di tutte e ' + NAW + ' le aree (come la 3F)' : 'Tutti i termini della stessa area'], ['gruppi', 'Alunni divisi in ' + NA + (NA === 1 ? ' gruppo' : ' gruppi') + ', uno per area (come la 3E)']].map(function (x) { return '<label class="op' + (c.modo === x[0] ? ' on' : '') + '"><input type="radio" name="wzM' + i + '" value="' + x[0] + '"' + (c.modo === x[0] ? ' checked' : '') + ' onchange="segna(this)"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
       '<div class="row" style="gap:8px"><label class="btn sec" style="min-height:38px;cursor:pointer;display:inline-flex;align-items:center" for="wzF' + i + '">Carica l\'elenco da Excel o CSV</label><input id="wzF' + i + '" type="file" accept=".xlsx,.xls,.ods,.csv,.txt" style="display:none" onchange="caricaElenco(' + i + ',this)"><span class="muted" style="font-size:14px">colonne <b>Cognome</b> e <b>Nome</b> (o una colonna con il nominativo)</span></div>' +
       '<div><label for="wzA' + i + '">Alunni (uno per riga, «Cognome Nome»)</label><textarea id="wzA' + i + '" rows="8" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px">' + esc(c.testo) + '</textarea></div>' +
       (w.tipo === 'edizione' ? '<div class="row" style="gap:6px"><span class="muted" style="font-size:14px">Riprendi gli alunni (stesso codice) della classe:</span>' + correnti.map(function (cl) { return '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="riprendiClasse(' + i + ',\'' + esc(cl) + '\')">' + esc(cl) + '</button>'; }).join('') + '</div>' +
         (Object.keys(c.riprendi).length ? '<span class="muted" style="font-size:14px">I nomi che restano uguali a quelli ripresi tengono il loro codice; quelli nuovi o modificati ricevono un codice nuovo.</span>' : '') +
         (w.classi.length > 1 ? '<div><button class="btn sec" style="min-height:36px" onclick="leggiPasso1();S.wz.classi.splice(' + i + ',1);disegnaWizard()">Togli questa classe</button></div>' : '') : '') +
+      (w.tipo === 'attivita' && w.classi.length > 1 ? '<div><button class="btn sec" style="min-height:36px" onclick="leggiPasso1();S.wz.classi.splice(' + i + ',1);disegnaWizard()">Togli questa classe</button></div>' : '') +
       '<span class="muted" style="font-size:14px">Senza partenza gli alunni entrano ma vedono il conto alla rovescia solo quando la fissi (pagina «Scadenze e valutazione»).</span></fieldset>';
   });
-  if (w.tipo === 'edizione') h += '<div><button class="btn sec" onclick="leggiPasso1();S.wz.classi.push(nuovaClasseWz());disegnaWizard()">+ Aggiungi un\'altra classe</button></div>';
+  if (w.tipo === 'edizione' || w.tipo === 'attivita') h += '<div><button class="btn sec" onclick="leggiPasso1();S.wz.classi.push(nuovaClasseWz());disegnaWizard()">+ Aggiungi un\'altra classe</button></div>';
   return h + '<div class="row" style="justify-content:flex-end"><button class="btn" onclick="wzAvanti1(this)">Avanti: proponi i termini</button></div>';
 }
 function wzAvanti1(btn) {
   leggiPasso1();
   var w = S.wz, errs = [];
+  if (w.tipo === 'attivita') {
+    if (!w.nome.trim()) errs.push('Dai un nome all\'attività.');
+    if (!/^\d{4}\/\d{2}$/.test(w.as)) errs.push('Anno scolastico nel formato 2026/27.');
+    if (w.areeMie) w.aree.forEach(function (a, i) { if (!String(a.it).trim()) errs.push('Dai un nome all\'area ' + (i + 1) + '.'); });
+    var Ro = w.regole.orale; if (Ro.base + Ro.passo * Ro.domande > 10 + 1e-9) errs.push('Interrogazione: con queste regole si supera il 10.');
+    if (w.regole.scritto.votoMin > w.regole.scritto.votoMax) errs.push('Il voto minimo dello scritto supera il massimo.');
+  }
   if (w.tipo === 'edizione') { if (!w.nome.trim()) errs.push('Dai un nome all\'edizione.'); if (!/^\d{4}\/\d{2}$/.test(w.as)) errs.push('Anno scolastico nel formato 2027/28.'); if (!(w.giorniIt >= 1 && w.giorniIt <= 30)) errs.push('Giorni per i termini ricevuti: da 1 a 30.'); }
   var nomi = {};
   w.classi.forEach(function (c) {
@@ -4567,10 +4737,15 @@ function wzAvanti1(btn) {
   });
   if (errs.length) { toast(errs[0], true); return; }
   w.fab = fabbisognoClient(w.classi);
+  if (w.tipo === 'attivita' && w.areeMie && !w.pacchetto) {
+    // aree mie: i termini li scrive (o li incolla) il docente, area per area
+    var vecchi = w.termini || {}; w.termini = {}; wzAreeN().forEach(function (n) { w.termini[n] = vecchi[n] || []; });
+    w.ridotto = null; w.passo = 2; disegnaWizard(); return;
+  }
   btn.disabled = true; btn.textContent = 'Cerco termini nuovi…';
   w.ridotto = null;
-  api('generatermini', { richiesta: w.fab, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
-    w.termini = {}; AREE_N.forEach(function (n) { w.termini[n] = x.aree[n].map(function (y) { return { t: y[0], d: y[1], o: 'banca' }; }); });
+  api('generatermini', { richiesta: w.fab, pacchetto: w.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+    w.termini = {}; wzAreeN().forEach(function (n) { w.termini[n] = x.aree[n].map(function (y) { return { t: y[0], d: y[1], o: 'banca' }; }); });
     w.disp = x.disponibili;
     // massimo a testa: se la banca non basta, ognuno ne riceve meno (lo stesso numero per tutti, almeno 4)
     if (Object.keys(x.mancano || {}).length) adattaMassimo();
@@ -4580,9 +4755,11 @@ function wzAvanti1(btn) {
 function passo2Html() {
   var w = S.wz, ok = true;
   var h = (w.ridotto ? '<div class="note warn" style="margin:0">La banca non ha abbastanza termini nuovi per ' + w.ridotto.da + ' a testa: ognuno ne riceve <b>' + w.ridotto.a + '</b>. Se vuoi arrivare a ' + w.ridotto.da + ', <button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="tornaAlMassimo()">torna a ' + w.ridotto.da + ' a testa</button> e aggiungi i termini mancanti scritti da te.</div>' : '') +
-    '<p style="margin:0">Termini nuovi proposti per area, già controllati: nessuno è uguale o simile a quelli dell\'edizione in corso, del 2026/27 e delle edizioni in archivio. Puoi sostituirli uno per uno, toglierli o aggiungere termini tuoi.</p>';
-  AREE_N.forEach(function (n) {
-    var a = area(n) || { it: 'Area ' + n, colore: '#15212B' }, lista = w.termini[n], serve = w.fab[n];
+    (w.tipo === 'attivita' && w.areeMie && !w.pacchetto ? '<p style="margin:0">Scrivi o incolla i termini di ogni area, uno per riga: <i>termine | definizione corretta</i> (va bene anche copiare due colonne da Excel). Servono esattamente i termini indicati per ogni area; ogni area ne ha almeno 8.</p>' :
+    '<p style="margin:0">Termini nuovi proposti per area, già controllati: nessuno è uguale o simile a quelli dell\'edizione in corso, del 2026/27 e delle edizioni in archivio. Puoi sostituirli uno per uno, toglierli o aggiungere termini tuoi.</p>');
+  var mie = w.tipo === 'attivita' && w.areeMie && !w.pacchetto;
+  wzAreeN().forEach(function (n) {
+    var a = wzArea(n) || { it: 'Area ' + n, colore: '#15212B' }, lista = w.termini[n], serve = w.fab[n];
     if (!serve) return;
     if (lista.length !== serve) ok = false;
     h += '<section class="stack" style="gap:6px;border-left:6px solid ' + esc(a.colore) + ';padding-left:12px"><div class="row" style="justify-content:space-between"><h3 style="margin:0;font-size:18px">' + n + '. ' + esc(a.it) + '</h3>' +
@@ -4592,9 +4769,9 @@ function passo2Html() {
           '<div class="row" style="gap:6px;margin-top:4px">' + (x.o === 'banca' ? '<button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzSostituisci(\'' + n + '\',' + k + ',this)">Sostituisci</button>' : '') +
           '<button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzTogli(\'' + n + '\',' + k + ')">Togli</button></div></li>';
       }).join('') + '</ol>' +
-      (lista.length < serve ? '<div class="note warn" style="margin:0">Mancano ' + (serve - lista.length) + ' termini. <button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzAltri(\'' + n + '\',this)">Proponi altri dalla banca</button></div>' : '') +
+      (lista.length < serve ? '<div class="note warn" style="margin:0">Mancano ' + (serve - lista.length) + ' termini.' + (mie ? '' : ' <button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="wzAltri(\'' + n + '\',this)">Proponi altri dalla banca</button>') + '</div>' : '') +
       (lista.length > serve ? '<div class="note warn" style="margin:0">Ce ne sono ' + (lista.length - serve) + ' in più: togline qualcuno.</div>' : '') +
-      '<details><summary style="cursor:pointer;font-weight:700">Aggiungi termini tuoi</summary><div class="stack" style="gap:6px;margin-top:6px"><label for="wzX' + n + '">Uno per riga: <i>termine | definizione corretta</i></label>' +
+      '<details' + (mie && lista.length < serve ? ' open' : '') + '><summary style="cursor:pointer;font-weight:700">Aggiungi termini tuoi</summary><div class="stack" style="gap:6px;margin-top:6px"><label for="wzX' + n + '">Uno per riga: <i>termine | definizione corretta</i></label>' +
       '<textarea id="wzX' + n + '" rows="4" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px" placeholder="Ponte su impianti | Protesi fissa che poggia su due o più impianti."></textarea>' +
       '<div><button class="btn sec" style="min-height:36px" onclick="wzMiei(\'' + n + '\',this)">Controlla e aggiungi</button></div></div></details></section>';
   });
@@ -4605,13 +4782,13 @@ function wzcAggiungi() { leggiPasso1(); S.wz.colleghi.push({ nome: '', codice: n
 function wzcTogli(i) { leggiPasso1(); S.wz.colleghi.splice(i, 1); disegnaWizard(); }
 function adattaMassimo() {
   var w = S.wz, max = Math.max.apply(null, w.classi.map(function (c) { return c.max; }));
-  var regge = function (t) { var cl = w.classi.map(function (c) { return Object.assign({}, c, { tpa: Math.min(c.max, t) }); }); var f = fabbisognoClient(cl); return AREE_N.every(function (n) { return f[n] <= w.disp[n]; }) ? cl : null; };
+  var regge = function (t) { var cl = w.classi.map(function (c) { return Object.assign({}, c, { tpa: Math.min(c.max, t) }); }); var f = fabbisognoClient(cl); return wzAreeN().every(function (n) { return f[n] <= w.disp[n]; }) ? cl : null; };
   for (var t = max - 1; t >= 4; t--) {
     var cl = regge(t);
     if (cl) {
       w.classi.forEach(function (c, i) { c.tpa = cl[i].tpa; });
       w.fab = fabbisognoClient(w.classi);
-      AREE_N.forEach(function (n) { w.termini[n] = w.termini[n].slice(0, w.fab[n]); });
+      wzAreeN().forEach(function (n) { w.termini[n] = w.termini[n].slice(0, w.fab[n]); });
       w.ridotto = { da: max, a: t };
       return;
     }
@@ -4620,12 +4797,12 @@ function adattaMassimo() {
 function tornaAlMassimo() {
   var w = S.wz; w.classi.forEach(function (c) { c.tpa = c.max; }); w.fab = fabbisognoClient(w.classi); w.ridotto = null; disegnaWizard();
 }
-function escludiWz() { var w = S.wz, e = w.scartati.slice(); AREE_N.forEach(function (n) { w.termini[n].forEach(function (x) { e.push(x.t); }); }); return e; }
+function escludiWz() { var w = S.wz, e = w.scartati.slice(); wzAreeN().forEach(function (n) { w.termini[n].forEach(function (x) { e.push(x.t); }); }); return e; }
 function wzSostituisci(n, k, btn) {
   var w = S.wz, vecchio = w.termini[n][k];
   btn.disabled = true;
   var ric = {}; ric[n] = 1;
-  api('generatermini', { richiesta: ric, escludi: escludiWz(), seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
     if (!x.aree[n].length) { btn.disabled = false; toast('La banca non ha altri termini liberi per quest\'area: aggiungine uno tuo.', true); return; }
     w.scartati.push(vecchio.t); w.termini[n][k] = { t: x.aree[n][0][0], d: x.aree[n][0][1], o: 'banca' }; disegnaWizard();
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
@@ -4634,7 +4811,7 @@ function wzTogli(n, k) { var x = S.wz.termini[n].splice(k, 1)[0]; if (x && x.o =
 function wzAltri(n, btn) {
   var w = S.wz, ric = {}; ric[n] = w.fab[n] - w.termini[n].length;
   btn.disabled = true;
-  api('generatermini', { richiesta: ric, escludi: escludiWz(), seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
     x.aree[n].forEach(function (y) { w.termini[n].push({ t: y[0], d: y[1], o: 'banca' }); });
     if (x.mancano[n]) toast('La banca non ha abbastanza termini liberi in quest\'area: ne mancano ' + x.mancano[n] + ', aggiungili tu.', true);
     disegnaWizard();
@@ -4643,9 +4820,10 @@ function wzAltri(n, btn) {
 function wzMiei(n, btn) {
   var righe = String($('wzX' + n).value || '').split(/\n+/).map(function (r) { return r.trim(); }).filter(Boolean);
   if (!righe.length) { toast('Scrivi almeno un termine: «termine | definizione».', true); return; }
-  var voci = righe.map(function (r) { var p = r.split('|'); return { area: n, termine: (p[0] || '').trim(), def: p.slice(1).join('|').trim() }; });
+  // «termine | definizione» oppure due colonne copiate da Excel (separate da tabulazione)
+  var voci = righe.map(function (r) { var tab = r.indexOf('\t') >= 0, p = tab ? r.split('\t') : r.split('|'); return { area: n, termine: (p[0] || '').trim(), def: p.slice(1).join(tab ? ' ' : '|').trim() }; });
   // controllo anche contro i termini già in lista
-  var w = S.wz, tutti = []; AREE_N.forEach(function (m) { w.termini[m].forEach(function (x) { tutti.push({ area: m, termine: x.t, def: x.d }); }); });
+  var w = S.wz, tutti = []; wzAreeN().forEach(function (m) { w.termini[m].forEach(function (x) { tutti.push({ area: m, termine: x.t, def: x.d }); }); });
   btn.disabled = true;
   api('verificatermini', { termini: tutti.concat(voci) }).then(function (x) {
     btn.disabled = false;
@@ -4661,28 +4839,49 @@ function wzMiei(n, btn) {
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 function passo3Html() {
-  var w = S.wz, tot = 0; AREE_N.forEach(function (n) { tot += w.termini[n].length; });
+  var w = S.wz, tot = 0; wzAreeN().forEach(function (n) { tot += w.termini[n].length; });
   var righe = w.classi.map(function (c) {
     var ripresi = c.alunni.filter(function (a) { return a.riprendi; }).length;
-    return '<tr><td><b>' + esc(c.nome) + '</b></td><td class="n">' + c.alunni.length + (ripresi ? '<br><span class="muted" style="font-size:13px">' + ripresi + ' ripresi</span>' : '') + '</td><td class="n">' + c.tpa + (c.max && c.max !== c.tpa ? '<br><span class="muted" style="font-size:13px">massimo ' + c.max + '</span>' : '') + '</td><td>' + (c.modo === 'gruppi' ? '4 gruppi, uno per area' : 'tutte le aree') + '</td>' +
+    return '<tr><td><b>' + esc(c.nome) + '</b></td><td class="n">' + c.alunni.length + (ripresi ? '<br><span class="muted" style="font-size:13px">' + ripresi + ' ripresi</span>' : '') + '</td><td class="n">' + c.tpa + (c.max && c.max !== c.tpa ? '<br><span class="muted" style="font-size:13px">massimo ' + c.max + '</span>' : '') + '</td><td>' + (c.modo === 'gruppi' ? wzAreeN().length + ' gruppi, uno per area' : 'tutte le aree') + '</td>' +
       '<td>' + (c.partenza ? esc(oraIt(new Date(c.partenza).toISOString())) : '<span class="muted">da fissare</span>') + '</td><td>' + esc(oraIt(new Date(c.scadenza).toISOString())) + '</td></tr>';
   }).join('');
   var avvisi = [];
   if (w.tipo === 'edizione' && S.d.admin.archiviata !== S.d.admin.impostazioni.edizione.id) avvisi.push('L\'edizione in corso (' + S.d.admin.impostazioni.edizione.nome + ') verrà chiusa agli alunni e archiviata: resta consultabile nell\'archivio e nella pagina pubblica.');
-  if (w.tipo === 'edizione') avvisi.push('L\'app passa alla nuova edizione: gli alunni dell\'edizione archiviata non ripresi non potranno più entrare (i loro dati restano nell\'archivio). Il tuo codice docente resta lo stesso.');
-  else avvisi.push('Le definizioni della nuova classe vanno sugli stessi quattro cartelloni. Le domande già assegnate alle altre classi non cambiano.');
+  if (w.tipo === 'attivita') {
+    avvisi.push('L\'attività parte in parallelo: quelle in corso (' + (S.d.spazi || []).map(function (x) { return x.nome; }).join(', ') + ') non cambiano.');
+    avvisi.push('Gli alunni ricevono codici nuovi, diversi da tutti quelli già in uso: con il codice entrano da soli nella loro attività, anche nella pagina del quiz.');
+  }
+  else if (w.tipo === 'edizione') avvisi.push('L\'app passa alla nuova edizione: gli alunni dell\'edizione archiviata non ripresi non potranno più entrare (i loro dati restano nell\'archivio). Il tuo codice docente resta lo stesso.');
+  else avvisi.push('Le definizioni della nuova classe vanno sugli stessi cartelloni di questa attività. Le domande già assegnate alle altre classi non cambiano.');
   avvisi.push('Dopo la creazione trovi i codici e le schede con QR nel pagina «Codici e schede QR».');
   return '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Classe</th><th style="text-align:right">Alunni</th><th style="text-align:right">Termini a testa</th><th>Distribuzione</th><th>Partenza</th><th>Scadenza</th></tr></thead><tbody>' + righe + '</tbody></table></div>' +
-    '<p style="margin:0">Termini nuovi: <b>' + tot + '</b> (' + AREE_N.filter(function (n) { return w.fab[n]; }).map(function (n) { return 'area ' + n + ': ' + w.termini[n].length; }).join(', ') + ').' +
+    '<p style="margin:0">Termini nuovi: <b>' + tot + '</b> (' + wzAreeN().filter(function (n) { return w.fab[n]; }).map(function (n) { return 'area ' + n + ': ' + w.termini[n].length; }).join(', ') + ').' +
     (w.tipo === 'edizione' ? ' Edizione: <b>' + esc(w.nome) + '</b>, a.s. ' + esc(w.as) + '. Colleghi: ' + (w.colleghi.length ? w.colleghi.map(function (c) { return esc(c.nome) + ' (' + FACOLTA.filter(function (f) { return c.permessi[f[0]]; }).map(function (f) { return f[1].toLowerCase(); }).join(', ') + ')'; }).join('; ') : 'nessuno') + '. Penalità: proposta ' + w.proposta + ' (' + (w.proposta === 'A' ? '−0,25' : '−0,50') + ' per errore). Termini ricevuti: ' + w.giorniIt + ' giorni. Termini degli esclusi: ' + (w.riassegnazione === 'manuale' ? 'decidi tu.' : 'in automatico, a sorte.') : '') + '</p>' +
+    (w.tipo === 'attivita' ? riepilogoRegoleWz() : '') +
     avvisi.map(function (a) { return '<p class="note" style="margin:0">' + esc(a) + '</p>'; }).join('') +
-    '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=2;disegnaWizard()">Indietro</button><button class="btn ok" onclick="wzCrea(this)">' + (w.tipo === 'edizione' ? 'Crea la nuova edizione' : 'Aggiungi la classe') + '</button></div>';
+    '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=2;disegnaWizard()">Indietro</button><button class="btn ok" onclick="wzCrea(this)">' + (w.tipo === 'edizione' ? 'Crea la nuova edizione' : w.tipo === 'attivita' ? 'Crea l\'attività' : 'Aggiungi la classe') + '</button></div>';
+}
+function riepilogoRegoleWz() {
+  var R = S.wz.regole, w = S.wz, oMax = Math.round((R.orale.base + R.orale.passo * R.orale.domande) * 1000) / 1000, oEx = Math.round((R.orale.base + R.orale.passoEsclusi * R.orale.domande) * 1000) / 1000;
+  return '<div class="stack" style="gap:4px"><b>Attività: ' + esc(w.nome) + ' · a.s. ' + esc(w.as) + '</b>' +
+    '<span>Cartelloni: ' + (w.areeMie ? w.aree.map(function (a, i) { return (a.numero || (i + 1)) + '. ' + esc(a.it) + (a.motto ? ' («' + esc(a.motto) + '»)' : ''); }).join(' · ') : 'le 4 aree del laboratorio') + '</span>' +
+    '<span>Scritto: da ' + fv(R.scritto.votoMax) + ', −' + fv(R.scritto.penalita) + ' per errore, minimo ' + fv(R.scritto.votoMin) + '; mancata consegna ' + fv(R.scritto.votoEsclusione) + '.</span>' +
+    '<span>Quiz: ' + R.quiz.secondi + ' secondi, ' + R.quiz.opzioni + ' definizioni, −' + R.quiz.passo + ' termini a ogni errore.</span>' +
+    '<span>Interrogazione: ' + R.orale.domande + ' termini, ' + fv(R.orale.base) + ' + ' + fv(R.orale.passo) + ' per punto (massimo ' + fv(oMax) + '; senza scritto ' + fv(R.orale.passoEsclusi) + ' per punto, massimo ' + fv(oEx) + ').</span>' +
+    '<span>Voto finale: ' + (R.finale.pesoScritto === 50 ? 'media tra scritto e orale' : 'scritto ' + R.finale.pesoScritto + ' %, orale ' + (100 - R.finale.pesoScritto) + ' %') + '.</span></div>';
 }
 function wzCrea(btn) {
   var w = S.wz;
-  var termini = {}; AREE_N.forEach(function (n) { termini[n] = w.termini[n].map(function (x) { return [x.t, x.d]; }); });
+  var termini = {}; wzAreeN().forEach(function (n) { termini[n] = w.termini[n].map(function (x) { return [x.t, x.d]; }); });
   var classi = w.classi.map(function (c) { return { nome: c.nome, tpa: c.tpa, modo: c.modo, partenza: c.partenza ? new Date(c.partenza).toISOString() : null, scadenza: new Date(c.scadenza).toISOString(), alunni: c.alunni }; });
   btn.disabled = true; btn.textContent = 'Creazione in corso…';
+  if (w.tipo === 'attivita') {
+    var aree = w.areeMie ? w.aree.map(function (a) { return { it: String(a.it).trim(), colore: a.colore, numero: String(a.numero || '').trim(), motto: String(a.motto || '').trim() }; }) : null;
+    api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt }).then(function (x) {
+      chiudiWizard(); toast('Attività creata: ' + x.alunni + ' alunni, ' + x.termini + ' termini'); cambiaAttivita(x.id);
+    }).catch(function (e) { btn.disabled = false; btn.textContent = 'Crea l\'attività'; toast(errMsg(e), true); });
+    return;
+  }
   var p = w.tipo === 'edizione' ? api('nuovaedizione', { nome: w.nome, as: w.as, classi: classi, termini: termini, riassegnazione: w.riassegnazione, proposta: w.proposta, giorniIt: w.giorniIt, colleghi: w.colleghi.filter(function (c) { return String(c.nome).trim(); }) }) : api('aggiungiclasse', { classe: classi[0], termini: termini });
   p.then(function (x) {
     chiudiWizard();
@@ -4703,7 +4902,7 @@ function stampaCartelloni(quali, abbondanza, lingua) {
   // si impaginano qui (stessi caratteri) per calcolare la dimensione del testo, poi si passano alla finestra di stampa
   var scatole = aree.map(function (a) {
     var b = document.createElement('div'); b.style.cssText = 'position:absolute;left:-30000px;top:0;width:700mm';
-    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { soloApprovate: true, qr: location.origin + '/glossario', as: as, en: bil });
+    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, qr: urlPubblico(), as: as, en: bil });
     document.body.appendChild(b); return b;
   });
   caratteriPronti().then(function () {
@@ -4913,6 +5112,12 @@ function barraLaterale(pag, pagine) {
     h += '<div class="sed"><div class="sed-l">' + (arch ? 'EDIZIONE CHIUSA E ARCHIVIATA' : 'EDIZIONE IN CORSO') + '</div><b>' + esc(ed.nome || ('Glossario ' + cl.join(' e '))) + '</b>' + (ed.as ? ' · a.s. ' + esc(ed.as) : '') +
       (S.d.config.chiusa ? '<div class="sed-c">App chiusa agli alunni</div>' : '');
   }
+  // attività parallele: si sceglie su quale lavorare (ognuna con classi, cartelloni, quiz e regole propri)
+  var sp = S.d.spazi || [];
+  if (!RO() && sp.length > 1) h += '<label class="satt"><span>Attività</span><select id="selAtt" onchange="cambiaAttivita(this.value)">' + sp.map(function (x) {
+    return '<option value="' + esc(x.id) + '"' + (x.id === (S.d.att || 'main') ? ' selected' : '') + '>' + esc(x.nome) + ' · ' + esc((x.classi || []).join(', ')) + '</option>';
+  }).join('') + '</select></label>';
+  if (!RO() && ADM()) h += '<button class="snuovaatt" onclick="apriWizard(\'attivita\')">+ Nuova attività</button>';
   if (cl.length > 1) h += '<div class="seg" role="group" aria-label="Filtra per classe">' + ['tutte'].concat(cl).map(function (c) {
     return '<button class="' + (f === c ? 'on' : '') + '" aria-pressed="' + (f === c) + '" data-classe="' + esc(c) + '" onclick="filtroClasse(\'' + esc(c) + '\')">' + (c === 'tutte' ? 'Tutte' : esc(c)) + '</button>';
   }).join('') + '</div>';
@@ -5057,7 +5262,7 @@ var PAGINA = {
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
   },
-  cartelloni: function () { return bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
+  cartelloni: function () { return (ADM() && !RO() && S.d.areeMie ? bloccoAreeMie() : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
     if (ADM() && !RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Presentazione per gli studenti</h2><div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
@@ -5078,7 +5283,7 @@ function tempoMs(ms) { var s = Math.round((ms || 0) / 1000), h = Math.floor(s / 
 function quizDi(id) { return (S.d.quiz || []).filter(function (q) { return q.id === id; })[0] || { indovinati: 0, soglia: 260, sessioni: 0, risposte: 0, corrette: 0, errori: 0, persi: 0, massimo: 0, ms: 0, stato: 'chiuso', ultime: [] }; }
 function votiDi(id) { return ((S.d.admin && S.d.admin.voti) || []).filter(function (v) { return v.id === id; })[0] || {}; }
 function dataBreve(iso) { var d = new Date(iso); return d.getDate() + ' ' + MESI[d.getMonth()] + ', ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-function votoOraleDa(punti, escluso) { return Math.round((3 + (escluso ? 0.25 : 0.5) * punti) * 1000) / 1000; }
+function votoOraleDa(punti, escluso) { var o = RG().orale; return Math.round((o.base + (escluso ? o.passoEsclusi : o.passo) * punti) * 1000) / 1000; }
 
 /* stato del quiz di un alunno, come etichetta: da esso dipende l'ammissione all'interrogazione */
 function chipQuiz(q) {
@@ -5099,7 +5304,7 @@ function paginaQuiz() {
   var sup = righe.filter(function (r) { return quizDi(r.id).superata; }).length, att = righe.filter(function (r) { return quizDi(r.id).sessioni > 0; }).length, fuori = righe.filter(function (r) { return quizDi(r.id).stato === 'scaduto'; }).length;
   var sg = righe.length ? quizDi(righe[0].id).soglia : 260;
   var h = '<section class="card stack" id="quizTab"><h2 style="margin:0;font-size:22px">Quiz: seconda parte della prova</h2>' +
-    '<p class="muted" style="margin:0">Il quiz ha una pagina a sé (<b>' + esc(location.host) + '/quiz</b>), separata dal glossario: un termine, quattro definizioni, 60 secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno <b>torna indietro di 5 termini</b>. ' +
+    '<p class="muted" style="margin:0">Il quiz ha una pagina a sé (<b>' + esc(location.host) + '/quiz</b>), separata dal glossario: un termine, ' + nDef(RG().quiz.opzioni) + ', ' + RG().quiz.secondi + ' secondi. A ogni errore la risposta giusta non viene mostrata e l\'alunno <b>torna indietro di ' + RG().quiz.passo + ' termini</b>. ' +
     'I progressi restano tra una sessione e l\'altra. Il quiz è <b>superato con ' + sg + ' termini indovinati</b> entro la scadenza: chi lo supera è ammesso all\'interrogazione, chi non lo completa resta senza voto. ' +
     'Soglia e scadenze si impostano in «Scadenze e valutazione».</p>' +
     '<div class="row">' + scadenzeQuiz() + '</div>' +
@@ -5130,17 +5335,17 @@ function paginaOrale() {
   var amm = righe.filter(function (r) { return quizDi(r.id).superata; }).length, fuori = righe.filter(function (r) { return quizDi(r.id).stato === 'scaduto'; }).length;
   var h = '<section class="card stack" id="oraleTab"><h2 style="margin:0;font-size:22px">Interrogazioni</h2>' +
     '<p class="muted" style="margin:0"><b>È ammesso all\'interrogazione solo chi ha superato il quiz</b> entro la scadenza: gli altri non vengono interrogati e restano senza voto (le loro definizioni restano sui cartelloni). ' +
-    'Per ogni alunno ammesso l\'app pesca <b>10 termini</b> tra tutti quelli del glossario (mai i suoi, bilanciati sulle aree, di preferenza i meno usciti nella classe). ' +
-    'Ogni risposta vale 1 punto se corretta, ½ se parziale, 0 se sbagliata. <b>Voto orale = 3 + ½ per punto</b> (massimo 8); per gli esclusi dallo scritto 3 + ¼ per punto (massimo 5,5). ' +
-    'Il <b>voto finale</b> è la media tra scritto e orale (per gli esclusi vale solo l\'orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</p>' +
+    'Per ogni alunno ammesso l\'app pesca <b>' + RG().orale.domande + ' termini</b> tra tutti quelli del glossario (mai i suoi, bilanciati sulle aree, di preferenza i meno usciti nella classe). ' +
+    'Ogni risposta vale 1 punto se corretta, ½ se parziale, 0 se sbagliata. <b>' + regolaOrale() + '</b> (massimo ' + fv(RG().orale.max) + '); per gli esclusi dallo scritto ' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto (massimo ' + fv(RG().orale.maxEsclusi) + '). ' +
+    'Il <b>voto finale</b> è la ' + mediaTxt() + ' (per gli esclusi vale solo l\'orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</p>' +
     '<div class="row"><span class="chip s-approvata">' + amm + ' su ' + righe.length + ' ammessi (quiz superato)</span><span class="chip s-vuota">' + fatte + ' interrogati</span>' + (fuori ? '<span class="chip s-correggere">' + fuori + ' non ammessi: senza voto</span>' : '') + scadenzeQuiz() + '</div>' +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th><th>Ammissione (quiz)</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th></th></tr></thead><tbody>';
   righe.forEach(function (r) {
     var v = votiDi(r.id), q = quizDi(r.id), o = v.orale;
-    h += '<tr data-orale="' + r.id + '"><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere">Escluso · max 5,5</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
+    h += '<tr data-orale="' + r.id + '"><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere">Escluso · max ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
       '<td>' + chipQuiz(q) + '</td>' +
       '<td class="n">' + (r.escluso ? '<span class="muted" style="font-weight:400">—</span>' : fv(v.voto)) + '</td>' +
-      '<td class="n">' + (o ? fv(o.voto) + '<br><span class="muted" style="font-weight:400;font-size:13px">' + fv(o.punti) + ' / 10 · ' + esc(dataBreve(o.data)) + '</span>' : '—') + '</td>' +
+      '<td class="n">' + (o ? fv(o.voto) + '<br><span class="muted" style="font-weight:400;font-size:13px">' + fv(o.punti) + ' / ' + RG().orale.domande + ' · ' + esc(dataBreve(o.data)) + '</span>' : '—') + '</td>' +
       '<td class="n">' + (v.finale != null ? '<b style="font-size:18px">' + fv(v.finale) + '</b>' : q.stato === 'scaduto' ? '<span class="muted" style="font-weight:400">senza voto</span>' : '<b style="font-size:18px">—</b>') + '</td>' +
       '<td>' + (!puo ? '' : q.superata ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ' + (o ? 'sec' : '') + ' tb" onclick="apriOrale(\'' + r.id + '\',this)">' + (v.oraleInCorso ? 'Riprendi' : o ? 'Ripeti' : 'Interroga') + '</button>' +
         (o ? '<button class="btn sec tb" onclick="annullaOrale(\'' + r.id + '\',this)">Annulla voto</button>' : '') + '</div>' : '<span class="muted" style="font-size:14px">' + (q.stato === 'scaduto' ? 'non interrogabile' : 'in attesa del quiz') + '</span>') + '</td></tr>';
@@ -5164,7 +5369,7 @@ function schedaOrale() {
     '<div><span class="kl">Tempo nel quiz</span><b>' + (q.sessioni ? tempoMs(q.ms) : '—') + '</b><small>' + (q.sessioni ? q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') : 'nessuna sessione') + '</small></div>' +
     '<div><span class="kl">Risposte nel quiz</span><b>' + q.corrette + ' / ' + q.risposte + '</b><small>' + (q.risposte ? Math.round(q.corrette / q.risposte * 100) + '% corrette · ' + (q.errori || 0) + ' errori' : 'nessuna risposta') + '</small></div>' +
     '<div><span class="kl">Termini indovinati</span><b>' + q.indovinati + ' / ' + q.soglia + '</b><small>' + (q.superata ? 'quiz superato il ' + esc(dataBreve(q.superata)) : 'quiz non superato') + '</small></div></div>' +
-    (r.escluso ? '<div class="note warn"><b>Alunno escluso dallo scritto:</b> all\'orale può arrivare al massimo a 5,5 (3 + ¼ per punto).</div>' : '') +
+    (r.escluso ? '<div class="note warn"><b>Alunno escluso dallo scritto:</b> all\'orale può arrivare al massimo a ' + fv(RG().orale.maxEsclusi) + ' (' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto).</div>' : '') +
     '</section><div class="or-punti" id="orPunti" aria-live="polite"><div><span class="kl">Risposte segnate</span><b>' + fatti + ' / ' + o.esiti.length + '</b></div><div><span class="kl">Punti</span><b>' + fv(punti) + ' / 10</b></div>' +
     '<div><span class="kl">Voto orale</span><b>' + (tutti ? fv(votoOraleDa(punti, r.escluso)) : '—') + '</b></div></div>';
   o.bozza.termini.forEach(function (t, i) {
@@ -5226,12 +5431,12 @@ function stampaAccessiQuiz(classe) {
       '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo quiz.</b></p></div>' +
       '<div class="acc"><div><div class="lb">Indirizzo del quiz</div><div class="url">' + esc(base.replace(/^https?:\/\//, '')) + '</div><div class="pic">poi scrivi il tuo codice personale</div></div>' +
       '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
-      '<ol><li>Compare un termine con <b>4 definizioni</b>: scegli quella giusta entro <b>60 secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
-      '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di 5 termini</b>: per andare avanti devi studiare le definizioni.</li>' +
+      '<ol><li>Compare un termine con <b>' + RG().quiz.opzioni + ' definizioni</b>: scegli quella giusta entro <b>' + RG().quiz.secondi + ' secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
+      '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di ' + RG().quiz.passo + ' termini</b>: per andare avanti devi studiare le definizioni.</li>' +
       '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi' + (sq ? ', <b>entro ' + esc(oraIt(sq)) + '</b>.' : ', entro la scadenza che ti dirà il docente.') + '</li>' +
       '<li>Il quiz è superato quando hai indovinato <b>' + (qa.soglia || 260) + ' termini</b>.</li></ol>' +
-      '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca 10 termini e tu dai la definizione. ' +
-      'Chi non completa il quiz entro la scadenza non viene interrogato e resta senza voto. Voto orale fino a 8; il voto finale è la media tra scritto e orale.</div>' +
+      '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca ' + RG().orale.domande + ' termini e tu dai la definizione. ' +
+      'Chi non completa il quiz entro la scadenza non viene interrogato e resta senza voto. Voto orale fino a ' + fv(RG().orale.max) + '; il voto finale è la ' + mediaTxt() + '.</div>' +
       '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: le sessioni fatte con il tuo codice risultano tue.</div>' +
       '<footer>Prof. Danilo Cerrato · Laboratorio odontotecnico</footer></section>';
   }).join('');
@@ -5259,7 +5464,7 @@ function bloccoQuizImp() {
   var q = (S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || { scadenze: {} }, tot = S.d.termini.length;
   return '<section class="card stack" id="quizImp"><h2 style="margin:0;font-size:22px">Quiz: seconda parte della prova</h2>' +
     '<p class="muted" style="margin:0">Il quiz di una classe <b>si apre quando ne fissi la scadenza</b> e si chiude a quell\'ora: finché il campo è vuoto gli alunni non possono entrare. ' +
-    'Chi indovina tutti i termini richiesti entro la scadenza è ammesso all\'interrogazione; gli altri restano senza voto. A ogni errore l\'alunno torna indietro di 5 termini e la risposta giusta non viene mostrata.</p>' +
+    'Chi indovina tutti i termini richiesti entro la scadenza è ammesso all\'interrogazione; gli altri restano senza voto. A ogni errore l\'alunno torna indietro di ' + RG().quiz.passo + ' termini e la risposta giusta non viene mostrata.</p>' +
     '<div class="grid4"><div><label for="qzSoglia">Termini da indovinare (su ' + tot + ')</label><input id="qzSoglia" type="number" min="10" max="' + tot + '" step="1" value="' + (q.soglia || tot) + '"></div>' +
     CLASSI().map(function (c) { var d = (q.scadenze || {})[c]; return '<div><label for="qzSc_' + c + '">Scadenza del quiz · ' + esc(c) + '</label><input id="qzSc_' + c + '" type="datetime-local" value="' + (d ? isoLocale(d) : '') + '">' +
       '<span class="muted" style="font-size:13px">' + (d ? (Date.now() > Date.parse(d) ? 'quiz chiuso: scadenza passata' : 'quiz aperto') : 'quiz non aperto') + '</span></div>'; }).join('') + '</div>' +

@@ -193,11 +193,11 @@ function creaReport(stato, attivita, now) {
   righe.forEach((x) => {
     doc.addPage({ size: 'A4', layout: 'portrait', margin: 36 });
     const Wp = doc.page.width - 72;
-    const area = DATI.AREE.find((a) => String(a.n) === String(x.a.gruppo)) || {};
+    const area = require('./catalogo').areeDi(stato.config).find((a) => String(a.n) === String(x.a.gruppo)) || {};
     let yy = testata(doc, x.a.nome, 'Classe ' + logica.classeDi(x.a) + (area.it ? ' · Gruppo ' + x.a.gruppo + ' · ' + area.it : ' · termini di tutte le aree') + ' · ' + sotto);
     // voti
     const vb = !EN ? [['Risposte', x.it.risposte + '/' + x.miei.length, ''], ['Approvate', x.it.approvate + '/' + x.miei.length, x.it.daApprovare ? x.it.daApprovare + ' da approvare' : ''],
-      ['Errori', String(x.it.errori), 'penalità ' + (imp.proposta === 'A' ? '0,25' : '0,50') + ' ciascuno'], ['Voto finale', x.v.voto != null ? fv(x.v.voto) + '/' + fv(x.v.votoMax) : '-', x.v.manuale != null ? 'manuale' : x.v.escluso ? 'esclusione' : x.v.tetto ? 'tetto 6' : 'calcolato']] : [['Voto italiano', fv(x.v.votoIt), x.it.errori + ' errori'], ['Voto inglese', fv(x.v.votoEn), x.en.errori + ' errori'],
+      ['Errori', String(x.it.errori), 'penalità ' + String(imp.penalita).replace('.', ',') + ' ciascuno'], ['Voto finale', x.v.voto != null ? fv(x.v.voto) + '/' + fv(x.v.votoMax) : '-', x.v.manuale != null ? 'manuale' : x.v.escluso ? 'esclusione' : x.v.tetto ? 'tetto 6' : 'calcolato']] : [['Voto italiano', fv(x.v.votoIt), x.it.errori + ' errori'], ['Voto inglese', fv(x.v.votoEn), x.en.errori + ' errori'],
       ['Media', x.v.media != null ? fv(x.v.media) : '-', ''], ['Voto finale', x.v.voto != null ? fv(x.v.voto) + '/' + fv(x.v.votoMax) : '-', x.v.manuale != null ? 'manuale' : x.v.escluso ? 'esclusione' : x.v.tetto ? 'tetto 6' : 'calcolato']];
     const w4 = Wp / 4;
     vb.forEach((b, i) => {

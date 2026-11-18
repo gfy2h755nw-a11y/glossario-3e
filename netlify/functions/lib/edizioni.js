@@ -10,7 +10,9 @@ const DATI = require('./dati');
 const auto = require('./automatico');
 const DBX = require('./dropbox');
 
-const AREE = DATI.AREE.map((a) => String(a.n));
+const AREE = DATI.AREE.map((a) => String(a.n)); // le 4 aree del laboratorio (banca termini)
+const numAree = (k) => Array.from({ length: k }, (x, i) => String(i + 1));
+const nAreeDi = (config) => (config && Array.isArray(config.aree) && config.aree.length ? config.aree.length : DATI.AREE.length);
 const err = (m) => L.errore(m);
 
 async function adminDa(db, codice) {
@@ -122,14 +124,18 @@ function mescola(arr, seme) {
   const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a;
 }
 /* richiesta: { '1': quanti, ... }; escludi: termini da non proporre (già scartati dal docente o già scelti) */
-async function generaTermini(db, { codice, richiesta, escludi, seme }) {
+async function generaTermini(db, { codice, richiesta, escludi, seme, pacchetto }) {
   const { stato } = await adminDa(db, codice);
   const usati = await terminiUsati(db, stato.config);
   const via = new Set((escludi || []).map((t) => SIM.chiave(t)));
   const aree = {}, disponibili = {}, mancano = {};
-  AREE.forEach((n) => {
+  // elenco pronto (aree scelte per un'attività nuova) oppure banca delle 4 aree del laboratorio
+  const P = pacchetto ? require('./pacchetti')[pacchetto] : null;
+  if (pacchetto && !P) err('Elenco di termini non trovato.');
+  const fonte = P ? P.termini : BANCA;
+  (P ? Object.keys(P.termini) : AREE).forEach((n) => {
     const chiesti = Math.max(0, Math.min(500, Number((richiesta || {})[n]) || 0));
-    const liberi = BANCA[n].map((x, i) => ({ t: x[0], d: x[1], i })).filter((x) => !via.has(SIM.chiave(x.t)) && !SIM.trovaSimile(x.t, x.d, usati));
+    const liberi = fonte[n].map((x, i) => ({ t: x[0], d: x[1], i })).filter((x) => !via.has(SIM.chiave(x.t)) && !SIM.trovaSimile(x.t, x.d, usati));
     disponibili[n] = liberi.length;
     const scelti = (seme ? mescola(liberi, seme) : liberi).slice(0, chiesti).sort((x, y) => x.i - y.i);
     aree[n] = scelti.map((x) => [x.t, x.d].concat(CAT.traduzionePronta(x.t) || ['', '']));
@@ -157,20 +163,20 @@ async function verificaTermini(db, { codice, termini }) {
 
 /* ---------- assegnazione dei termini agli alunni di una classe ---------- */
 // modo 'gruppi': alunni divisi in 4 gruppi consecutivi, uno per area; modo 'misto': termini di tutte le aree a ciascuno
-function piano(classe) {
-  const n = classe.alunni.length, tpa = classe.tpa;
-  const base = Math.floor(n / 4), extra = n % 4, gruppo = [];
-  for (let g = 0, i = 0; g < 4; g++) for (let k = 0; k < base + (g < extra ? 1 : 0); k++, i++) gruppo[i] = g + 1;
+function piano(classe, nA) {
+  const n = classe.alunni.length, tpa = classe.tpa, NA = nA || 4, AR = numAree(NA);
+  const base = Math.floor(n / NA), extra = n % NA, gruppo = [];
+  for (let g = 0, i = 0; g < NA; g++) for (let k = 0; k < base + (g < extra ? 1 : 0); k++, i++) gruppo[i] = g + 1;
   return classe.alunni.map((al, i) => {
-    const aree = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    const aree = {}; AR.forEach((a) => { aree[a] = 0; });
     if (classe.modo === 'gruppi') aree[gruppo[i]] = tpa;
-    else { const b = Math.floor(tpa / 4), r = tpa % 4; AREE.forEach((a) => { aree[a] = b; }); for (let k = 0; k < r; k++) aree[((i + k) % 4) + 1]++; }
+    else { const b = Math.floor(tpa / NA), r = tpa % NA; AR.forEach((a) => { aree[a] = b; }); for (let k = 0; k < r; k++) aree[((i + k) % NA) + 1]++; }
     return { al, gruppo: classe.modo === 'gruppi' ? String(gruppo[i]) : 'M', aree };
   });
 }
-function fabbisogno(classi) {
-  const tot = { 1: 0, 2: 0, 3: 0, 4: 0 };
-  classi.forEach((c) => piano(c).forEach((p) => AREE.forEach((a) => { tot[a] += p.aree[a]; })));
+function fabbisogno(classi, nA) {
+  const AR = numAree(nA || 4), tot = {}; AR.forEach((a) => { tot[a] = 0; });
+  classi.forEach((c) => piano(c, nA).forEach((p) => AR.forEach((a) => { tot[a] += p.aree[a]; })));
   return tot;
 }
 const NOME_CLASSE = /^[0-9][A-Z]{1,3}$|^[A-Z0-9]{1,6}$/;
@@ -192,8 +198,8 @@ function validaClasse(c, i) {
   return { nome, tpa, modo: c.modo, alunni, partenza: part, scadenza: scad };
 }
 function validaTermini(termini, fab, esistenti) {
-  const out = {};
-  AREE.forEach((n) => {
+  const out = {}, AR = Object.keys(fab);
+  AR.forEach((n) => {
     const pulisci = (v) => String(v || '').replace(/\s+/g, ' ').trim();
     // termine, definizione e, se ci sono, la loro traduzione inglese
     const lista = ((termini || {})[n] || []).map((x) => { const it = pulisci(x[0]), pr = CAT.traduzionePronta(it) || []; return [it, pulisci(x[1]), pulisci(x[2]).slice(0, 100) || pr[0] || '', pulisci(x[3]).slice(0, 400) || pr[1] || '']; });
@@ -203,7 +209,7 @@ function validaTermini(termini, fab, esistenti) {
   });
   // nessun doppione tra i termini nuovi, né con quelli dell'edizione in cui finiscono (stessi cartelloni)
   const visti = (esistenti || []).slice();
-  AREE.forEach((n) => out[n].forEach((x) => {
+  AR.forEach((n) => out[n].forEach((x) => {
     const s = SIM.trovaSimile(x[0], '', visti);
     if (s) err('«' + x[0] + '» è troppo simile a «' + s.termine + '»' + (s.dove ? ' (' + s.dove + ')' : '') + ': sostituiscilo.');
     visti.push({ termine: x[0], def: x[1], dove: 'stesso elenco' });
@@ -226,7 +232,7 @@ function idAlunno(classe, i, usati) {
   usati.add(id); return id;
 }
 function controllaAree(cat) {
-  AREE.forEach((n) => { const tot = (cat[n] || []).length; if (tot > 0 && tot < 8) err('Area ' + n + ': con meno di 8 termini non si possono formare le 8 alternative. Cambia il numero di termini a testa o la distribuzione.'); });
+  Object.keys(cat).forEach((n) => { const tot = (cat[n] || []).length; if (tot > 0 && tot < 8) err('Area ' + n + ': con meno di 8 termini non si possono formare le 8 alternative. Cambia il numero di termini a testa o la distribuzione.'); });
 }
 
 /* chiusura dell'edizione in corso decisa dal docente: app chiusa agli alunni e copia in archivio */
@@ -237,34 +243,51 @@ async function chiudiEdizione(db, { codice }) {
   return Object.assign({ chiusa: true }, r);
 }
 
-/* ---------- nuova edizione ---------- */
-async function nuovaEdizione(db, p) {
-  const { stato } = await adminDa(db, p.codice);
+/* ---------- aree e regole di una nuova edizione o attività ---------- */
+const COLORI = ['#2E6DB4', '#1F8A70', '#B5532A', '#7A4FA0', '#C2185B', '#5D6D2E'];
+function validaAree(aree) {
+  if (aree == null) return null; // le 4 aree del laboratorio
+  if (!Array.isArray(aree) || aree.length < 1 || aree.length > 6) err('Le aree (cartelloni) vanno da 1 a 6.');
+  const out = aree.map((a, i) => {
+    const it = String((a && a.it) || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (!it) err('Dai un nome all\'area ' + (i + 1) + '.');
+    const col = /^#[0-9A-Fa-f]{6}$/.test((a && a.colore) || '') ? a.colore.toUpperCase() : COLORI[i];
+    // motto (una parola o una frase, sul cartellone sopra il nastro) e numero grande nella testata: scelti dal docente
+    const motto = String((a && a.motto) || '').replace(/\s+/g, ' ').trim();
+    if (motto.length > 60) err('Area ' + (i + 1) + ': il motto può avere al massimo 60 caratteri.');
+    const numero = String((a && a.numero) || '').replace(/\s+/g, '').trim();
+    if (numero.length > 3) err('Area ' + (i + 1) + ': il numero in alto può avere al massimo 3 caratteri.');
+    return { n: i + 1, it, en: String((a && a.en) || '').replace(/\s+/g, ' ').trim().slice(0, 60), colore: col, motto, numero: numero || String(i + 1).padStart(2, '0') };
+  });
+  if (new Set(out.map((a) => a.it.toLowerCase())).size !== out.length) err('Due aree hanno lo stesso nome.');
+  return out;
+}
+/* costruisce configurazione, alunni e termini di una nuova edizione (o attività parallela) senza scrivere nulla */
+function costruisci(stato, p, usatiCodiciEsterni) {
   const config = stato.config, edCorr = L.edizioneDi(config);
   const nome = String(p.nome || '').replace(/\s+/g, ' ').trim(), as = String(p.as || '').trim();
   if (!nome) err('Dai un nome alla nuova edizione.');
   if (!/^\d{4}\/\d{2}$/.test(as)) err('Anno scolastico non valido (es. 2027/28).');
+  const aree = validaAree(p.aree), nA = aree ? aree.length : DATI.AREE.length;
   const classi = (p.classi || []).map(validaClasse);
   if (!classi.length) err('Inserisci almeno una classe.');
   if (new Set(classi.map((c) => c.nome)).size !== classi.length) err('Due classi hanno lo stesso nome.');
-  const fab = fabbisogno(classi);
-  const usatiCodici = new Set((config.docenti || []).map((d) => d.codice)), usatiId = new Set();
+  const fab = fabbisogno(classi, nA);
+  const usatiCodici = new Set((config.docenti || []).map((d) => d.codice).concat(usatiCodiciEsterni || [])), usatiId = new Set();
   const vecchi = {}; stato.alunni.forEach((a) => { vecchi[a.id] = a; });
   // alunni ripresi dall'edizione precedente: stesso codice e stessa scheda
   classi.forEach((c) => c.alunni.forEach((a) => { if (a.riprendi) { if (!vecchi[a.riprendi]) err('Alunno da riprendere non trovato: ' + a.nome + '.'); if (usatiId.has(a.riprendi)) err(a.nome + ' compare due volte.'); usatiId.add(a.riprendi); usatiCodici.add(vecchi[a.riprendi].codice); } }));
   const termini = validaTermini(p.termini, fab, []);
   const alunni = [], piani = [];
-  classi.forEach((c) => piano(c).forEach((pp, i) => {
-    const r = pp.al.riprendi ? vecchi[pp.al.riprendi] : null;
-    const id = r ? r.id : idAlunno(c.nome, i, usatiId);
-    alunni.push({ id, nome: r ? r.nome : pp.al.nome, gruppo: pp.gruppo, classe: c.nome, codice: r ? r.codice : L.generaCodice(usatiCodici), voto_manuale: null, riammesso: false });
+  classi.forEach((c) => piano(c, nA).forEach((pp, i) => {
+    const rr = pp.al.riprendi ? vecchi[pp.al.riprendi] : null;
+    const id = rr ? rr.id : idAlunno(c.nome, i, usatiId);
+    alunni.push({ id, nome: rr ? rr.nome : pp.al.nome, gruppo: pp.gruppo, classe: c.nome, codice: rr ? rr.codice : L.generaCodice(usatiCodici), voto_manuale: null, riammesso: false });
     piani.push({ id, aree: pp.aree });
   }));
-  const catalogo = {}; AREE.forEach((n) => { catalogo[n] = termini[n]; });
+  const catalogo = {}; numAree(nA).forEach((n) => { catalogo[n] = termini[n]; });
   controllaAree(catalogo);
-  const docs = []; AREE.forEach((n) => docs.push(...terminiDoc(n, 0, termini[n], assegnazioni(piani, n))));
-  const giaUsati = new Set((await db.leggiArchivi()).map((m) => m.id).concat([edCorr.id]));
-  let id = '', k = 1; do { id = as.replace('/', '-') + '-' + k; k++; } while (giaUsati.has(id));
+  const docs = []; numAree(nA).forEach((n) => docs.push(...terminiDoc(n, 0, termini[n], assegnazioni(piani, n))));
   const scadMax = classi.map((c) => c.scadenza).sort().slice(-1)[0], partMin = classi.map((c) => c.partenza).filter(Boolean).sort()[0] || null;
   const nuovaConfig = {
     chiusa: false, docenti: p.colleghi ? L.nuoviColleghi(config, { alunni }, p.colleghi) : config.docenti, proposta: p.proposta === 'A' || p.proposta === 'B' ? p.proposta : (config.proposta || DATI.VALUTAZIONE.proposta), lingue: ['it'], versioneDati: 4,
@@ -273,8 +296,27 @@ async function nuovaEdizione(db, p) {
     classi: classi.map((c) => c.nome), partenza: partMin, scadenze: { it: scadMax, en: new Date(Date.parse(scadMax) + 7 * 86400000).toISOString() },
     calendario: Object.fromEntries(classi.map((c) => [c.nome, { partenza: c.partenza, scadenzaIt: c.scadenza }])),
     tpaClassi: Object.fromEntries(classi.map((c) => [c.nome, c.tpa])),
-    catalogo, blocchi: {}, edizione: { id, nome, as, creata: new Date().toISOString() }, archiviata: null
+    catalogo, blocchi: {}, edizione: { id: '', nome, as, creata: new Date().toISOString() }, archiviata: null
   };
+  if (aree) nuovaConfig.aree = aree;
+  if (p.regole) nuovaConfig.regole = require('./regole').valida(p.regole);
+  return { config: nuovaConfig, alunni, docs, nome, as, edCorr };
+}
+async function nuovoIdEdizione(db, as, altri) {
+  const giaUsati = new Set((await db.leggiArchivi()).map((m) => m.id).concat(altri || []));
+  let id = '', k = 1; do { id = as.replace('/', '-') + '-' + k; k++; } while (giaUsati.has(id));
+  return id;
+}
+
+/* ---------- nuova edizione ---------- */
+async function nuovaEdizione(db, p) {
+  const { stato } = await adminDa(db, p.codice);
+  const config = stato.config;
+  const altri = await (db.codiciAltriSpazi ? db.codiciAltriSpazi() : []);
+  const { config: nuovaConfig, alunni, docs, nome, as, edCorr } = costruisci(stato, p, altri);
+  const reg = db.leggiRegistro ? await db.leggiRegistro() : [];
+  const id = await nuovoIdEdizione(db, as, [edCorr.id].concat(reg.map((x) => x.ed || '')));
+  nuovaConfig.edizione.id = id;
   // l'edizione in corso, se non è già in archivio, si chiude agli alunni e si archivia (resta consultabile)
   let archiviata = null;
   if (config.archiviata !== edCorr.id) {
@@ -294,20 +336,21 @@ async function aggiungiClasse(db, p) {
   const c = validaClasse(p.classe || {}, 0);
   if (imp.classi.indexOf(c.nome) >= 0) err('La classe ' + c.nome + ' c\'è già in questa edizione.');
   if (c.alunni.some((a) => a.riprendi)) err('In una classe aggiunta gli alunni sono tutti nuovi.');
-  const fab = fabbisogno([c]);
+  const nA = nAreeDi(config), fab = fabbisogno([c], nA);
   const { cat, blocchi } = CAT.materializza(config);
-  const esistenti = []; AREE.forEach((n) => (cat[n] || []).forEach((x) => esistenti.push({ termine: x[0], def: x[1], dove: 'edizione in corso' })));
+  const esistenti = []; numAree(nA).forEach((n) => (cat[n] || []).forEach((x) => esistenti.push({ termine: x[0], def: x[1], dove: 'edizione in corso' })));
   const termini = validaTermini(p.termini, fab, esistenti);
   // gli alunni con questa classe ma senza classe registrata vengono da un tentativo interrotto: i loro id si riusano
-  const usatiCodici = new Set(stato.alunni.map((a) => a.codice).concat((config.docenti || []).map((d) => d.codice))), usatiId = new Set(stato.alunni.filter((a) => a.classe !== c.nome).map((a) => a.id));
+  const altri = await (db.codiciAltriSpazi ? db.codiciAltriSpazi() : []);
+  const usatiCodici = new Set(stato.alunni.map((a) => a.codice).concat((config.docenti || []).map((d) => d.codice), altri)), usatiId = new Set(stato.alunni.filter((a) => a.classe !== c.nome).map((a) => a.id));
   const alunni = [], piani = [];
-  piano(c).forEach((pp, i) => {
+  piano(c, nA).forEach((pp, i) => {
     const id = idAlunno(c.nome, i, usatiId);
     alunni.push({ id, nome: pp.al.nome, gruppo: pp.gruppo, classe: c.nome, codice: L.generaCodice(usatiCodici), voto_manuale: null, riammesso: false });
     piani.push({ id, aree: pp.aree });
   });
   const docs = [];
-  AREE.forEach((n) => {
+  numAree(nA).forEach((n) => {
     if (!termini[n].length) return;
     const k0 = (cat[n] || []).length;
     blocchi[n] = (blocchi[n] || []).concat([k0]); // i termini nuovi formano un blocco: le domande già assegnate non cambiano
@@ -328,7 +371,7 @@ async function aggiungiClasse(db, p) {
 /* fabbisogno per il generatore (senza scrivere nulla) */
 function calcolaFabbisogno(p) {
   const classi = (p.classi || []).map((c) => ({ nome: c.nome, tpa: Number(c.tpa) || 0, modo: c.modo, alunni: (c.alunni || []).filter((a) => String(a.nome || '').trim()) }));
-  return fabbisogno(classi);
+  return fabbisogno(classi, Math.max(1, Math.min(6, Number(p.nAree) || 4)));
 }
 
-module.exports = { chiudiEdizione, archivia, consultaArchivio, fileArchivio, pubblico, generaTermini, verificaTermini, nuovaEdizione, aggiungiClasse, calcolaFabbisogno, piano };
+module.exports = { costruisci, nuovoIdEdizione, validaAree, nAreeDi, numAree, chiudiEdizione, archivia, consultaArchivio, fileArchivio, pubblico, generaTermini, verificaTermini, nuovaEdizione, aggiungiClasse, calcolaFabbisogno, piano };

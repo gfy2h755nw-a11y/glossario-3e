@@ -66,6 +66,12 @@ function barraLaterale(pag, pagine) {
     h += '<div class="sed"><div class="sed-l">' + (arch ? 'EDIZIONE CHIUSA E ARCHIVIATA' : 'EDIZIONE IN CORSO') + '</div><b>' + esc(ed.nome || ('Glossario ' + cl.join(' e '))) + '</b>' + (ed.as ? ' · a.s. ' + esc(ed.as) : '') +
       (S.d.config.chiusa ? '<div class="sed-c">App chiusa agli alunni</div>' : '');
   }
+  // attività parallele: si sceglie su quale lavorare (ognuna con classi, cartelloni, quiz e regole propri)
+  var sp = S.d.spazi || [];
+  if (!RO() && sp.length > 1) h += '<label class="satt"><span>Attività</span><select id="selAtt" onchange="cambiaAttivita(this.value)">' + sp.map(function (x) {
+    return '<option value="' + esc(x.id) + '"' + (x.id === (S.d.att || 'main') ? ' selected' : '') + '>' + esc(x.nome) + ' · ' + esc((x.classi || []).join(', ')) + '</option>';
+  }).join('') + '</select></label>';
+  if (!RO() && ADM()) h += '<button class="snuovaatt" onclick="apriWizard(\'attivita\')">+ Nuova attività</button>';
   if (cl.length > 1) h += '<div class="seg" role="group" aria-label="Filtra per classe">' + ['tutte'].concat(cl).map(function (c) {
     return '<button class="' + (f === c ? 'on' : '') + '" aria-pressed="' + (f === c) + '" data-classe="' + esc(c) + '" onclick="filtroClasse(\'' + esc(c) + '\')">' + (c === 'tutte' ? 'Tutte' : esc(c)) + '</button>';
   }).join('') + '</div>';
@@ -210,7 +216,7 @@ var PAGINA = {
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
   },
-  cartelloni: function () { return bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
+  cartelloni: function () { return (ADM() && !RO() && S.d.areeMie ? bloccoAreeMie() : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
     if (ADM() && !RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Presentazione per gli studenti</h2><div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
