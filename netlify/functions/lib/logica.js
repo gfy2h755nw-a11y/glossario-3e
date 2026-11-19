@@ -535,6 +535,13 @@ async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta,
     imp0.classi.forEach((c) => { const v = (quiz.scadenze || {})[c]; qz.scadenze[c] = v ? isoValida(v) : null; });
     Object.keys(quiz.scadenze || {}).forEach((c) => { if (imp0.classi.indexOf(c) < 0) errore('Classe sconosciuta: ' + c + '.'); });
     mod.quiz = qz;
+    // secondi per rispondere: regolabili per ogni attività (regole.quiz.secondi), 10-300
+    if (quiz.secondi !== undefined && quiz.secondi !== null && quiz.secondi !== '') {
+      const s = Number(quiz.secondi); if (!(Number.isInteger(s) && s >= 10 && s <= 300)) errore('I secondi per rispondere nel quiz vanno da 10 a 300.');
+      const reg = JSON.parse(JSON.stringify(stato.config.regole || {}));
+      reg.quiz = Object.assign({}, reg.quiz || {}, { secondi: s });
+      mod.regole = reg;
+    }
   }
   const dopo = impostazioni(Object.assign({}, stato.config, mod));
   if (dopo.partenza && Date.parse(dopo.partenza) >= Date.parse(dopo.scadenzaIt)) errore('La partenza deve venire prima della scadenza.');

@@ -67,12 +67,18 @@ function controllaAccesso(q, cfg) {
 function riepilogoQuiz(q, cfg) {
   const s = (q && q.sessioni) || [], c = cfg || { soglia: QUIZ.soglia, scadenza: null, aperto: false, scaduto: false };
   const ind = Object.keys((q && q.ok) || {}).length, sup = (q && q.superata) || null;
-  return { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null,
+  const r = { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, dispositivi: ((q && q.disp) || []).length, subentri: (q && q.subentri) || 0, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null,
     // stato rispetto all'ammissione all'orale
     stato: sup ? 'superato' : !c.aperto ? 'chiuso' : c.scaduto ? 'scaduto' : s.length ? 'in corso' : 'non iniziato',
     prima: s.length ? s[0].i : null, ultima: s.length ? (s[s.length - 1].f || s[s.length - 1].i) : null,
     risposte: s.reduce((x, y) => x + (y.r || 0), 0), corrette: s.reduce((x, y) => x + (y.c || 0), 0), errori: s.reduce((x, y) => x + (y.e || 0), 0), persi: s.reduce((x, y) => x + (y.p || 0), 0),
     massimo: Math.max(ind, (q && q.max) || 0), ms: s.reduce((x, y) => x + (y.ms || 0), 0) };
+  // tempo fino al termine del quiz: al superamento, oppure tutto il tempo speso se la scadenza è passata (o è ancora in corso)
+  r.msSup = sup ? (q.msSup != null ? q.msSup : s.filter((y) => y.i <= sup).reduce((x, y) => x + (y.ms || 0), 0)) : null;
+  r.msFine = sup ? r.msSup : r.ms;
+  r.concluso = r.stato === 'superato' || r.stato === 'scaduto';
+  r.giorniSup = sup && s.length ? Math.max(1, Math.round((Date.parse(sup.slice(0, 10)) - Date.parse(String(s[0].i).slice(0, 10))) / 86400000) + 1) : null;
+  return r;
 }
 function nuovaDomanda(cat, q, stessa, nOpz) {
   const tutti = tutte(cat), ok = q.ok || {}, prec = q.corrente ? chiave(q.corrente.a, q.corrente.k) : '';
@@ -92,6 +98,16 @@ function nuovaDomanda(cat, q, stessa, nOpz) {
   const o = [t.k], testi = { [voci[t.k][1]]: 1 };
   altri.forEach((k) => { if (o.length < (nOpz || QUIZ.opzioni) && !testi[voci[k][1]]) { testi[voci[k][1]] = 1; o.push(k); } });
   for (let x = o.length - 1; x > 0; x--) { const y = caso(x + 1); [o[x], o[y]] = [o[y], o[x]]; }
+  // posizione della risposta giusta: mai la stessa della domanda prima e, tra le altre, una di quelle uscite meno
+  // nelle ultime domande, così si distribuisce in modo uniforme tra 1, 2, 3 e 4 senza schemi prevedibili
+  const st = (q.pos || []).slice(-8), ultima = st.length ? st[st.length - 1] : -1;
+  const conta = o.map((x, i) => st.filter((v) => v === i).length);
+  const ammesse = o.map((x, i) => i).filter((i) => i !== ultima || o.length < 2);
+  const meno = Math.min.apply(null, ammesse.map((i) => conta[i]));
+  const scelte = ammesse.filter((i) => conta[i] <= meno + 1 && (conta[i] === meno || caso(2) === 0));
+  const pos = scelte.length ? scelte[caso(scelte.length)] : ammesse[caso(ammesse.length)];
+  const qui = o.indexOf(t.k); [o[qui], o[pos]] = [o[pos], o[qui]];
+  q.pos = st.concat([pos]);
   return { a: t.a, k: t.k, o, g: LETTERE[o.indexOf(t.k)], t: Date.now() };
 }
 function vistaDomanda(cat, cur, n, cfg) {
@@ -100,21 +116,33 @@ function vistaDomanda(cat, cur, n, cfg) {
   cur.o.forEach((k, i) => { d[LETTERE[i]] = cat[cur.a][k][1]; });
   return d;
 }
-async function quizInizio(db, { codice }) {
+/* Una sola sessione per codice: ogni avvio crea un gettone; le risposte con un gettone vecchio (quiz aperto nel frattempo
+   su un altro dispositivo) vengono rifiutate. Si registrano i dispositivi usati e le sessioni prese da un altro dispositivo
+   mentre la precedente era ancora attiva (segnale per il docente). */
+const SUBENTRO_MS = 10 * 60000;
+async function quizInizio(db, { codice, disp }) {
   const { a, cat, cfg } = await contestoQuiz(db, codice);
   controllaAccesso(a.quiz, cfg);
   const v = a.quiz || {};
-  const q = { ok: v.ok || {}, seq: v.seq || 0, max: v.max || 0, sessioni: (v.sessioni || []).slice(-(QUIZ.maxSessioni - 1)), superata: v.superata || null, corrente: v.corrente || null };
+  const q = { ok: v.ok || {}, seq: v.seq || 0, max: v.max || 0, sessioni: (v.sessioni || []).slice(-(QUIZ.maxSessioni - 1)), superata: v.superata || null, corrente: v.corrente || null,
+    disp: (v.disp || []).slice(0, 20), subentri: v.subentri || 0, pos: (v.pos || []).slice(-8) };
+  if (v.msSup != null) q.msSup = v.msSup;
   const ora = new Date().toISOString();
+  const d = String(disp || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 40) || 'sconosciuto';
+  if (q.disp.indexOf(d) < 0 && q.disp.length < 20) q.disp.push(d);
+  const prec = v.sess, ultima = q.sessioni.length ? Date.parse(q.sessioni[q.sessioni.length - 1].f || q.sessioni[q.sessioni.length - 1].i) : 0;
+  if (prec && prec.disp && prec.disp !== d && Date.now() - ultima < SUBENTRO_MS) q.subentri++;
+  q.sess = { tok: require('crypto').randomBytes(12).toString('hex'), disp: d, i: ora };
   q.sessioni.push({ i: ora, f: ora, ms: 0, r: 0, c: 0, e: 0, s: 0, n: 0, p: 0 });
   q.corrente = nuovaDomanda(cat, q, true, cfg.opzioni);
   await db.sostituisciQuiz(a.id, q);
-  return { nome: L.nomePubblico(a.nome), stato: riepilogoQuiz(q, cfg), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
+  return { tok: q.sess.tok, nome: L.nomePubblico(a.nome), stato: riepilogoQuiz(q, cfg), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
 }
-async function quizRisposta(db, { codice, scelta, pausa }) {
+async function quizRisposta(db, { codice, scelta, pausa, tok }) {
   const { a, cat, cfg } = await contestoQuiz(db, codice);
   const q = a.quiz;
   controllaAccesso(q, cfg);
+  if (q && q.sess && q.sess.tok && tok !== q.sess.tok) L.errore('Sessione chiusa: il quiz è stato aperto con il tuo codice su un altro telefono o computer. Se sei tu, premi «Inizia» per continuare qui.');
   if (!q || !q.corrente || !q.sessioni || !q.sessioni.length || !cat[q.corrente.a] || !cat[q.corrente.a][q.corrente.k]) L.errore('Sessione scaduta: ricomincia il quiz.');
   // il tempo parte quando la domanda compare: si toglie la pausa passata a leggere l'esito della precedente (al massimo 15 secondi)
   const cur = q.corrente, ora = Date.now(), tempo = Math.max(0, ora - cur.t - Math.min(Math.max(Number(pausa) || 0, 0), 15000));
@@ -138,7 +166,11 @@ async function quizRisposta(db, { codice, scelta, pausa }) {
   }
   const ind = Object.keys(q.ok).length;
   q.max = Math.max(q.max || 0, ind);
-  if (!q.superata && ind >= cfg.soglia) q.superata = new Date(ora).toISOString();
+  if (!q.superata && ind >= cfg.soglia) {
+    q.superata = new Date(ora).toISOString();
+    // tempo complessivo passato sul quiz fino al superamento (le risposte date dopo, di ripasso, non contano)
+    q.msSup = q.sessioni.reduce((x, y) => x + (y.ms || 0), 0);
+  }
   const esito = { corretta, scaduta, persi, termine: cat[cur.a][cur.k][0] };
   if (corretta) esito.giusta = cur.g; // la risposta giusta non si svela mai dopo un errore
   q.corrente = nuovaDomanda(cat, q, false, cfg.opzioni);

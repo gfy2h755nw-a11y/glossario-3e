@@ -10,6 +10,9 @@
 <meta name="theme-color" content="#15212B">
 <style>@font-face{font-family:'Archivo';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/archivo-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/archivo-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:800;font-display:swap;src:url(/fonts/archivo-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:900;font-display:swap;src:url(/fonts/archivo-latin-900-normal.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(/fonts/cormorant-garamond-latin-500-italic.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/cormorant-garamond-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-italic.woff2) format('woff2')}</style>
 <style>
+/* testo del quiz non selezionabile né copiabile (resta scrivibile il campo del codice) */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 /* pagina del quiz: separata dalla pagina pubblica del glossario; un'unica colonna, comoda sul telefono */
 :root{--ink:#15212B;--muto:#5B6976;--linea:#D3DCE3;--fondo:#F2F0EA;--carta:#fff}
 *{box-sizing:border-box}
@@ -697,12 +700,20 @@ var Quiz = (function () {
       chiama({ azione: 'quizregole', codice: c }).then(function (r) { if (r && r.secondi) { R = r; var u = document.getElementById('qzReg'); if (u) u.innerHTML = regole(R); } }).catch(function () { /* restano quelle di sempre */ }); };
     i.oninput = chiedi; chiedi();
   }
+  // una sola sessione per codice: gettone della sessione aperta qui e codice anonimo di questo dispositivo
+  var tok = null;
+  function dispositivo() {
+    var k = 'glossario_disp', v = '';
+    try { v = localStorage.getItem(k) || ''; if (!v) { v = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem(k, v); } } catch (e) { v = 'nd'; }
+    return v;
+  }
   function via() {
     cod = String(document.getElementById('qzCod').value || '').trim().toUpperCase();
     if (!cod) return accesso('Inserisci il tuo codice.');
     document.getElementById('qzVia').disabled = true;
-    chiama({ azione: 'quizinizio', codice: cod }).then(function (d) {
+    chiama({ azione: 'quizinizio', codice: cod, disp: dispositivo() }).then(function (d) {
       try { localStorage.setItem(KEY, cod); } catch (e) { /* niente memoria */ }
+      tok = d.tok;
       st = d.stato; ses = d.sessione; tot = d.totale; nome = d.nome; finePrec = 0; domanda(d.domanda);
     }).catch(function (e) { accesso(e.message); });
   }
@@ -727,7 +738,7 @@ var Quiz = (function () {
   function rispondi(l) {
     if (attesa || !dom) return; attesa = true; stop();
     [].forEach.call(document.querySelectorAll('.qz-op'), function (b) { b.disabled = true; });
-    chiama({ azione: 'quizrisposta', codice: cod, scelta: l, pausa: Quiz._pausa || 0 }).then(function (d) {
+    chiama({ azione: 'quizrisposta', codice: cod, scelta: l, pausa: Quiz._pausa || 0, tok: tok }).then(function (d) {
       Quiz._pausa = 0; st = d.stato; ses = d.sessione;
       var e = d.esito;
       [].forEach.call(document.querySelectorAll('.qz-op'), function (b) { var x = b.getAttribute('data-l'); if (e.corretta && x === e.giusta) b.className = 'qz-op ok'; else if (!e.corretta && x === l) b.className = 'qz-op no'; });
@@ -766,6 +777,14 @@ var Quiz = (function () {
   return { riprendi: riprendi, avvio: avvio, apri: apri, chiudi: chiudi, via: via, rispondi: rispondi, _pausa: 0 };
 })();
 Quiz.avvio();
+
+/* niente copia, taglia, menu del tasto destro o pressione lunga, selezione o trascinamento del testo, fuori dal campo del codice */
+(function () {
+  var campo = function (e) { var t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); };
+  ['copy', 'cut', 'contextmenu', 'selectstart', 'dragstart'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { if (!campo(e)) e.preventDefault(); });
+  });
+})();
 </script>
 </body>
 </html>

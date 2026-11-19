@@ -3,6 +3,7 @@
  */
 const PDFDocument = require('pdfkit');
 const OR = require('./orale');
+const REG = require('./regole');
 const DATI = require('./dati');
 const logica = require('./logica');
 const ATT = require('./attivita');
@@ -100,10 +101,106 @@ function tabella(doc, x, y, colonne, righe, opz) {
   return y;
 }
 
+/* logo della scuola: lo stesso disegno vettoriale dell'app (Poster.logo), viewBox 100×100 */
+const LOGO_TESTI = [
+  ['BARSANTI', 15, 15.5, 66, 17, 0], ['SALVETTI', 15, 98, 65, 17, 0],
+  ['FIORILLO', 83.5, 19, 64, 17, 90], ['EINAUDI', 16.5, 84, 63, 17, -90], ['B', 19, 81, 61, 88, 0]
+];
+function logoScuola(doc, x, y, lato) {
+  doc.save();
+  doc.translate(x, y).scale(lato / 100);
+  doc.rect(0, 0, 100, 100).fill('#EA3628');
+  doc.font('Helvetica-Bold').fillColor('#fff');
+  LOGO_TESTI.forEach(([t, tx, ty, L, fs, rot]) => {
+    doc.save();
+    doc.translate(tx, ty);
+    if (rot) doc.rotate(rot, { origin: [0, 0] });
+    doc.fontSize(fs);
+    doc.scale(L / doc.widthOfString(t), 1, { origin: [0, 0] });
+    doc.text(t, 0, 0, { baseline: 'alphabetic', lineBreak: false });
+    doc.restore();
+  });
+  doc.restore();
+}
+/* riquadri con le statistiche di classe del quiz (pagina «Quiz, interrogazione orale e voto finale») */
+function quizClasse(doc, y, el, RR, cqz, tq) {
+  const W = doc.page.width - 72, H = 220;
+  if (y > doc.page.height - 36 - H - 20) { doc.addPage({ size: 'A4', layout: 'landscape', margin: 36 }); y = 40; }
+  doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Quiz: dati della classe', 36, y); y = doc.y + 5;
+  const n = el.length || 1, pc = (k) => Math.round(k / n * 100) + '%';
+  const conta = (st) => el.filter((e) => e.q.stato === st).length;
+  const iniz = el.filter((e) => e.q.sessioni), ni = iniz.length;
+  const giorniDi = (e) => { const g = {}; ((e.x.a.quiz && e.x.a.quiz.sessioni) || []).forEach((s) => { const p = parti(Date.parse(s.i)); g[p.year + p.month + p.day] = 1; }); return Object.keys(g).length; };
+  const supM = el.filter((e) => e.q.msSup != null), mSup = supM.length ? supM.reduce((s, e) => s + e.q.msSup, 0) / supM.length : null;
+  const msTot = iniz.reduce((s, e) => s + e.q.ms, 0), sesTot = iniz.reduce((s, e) => s + e.q.sessioni, 0);
+  const risp = iniz.reduce((s, e) => s + e.q.risposte, 0), corr = iniz.reduce((s, e) => s + e.q.corrette, 0);
+  const media = (a) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : null);
+  const f1 = (v) => (v == null ? '-' : String(Math.round(v * 10) / 10).replace('.', ','));
+  // coerenza quiz-orale
+  const amm = el.filter((e) => e.q.superata), int = amm.filter((e) => e.x.v.orale && e.x.v.orale.voto != null);
+  const mOr = media(int.map((e) => e.x.v.orale.voto));
+  const medS = media(int.map((e) => e.q.sessioni));
+  const pochi = int.filter((e) => e.q.sessioni <= medS), tanti = int.filter((e) => e.q.sessioni > medS);
+  const bassi = int.filter((e) => e.x.v.orale.voto < 6);
+  // regolarità
+  const piuDisp = el.filter((e) => e.q.dispositivi > 1).length, conSub = el.filter((e) => e.q.subentri > 0), sub = conSub.reduce((s, e) => s + e.q.subentri, 0);
+  const box = [
+    ['Esito', [['Ammessi all\'orale', conta('superato') + '  (' + pc(conta('superato')) + ')', VERDE], ['Non ammessi (scaduto)', conta('scaduto') + '  (' + pc(conta('scaduto')) + ')', ARANCIO], ['In corso', conta('in corso') + '  (' + pc(conta('in corso')) + ')'], ['Non ancora iniziato', String(conta('non iniziato') + conta('chiuso'))], ['Soglia', cqz.soglia + ' termini su ' + cqz.totale]]],
+    ['Impegno', [['Tempo totale nel quiz', ni ? tq(msTot) : '-'], ['Tempo medio per alunno', ni ? tq(msTot / ni) : '-'], ['Tempo medio per superarlo', mSup != null ? tq(mSup) + (supM.length ? '  (' + f1(media(supM.map((e) => e.q.giorniSup))) + ' gg)' : '') : '-'], ['Sessioni medie per alunno', f1(ni ? sesTot / ni : null)], ['Giorni di attività (media)', f1(media(iniz.map(giorniDi)))], ['Risposte corrette', risp ? Math.round(corr / risp * 100) + '% di ' + risp : '-']]],
+    ['Coerenza quiz-orale', [['Ammessi già interrogati', int.length + ' su ' + amm.length], ['Voto orale medio', f1(mOr)], ['Con meno sessioni della media', pochi.length ? 'orale ' + f1(media(pochi.map((e) => e.x.v.orale.voto))) : '-'], ['Con più sessioni della media', tanti.length ? 'orale ' + f1(media(tanti.map((e) => e.x.v.orale.voto))) : '-'], ['Quiz superato, orale sotto 6', String(bassi.length), bassi.length ? ARANCIO : null]]],
+    ['Regolarità', [['Alunni con più dispositivi', String(piuDisp)], ['Cambi di dispositivo a quiz aperto', String(sub), sub ? ARANCIO : null], ['Alunni coinvolti', String(conSub.length)], ['Sessione unica per codice', 'attiva'], ['Secondi per risposta', String(RR.quiz.secondi)]]]
+  ];
+  const gw = 8, bw = (W * 0.62 - gw) / 2, bh = 98;
+  box.forEach(([tit, voci], i) => {
+    const bx = 36 + (i % 2) * (bw + gw), by = y + Math.floor(i / 2) * (bh + gw);
+    doc.roundedRect(bx, by, bw, bh, 4).lineWidth(0.6).strokeColor('#DDE4EA').stroke();
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(SCURO).text(tit.toUpperCase(), bx + 8, by + 6, { characterSpacing: 0.4 });
+    voci.forEach(([et, va, col], k) => {
+      const ry = by + 21 + k * 12.5;
+      doc.font('Helvetica').fontSize(8).fillColor(GRIGIO).text(et, bx + 8, ry, { width: bw * 0.58, lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(8).fillColor(col || SCURO).text(va, bx + 8 + bw * 0.58, ry, { width: bw * 0.42 - 16, align: 'right', lineBreak: false });
+    });
+  });
+  // andamento: ammessi cumulati giorno per giorno
+  const cx = 36 + W * 0.62 + gw + 4, cw = W - (cx - 36), cy = y, ch = 2 * bh + gw;
+  doc.roundedRect(cx, cy, cw, ch, 4).lineWidth(0.6).strokeColor('#DDE4EA').stroke();
+  doc.font('Helvetica-Bold').fontSize(8.5).fillColor(SCURO).text('ANDAMENTO NEL TEMPO', cx + 8, cy + 6, { characterSpacing: 0.4 });
+  doc.font('Helvetica').fontSize(7.5).fillColor(GRIGIO).text('Ammessi all\'orale, totale giorno per giorno', cx + 8, cy + 18);
+  const tutte = [];
+  el.forEach((e) => ((e.x.a.quiz && e.x.a.quiz.sessioni) || []).forEach((s) => tutte.push(Date.parse(s.i))));
+  if (!tutte.length) { doc.font('Helvetica').fontSize(8).fillColor(GRIGIO).text('Nessun accesso al quiz.', cx + 8, cy + 40); return y + ch; }
+  const G = 86400000, k0 = (ms) => { const p = parti(ms); return Date.UTC(+p.year, +p.month - 1, +p.day); };
+  let d0 = k0(Math.min.apply(null, tutte));
+  const fine = Math.max(k0(Math.max.apply(null, tutte)), ...el.filter((e) => e.q.superata).map((e) => k0(Date.parse(e.q.superata))), cqz.scadenza ? Math.min(k0(Date.parse(cqz.scadenza)), k0(Date.now())) : 0);
+  let nd = Math.round((fine - d0) / G) + 1;
+  if (nd > 30) { d0 = fine - 29 * G; nd = 30; }
+  const giorni = [];
+  for (let i = 0; i < nd; i++) { const g = d0 + i * G; giorni.push({ g, v: el.filter((e) => e.q.superata && k0(Date.parse(e.q.superata)) <= g).length }); }
+  const px = cx + 22, pw = cw - 32, py = cy + 34, ph = ch - 58, mx = Math.max(1, el.length);
+  doc.moveTo(px, py + ph).lineTo(px + pw, py + ph).lineWidth(0.5).strokeColor('#B9C4CE').stroke();
+  [0, 0.5, 1].forEach((f) => { const v = Math.round(mx * f), yy = py + ph - ph * v / mx; doc.font('Helvetica').fontSize(6.5).fillColor(GRIGIO).text(String(v), cx + 4, yy - 3, { width: 15, align: 'right' }); if (f) doc.moveTo(px, yy).lineTo(px + pw, yy).lineWidth(0.3).strokeColor('#EEF2F5').stroke(); });
+  const sl = pw / nd, bwid = Math.min(18, Math.max(2, sl * 0.7));
+  giorni.forEach((d, i) => {
+    const h = ph * d.v / mx;
+    if (h > 0) doc.rect(px + i * sl + (sl - bwid) / 2, py + ph - h, bwid, h).fill(VERDE);
+    if (i === 0 || i === nd - 1 || (nd > 6 && i === Math.floor(nd / 2))) {
+      const dt = new Date(d.g); doc.font('Helvetica').fontSize(6.5).fillColor(GRIGIO).text(dt.getUTCDate() + '/' + (dt.getUTCMonth() + 1), px + i * sl - 10, py + ph + 3, { width: sl + 20, align: 'center', lineBreak: false });
+    }
+  });
+  const ul = giorni[giorni.length - 1].v;
+  doc.font('Helvetica-Bold').fontSize(7.5).fillColor(SCURO).text(ul + ' ammessi su ' + el.length, cx + 8, cy + ch - 12, { width: cw - 16, align: 'right' });
+  return y + ch;
+}
+/* tempo complessivo sul quiz fino al termine: superamento, scadenza, oppure finora se ancora in corso */
+function fineQuiz(q, tq) {
+  if (!q.sessioni) return '-';
+  if (q.superata) return { t: tq(q.msFine), c: VERDE, b: true };
+  if (q.stato === 'scaduto') return { t: tq(q.msFine), c: ARANCIO };
+  return { t: tq(q.msFine) + ' (in corso)', c: GRIGIO };
+}
 function testata(doc, titolo, sotto) {
   const w = doc.page.width - 72;
-  doc.rect(36, 30, 26, 26).fill('#EA3628');
-  doc.font('Helvetica-Bold').fontSize(17).fillColor('#fff').text('B', 36, 35, { width: 26, align: 'center' });
+  logoScuola(doc, 36, 30, 26);
   doc.font('Helvetica-Bold').fontSize(14).fillColor(SCURO).text(titolo, 70, 30, { width: w - 34 });
   doc.font('Helvetica').fontSize(8.5).fillColor(GRIGIO).text(sotto, 70, doc.y + 1, { width: w - 34 });
   const y = Math.max(doc.y, 56) + 6;
@@ -246,10 +343,32 @@ function creaReport(stato, attivita, now) {
           q.superata ? 'quiz superato il ' + quando(q.superata) : '-'],
         [{ t: 'Voto scritto', b: true }, x.v.escluso ? { t: 'escluso', c: ARANCIO, b: true } : { t: fv(x.v.voto), b: true }, x.v.escluso ? (x.v.motivo || 'escluso dal compito') : x.it.errori + ' risposte errate · ' + x.it.approvate + ' / ' + x.miei.length + ' approvate' + (x.v.manuale != null ? ' · voto del docente' : ''),
           risp.length ? 'prima risposta ' + risp[0] + ' · ultima ' + risp[risp.length - 1] : 'nessuna risposta'],
-        [{ t: 'Voto orale', b: true }, { t: o ? fv(o.voto) : '-', b: true }, o ? fv(o.punti) + ' punti su 10' + (o.escluso ? ' · massimo 5,5' : '') + (o.docente ? ' · ' + o.docente : '') : 'non ancora interrogato', o ? 'interrogazione del ' + quando(o.data) : '-'],
-        [{ t: 'Voto finale', b: true }, { t: fv(x.v.finale), b: true }, x.v.finale == null ? (q.stato === 'scaduto' ? 'senza voto: quiz non completato' : 'manca l\'orale') : x.v.escluso ? 'solo orale (escluso dallo scritto)' : 'media tra scritto ' + fv(x.v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv((x.v.voto + o.voto) / 2), x.v.finale != null ? 'definito il ' + quando(o.data) : '-']
+        [{ t: 'Voto orale', b: true }, { t: o ? fv(o.voto) : '-', b: true }, o ? fv(o.punti) + ' punti su ' + REG.di(stato.config).orale.domande + (o.escluso ? ' · massimo ' + fv(REG.di(stato.config).orale.maxEsclusi) : '') + (o.docente ? ' · ' + o.docente : '') : 'non ancora interrogato', o ? 'interrogazione del ' + quando(o.data) : '-'],
+        [{ t: 'Voto finale', b: true }, { t: fv(x.v.finale), b: true }, x.v.finale == null ? (q.stato === 'scaduto' ? 'senza voto: quiz non completato' : 'manca l\'orale') : x.v.escluso ? 'solo orale (escluso dallo scritto)' : (function () { const ps = REG.di(stato.config).finale.pesoScritto; return (ps === 50 ? 'media tra scritto ' : 'media pesata (' + ps + ' % scritto) tra scritto ') + fv(x.v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv(Math.round((x.v.voto * ps + o.voto * (100 - ps)) / 100 * 1000) / 1000); })(), x.v.finale != null ? 'definito il ' + quando(o.data) : '-']
       ], { fs: 8 }) + 12;
       if (yy > doc.page.height - 140) { doc.addPage({ layout: 'portrait', margin: 36 }); yy = 40; }
+      // quiz nel dettaglio: indicatori e sessioni (le più recenti)
+      const ses = (x.a.quiz && x.a.quiz.sessioni) || [];
+      if (ses.length) {
+        doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Quiz: andamento e sessioni', 36, yy); yy = doc.y + 4;
+        const medio = q.risposte ? Math.round(q.ms / q.risposte / 100) / 10 : 0, scad = ses.reduce((a, b) => a + (b.s || 0), 0);
+        const ind = [['Risposte corrette', q.risposte ? Math.round(q.corrette / q.risposte * 100) + ' %' : '-'], ['Tempo medio per risposta', medio ? String(medio).replace('.', ',') + ' s su ' + REG.di(stato.config).quiz.secondi : '-'],
+          ['Tempi scaduti', String(scad)], ['Massimo raggiunto', q.massimo + ' / ' + q.soglia], ['Dispositivi usati', String(q.dispositivi || (ses.length ? 1 : 0))], ['Cambi di dispositivo', String(q.subentri || 0)],
+          ['Tempo fino al termine', tqm(q.msFine) + (q.superata ? '' : q.stato === 'scaduto' ? ' (scaduto)' : ' (in corso)')], ['Giorni per superarlo', q.superata ? q.giorniSup + (q.giorniSup === 1 ? ' giorno' : ' giorni') : '-']];
+        const w6 = Wp / 4;
+        ind.forEach((b, i) => {
+          const cx = 36 + (i % 4) * w6, cy = yy + Math.floor(i / 4) * 28;
+          doc.font('Helvetica').fontSize(7.5).fillColor(GRIGIO).text(b[0].toUpperCase(), cx, cy, { width: w6 - 8 });
+          doc.font('Helvetica-Bold').fontSize(10).fillColor(i === 5 && q.subentri ? ARANCIO : i === 6 && q.superata ? VERDE : SCURO).text(b[1], cx, cy + 10, { width: w6 - 8 });
+        });
+        yy += 60;
+        const ultime = ses.slice(-12), cs = [{ t: 'N.', w: 26, a: 'center' }, { t: 'Inizio', w: 100 }, { t: 'Durata', w: 56, a: 'center' }, { t: 'Risposte', w: 54, a: 'center' }, { t: 'Corrette', w: 54, a: 'center' }, { t: 'Errori', w: 46, a: 'center' }, { t: 'Tempi scaduti', w: 56, a: 'center' }, { t: 'Termini nuovi', w: 56, a: 'center' }, { t: 'Termini persi', w: 56, a: 'center' }];
+        const sc = Wp / cs.reduce((a, c) => a + c.w, 0); cs.forEach((c) => { c.w *= sc; });
+        yy = tabella(doc, 36, yy, cs, ultime.map((z, i) => [String(ses.length - ultime.length + i + 1), quando(z.i), tqm(z.ms), String(z.r || 0), String(z.c || 0), String(z.e || 0), String(z.s || 0), String(z.n || 0), String(z.p || 0)]), { fs: 7.5 });
+        if (ses.length > ultime.length) { doc.font('Helvetica').fontSize(7.5).fillColor(GRIGIO).text('Sono riportate le ultime ' + ultime.length + ' sessioni su ' + ses.length + '.', 36, yy + 2); yy = doc.y; }
+        yy += 12;
+        if (yy > doc.page.height - 140) { doc.addPage({ layout: 'portrait', margin: 36 }); yy = 40; }
+      }
     }
 
     // termini
@@ -289,19 +408,22 @@ function creaReport(stato, attivita, now) {
   const qzDi = (x) => OR.riepilogoQuiz(x.a.quiz, OR.cfgQuiz(stato.config, logica.classeDi(x.a), null, x.a)), cqz = OR.cfgQuiz(stato.config, (imp.classi || [])[0]);
   const STQ = { superato: 'ammesso', scaduto: 'non ammesso', 'in corso': 'in corso', 'non iniziato': 'non iniziato', chiuso: 'quiz non aperto' };
   let yo = testata(doc, 'Quiz, interrogazione orale e voto finale', sotto);
-  doc.font('Helvetica').fontSize(9).fillColor(SCURO).text('Quiz (seconda parte della prova): un termine, ' + OR.QUIZ.opzioni + ' definizioni, ' + OR.QUIZ.secondi + ' secondi; a ogni errore la risposta giusta non viene mostrata e si torna indietro di ' + OR.QUIZ.passo + ' termini; superato con ' + cqz.soglia + ' termini indovinati su ' + cqz.totale + ', entro la scadenza fissata dal docente. Chi lo supera è ammesso all\'interrogazione; chi non lo completa non viene interrogato e resta senza voto (le sue definizioni restano sui cartelloni). ' +
-    'Interrogazione orale: ' + OR.ORALE.domande + ' termini pescati tra tutti quelli del glossario (mai quelli dell\'alunno); corretta 1 punto, parziale 0,5, sbagliata 0; voto orale = 3 + 0,5 per punto (massimo 8), per gli esclusi 3 + 0,25 per punto (massimo 5,5). ' +
-    'Voto finale = media tra scritto e orale (per gli esclusi il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore.', 36, yo, { width: doc.page.width - 72 });
+  const RR = REG.di(stato.config), fz = (n) => String(n).replace('.', ',');
+  doc.font('Helvetica').fontSize(9).fillColor(SCURO).text('Quiz (seconda parte della prova): un termine, ' + RR.quiz.opzioni + ' definizioni, ' + RR.quiz.secondi + ' secondi; a ogni errore la risposta giusta non viene mostrata e si torna indietro di ' + RR.quiz.passo + ' termini; con lo stesso codice il quiz è aperto su un solo dispositivo alla volta; superato con ' + cqz.soglia + ' termini indovinati su ' + cqz.totale + ', entro la scadenza fissata dal docente. Chi lo supera è ammesso all\'interrogazione; chi non lo completa non viene interrogato e resta senza voto (le sue definizioni restano sui cartelloni). ' +
+    'Interrogazione orale: ' + RR.orale.domande + ' termini pescati tra tutti quelli del glossario (mai quelli dell\'alunno); corretta 1 punto, parziale 0,5, sbagliata 0; voto orale = ' + fz(RR.orale.base) + ' + ' + fz(RR.orale.passo) + ' per punto (massimo ' + fz(RR.orale.max) + '), per gli esclusi ' + fz(RR.orale.base) + ' + ' + fz(RR.orale.passoEsclusi) + ' per punto (massimo ' + fz(RR.orale.maxEsclusi) + '). ' +
+    'Voto finale = ' + (RR.finale.pesoScritto === 50 ? 'media tra scritto e orale' : 'media pesata: scritto ' + RR.finale.pesoScritto + ' %, orale ' + (100 - RR.finale.pesoScritto) + ' %') + ' (per gli esclusi il solo orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore.', 36, yo, { width: doc.page.width - 72 });
   yo = doc.y + 10;
   const tq = (ms) => { const m = Math.round((ms || 0) / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
-  const colO = [{ t: 'Alunno', w: 130 }, { t: 'Gr.', w: 26, a: 'center' }, { t: 'Scritto', w: 44, a: 'center' }, { t: 'Sessioni quiz', w: 46, a: 'center' }, { t: 'Tempo nel quiz', w: 56, a: 'center' }, { t: 'Risposte quiz', w: 50, a: 'center' },
+  const colO = [{ t: 'Alunno', w: 130 }, { t: 'Gr.', w: 26, a: 'center' }, { t: 'Scritto', w: 44, a: 'center' }, { t: 'Sessioni quiz', w: 46, a: 'center' }, { t: 'Tempo nel quiz', w: 50, a: 'center' }, { t: 'Tempo fino al termine', w: 58, a: 'center' }, { t: 'Risposte quiz', w: 46, a: 'center' },
     { t: 'Corrette', w: 50, a: 'center' }, { t: 'Errori', w: 36, a: 'center' }, { t: 'Termini persi', w: 40, a: 'center' }, { t: 'Termini indovinati', w: 56, a: 'center' }, { t: 'Ammissione all\'orale', w: 76, a: 'center' }, { t: 'Orale: data', w: 62, a: 'center' }, { t: 'Punti orale', w: 44, a: 'center' }, { t: 'Voto orale', w: 44, a: 'center' }, { t: 'Voto finale', w: 46, a: 'center' }];
   const WO = doc.page.width - 72, scO = WO / colO.reduce((x, c) => x + c.w, 0); colO.forEach((c) => { c.w *= scO; });
   yo = tabella(doc, 36, yo, colO, righe.map((x) => {
     const q = qzDi(x), o = x.v.orale;
-    return [{ t: x.a.nome, b: true }, logica.etichettaAl(x.a), x.v.escluso ? { t: 'escluso', c: ARANCIO } : fv(x.v.voto), q.sessioni, q.sessioni ? tq(q.ms) : '-', q.risposte, q.risposte ? q.corrette + ' (' + Math.round(q.corrette / q.risposte * 100) + '%)' : '-',
-      q.errori, q.persi, q.indovinati + ' / ' + q.soglia, q.superata ? { t: 'ammesso ' + soloData(q.superata), c: VERDE, b: true } : { t: STQ[q.stato], c: q.stato === 'scaduto' ? ARANCIO : SCURO, b: q.stato === 'scaduto' }, o ? soloData(o.data) : '-', o ? fv(o.punti) + ' / 10' : '-', { t: o ? fv(o.voto) : '-', b: true }, { t: fv(x.v.finale), b: true }];
+    return [{ t: x.a.nome, b: true }, logica.etichettaAl(x.a), x.v.escluso ? { t: 'escluso', c: ARANCIO } : fv(x.v.voto), q.sessioni, q.sessioni ? tq(q.ms) : '-', fineQuiz(q, tq), q.risposte, q.risposte ? q.corrette + ' (' + Math.round(q.corrette / q.risposte * 100) + '%)' : '-',
+      q.errori, q.persi, q.indovinati + ' / ' + q.soglia, q.superata ? { t: 'ammesso ' + soloData(q.superata), c: VERDE, b: true } : { t: STQ[q.stato], c: q.stato === 'scaduto' ? ARANCIO : SCURO, b: q.stato === 'scaduto' }, o ? soloData(o.data) : '-', o ? fv(o.punti) + ' / ' + REG.di(stato.config).orale.domande : '-', { t: o ? fv(o.voto) : '-', b: true }, { t: fv(x.v.finale), b: true }];
   }), { fs: 8, layout: 'landscape' });
+  // dati del quiz sull'intera classe: esito, impegno, andamento nel tempo, coerenza con l'orale, regolarità
+  yo = quizClasse(doc, yo + 16, righe.map((x) => ({ x, q: qzDi(x) })), RR, cqz, tq);
   // dettaglio delle interrogazioni: i termini chiesti e l'esito di ogni risposta
   const interr = righe.filter((x) => x.v.orale);
   if (interr.length) {
