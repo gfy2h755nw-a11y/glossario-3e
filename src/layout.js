@@ -288,7 +288,7 @@ var PAGINA = {
   sollecito: function () { return bloccoSollecito(); },
   situazione: function () { return panoramica() + bloccoSituazione(); },
   gestione: function () { return bloccoGestione(); },
-  voti: function () { return bloccoAdmin('voti'); },
+  voti: function () { return bloccoAdmin('voti') + bloccoArgo(); },
   quiz: function () { return paginaQuiz(); },
   orale: function () { return paginaOrale(); },
   codici: function () {

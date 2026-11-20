@@ -385,6 +385,12 @@ function creaReport(stato, attivita, now) {
           yy = doc.y + 8;
         }
       }
+      // giudizio: quello scritto dal docente o quello generato dai dati
+      {
+        const g = x.a.giudizio || require('./giudizi').auto(x.v, q);
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(SCURO).text('Giudizio: ', 36, yy, { continued: true }).font('Helvetica').text(g, { width: Wp });
+        yy = doc.y + 8;
+      }
       if (ses.length) {
         doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Quiz: andamento e sessioni', 36, yy); yy = doc.y + 4;
         const medio = q.risposte ? Math.round(q.ms / q.risposte / 100) / 10 : 0, scad = ses.reduce((a, b) => a + (b.s || 0), 0);

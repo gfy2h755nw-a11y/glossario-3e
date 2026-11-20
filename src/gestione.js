@@ -7,7 +7,7 @@ function finestra(titolo, testo, scelte, largo) {
   o.setAttribute('style', 'position:fixed;inset:0;background:rgba(21,33,43,.55);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px');
   o.innerHTML = '<div class="card stack" role="dialog" aria-modal="true" aria-labelledby="riammT" style="max-width:' + (largo ? 720 : 560) + 'px;width:100%;max-height:90vh;overflow:auto;background:#fff"><h2 id="riammT" style="margin:0;font-size:21px">' + esc(titolo) + '</h2>' + testo +
     '<div class="stack" style="gap:8px">' + scelte.map(function (c, i) { return '<button class="btn' + (c.warn ? ' warn' : '') + '" data-i="' + i + '" style="text-align:left;height:auto;padding:10px 14px;display:block">' + esc(c.t) + (c.s ? '<br><span style="font-weight:400;font-size:14px;opacity:.85">' + esc(c.s) + '</span>' : '') + '</button>'; }).join('') +
-    '<button class="btn sec" data-i="x">Annulla</button></div></div>';
+    '<button class="btn sec" data-i="x">' + (largo === 'chiudi' ? 'Chiudi' : 'Annulla') + '</button></div></div>';
   document.body.appendChild(o);
   var chiudi = function () { o.remove(); document.removeEventListener('keydown', tasto); };
   var tasto = function (e) { if (e.key === 'Escape') chiudi(); };
@@ -274,7 +274,7 @@ function archiviaEdizione(sovrascrivi, btn) {
   var ed = S.d.admin.impostazioni.edizione;
   finestra(sovrascrivi ? 'Aggiorna la copia in archivio' : 'Archivia l\'edizione',
     '<p style="margin:0">' + (sovrascrivi ? 'La copia archiviata di <b>' + esc(ed.nome) + '</b> verrà sostituita con i dati di adesso.' : 'Archivio <b>' + esc(ed.nome) + '</b> (a.s. ' + esc(ed.as) + '): risposte, voti, definizioni approvate, codici e registro degli accessi.') + '</p>' +
-    '<p style="margin:0">L\'edizione resta consultabile qui (in sola lettura) e nella pagina pubblica. Se Dropbox è collegato, ci va anche una copia (dati completi e Word) nella cartella <b>Archivio</b>. Gli alunni continuano a vedere l\'app chiusa finché non crei una nuova edizione.</p>',
+    '<p style="margin:0">L\'edizione resta consultabile qui (in sola lettura) e nella pagina pubblica. Se Dropbox è collegato, ci va anche una copia (dati completi, Word, report e tabella dei voti con i giudizi) nella cartella <b>Archivio</b>. Gli alunni continuano a vedere l\'app chiusa finché non crei una nuova edizione.</p>',
     [{ t: sovrascrivi ? 'Aggiorna la copia' : 'Archivia', f: function () {
       btn.disabled = true;
       api('archivia', { sovrascrivi: !!sovrascrivi }).then(function (x) { return ricarica('Edizione archiviata' + (x.dropbox === 'ok' ? ' (copia anche su Dropbox)' : x.dropbox === 'non collegato' ? '' : ' — Dropbox: ' + x.dropbox)); })
@@ -970,4 +970,94 @@ function rcRipristina(id, btn) {
     api('salvarevisione', { voci: [{ id: id }], ripristina: true }).then(function (r) { return rcDopo(r, 'Testo originale ripristinato'); })
       .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
   } }]);
+}
+
+/* ---------- scheda unica dello studente: tutto in un posto, con le azioni ---------- */
+function linkScheda(r) { return '<button class="lnk" data-scheda="' + r.id + '" onclick="schedaStudente(\'' + r.id + '\')" title="Apri la scheda dello studente">' + esc(r.nome) + '</button>'; }
+function schedaStudente(id) {
+  var r = (S.d.panoramica || []).filter(function (x) { return x.id === id; })[0]; if (!r) return;
+  var v = votiDi(id), q = quizDi(id), o = v.orale, cod = ((S.d.codiciAlunni || []).filter(function (a) { return a.id === id; })[0] || {}).codice;
+  var adm = !RO(), riga = function (k, val, nota) { return '<div class="sk-r"><span>' + k + '</span><b>' + val + '</b>' + (nota ? '<small>' + nota + '</small>' : '') + '</div>'; };
+  var chip = [];
+  if (q.bes) chip.push('<span class="chip s-bozza">BES</span>');
+  if (r.escluso) chip.push('<span class="chip s-correggere">Escluso dallo scritto</span>');
+  if (r.proroga) chip.push('<span class="chip s-inviata">Proroga scritto al ' + esc(oraIt(r.proroga)) + '</span>');
+  if (q.proroga) chip.push('<span class="chip s-inviata">Proroga quiz al ' + esc(oraIt(q.proroga)) + '</span>');
+  if (q.sogliaPersonale != null || q.passoPersonale != null) chip.push('<span class="chip s-bozza">Regole personali nel quiz</span>');
+  var h = '<div class="row" style="gap:6px">' + '<span class="chip s-vuota">' + esc(etich(r)) + '</span>' + chip.join('') + '</div>' +
+    '<div class="sk-g">' +
+      '<section><h4 class="sk-h f1">1 · Scritto</h4>' +
+        riga('Voto dello scritto', r.escluso ? 'escluso' : fv(v.voto), v.manuale != null ? 'voto inserito da te (calcolato ' + fv(v.calcolato) + ')' : '') +
+        riga('Risposte', r.inviate + ' inviate · ' + r.errate + ' errate', r.approvate + ' / ' + (r.termini * LINGUE().length) + ' approvate' + (r.daApprovare ? ' · ' + r.daApprovare + ' da rivedere' : '')) +
+        riga('Scadenza', esc(oraIt(r.scadenza)), r.ereditati ? 'ha ricevuto ' + r.ereditati + ' termini' : '') + '</section>' +
+      '<section><h4 class="sk-h f2">2 · Quiz</h4>' +
+        riga('Stato', chipQuiz(q), q.scadenza ? 'scadenza ' + esc(oraIt(q.scadenza)) : '') +
+        riga('Termini indovinati', q.indovinati + ' / ' + q.soglia, q.sessioni ? q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') + ' · ' + tempoMs(q.ms) : 'nessuna sessione') +
+        (q.superata ? riga('Fino al superamento', tempoMs(q.msFine), q.giorniSup + (q.giorniSup === 1 ? ' giorno' : ' giorni')) : '') +
+        (q.dispositivi > 1 || q.subentri ? riga('Segnali', (q.dispositivi || 0) + ' dispositivi', (q.subentri || 0) + ' cambi a quiz aperto') : '') + '</section>' +
+      '<section><h4 class="sk-h f3">3 · Orale</h4>' +
+        (o ? riga('Voto orale', fv(o.voto) + (o.manuale ? ' (tuo)' : ''), fv(o.punti) + ' punti su ' + ((o.termini && o.termini.length) || RG().orale.domande) + ' · ' + esc(dataBreve(o.data))) :
+          riga('Interrogazione', q.superata ? (q.piano ? esc(giornoIt(q.piano.data)) + (q.piano.ora ? ', ' + q.piano.ora + 'ª ora' : '') : 'da programmare') : 'non ancora ammesso', '')) + '</section>' +
+      '<section><h4 class="sk-h f4">4 · Voto finale</h4>' + riga('Finale', v.finale != null ? '<span style="font-size:22px">' + fv(v.finale) + '</span>' : '—', v.finale == null ? (q.stato === 'scaduto' ? 'senza voto: quiz non completato' : 'manca l\'orale') : '') +
+        riga('Giudizio', '', esc(giudizioDi(id))) + '</section>' +
+    '</div>' +
+    (cod ? '<div class="row" style="gap:8px;align-items:center"><span class="muted">Codice personale</span><code class="disp" style="font-size:18px;letter-spacing:.08em">' + esc(cod) + '</code><button class="btn sec tb" onclick="copiaTesto(\'' + esc(cod) + '\',this)">Copia</button></div>' : '');
+  var az = [];
+  if (adm && PUO('studenti')) az.push({ t: 'Proroga dello scritto o passaggio dei termini', f: function () { S.gs = { classe: r.classe || CLASSI()[0], id: id }; vai('gestione'); } });
+  if (adm && PUO('studenti')) az.push({ t: (q.bes ? 'BES e regole personali del quiz' : 'Segna BES o regole personali del quiz'), f: function () { regolePersonaliQuiz(id); } });
+  if (adm && PUO('studenti') && !q.superata && q.scadenzaClasse) az.push({ t: 'Proroga del quiz', f: function () { prorogaQuiz(id); } });
+  if (adm && PUO('voti') && q.superata) az.push({ t: o ? 'Ripeti l\'interrogazione' : 'Interroga adesso', f: function () { vai('orale'); apriOrale(id); } });
+  if (adm && PUO('voti')) az.push({ t: 'Modifica il giudizio', f: function () { modificaGiudizio(id); } });
+  finestra(r.nome, h, az, 'chiudi');
+}
+
+/* ---------- giudizio breve per alunno ---------- */
+function giudizioDi(id) { var g = ((S.d.admin && S.d.admin.giudizi) || {})[id] || {}; return g.mio || g.auto || ''; }
+function modificaGiudizio(id) {
+  var g = ((S.d.admin && S.d.admin.giudizi) || {})[id] || {};
+  S.gdz = g.mio || g.auto || '';
+  var scelte = [{ t: 'Salva il giudizio', f: function () { salvaGdz(id, S.gdz); } }];
+  if (g.mio) scelte.push({ t: 'Torna al giudizio generato dai dati', warn: true, f: function () { salvaGdz(id, ''); } });
+  finestra('Giudizio · ' + nomeAlunno(id), '<p class="muted" style="margin:0;font-size:14px">Generato dai dati: «' + esc(g.auto || '') + '». Puoi riscriverlo come vuoi: va nel report e nella tabella per Argo.</p>' +
+    '<label for="gdzT">Giudizio</label><textarea id="gdzT" maxlength="600" rows="5" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px" oninput="S.gdz=this.value">' + esc(S.gdz) + '</textarea>', scelte, true);
+}
+function salvaGdz(id, t) {
+  api('giudizio', { alunno: id, testo: t }).then(function () { return ricarica(t ? 'Giudizio salvato per ' + nomeAlunno(id) : 'Giudizio generato dai dati per ' + nomeAlunno(id)); })
+    .catch(function (e) { toast(errMsg(e), true); });
+}
+
+/* ---------- voti pronti per Argo: da copiare nel registro o scaricare per Excel ---------- */
+function righeArgo() {
+  return (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }).slice().sort(function (a, b) { return a.nome.localeCompare(b.nome, 'it'); }).map(function (r) {
+    var v = votiDi(r.id), o = v.orale;
+    return { id: r.id, nome: r.nome, classe: r.classe || '', scritto: r.escluso ? 'escluso' : v.voto != null ? fv(v.voto) : '', orale: o ? fv(o.voto) : '', finale: v.finale != null ? fv(v.finale) : '', giudizio: giudizioDi(r.id) };
+  });
+}
+function bloccoArgo() {
+  if (!(S.d.admin && S.d.admin.voti)) return '';
+  var R = righeArgo(), senza = R.filter(function (x) { return !x.finale; }).length;
+  return '<section class="card stack" id="argo"><h2 style="margin:0;font-size:22px">Voti per Argo</h2>' +
+    '<p class="muted" style="margin:0">In ordine alfabetico, come nel registro' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? ' (classe ' + esc(S.filtro.classe) + ')' : ' (scegli la classe in alto a sinistra per averne una sola)') + '. ' +
+    '«Copia i voti finali» copia un voto per riga, da incollare nella colonna del registro; la tabella completa e il file per Excel hanno anche scritto, orale e giudizio.' + (senza ? ' <b>' + senza + (senza === 1 ? ' alunno non ha' : ' alunni non hanno') + ' ancora il voto finale</b>: la sua casella resta vuota.' : '') + '</p>' +
+    '<div class="row"><button class="btn" id="argoFin" onclick="copiaArgo(\'finali\',this)">Copia i voti finali</button><button class="btn sec" id="argoTab" onclick="copiaArgo(\'tabella\',this)">Copia la tabella completa</button><button class="btn sec" id="argoCsv" onclick="scaricaArgo()">Scarica per Excel</button></div>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Classe</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th>Giudizio</th><th></th></tr></thead><tbody>' +
+    R.map(function (x) {
+      return '<tr data-argo="' + x.id + '"><td>' + esc(x.nome) + '</td><td>' + esc(x.classe) + '</td><td class="n">' + esc(x.scritto || '—') + '</td><td class="n">' + esc(x.orale || '—') + '</td><td class="n"><b>' + esc(x.finale || '—') + '</b></td>' +
+        '<td style="font-size:14px;max-width:420px">' + esc(x.giudizio) + '</td><td>' + (!RO() && PUO('voti') ? '<button class="btn sec tb" onclick="modificaGiudizio(\'' + x.id + '\')">Modifica</button>' : '') + '</td></tr>';
+    }).join('') + '</tbody></table></div></section>';
+}
+function copiaArgo(tipo, btn) {
+  var R = righeArgo();
+  var t = tipo === 'finali' ? R.map(function (x) { return x.finale; }).join('\n')
+    : ['Alunno\tClasse\tScritto\tOrale\tFinale\tGiudizio'].concat(R.map(function (x) { return [x.nome, x.classe, x.scritto, x.orale, x.finale, x.giudizio].join('\t'); })).join('\n');
+  copiaTesto(t, btn);
+}
+function scaricaArgo() {
+  var q = function (v) { v = String(v == null ? '' : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var csv = '﻿' + ['Alunno;Classe;Scritto;Orale;Finale;Giudizio'].concat(righeArgo().map(function (x) { return [x.nome, x.classe, x.scritto, x.orale, x.finale, x.giudizio].map(q).join(';'); })).join('\r\n');
+  var a = document.createElement('a'), d = new Date();
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'voti-glossario' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? '-' + S.filtro.classe : '') + '-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.csv';
+  document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('File per Excel scaricato');
 }

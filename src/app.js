@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '20/11/2026 · 8';
+var VERSIONE = '20/11/2026 · 9';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -452,7 +452,7 @@ function panoramica() {
   var P = S.d.panoramica || [], tot = { inviate: 0, corrette: 0, errate: 0, daApprovare: 0, approvate: 0 };
   var righe = P.filter(function (r) { return inClasse(r.id); }).map(function (r) {
     Object.keys(tot).forEach(function (k) { tot[k] += r[k]; });
-    return '<tr' + (r.escluso ? ' class="riga-esclusa"' : '') + '><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere" title="' + esc(r.motivo) + '">Escluso</span>' + ((r.riassegnatiA || []).length ? ' <span class="muted" style="font-size:13px">termini → ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : '') : '') + (r.ereditati ? ' <span class="chip s-inviata">+' + r.ereditati + ' ricevuti</span>' : '') + (r.proroga ? ' <span class="chip s-vuota" title="Proroga fino a ' + esc(oraIt(r.proroga)) + '">proroga</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
+    return '<tr' + (r.escluso ? ' class="riga-esclusa"' : '') + '><td>' + linkScheda(r) + (r.escluso ? ' <span class="chip s-correggere" title="' + esc(r.motivo) + '">Escluso</span>' + ((r.riassegnatiA || []).length ? ' <span class="muted" style="font-size:13px">termini → ' + esc(r.riassegnatiA.map(nomeAlunno).join(', ')) + '</span>' : '') : '') + (r.ereditati ? ' <span class="chip s-inviata">+' + r.ereditati + ' ricevuti</span>' : '') + (r.proroga ? ' <span class="chip s-vuota" title="Proroga fino a ' + esc(oraIt(r.proroga)) + '">proroga</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
       '<td class="n">' + r.inviate + '</td><td class="n" style="color:var(--ok)">' + r.corrette + '</td><td class="n" style="color:var(--err)">' + r.errate + '</td>' +
       '<td class="n">' + (r.daApprovare ? '<span class="chip s-inviata">' + r.daApprovare + '</span>' : '0') + '</td><td class="n">' + r.approvate + '/' + (r.termini * LINGUE().length) + '</td></tr>';
   }).join('');

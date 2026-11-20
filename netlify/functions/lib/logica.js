@@ -350,6 +350,8 @@ function pacchetto(stato, chi) {
         voti: val.map((v) => ({ id: v.id, voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, errIt: v.it.errate, errEn: v.en.errate, votoMax: v.votoMax, ereditati: v.ereditati,
           tetto: v.tetto, motivoTetto: v.motivoTetto, orale: (chi.admin || P.voti) ? v.orale : (v.orale ? { voto: v.orale.voto, punti: v.orale.punti, data: v.orale.data } : null), finale: v.finale, oraleInCorso: v.oraleInCorso, quizStato: v.quizStato, ammesso: v.ammesso,
           calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })),
+        // giudizio breve per alunno: quello generato dai dati e, se c'è, quello scritto dal docente
+        giudizi: Object.fromEntries(val.map((v) => { const a = stato.alunni.find((x) => x.id === v.id), q = out.quiz.find((x) => x.id === v.id); return [v.id, { auto: require('./giudizi').auto(v, q), mio: (a && a.giudizio) || '' }]; })),
         attivita: stato.attivita && (chi.admin || P.documenti) ? Object.fromEntries(stato.alunni.map((a) => [a.id, ATT.riepilogo(stato.attivita[a.id], now)])) : null,
         dropbox: chi.admin ? stato.dropbox || null : null,
         colleghi: chi.admin ? (stato.config.docenti || []).filter((d) => !(d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin)).map((d) => ({ nome: d.nome, codice: d.codice, permessi: permessiDi(d, false) })) : undefined };
@@ -657,6 +659,16 @@ async function salvaRevisione(db, { codice, voci, ripristina }) {
   await db.scriviConfig({ catalogo: cat, blocchi });
   await db.transazione(async (tx) => { mods.forEach(([id, m]) => tx.scriviTermine(id, m)); });
   return { salvate: mods.length };
+}
+
+/* giudizio scritto dal docente (vuoto = torna quello generato dai dati) */
+async function salvaGiudizio(db, { codice, alunno: id, testo }) {
+  const stato = await db.leggiTutto(); permesso(identifica(stato, codice), 'voti');
+  const a = stato.alunni.find((x) => x.id === id); if (!a) errore('Alunno non trovato.');
+  const t = String(testo == null ? '' : testo).replace(/\s+/g, ' ').trim();
+  if (t.length > 600) errore('Giudizio troppo lungo (al massimo 600 caratteri).');
+  await db.scriviAlunno(a.id, { giudizio: t || null });
+  return { alunno: a.id, giudizio: t };
 }
 
 async function votoManuale(db, { codice, alunno, voto }) {
@@ -1012,6 +1024,6 @@ function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k
 function etichettaAl(a) { return /^[1-9]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
 module.exports = { messaggioEsclusione,
   indiceTermine, arrotFinale,
-  traduzioni, salvaTraduzioni, revisioneCartelloni, salvaRevisione, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
+  traduzioni, salvaTraduzioni, revisioneCartelloni, salvaRevisione, salvaGiudizio, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
   anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,
   identifica, soloAdmin, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

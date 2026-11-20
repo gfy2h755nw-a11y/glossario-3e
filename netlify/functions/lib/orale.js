@@ -54,11 +54,29 @@ function cfgQuiz(config, classe, tot, alunno) {
     passo: pP != null ? pP : R.passo, secondi: B && B.secondi != null ? B.secondi : R.secondi, senzaTempo: !!(B && B.secondi === 0), dimezza: !!(B && B.dimezza !== false), bes: B, opzioni: R.opzioni };
 }
 /* lettura leggera (configurazione + un alunno): il quiz fa una richiesta a ogni risposta e non deve rileggere tutto il glossario */
-async function contestoQuiz(db, codice) {
+/* «Prova il quiz»: il docente entra con il suo codice come uno studente finto. Lo stato della prova sta nella config
+   (provaQuiz, una stringa JSON per docente): nessun alunno, nessuna statistica e nessun report lo vedono. */
+function alunnoProva(config, d, bes) {
+  let q = null; try { q = JSON.parse(((config.provaQuiz || {})[d.id || d.codice]) || 'null'); } catch (e) { q = null; }
+  const cl = ((config.impostazioni && config.impostazioni.classi) || config.classi || ['3E'])[0];
+  return { id: '_prova', nome: 'Prova Docente', classe: cl, gruppo: 1, quiz: q, bes: bes ? { secondi: 0, dimezza: true } : null, _prova: d.id || d.codice };
+}
+async function salvaQuiz(db, a, q) {
+  if (a._prova) return db.scriviConfig({ provaQuiz: { [a._prova]: JSON.stringify(q) } });
+  return db.sostituisciQuiz(a.id, q);
+}
+async function contestoQuiz(db, codice, prova, bes) {
   const c = String(codice == null ? '' : codice).trim().toUpperCase();
   if (!c) L.errore('Inserisci il tuo codice.');
   const config = await db.leggiConfig();
   if (!config) L.errore('Glossario non ancora configurato.');
+  const doc = (config.docenti || []).find((d) => d.codice && String(d.codice).trim().toUpperCase() === c);
+  if (prova) {
+    if (!doc) L.errore('La prova del quiz è riservata ai docenti: inserisci il tuo codice da docente.');
+    const a = alunnoProva(config, doc, bes), cat = CAT.materializza(config).cat;
+    const cfg = Object.assign(cfgQuiz(config, a.classe, tutte(cat).length, a), { aperto: true, attesa: false, scaduto: false, scadenza: new Date(Date.now() + 86400000).toISOString() });
+    return { a, cat, cfg };
+  }
   const a = await db.leggiAlunnoCodice(c);
   if (!a) {
     if ((config.docenti || []).some((d) => d.codice && String(d.codice).trim().toUpperCase() === c)) L.errore('Il quiz è riservato agli alunni: inserisci il tuo codice personale.');
@@ -132,8 +150,9 @@ function vistaDomanda(cat, cur, n, cfg) {
    su un altro dispositivo) vengono rifiutate. Si registrano i dispositivi usati e le sessioni prese da un altro dispositivo
    mentre la precedente era ancora attiva (segnale per il docente). */
 const SUBENTRO_MS = 10 * 60000;
-async function quizInizio(db, { codice, disp }) {
-  const { a, cat, cfg } = await contestoQuiz(db, codice);
+async function quizInizio(db, { codice, disp, prova, bes, daCapo }) {
+  const { a, cat, cfg } = await contestoQuiz(db, codice, prova, bes);
+  if (a._prova && daCapo) a.quiz = null; // la prova riparte da zero
   controllaAccesso(a.quiz, cfg);
   const v = a.quiz || {};
   const q = { ok: v.ok || {}, seq: v.seq || 0, max: v.max || 0, sessioni: (v.sessioni || []).slice(-(QUIZ.maxSessioni - 1)), superata: v.superata || null, corrente: v.corrente || null,
@@ -147,11 +166,11 @@ async function quizInizio(db, { codice, disp }) {
   q.sess = { tok: require('crypto').randomBytes(12).toString('hex'), disp: d, i: ora };
   q.sessioni.push({ i: ora, f: ora, ms: 0, r: 0, c: 0, e: 0, s: 0, n: 0, p: 0 });
   q.corrente = nuovaDomanda(cat, q, true, cfg.opzioni);
-  await db.sostituisciQuiz(a.id, q);
+  await salvaQuiz(db, a, q);
   return { tok: q.sess.tok, nome: L.nomePubblico(a.nome), stato: perStudente(riepilogoQuiz(q, cfg)), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
 }
-async function quizRisposta(db, { codice, scelta, pausa, tok }) {
-  const { a, cat, cfg } = await contestoQuiz(db, codice);
+async function quizRisposta(db, { codice, scelta, pausa, tok, prova, bes }) {
+  const { a, cat, cfg } = await contestoQuiz(db, codice, prova, bes);
   const q = a.quiz;
   controllaAccesso(q, cfg);
   if (q && q.sess && q.sess.tok && tok !== q.sess.tok) L.errore('Sessione chiusa: il quiz è stato aperto con il tuo codice su un altro telefono o computer. Se sei tu, premi «Inizia» per continuare qui.');
@@ -187,23 +206,23 @@ async function quizRisposta(db, { codice, scelta, pausa, tok }) {
   const esito = { corretta, scaduta, persi, termine: cat[cur.a][cur.k][0] };
   if (corretta) esito.giusta = cur.g; // la risposta giusta non si svela mai dopo un errore
   q.corrente = nuovaDomanda(cat, q, false, cfg.opzioni);
-  await db.sostituisciQuiz(a.id, q);
+  await salvaQuiz(db, a, q);
   return { esito, stato: perStudente(riepilogoQuiz(q, cfg)), sessione: { r: s.r, c: s.c, e: s.e || 0, n: s.n, p: s.p || 0, ms: s.ms }, domanda: vistaDomanda(cat, q.corrente, s.r + 1, cfg) };
 }
 /* regole del quiz per la pagina d'ingresso (dal codice): se il codice non c'è, quelle di sempre */
-async function quizRegole(db, { codice }) {
+async function quizRegole(db, { codice, prova, bes }) {
   const c = String(codice == null ? '' : codice).trim().toUpperCase();
   const config = await db.leggiConfig();
   const a = c && config ? await db.leggiAlunnoCodice(c) : null;
-  const R = REG.di(a ? config : {}).quiz;
-  // con il codice di un alunno: le sue regole personali, se ne ha
-  const P = a ? cfgQuiz(config, L.classeDi(a), null, a) : null;
+  const R = REG.di(a || prova ? config : {}).quiz;
+  // con il codice di un alunno: le sue regole personali, se ne ha (nella prova del docente: quelle scelte per la prova)
+  const P = a ? cfgQuiz(config, L.classeDi(a), null, a) : prova && config ? cfgQuiz(config, null, null, { bes: bes ? { secondi: 0, dimezza: true } : null }) : null;
   return { secondi: P ? P.secondi : R.secondi, opzioni: R.opzioni, passo: P ? P.passo : R.passo, soglia: P ? P.soglia : undefined, senzaTempo: !!(P && P.senzaTempo), dimezza: !!(P && P.dimezza) };
 }
 /* tabellone del quiz per i docenti */
 function tabelloneQuiz(stato) {
   const tot = tutte(catalogo(stato)).length;
-  return stato.alunni.map((a) => Object.assign({ id: a.id }, riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a), tot, a)), {
+  return stato.alunni.map((a) => Object.assign({ id: a.id, piano: a.orale_piano || null }, riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a), tot, a)), {
     ultime: ((a.quiz && a.quiz.sessioni) || []).slice(-60).map((s) => ({ i: s.i, ms: s.ms || 0, r: s.r || 0, c: s.c || 0, e: s.e || 0, s: s.s || 0, n: s.n || 0, p: s.p || 0, d: s.d || 0 })) }));
 }
 
@@ -307,10 +326,23 @@ async function quizProroga(db, { codice, alunno: id, data }) {
   return { alunno: a.id, proroga: iso };
 }
 
+/* calendario delle interrogazioni: giorno (AAAA-MM-GG) e ora di lezione (1-10); vuoto = da programmare */
+async function pianoOrale(db, { codice, alunno: id, data, ora }) {
+  const stato = await db.leggiTutto(); L.permesso(L.identifica(stato, codice), 'voti');
+  const a = alunno(stato, id);
+  if (!data) { await db.scriviAlunno(a.id, { orale_piano: null }); return { alunno: a.id, piano: null }; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data)) || isNaN(Date.parse(data))) L.errore('Data dell\'interrogazione non valida.');
+  let h = null;
+  if (ora !== undefined && ora !== null && ora !== '') { h = Number(ora); if (!Number.isInteger(h) || h < 1 || h > 10) L.errore('Ora di lezione: da 1 a 10.'); }
+  const piano = { data: String(data), ora: h };
+  await db.scriviAlunno(a.id, { orale_piano: piano });
+  return { alunno: a.id, piano };
+}
+
 /* «Dimezza opzioni» (studenti BES): della domanda in corso restano la definizione giusta e una sbagliata a caso.
    Il tempo della domanda non riparte. */
-async function quizDimezza(db, { codice, tok }) {
-  const { a, cat, cfg } = await contestoQuiz(db, codice);
+async function quizDimezza(db, { codice, tok, prova, bes }) {
+  const { a, cat, cfg } = await contestoQuiz(db, codice, prova, bes);
   const q = a.quiz;
   controllaAccesso(q, cfg);
   if (!cfg.dimezza) L.errore('«Dimezza opzioni» non è attivo per te.');
@@ -323,7 +355,7 @@ async function quizDimezza(db, { codice, tok }) {
     cur.o = cur.o.filter((k) => k === cur.k || k === tieni);
     cur.g = LETTERE[cur.o.indexOf(cur.k)]; cur.dim = true;
     const s = q.sessioni[q.sessioni.length - 1]; s.d = (s.d || 0) + 1;
-    await db.sostituisciQuiz(a.id, q);
+    await salvaQuiz(db, a, q);
   }
   return { domanda: vistaDomanda(cat, cur, (q.sessioni[q.sessioni.length - 1].r || 0) + 1, cfg) };
 }
@@ -355,4 +387,4 @@ async function quizPersonale(db, { codice, alunno: id, soglia, passo, bes }) {
   return { alunno: a.id, soglia: s, passo: p, bes: mod.bes !== undefined ? mod.bes : a.bes || null, superata: !!(mod.quiz && mod.quiz.superata) };
 }
 
-module.exports = { quizRegole, quizProroga, quizPersonale, quizDimezza, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };
+module.exports = { quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };

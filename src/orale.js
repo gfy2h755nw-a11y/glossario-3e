@@ -33,13 +33,17 @@ function paginaQuiz() {
     'Soglia e scadenze si impostano in «Scadenze e valutazione». Con lo stesso codice il quiz resta aperto <b>su un solo dispositivo alla volta</b>: se si apre altrove, la sessione precedente si chiude; accanto al nome vedi quanti dispositivi ha usato l\'alunno e quante volte una sessione ancora attiva è stata presa da un altro dispositivo.</p>' +
     '<div class="row">' + scadenzeQuiz() + '</div>' +
     bottoniAccessiQuiz() +
+    // prova del docente: si apre la pagina del quiz in una nuova scheda, si entra con il proprio codice da docente
+    '<div class="row" style="gap:8px;align-items:center"><a class="btn sec" id="qzProva" href="/quiz?prova=1" target="_blank" rel="noopener">Prova il quiz come uno studente</a>' +
+      '<a class="btn sec" id="qzProvaBes" href="/quiz?prova=1&amp;bes=1" target="_blank" rel="noopener">Prova con le misure personalizzate</a>' +
+      '<span class="muted" style="font-size:14px">si entra con il tuo codice da docente; niente finisce tra i dati della classe</span></div>' +
     '<div class="row"><span class="chip s-approvata">' + sup + ' su ' + righe.length + ' hanno superato il quiz</span><span class="chip s-vuota">' + att + ' hanno fatto almeno una sessione</span>' + (fuori ? '<span class="chip s-correggere">' + fuori + ' non ammessi (scadenza passata)</span>' : '') + '</div>' +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th><th style="text-align:right">Sessioni</th><th style="text-align:right">Tempo</th><th style="text-align:right" title="Tempo passato sul quiz fino al superamento (o fino alla scadenza)">Fino al termine</th><th style="text-align:right">Risposte</th><th style="text-align:right">Corrette</th><th style="text-align:right">Errori</th><th style="text-align:right">Termini persi</th><th>Termini indovinati</th><th>Ammissione all\'orale</th><th></th></tr></thead><tbody>';
   righe.forEach(function (r) {
     var q = quizDi(r.id), aperto = S.qzAperto === r.id, pc = Math.min(100, Math.round(q.indovinati / q.soglia * 100));
     var dsp = (q.subentri ? ' <span class="chip s-correggere" title="Il quiz è stato aperto su un altro dispositivo mentre la sessione precedente era ancora attiva">Sessione presa da un altro dispositivo · ' + q.subentri + (q.subentri === 1 ? ' volta' : ' volte') + '</span>' : '') +
       (q.dispositivi > 1 ? ' <span class="chip s-inviata">' + q.dispositivi + ' dispositivi</span>' : '');
-    h += '<tr data-quiz="' + r.id + '"><td>' + esc(r.nome) + (r.escluso ? ' <span class="chip s-correggere">Escluso</span>' : '') + dsp + '</td><td class="n">' + esc(etich(r)) + '</td><td class="n">' + q.sessioni + '</td><td class="n" style="font-weight:400">' + (q.sessioni ? tempoMs(q.ms) : '—') + '</td>' + '<td class="n">' + fineQuizHtml(q) + '</td>' +
+    h += '<tr data-quiz="' + r.id + '"><td>' + linkScheda(r) + (r.escluso ? ' <span class="chip s-correggere">Escluso</span>' : '') + dsp + '</td><td class="n">' + esc(etich(r)) + '</td><td class="n">' + q.sessioni + '</td><td class="n" style="font-weight:400">' + (q.sessioni ? tempoMs(q.ms) : '—') + '</td>' + '<td class="n">' + fineQuizHtml(q) + '</td>' +
       '<td class="n" style="font-weight:400">' + q.risposte + '</td><td class="n">' + q.corrette + (q.risposte ? ' <span class="muted" style="font-weight:400;font-size:13px">' + Math.round(q.corrette / q.risposte * 100) + '%</span>' : '') + '</td>' +
       '<td class="n">' + (q.errori || 0) + '</td><td class="n" style="font-weight:400">' + (q.persi || 0) + '</td>' +
       '<td style="min-width:150px"><b>' + q.indovinati + '</b> / ' + q.soglia + (q.massimo > q.indovinati ? ' <span class="muted" style="font-size:13px">(massimo ' + q.massimo + ')</span>' : '') + '<div class="bar" style="margin-top:4px"><span style="width:' + pc + '%;background:' + (q.superata ? 'var(--ok)' : 'var(--a1)') + '"></span></div></td>' +
@@ -52,7 +56,7 @@ function paginaQuiz() {
       q.ultime.map(function (s, i) { return '<tr><td>' + (q.sessioni - q.ultime.length + i + 1) + '</td><td>' + esc(dataBreve(s.i)) + '</td><td class="n" style="font-weight:400">' + tempoMs(s.ms) + '</td><td class="n" style="font-weight:400">' + s.r + '</td><td class="n">' + s.c + '</td><td class="n">' + (s.e || 0) + '</td><td class="n" style="font-weight:400">' + s.s + '</td><td class="n">' + s.n + '</td><td class="n" style="font-weight:400">' + (s.p || 0) + '</td></tr>'; }).reverse().join('') +
       '</tbody></table>' + (q.sessioni > q.ultime.length ? '<p class="muted" style="margin:6px 0 0;font-size:13px">Sono mostrate le ultime ' + q.ultime.length + ' sessioni su ' + q.sessioni + '.</p>' : '') + '</td></tr>';
   });
-  return h + '</tbody></table></div></section>';
+  return h + '</tbody></table></div></section>' + bloccoSollecitiQuiz(righe);
 }
 
 /* --- interrogazione orale --- */
@@ -67,18 +71,69 @@ function paginaOrale() {
     'Ogni risposta vale 1 punto se corretta, ½ se parziale, 0 se sbagliata. <b>' + regolaOrale() + '</b> (massimo ' + fv(RG().orale.max) + '); per gli esclusi dallo scritto ' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto (massimo ' + fv(RG().orale.maxEsclusi) + '). ' +
     'Il <b>voto finale</b> è la ' + mediaTxt() + ' (per gli esclusi vale solo l\'orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</p>' +
     '<div class="row"><span class="chip s-approvata">' + amm + ' su ' + righe.length + ' ammessi (quiz superato)</span><span class="chip s-vuota">' + fatte + ' interrogati</span>' + (fuori ? '<span class="chip s-correggere">' + fuori + ' non ammessi: senza voto</span>' : '') + scadenzeQuiz() + '</div>' +
-    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th><th>Ammissione (quiz)</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th></th></tr></thead><tbody>';
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th><th>Ammissione (quiz)</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th>Quando</th><th></th></tr></thead><tbody>';
   righe.forEach(function (r) {
     var v = votiDi(r.id), q = quizDi(r.id), o = v.orale;
-    h += '<tr data-orale="' + r.id + '"><td>' + esc(r.nome) + (q.bes ? ' <span class="chip s-bozza" title="Studente BES: interrogazione su ' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini">BES</span>' : '') + (r.escluso ? ' <span class="chip s-correggere">Escluso · max ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
+    h += '<tr data-orale="' + r.id + '"><td>' + linkScheda(r) + (q.bes ? ' <span class="chip s-bozza" title="Studente BES: interrogazione su ' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini">BES</span>' : '') + (r.escluso ? ' <span class="chip s-correggere">Escluso · max ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
       '<td>' + chipQuiz(q) + '</td>' +
       '<td class="n">' + (r.escluso ? '<span class="muted" style="font-weight:400">—</span>' : fv(v.voto)) + '</td>' +
-      '<td class="n">' + (o ? fv(o.voto) + (o.manuale ? ' <span class="chip s-bozza" title="Voto assegnato da te; quello calcolato dalle risposte era ' + fv(o.votoCalcolato) + '">tuo</span>' : '') + '<br><span class="muted" style="font-weight:400;font-size:13px">' + fv(o.punti) + ' / ' + RG().orale.domande + ' · ' + esc(dataBreve(o.data)) + (o.manuale ? ' · calcolato ' + fv(o.votoCalcolato) : '') + '</span>' : '—') + '</td>' +
+      '<td class="n">' + (o ? fv(o.voto) + (o.manuale ? ' <span class="chip s-bozza" title="Voto assegnato da te; quello calcolato dalle risposte era ' + fv(o.votoCalcolato) + '">tuo</span>' : '') + '<br><span class="muted" style="font-weight:400;font-size:13px">' + fv(o.punti) + ' / ' + ((o.termini && o.termini.length) || RG().orale.domande) + ' · ' + esc(dataBreve(o.data)) + (o.manuale ? ' · calcolato ' + fv(o.votoCalcolato) : '') + '</span>' : '—') + '</td>' +
       '<td class="n">' + (v.finale != null ? '<b style="font-size:18px">' + fv(v.finale) + '</b>' : q.stato === 'scaduto' ? '<span class="muted" style="font-weight:400">senza voto</span>' : '<b style="font-size:18px">—</b>') + '</td>' +
+      '<td>' + celPiano(r, q, o, puo) + '</td>' +
       '<td>' + (!puo ? '' : q.superata ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ' + (o ? 'sec' : '') + ' tb" onclick="apriOrale(\'' + r.id + '\',this)">' + (v.oraleInCorso ? 'Riprendi' : o ? 'Ripeti' : 'Interroga') + '</button>' +
         (o ? '<button class="btn sec tb" onclick="annullaOrale(\'' + r.id + '\',this)">Annulla voto</button>' : '') + '</div>' : '<span class="muted" style="font-size:14px">' + (q.stato === 'scaduto' ? 'non interrogabile' : 'in attesa del quiz') + '</span>') + '</td></tr>';
   });
-  return h + '</tbody></table></div></section>';
+  return elencoDelGiorno(righe, puo) + h + '</tbody></table></div></section>';
+}
+/* --- calendario delle interrogazioni --- */
+function oggiIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function giornoIt(iso) { var p = iso.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }); }
+function celPiano(r, q, o, puo) {
+  var p = q.piano;
+  if (!q.superata || o) return p && !o ? '<span class="muted" style="font-size:13px">' + esc(giornoIt(p.data)) + '</span>' : '';
+  if (!puo) return p ? esc(giornoIt(p.data)) + (p.ora ? ' · ' + p.ora + 'ª ora' : '') : '<span class="muted">da programmare</span>';
+  return '<div class="row" style="gap:4px;flex-wrap:nowrap"><input type="date" aria-label="Giorno dell\'interrogazione di ' + esc(r.nome) + '" data-pgiorno="' + r.id + '" value="' + (p ? p.data : '') + '" onchange="salvaPiano(\'' + r.id + '\')" style="min-height:38px;max-width:150px">' +
+    '<select aria-label="Ora di lezione" data-pora="' + r.id + '" onchange="salvaPiano(\'' + r.id + '\')" style="min-height:38px;max-width:86px"><option value="">ora</option>' +
+    [1, 2, 3, 4, 5, 6, 7, 8].map(function (h) { return '<option value="' + h + '"' + (p && p.ora === h ? ' selected' : '') + '>' + h + 'ª</option>'; }).join('') + '</select></div>';
+}
+function salvaPiano(id) {
+  var g = document.querySelector('[data-pgiorno="' + id + '"]'), o = document.querySelector('[data-pora="' + id + '"]');
+  api('pianoorale', { alunno: id, data: g ? g.value : '', ora: o ? o.value : '' }).then(function (x) {
+    var q = quizDi(id); q.piano = x.piano;
+    toast(x.piano ? nomeAlunno(id) + ': ' + giornoIt(x.piano.data) + (x.piano.ora ? ', ' + x.piano.ora + 'ª ora' : '') : nomeAlunno(id) + ': da programmare');
+    var b = $('orGiorno'); if (b) b.outerHTML = elencoDelGiorno((S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }), PUO('voti') && !RO());
+  }).catch(function (e) { toast(errMsg(e), true); });
+}
+function elencoDelGiorno(righe, puo) {
+  var g = S.orG || oggiIso();
+  var lista = righe.filter(function (r) { var p = quizDi(r.id).piano; return p && p.data === g; })
+    .sort(function (a, b) { return ((quizDi(a.id).piano.ora || 99) - (quizDi(b.id).piano.ora || 99)) || a.nome.localeCompare(b.nome); });
+  var daProg = righe.filter(function (r) { var q = quizDi(r.id); return q.superata && !votiDi(r.id).orale && !q.piano; }).length;
+  return '<section class="card stack" id="orGiorno"><div class="row" style="justify-content:space-between;align-items:flex-end"><div><h3 style="margin:0;font-size:19px">Interrogazioni del giorno</h3>' +
+    '<span class="muted" style="font-size:14px">' + (daProg ? daProg + (daProg === 1 ? ' ammesso ancora da programmare' : ' ammessi ancora da programmare') + ' (colonna «Quando» qui sotto)' : 'tutti gli ammessi sono programmati o già interrogati') + '</span></div>' +
+    '<div class="row" style="gap:8px"><input type="date" id="orGData" aria-label="Giorno" value="' + g + '" onchange="S.orG=this.value;vistaDocente()" style="min-height:42px"><button class="btn sec" id="orGStampa" onclick="stampaGiorno()"' + (lista.length ? '' : ' disabled') + '>Stampa l\'elenco</button></div></div>' +
+    (lista.length ? '<ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px">' + lista.map(function (r) {
+      var q = quizDi(r.id), o = votiDi(r.id).orale;
+      return '<li><b>' + esc(r.nome) + '</b> <span class="muted">' + esc(etich(r)) + (q.piano.ora ? ' · ' + q.piano.ora + 'ª ora' : '') + '</span>' + (q.bes ? ' <span class="chip s-bozza">BES</span>' : '') +
+        (o ? ' <span class="chip s-approvata">interrogato · ' + fv(o.voto) + '</span>' : puo ? ' <button class="btn tb" onclick="apriOrale(\'' + r.id + '\',this)">Interroga</button>' : '') + '</li>';
+    }).join('') + '</ol>' : '<p class="muted" style="margin:0">Nessuna interrogazione programmata per ' + esc(giornoIt(g)) + '.</p>') + '</section>';
+}
+function stampaGiorno() {
+  var g = S.orG || oggiIso(), righe = (S.d.panoramica || []).filter(function (r) { var p = quizDi(r.id).piano; return inClasse(r.id) && p && p.data === g; })
+    .sort(function (a, b) { return ((quizDi(a.id).piano.ora || 99) - (quizDi(b.id).piano.ora || 99)) || a.nome.localeCompare(b.nome); });
+  var w = window.open('', '_blank'); if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
+  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Interrogazioni ' + esc(giornoIt(g)) + '</title><style>body{font-family:Arial,sans-serif;margin:18mm;color:#15212B}h1{font-size:20pt;margin:0 0 2mm}p{margin:0 0 6mm;color:#555}table{width:100%;border-collapse:collapse;font-size:12pt}th,td{border:1px solid #999;padding:3mm;text-align:left}th{background:#eee}td.v{width:28mm}</style></head><body>' +
+    '<h1>Interrogazioni del glossario</h1><p>' + esc(giornoIt(g)) + ' · ' + righe.length + (righe.length === 1 ? ' alunno' : ' alunni') + '</p>' +
+    '<table><thead><tr><th>Ora</th><th>Alunno</th><th>Classe</th><th>Voto orale</th><th>Note</th></tr></thead><tbody>' +
+    righe.map(function (r) { var q = quizDi(r.id); return '<tr><td>' + (q.piano.ora ? q.piano.ora + 'ª' : '') + '</td><td>' + esc(r.nome) + '</td><td>' + esc(etich(r)) + '</td><td class="v"></td><td></td></tr>'; }).join('') +
+    '</tbody></table><script>setTimeout(function(){window.print()},300)</scr' + 'ipt></body></html>');
+  w.document.close();
+}
+/* --- interrogazione a schermo pieno (tablet in classe) --- */
+function schermoPieno(on) {
+  document.body.classList.toggle('or-pieno', !!on); S.orPieno = !!on;
+  try { if (on && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {}); else if (!on && document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* va bene anche senza */ }
+  var y = window.scrollY; vistaDocente(); window.scrollTo(0, y);
 }
 function apriOrale(id, btn) {
   if (btn) btn.disabled = true;
@@ -92,7 +147,7 @@ function schedaOrale() {
   var o = S.or, r = (S.d.panoramica || []).filter(function (x) { return x.id === o.alunno; })[0] || {}, q = quizDi(o.alunno), vs = votiDi(o.alunno);
   var fatti = o.esiti.filter(function (e) { return e !== null; }).length, punti = puntiOrale(), tutti = fatti === o.esiti.length;
   var h = '<section class="card stack" id="oraleScheda"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Interrogazione di ' + esc(r.nome || nomeAlunno(o.alunno)) + ' <span class="muted" style="font-weight:400;font-size:16px">' + esc(etich(r)) + '</span></h2>' +
-    '<button class="btn sec tb" onclick="S.or=null;vistaDocente()">Torna all\'elenco</button></div>' +
+    '<div class="row" style="gap:6px"><button class="btn sec tb" id="orPieno" onclick="schermoPieno(' + (S.orPieno ? 'false' : 'true') + ')">' + (S.orPieno ? 'Esci dallo schermo pieno' : 'Schermo pieno') + '</button><button class="btn sec tb" onclick="S.or=null;if(S.orPieno)schermoPieno(false);vistaDocente()">Torna all\'elenco</button></div></div>' +
     '<div class="or-info" id="orInfo"><div><span class="kl">Voto dello scritto</span><b>' + (r.escluso ? 'Escluso' : fv(vs.voto)) + '</b><small>' + (r.escluso ? 'non entra nel finale' : (vs.errIt || 0) + (vs.errIt === 1 ? ' errore' : ' errori') + (vs.manuale != null ? ' · voto manuale' : '')) + '</small></div>' +
     '<div><span class="kl">Tempo nel quiz</span><b>' + (q.sessioni ? tempoMs(q.ms) : '—') + '</b><small>' + (q.sessioni ? q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') + (q.superata ? ' · ' + tempoMs(q.msFine) + ' per superarlo' : '') : 'nessuna sessione') + '</small></div>' +
     '<div><span class="kl">Risposte nel quiz</span><b>' + q.corrette + ' / ' + q.risposte + '</b><small>' + (q.risposte ? Math.round(q.corrette / q.risposte * 100) + '% corrette · ' + (q.errori || 0) + ' errori' : 'nessuna risposta') + '</small></div>' +
@@ -286,4 +341,39 @@ function fineQuizHtml(q) {
   if (q.superata) return '<span title="Superato in ' + (q.giorniSup || 1) + (q.giorniSup === 1 ? ' giorno' : ' giorni') + ' dalla prima sessione">' + t + '</span>';
   if (q.stato === 'scaduto') return '<span class="no" style="font-weight:400">' + t + '</span>';
   return '<span class="muted" style="font-weight:400">' + t + ' · in corso</span>';
+}
+
+/* --- solleciti per il quiz: chi non è mai entrato e chi è indietro rispetto al tempo passato --- */
+function bloccoSollecitiQuiz(righe) {
+  if (RO()) return '';
+  var now = Date.now(), mai = [], indietro = [], scad = null;
+  righe.forEach(function (r) {
+    var q = quizDi(r.id);
+    if (q.superata || (q.stato !== 'in corso' && q.stato !== 'non iniziato') || !q.scadenza) return;
+    var fine = Date.parse(q.scadenza), ini = q.partenza ? Date.parse(q.partenza) : (q.prima ? Date.parse(q.prima) : now);
+    if (!scad || fine < scad) scad = fine;
+    if (!q.sessioni) { mai.push(r); return; }
+    var tempo = fine > ini ? Math.min(1, Math.max(0, (now - ini) / (fine - ini))) : 1, fatto = q.soglia ? q.indovinati / q.soglia : 0;
+    if (fatto + 0.1 < tempo) indietro.push({ r: r, q: q });
+  });
+  if (!mai.length && !indietro.length) return '<section class="card stack" id="sollQuiz"><h3 style="margin:0;font-size:19px">Solleciti per il quiz</h3><p class="muted" style="margin:0">Nessuno da sollecitare: chi ha il quiz aperto è al passo con il tempo.</p></section>';
+  var quando = scad ? oraIt(new Date(scad).toISOString()) : 'alla scadenza';
+  var msgCl = 'Promemoria: il QUIZ GLOSSARIO si chiude ' + quando + ' ed è un termine tassativo. Solo chi lo supera entro la scadenza è ammesso all\'interrogazione. Chi non ha ancora iniziato lo faccia subito: si entra con il proprio codice personale.';
+  var msgUno = function (r, q) {
+    return (q ? 'Nel quiz del glossario sei a ' + q.indovinati + ' termini su ' + q.soglia + ': ' : 'Non hai ancora iniziato il quiz del glossario: ') + 'si chiude ' + quando + ' e non ci saranno proroghe. Prof. Cerrato';
+  };
+  var riga = function (r, q) {
+    return '<tr><td>' + esc(r.nome) + '</td><td>' + (q ? q.indovinati + ' / ' + q.soglia + ' <span class="muted">(' + Math.round(q.indovinati / q.soglia * 100) + '%)</span>' : '<span class="chip s-correggere">mai entrato</span>') + '</td>' +
+      '<td><button class="btn sec tb" onclick="copiaTesto(this.getAttribute(\'data-t\'),this)" data-t="' + esc(msgUno(r, q)) + '">Copia messaggio</button></td></tr>';
+  };
+  return '<section class="card stack" id="sollQuiz"><h3 style="margin:0;font-size:19px">Solleciti per il quiz · ' + (mai.length + indietro.length) + '</h3>' +
+    '<p class="muted" style="margin:0">Chi non è mai entrato e chi è indietro rispetto al tempo già passato (ha indovinato una parte dei termini più piccola della parte di tempo trascorsa). I messaggi personali sono da mandare uno per uno; il promemoria per la classe non contiene nomi.</p>' +
+    '<div class="row"><button class="btn" id="qzSollCl" onclick="copiaTesto(this.getAttribute(\'data-t\'),this)" data-t="' + esc(msgCl) + '">Copia il promemoria per la classe</button></div>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Quiz</th><th></th></tr></thead><tbody>' +
+    mai.map(function (r) { return riga(r, null); }).join('') + indietro.map(function (x) { return riga(x.r, x.q); }).join('') + '</tbody></table></div></section>';
+}
+function copiaTesto(t, btn) {
+  var area = function () { finestra('Copia il testo', '<textarea style="width:100%;min-height:140px;font:inherit">' + esc(t) + '</textarea>', []); };
+  var fatto = function () { if (btn) { var o = btn.textContent; btn.textContent = 'Copiato'; setTimeout(function () { btn.textContent = o; }, 1500); } toast('Testo copiato'); };
+  try { navigator.clipboard.writeText(t).then(fatto, area); } catch (e) { area(); }
 }

@@ -51,10 +51,25 @@ async function archivia(db, { codice, sovrascrivi }) {
       const token = await DBX.tokenAccesso(segreto), base = '/Archivio/' + ed.id;
       await DBX.carica(token, base + '_dati_completi.json', Buffer.from(JSON.stringify(full, null, 1), 'utf8'));
       await DBX.carica(token, base + '_definizioni_approvate.docx', await wordDa(full));
+      // anche il report completo e la tabella dei voti con i giudizi (per Excel e per Argo)
+      const st = auto.statoDa(full);
+      await DBX.carica(token, base + '_report.pdf', await require('./report').creaReport(st.stato, st.attivita, now));
+      await DBX.carica(token, base + '_voti.csv', votiCsv(stato, now));
       dropbox = 'ok';
     } catch (e) { dropbox = 'errore: ' + String(e.message || e).slice(0, 200); }
   }
   return { id: ed.id, nome: ed.nome, dropbox };
+}
+/* voti finali con scritto, orale e giudizio, in ordine alfabetico (separatore ; e decimali con la virgola, come vuole Excel in italiano) */
+function votiCsv(stato, now) {
+  const OR = require('./orale'), G = require('./giudizi');
+  const tab = OR.tabelloneQuiz(stato), fv = (n) => (n == null ? '' : String(Math.round(n * 100) / 100).replace('.', ','));
+  const q = (v) => { v = String(v == null ? '' : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const righe = stato.alunni.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'it')).map((a) => {
+    const v = L.valuta(stato, a, now), z = tab.find((x) => x.id === a.id);
+    return [a.nome, L.classeDi(a), v.escluso ? 'escluso' : fv(v.voto), v.orale ? fv(v.orale.voto) : '', fv(v.finale), a.giudizio || G.auto(v, z)].map(q).join(';');
+  });
+  return Buffer.from('\ufeff' + ['Alunno;Classe;Scritto;Orale;Finale;Giudizio'].concat(righe).join('\r\n'), 'utf8');
 }
 function statoDaArchivio(full) {
   const { stato, attivita } = auto.statoDa(full);
@@ -374,4 +389,4 @@ function calcolaFabbisogno(p) {
   return fabbisogno(classi, Math.max(1, Math.min(6, Number(p.nAree) || 4)));
 }
 
-module.exports = { costruisci, nuovoIdEdizione, validaAree, nAreeDi, numAree, chiudiEdizione, archivia, consultaArchivio, fileArchivio, pubblico, generaTermini, verificaTermini, nuovaEdizione, aggiungiClasse, calcolaFabbisogno, piano };
+module.exports = { costruisci, nuovoIdEdizione, validaAree, nAreeDi, numAree, chiudiEdizione, archivia, consultaArchivio, fileArchivio, pubblico, generaTermini, verificaTermini, nuovaEdizione, aggiungiClasse, calcolaFabbisogno, piano , votiCsv };

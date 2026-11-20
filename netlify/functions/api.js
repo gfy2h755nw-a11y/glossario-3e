@@ -35,6 +35,7 @@ const AZIONI = {
   // revisione dei cartelloni prima della stampa: termine e definizione corretti dal docente
   revisionecartelloni: (d, p) => logica.revisioneCartelloni(d, p),
   salvarevisione: (d, p) => logica.salvaRevisione(d, p),
+  giudizio: (d, p) => logica.salvaGiudizio(d, p),
   colleghi: (d, p) => logica.colleghi(d, p),
   archivioconsulta: (d, p) => ED.consultaArchivio(d, p),
   archiviofile: (d, p) => ED.fileArchivio(d, p),
@@ -49,6 +50,7 @@ const AZIONI = {
   quizproroga: (d, p) => OR.quizProroga(d, p),
   quizpersonale: (d, p) => OR.quizPersonale(d, p),
   quizdimezza: (d, p) => OR.quizDimezza(d, p),
+  pianoorale: (d, p) => OR.pianoOrale(d, p),
   oralepesca: (d, p) => OR.oralePesca(d, p),
   oralecambia: (d, p) => OR.oraleCambia(d, p),
   oralesalva: (d, p) => OR.oraleSalva(d, p),
