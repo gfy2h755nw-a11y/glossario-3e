@@ -66,7 +66,7 @@ h2.qz-h{font:800 18px Archivo,Arial,sans-serif;margin:18px 0 4px}
 </style>
 </head>
 <body>
-<header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Quiz del glossario</b><span class="sott">Istituto Barsanti · Laboratorio odontotecnico</span></div><div id="hdr"><a class="hb" href="/glossario">Studia il glossario</a></div></div></header>
+<header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Quiz del glossario</b><span class="sott">Istituto Barsanti · Laboratorio odontotecnico</span></div><div id="hdr"></div></div></header>
 <main class="qz" id="qz" aria-live="off"></main>
 <script>/*POSTER*/</script>
 <script>
@@ -86,7 +86,7 @@ var Quiz = (function () {
   function tempo(ms) { var s = Math.round(ms / 1000), m = Math.floor(s / 60); return m + ':' + ('0' + (s % 60)).slice(-2); }
   function testa() {
     var h = document.getElementById('hdr');
-    if (h) h.innerHTML = dom ? '<button class="hb" onclick="Quiz.chiudi()">Termina</button>' : '<a class="hb" href="/glossario">Studia il glossario</a>';
+    if (h) h.innerHTML = dom ? '<button class="hb" onclick="Quiz.chiudi()">Termina</button>' : '';
     return dom ? '' : '<div class="qz-top"><b>Quiz del glossario</b></div>';
   }
   function quandoIt(iso) { return new Date(iso).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
@@ -175,7 +175,7 @@ var Quiz = (function () {
       [].forEach.call(document.querySelectorAll('.qz-op'), function (b) { var x = b.getAttribute('data-l'); if (e.corretta && x === e.giusta) b.className = 'qz-op ok'; else if (!e.corretta && x === l) b.className = 'qz-op no'; });
       var t0 = Date.now(), prossima = d.domanda;
       document.getElementById('qzEs').innerHTML = '<div class="qz-es" style="color:' + (e.corretta ? '#1F7A3D' : '#B3261E') + '">' + (e.corretta ? 'Giusto!' : (e.scaduta ? 'Tempo scaduto' : 'Sbagliato') + (!e.persi ? '.' : st.indovinati === 0 ? ': perdi ' + (e.persi === 1 ? 'l\'unico termine indovinato' : 'i ' + e.persi + ' termini indovinati') + ' e torni a zero.' : ': torni indietro di ' + e.persi + ' termini. Ora sei a ' + st.indovinati + ' su ' + st.soglia + '.')) + '</div>' +
-        (!e.corretta && !st.superata ? '<p class="qz-area" style="margin:0 0 10px">La risposta giusta non viene mostrata: ripassa «' + esc(e.termine) + '» sul <a href="/glossario" target="_blank" rel="noopener">glossario</a>, tornerà.</p>' : '') +
+        (!e.corretta && !st.superata ? '<p class="qz-area" style="margin:0 0 10px">La risposta giusta non viene mostrata: ripassa «' + esc(e.termine) + '», tornerà.</p>' : '') +
         '<button class="qz-btn" id="qzAvanti">Prossimo termine</button>';
       var avanti = function () { if (!prossima) return; var p = prossima; prossima = null; clearTimeout(auto); Quiz._pausa = Math.min(Date.now() - t0, 15000); domanda(p); };
       var auto = setTimeout(avanti, 15000); // oltre 15 secondi di pausa il tempo della domanda successiva partirebbe comunque
@@ -193,7 +193,7 @@ var Quiz = (function () {
       dom = null;
       box().innerHTML = testa() + '<div class="qz-card"><div class="qz-term" style="font-size:24px">Sessione terminata</div><p>Hai risposto a <b>' + ses.r + '</b> domande: <b>' + ses.c + '</b> corrette e <b>' + (ses.e || 0) + '</b> ' + ((ses.e || 0) === 1 ? 'errore' : 'errori') + ' (' + (ses.p || 0) + ' termini persi), in <b>' + tempo(ses.ms) + '</b>.</p>' +
         '<p>Sei a <b>' + st.indovinati + '</b> termini indovinati su ' + st.soglia + (st.superata ? ': <b>quiz superato</b>, sei ammesso all\'interrogazione.' : '. Te ne mancano <b>' + Math.max(0, st.soglia - st.indovinati) + '</b>. I progressi restano salvati' + (st.scadenza ? ': hai tempo fino a ' + esc(quandoIt(st.scadenza)) + '.' : '.')) + '</p>' +
-        '<div class="qz-riga"><button class="qz-btn" onclick="Quiz.riprendi()">Riprendi il quiz</button><a class="qz-x" href="/glossario">Studia il glossario</a></div></div>';
+        '<div class="qz-riga"><button class="qz-btn" onclick="Quiz.riprendi()">Riprendi il quiz</button></div></div>';
       ses = null; window.scrollTo(0, 0); return;
     }
     accesso();

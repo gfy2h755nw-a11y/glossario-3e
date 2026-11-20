@@ -3224,7 +3224,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '20/11/2026 · 9';
+var VERSIONE = '20/11/2026 · 10';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3447,7 +3447,7 @@ function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
-  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: urlPubblico(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: S.d.utente.ruolo === 'alunno' ? null : urlPubblico(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
   var scala = function () { var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth; sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px'; };
   Poster.adatta(sc); scala();
   // si riadatta quando i caratteri veri sono caricati: misurare con quelli di riserva fa uscire le voci dalle colonne
