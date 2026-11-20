@@ -100,7 +100,7 @@ function impostazioni(config) {
     giorniIt: Number(config.giorniIt) > 0 ? Number(config.giorniIt) : DATI.EREDITA.giorniIt,
     giorniEn: Number(config.giorniEn) > 0 ? Number(config.giorniEn) : DATI.EREDITA.giorniEn,
     votoMin: RS.votoMin,
-    quiz: { soglia: config.quiz && Number(config.quiz.soglia) >= 1 ? Number(config.quiz.soglia) : null, scadenze: Object.assign({}, (config.quiz && config.quiz.scadenze) || {}) },
+    quiz: { soglia: config.quiz && Number(config.quiz.soglia) >= 1 ? Number(config.quiz.soglia) : null, scadenze: Object.assign({}, (config.quiz && config.quiz.scadenze) || {}), partenze: Object.assign({}, (config.quiz && config.quiz.partenze) || {}) },
     votoEsclusione: RS.votoEsclusione,
     lingue: Array.isArray(config.lingue) && config.lingue.length ? (config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0).length ? config.lingue.filter((l) => DATI.LINGUE.indexOf(l) >= 0) : DATI.LINGUE.slice()) : DATI.LINGUE,
     partenza: config.partenza !== undefined ? config.partenza : DATI.PARTENZA,
@@ -529,12 +529,19 @@ async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta,
   }
   if (quiz !== undefined && quiz !== null) {
     // quiz (parte della prova): { soglia, scadenze: { classe: ISO | '' } }. Una classe senza scadenza ha il quiz chiuso.
-    const imp0 = impostazioni(stato.config), tot = Object.values(CAT.materializza(stato.config).cat).reduce((x, v) => x + v.length, 0), qz = { soglia: tot, scadenze: {} };
+    const imp0 = impostazioni(stato.config), tot = Object.values(CAT.materializza(stato.config).cat).reduce((x, v) => x + v.length, 0), qz = { soglia: tot, scadenze: {}, partenze: {} };
     if (quiz.soglia !== undefined && quiz.soglia !== null && quiz.soglia !== '') {
       const n = Number(quiz.soglia); if (!(Number.isInteger(n) && n >= 10 && n <= tot)) errore('I termini da indovinare nel quiz vanno da 10 a ' + tot + '.'); qz.soglia = n;
     } else if (stato.config.quiz && stato.config.quiz.soglia) qz.soglia = stato.config.quiz.soglia;
     imp0.classi.forEach((c) => { const v = (quiz.scadenze || {})[c]; qz.scadenze[c] = v ? isoValida(v) : null; });
     Object.keys(quiz.scadenze || {}).forEach((c) => { if (imp0.classi.indexOf(c) < 0) errore('Classe sconosciuta: ' + c + '.'); });
+    // apertura per classe (facoltativa): se non arriva, resta quella salvata
+    const pa0 = (stato.config.quiz && stato.config.quiz.partenze) || {};
+    imp0.classi.forEach((c) => {
+      const v = quiz.partenze ? quiz.partenze[c] : pa0[c];
+      qz.partenze[c] = v ? isoValida(v) : null;
+      if (qz.partenze[c] && qz.scadenze[c] && Date.parse(qz.partenze[c]) >= Date.parse(qz.scadenze[c])) errore('Quiz ' + c + ': l\'apertura deve essere prima della scadenza.');
+    });
     mod.quiz = qz;
     // secondi per rispondere: regolabili per ogni attività (regole.quiz.secondi), 10-300
     if (quiz.secondi !== undefined && quiz.secondi !== null && quiz.secondi !== '') {

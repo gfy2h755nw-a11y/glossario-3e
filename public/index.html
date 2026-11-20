@@ -3156,7 +3156,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '20/11/2026 · 2';
+var VERSIONE = '20/11/2026 · 3';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3351,6 +3351,7 @@ function avvisoMancanti(aree) {
 }
 /* app dell'alunno: a che punto è con il quiz (compare solo quando il docente lo ha aperto) */
 function notaQuizAlunno(q) {
+  if (q && q.stato === 'chiuso' && q.partenza && q.scadenza) return '<div class="note" id="notaQuiz"><b>Seconda parte della prova: il quiz.</b> Si apre il <b>' + esc(oraIt(q.partenza)) + '</b> e si chiude il ' + esc(oraIt(q.scadenza)) + '. Dovrai indovinare ' + q.soglia + ' termini per essere ammesso all\'interrogazione.</div>';
   if (!q || q.stato === 'chiuso') return '';
   var link = '<a href="/quiz" target="_blank" rel="noopener">Apri il quiz</a>';
   if (q.stato === 'superato') return '<div class="note ok" id="notaQuiz"><b>Quiz superato:</b> sei ammesso all\'interrogazione orale.</div>';
@@ -5394,13 +5395,16 @@ function votoOraleDa(punti, escluso) { var o = RG().orale; return Math.round((o.
 function chipQuiz(q) {
   if (q.stato === 'superato') return '<span class="chip s-approvata">Ammesso</span><br><span class="muted" style="font-size:13px">quiz superato il ' + esc(dataBreve(q.superata)) + '</span>';
   if (q.stato === 'scaduto') return '<span class="chip s-correggere">Non ammesso</span><br><span class="muted" style="font-size:13px">quiz non completato: ' + q.indovinati + ' / ' + q.soglia + '</span>';
-  if (q.stato === 'chiuso') return '<span class="chip s-vuota">Quiz non aperto</span>';
+  if (q.stato === 'chiuso') return '<span class="chip s-vuota">Quiz non aperto</span>' + (q.partenza && q.scadenza ? '<br><span class="muted" style="font-size:13px">si apre il ' + esc(dataBreve(q.partenza)) + '</span>' : '');
   return '<span class="chip s-inviata">' + (q.stato === 'in corso' ? 'In corso' : 'Non iniziato') + '</span><br><span class="muted" style="font-size:13px">' + q.indovinati + ' / ' + q.soglia + '</span>';
 }
 function scadenzeQuiz() {
   var q = (S.d.admin && S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || null; if (!q) return '';
   var cl = S.filtro.classe && S.filtro.classe !== 'tutte' ? [S.filtro.classe] : CLASSI();
-  return cl.map(function (c) { var d = (q.scadenze || {})[c]; return '<span class="chip ' + (d ? (Date.now() > Date.parse(d) ? 's-correggere' : 's-inviata') : 's-vuota') + '">' + esc(c) + ': ' + (d ? (Date.now() > Date.parse(d) ? 'quiz scaduto il ' : 'quiz entro il ') + esc(oraIt(d)) : 'quiz non aperto') + '</span>'; }).join('');
+  return cl.map(function (c) {
+    var d = (q.scadenze || {})[c], p = (q.partenze || {})[c], now = Date.now();
+    if (d && p && now < Date.parse(p)) return '<span class="chip s-vuota">' + esc(c) + ': quiz dal ' + esc(oraIt(p)) + ' al ' + esc(oraIt(d)) + '</span>';
+    return '<span class="chip ' + (d ? (now > Date.parse(d) ? 's-correggere' : 's-inviata') : 's-vuota') + '">' + esc(c) + ': ' + (d ? (now > Date.parse(d) ? 'quiz scaduto il ' : 'quiz entro il ') + esc(oraIt(d)) : 'quiz non aperto') + '</span>'; }).join('');
 }
 
 /* --- tabellone del quiz --- */
@@ -5540,6 +5544,7 @@ function stampaAccessiQuiz(classe) {
       '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
       '<ol><li>Compare un termine con <b>' + RG().quiz.opzioni + ' definizioni</b>: scegli quella giusta entro <b>' + RG().quiz.secondi + ' secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
       '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di ' + RG().quiz.passo + ' termini</b>: per andare avanti devi studiare le definizioni.</li>' +
+      (qa.partenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).partenze || {})[a.classe || '3E'] ? '<li>Il quiz si apre il <b>' + esc(oraIt(qa.partenza || S.d.admin.impostazioni.quiz.partenze[a.classe || '3E'])) + '</b>: prima di allora non si può entrare.</li>' : '') +
       '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi' + (sq ? ', <b>entro ' + esc(oraIt(sq)) + '</b>.' : ', entro la scadenza che ti dirà il docente.') + '</li>' +
       '<li>Il quiz è superato quando hai indovinato <b>' + (qa.soglia || 260) + ' termini</b>.</li></ol>' +
       '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca ' + RG().orale.domande + ' termini e tu dai la definizione. ' +
@@ -5570,18 +5575,24 @@ function stampaAccessiQuiz(classe) {
 function bloccoQuizImp() {
   var q = (S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || { scadenze: {} }, tot = S.d.termini.length;
   return '<section class="card stack" id="quizImp"><h2 style="margin:0;font-size:22px">Quiz: seconda parte della prova</h2>' +
-    '<p class="muted" style="margin:0">Il quiz di una classe <b>si apre quando ne fissi la scadenza</b> e si chiude a quell\'ora: finché il campo è vuoto gli alunni non possono entrare. ' +
+    '<p class="muted" style="margin:0">Per ogni classe fissi <b>apertura</b> e <b>scadenza</b>: il quiz si apre all\'ora di apertura (se la lasci vuota, si apre subito) e si chiude alla scadenza. Senza scadenza resta chiuso. ' +
     'Chi indovina tutti i termini richiesti entro la scadenza è ammesso all\'interrogazione; gli altri restano senza voto. A ogni errore l\'alunno torna indietro di ' + RG().quiz.passo + ' termini e la risposta giusta non viene mostrata.</p>' +
     '<div class="grid4"><div><label for="qzSoglia">Termini da indovinare (su ' + tot + ')</label><input id="qzSoglia" type="number" min="10" max="' + tot + '" step="1" value="' + (q.soglia || tot) + '"></div>' +
     '<div><label for="qzSec">Secondi per rispondere</label><input id="qzSec" type="number" inputmode="numeric" min="10" max="300" step="1" value="' + RG().quiz.secondi + '"><span class="muted" style="font-size:13px">meno tempo = più difficile copiare (con 20-25 secondi non si fa in tempo a chiedere a un\'IA)</span></div>' +
-    CLASSI().map(function (c) { var d = (q.scadenze || {})[c]; return '<div><label for="qzSc_' + c + '">Scadenza del quiz · ' + esc(c) + '</label><input id="qzSc_' + c + '" type="datetime-local" value="' + (d ? isoLocale(d) : '') + '">' +
-      '<span class="muted" style="font-size:13px">' + (d ? (Date.now() > Date.parse(d) ? 'quiz chiuso: scadenza passata' : 'quiz aperto') : 'quiz non aperto') + '</span></div>'; }).join('') + '</div>' +
+    '</div><div class="grid4">' +
+    CLASSI().map(function (c) {
+      var d = (q.scadenze || {})[c], p = (q.partenze || {})[c], now = Date.now();
+      var st = !d ? 'quiz chiuso: manca la scadenza' : now > Date.parse(d) ? 'quiz chiuso: scadenza passata' : p && now < Date.parse(p) ? 'si apre il ' + oraIt(p) : 'quiz aperto';
+      return '<div><label for="qzPa_' + c + '">Apertura del quiz · ' + esc(c) + '</label><input id="qzPa_' + c + '" type="datetime-local" value="' + (p ? isoLocale(p) : '') + '">' +
+        '<span class="muted" style="font-size:13px">vuota = si apre subito</span></div>' +
+        '<div><label for="qzSc_' + c + '">Scadenza del quiz · ' + esc(c) + '</label><input id="qzSc_' + c + '" type="datetime-local" value="' + (d ? isoLocale(d) : '') + '">' +
+        '<span class="muted" style="font-size:13px">' + esc(st) + '</span></div>'; }).join('') + '</div>' +
     '<div class="row"><button class="btn" id="qzSalva" onclick="salvaQuizImp(this)">Salva le regole del quiz</button></div></section>';
 }
 function salvaQuizImp(btn) {
-  var sc = {}; CLASSI().forEach(function (c) { var v = $('qzSc_' + c).value; sc[c] = v ? new Date(v).toISOString() : ''; });
+  var sc = {}, pa = {}; CLASSI().forEach(function (c) { var v = $('qzSc_' + c).value, w = $('qzPa_' + c).value; sc[c] = v ? new Date(v).toISOString() : ''; pa[c] = w ? new Date(w).toISOString() : ''; });
   btn.disabled = true;
-  api('impostazioni', { quiz: { soglia: $('qzSoglia').value, secondi: $('qzSec').value, scadenze: sc } }).then(function () { return ricarica('Regole del quiz salvate'); }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
+  api('impostazioni', { quiz: { soglia: $('qzSoglia').value, secondi: $('qzSec').value, scadenze: sc, partenze: pa } }).then(function () { return ricarica('Regole del quiz salvate'); }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
 }
 
 /* proroga individuale del quiz: una data dopo la scadenza della classe; si può togliere */

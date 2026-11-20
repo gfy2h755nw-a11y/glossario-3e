@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '20/11/2026 · 2';
+var VERSIONE = '20/11/2026 · 3';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -245,6 +245,7 @@ function avvisoMancanti(aree) {
 }
 /* app dell'alunno: a che punto è con il quiz (compare solo quando il docente lo ha aperto) */
 function notaQuizAlunno(q) {
+  if (q && q.stato === 'chiuso' && q.partenza && q.scadenza) return '<div class="note" id="notaQuiz"><b>Seconda parte della prova: il quiz.</b> Si apre il <b>' + esc(oraIt(q.partenza)) + '</b> e si chiude il ' + esc(oraIt(q.scadenza)) + '. Dovrai indovinare ' + q.soglia + ' termini per essere ammesso all\'interrogazione.</div>';
   if (!q || q.stato === 'chiuso') return '';
   var link = '<a href="/quiz" target="_blank" rel="noopener">Apri il quiz</a>';
   if (q.stato === 'superato') return '<div class="note ok" id="notaQuiz"><b>Quiz superato:</b> sei ammesso all\'interrogazione orale.</div>';

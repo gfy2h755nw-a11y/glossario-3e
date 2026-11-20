@@ -42,7 +42,9 @@ function cfgQuiz(config, classe, tot, alunno) {
   // proroga individuale: vale solo se la classe ha il quiz aperto e se è più tarda della scadenza della classe
   const pr = alunno && alunno.quiz_proroga && sc && Date.parse(alunno.quiz_proroga) > Date.parse(sc) ? alunno.quiz_proroga : null;
   const scad = pr || sc, R = REG.di(config).quiz;
-  return { soglia: n >= 1 ? Math.min(Math.round(n), totale) : totale, totale, scadenza: scad, scadenzaClasse: sc, proroga: pr, aperto: !!scad, scaduto: !!scad && Date.now() > Date.parse(scad),
+  // apertura per classe: prima di quell'ora il quiz resta chiuso (vuota = aperto da subito, appena c'è la scadenza)
+  const pa = sc ? (q.partenze || {})[classe] || null : null, attesa = !!pa && Date.now() < Date.parse(pa);
+  return { soglia: n >= 1 ? Math.min(Math.round(n), totale) : totale, totale, scadenza: scad, scadenzaClasse: sc, proroga: pr, partenza: pa, attesa, aperto: !!scad && !attesa, scaduto: !!scad && Date.now() > Date.parse(scad),
     passo: R.passo, secondi: R.secondi, opzioni: R.opzioni };
 }
 /* lettura leggera (configurazione + un alunno): il quiz fa una richiesta a ogni risposta e non deve rileggere tutto il glossario */
@@ -61,13 +63,14 @@ async function contestoQuiz(db, codice) {
 }
 const giorno = (iso) => new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 function controllaAccesso(q, cfg) {
+  if (cfg.attesa) L.errore('Il quiz non è ancora aperto: si apre il ' + giorno(cfg.partenza) + '.');
   if (!cfg.aperto) L.errore('Il quiz non è ancora aperto: il docente comunicherà quando inizia.');
   if (cfg.scaduto && !(q && q.superata)) L.errore('Il tempo per il quiz è scaduto il ' + giorno(cfg.scadenza) + '. Hai indovinato ' + Object.keys((q && q.ok) || {}).length + ' termini su ' + cfg.soglia + '.');
 }
 function riepilogoQuiz(q, cfg) {
   const s = (q && q.sessioni) || [], c = cfg || { soglia: QUIZ.soglia, scadenza: null, aperto: false, scaduto: false };
   const ind = Object.keys((q && q.ok) || {}).length, sup = (q && q.superata) || null;
-  const r = { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, dispositivi: ((q && q.disp) || []).length, subentri: (q && q.subentri) || 0, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null,
+  const r = { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, dispositivi: ((q && q.disp) || []).length, subentri: (q && q.subentri) || 0, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null, partenza: c.partenza || null,
     // stato rispetto all'ammissione all'orale
     stato: sup ? 'superato' : !c.aperto ? 'chiuso' : c.scaduto ? 'scaduto' : s.length ? 'in corso' : 'non iniziato',
     prima: s.length ? s[0].i : null, ultima: s.length ? (s[s.length - 1].f || s[s.length - 1].i) : null,
