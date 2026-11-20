@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Glossario odontotecnico · consultazione</title>
+<title>Glossario odontotecnico · IIS Barsanti, Massa</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#15212B">
@@ -56,7 +56,59 @@ mark{background:#FFE98A;color:inherit;border-radius:3px;padding:0 1px}
 .nulla{text-align:center;color:var(--muto);padding:40px 0}
 footer{margin:40px 0 0;padding:26px 0 40px;text-align:center;color:var(--muto);font-size:14px;border-top:1px solid var(--linea)}
 footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:30px;color:var(--ink);margin-bottom:4px}
-@media (max-width:640px){.top .dx{display:none}.voce{padding:10px 12px}h2{font-size:20px}}
+/* ---------- home, «Mettiti alla prova», «Gioca a squadre» ---------- */
+.vista[hidden]{display:none!important}
+.hero{margin:18px 0 0;background:var(--carta);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(21,33,43,.08)}
+.hero .fascia{display:flex;height:10px}.hero .fascia i{flex:1}
+.hero .in{padding:22px 22px 20px;display:grid;gap:10px}
+.hero h1{margin:0;font:800 34px/1.05 Archivo,Arial,sans-serif;letter-spacing:-.01em;text-wrap:balance}
+.hero .ist{margin:0;color:var(--muto);font-size:15.5px}
+.hero .ist b{color:var(--ink)}
+.hero .mot{font:italic 600 24px/1.1 'Cormorant Garamond',Georgia,serif;color:var(--ink);margin:2px 0 0}
+.hcerca{display:flex;gap:8px;margin-top:6px}
+.hcerca input{flex:1;min-width:0;font:inherit;font-size:18px;padding:14px 16px;border:2px solid var(--ink);border-radius:12px;background:#fff}
+.hcerca button,.gbtn{min-height:52px;padding:0 20px;border:0;border-radius:12px;background:var(--ink);color:#fff;font:800 16px Archivo,Arial,sans-serif;cursor:pointer}
+.gbtn.sec{background:#fff;color:var(--ink);border:2px solid var(--ink)}
+.gbtn:disabled{opacity:.45;cursor:default}
+.gbtn:focus-visible,.hcerca input:focus-visible,.card3:focus-visible,.atile:focus-visible,.gop:focus-visible{outline:3px solid #F2B705;outline-offset:2px}
+.cards3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin:16px 0 0}
+.card3{display:flex;flex-direction:column;gap:6px;text-align:left;border:0;border-radius:16px;padding:18px;background:var(--carta);color:var(--ink);cursor:pointer;font:inherit;box-shadow:0 1px 3px rgba(21,33,43,.08);border-top:6px solid var(--c)}
+.card3 b{font:800 21px Archivo,Arial,sans-serif}
+.card3 span{color:var(--muto);font-size:15px}
+.card3 em{font-style:normal;font:700 14px Archivo,Arial,sans-serif;color:var(--c);margin-top:4px}
+.htit{font:800 13px Archivo,Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muto);margin:24px 0 8px}
+.atiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px}
+.atile{display:flex;gap:12px;align-items:center;border:0;border-radius:14px;padding:12px 14px;background:var(--c);color:#fff;cursor:pointer;text-align:left;font:inherit;min-height:64px}
+.atile .n{font:800 28px/1 Archivo,Arial,sans-serif;opacity:.95}
+.atile b{display:block;font:800 16px Archivo,Arial,sans-serif}
+.atile span{font-size:13.5px;opacity:.9}
+.indietro{margin:14px 0 0;border:0;background:none;font:700 15px Archivo,Arial,sans-serif;color:var(--ink);cursor:pointer;padding:6px 0;min-height:44px}
+.gbox{background:var(--carta);border-radius:16px;padding:18px;margin:12px 0;box-shadow:0 1px 3px rgba(21,33,43,.08);display:grid;gap:12px}
+.gbox h2{margin:0;font-size:24px}
+.gtesta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font:700 15px Archivo,Arial,sans-serif;color:var(--muto)}
+.gterm{font:800 30px/1.1 Archivo,Arial,sans-serif;margin:2px 0 4px;text-wrap:balance}
+.gtempo{height:10px;border-radius:9px;background:#E3E8EC;overflow:hidden}.gtempo i{display:block;height:100%;background:var(--ink);transition:width .2s linear}
+.gtempo.poco i{background:#C0392B}
+.gop{display:flex;gap:10px;text-align:left;width:100%;border:2px solid var(--linea);background:#fff;border-radius:12px;padding:12px 14px;font:inherit;font-size:16px;cursor:pointer;color:var(--ink)}
+.gop b{font-family:Archivo,Arial,sans-serif}
+.gop.ok{border-color:#1F7A3D;background:#E8F5EC}.gop.no{border-color:#C0392B;background:#FBEAE8}
+.gop:disabled{cursor:default}
+.gpunteggio{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.gpunteggio b{font:800 56px/1 Archivo,Arial,sans-serif}
+.grev{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.grev li{border-left:5px solid var(--c);padding:6px 10px;background:#F7F8F9;border-radius:6px;font-size:15px}
+.gsq{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr));gap:8px}
+.gsq div{border-radius:12px;padding:10px 12px;color:#fff;background:var(--c)}
+.gsq div b{display:block;font:800 15px/1.2 Archivo,Arial,sans-serif;overflow-wrap:anywhere}
+.gsq div span{font:800 26px Archivo,Arial,sans-serif}
+.gsq div.turno{outline:4px solid #F2B705;outline-offset:2px}
+.gform{display:grid;gap:10px}
+.gform label{font:700 15px Archivo,Arial,sans-serif}
+.gform input,.gform select{font:inherit;padding:10px 12px;border:2px solid var(--linea);border-radius:10px;background:#fff;width:100%}
+.gseg{display:flex;gap:8px}.gseg button{flex:1;min-height:48px;border:2px solid var(--ink);border-radius:10px;background:#fff;font:800 16px Archivo,Arial,sans-serif;cursor:pointer}
+.gseg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.vince{font:800 26px/1.2 Archivo,Arial,sans-serif}
+@media (max-width:640px){.top .dx{display:none}.voce{padding:10px 12px}h2{font-size:20px}.hero h1{font-size:28px}.gterm{font-size:25px}.hcerca{flex-direction:column}}
 @media print{.top,.cmd{position:static}.voce{break-inside:avoid}}
 </style>
 </head>
@@ -70,17 +122,42 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
   <div class="aut"><div class="wrap" id="autori"><p>Caricamento…</p></div></div>
 </header>
 <main class="wrap">
+  <div id="edz" style="padding-top:12px"></div>
+  <!-- HOME -->
+  <section class="vista" id="vHome">
+    <div class="hero"><div class="fascia" id="fascia"></div><div class="in">
+      <h1>Glossario odontotecnico</h1>
+      <p class="ist"><b>IIS «L. Barsanti» · sede Salvetti · Massa</b><br>Laboratorio odontotecnico · a cura del <b>prof. Danilo Cerrato</b><span id="hAnno"></span></p>
+      <p class="mot">Nomina sunt consequentia rerum.</p>
+      <form class="hcerca" id="hForm" role="search"><label for="hq" style="position:absolute;left:-9999px">Ricerca libera nel glossario</label><input id="hq" type="search" placeholder="Cerca un termine o una parola…" autocomplete="off"><button type="submit">Cerca</button></form>
+      <p class="stat" id="hStat"></p>
+    </div></div>
+    <div class="cards3">
+      <button class="card3" style="--c:#2E6DB4" onclick="vai('glossario')"><b>Consulta il glossario</b><span>Tutti i termini con le definizioni, per argomento e dalla A alla Z.</span><em>Apri il glossario →</em></button>
+      <button class="card3" style="--c:#1F8A70" onclick="vai('prova')"><b>Mettiti alla prova</b><span>10 termini, 4 definizioni per termine, 1 minuto per rispondere. Punteggio da 4 a 7,5.</span><em>Inizia →</em></button>
+      <button class="card3" style="--c:#B5532A" onclick="vai('squadre')"><b>Gioca a squadre</b><span>Fino a 3 squadre con il loro nome, fino a 20 termini a squadra, 1 minuto a termine. Vince chi indovina di più.</span><em>Prepara la partita →</em></button>
+    </div>
+    <div class="htit">Gli argomenti</div>
+    <div class="atiles" id="aTiles"></div>
+  </section>
+  <!-- METTITI ALLA PROVA -->
+  <section class="vista" id="vProva" hidden><button class="indietro" onclick="vai('')">← Home</button><div id="gProva"></div></section>
+  <!-- GIOCA A SQUADRE -->
+  <section class="vista" id="vSquadre" hidden><button class="indietro" onclick="vai('')">← Home</button><div id="gSquadre"></div></section>
+  <!-- GLOSSARIO -->
+  <section class="vista" id="vGlos" hidden>
+  <button class="indietro" onclick="vai('')">← Home</button>
   <div class="cmd" id="cmd">
-    <div id="edz"></div>
     <div class="tabs" id="tabs" role="toolbar" aria-label="Argomenti"></div>
     <label for="q" style="position:absolute;left:-9999px">Cerca un termine</label>
     <input class="cerca" id="q" type="search" placeholder="Cerca un termine o una parola nella definizione…" autocomplete="off">
     <p class="stat" id="stat"></p>
   </div>
   <div id="lista"><p class="nulla">Caricamento del glossario…</p></div>
+  </section>
   <footer>
     <div class="motto">Nomina sunt consequentia rerum.</div>
-    <div style="margin-top:10px">Glossario realizzato dalle classi <span id="clf">3E e 3F</span> · a cura del prof. Danilo Cerrato · Istituto Barsanti - sede Salvetti, Massa</div>
+    <div style="margin-top:10px">Glossario realizzato dalle classi <span id="clf">3E e 3F</span> · a cura del prof. Danilo Cerrato</div><div>Istituto di Istruzione Superiore «L. Barsanti» · sede Salvetti · Massa · Laboratorio odontotecnico</div>
   </footer>
 </main>
 <script>
@@ -121,12 +198,13 @@ function edizioni() {
     return '<option value="' + esc(x.id) + '"' + (x.id === (G.att || 'main') ? ' selected' : '') + '>' + esc(x.nome) + ' · classi ' + esc((x.classi || []).join(', ')) + '</option>'; }).join('') + '</select>' : '';
   var conEd = !(E.length < 2 && !G.archiviata);
   if (!selAtt && !conEd) { el.innerHTML = ''; return; }
-  el.innerHTML = '<div class="edz">' + selAtt + (conEd ? '<label for="selEd">Edizione</label><select id="selEd">' + E.map(function (e) {
-    return '<option value="' + esc(e.id) + '"' + (e.id === cur ? ' selected' : '') + '>' + esc(e.nome) + ' · a.s. ' + esc(e.as) + (e.inCorso ? ' (in corso)' : '') + '</option>'; }).join('') + '</select>' +
+  // di norma il glossario completo (tutte le edizioni insieme); dal menu si sceglie anche una sola edizione
+  el.innerHTML = '<div class="edz">' + selAtt + (conEd ? '<label for="selEd">Edizione</label><select id="selEd"><option value=""' + (!ED ? ' selected' : '') + '>Tutte le edizioni (glossario completo)</option>' + E.map(function (e) {
+    return '<option value="' + esc(e.id) + '"' + (ED && e.id === (ED || cur) ? ' selected' : '') + '>' + esc(e.nome) + ' · a.s. ' + esc(e.as) + (e.inCorso ? ' (in corso)' : '') + '</option>'; }).join('') + '</select>' +
     (G.archiviata ? '<span class="arch">Edizione archiviata: la consulti com\'era a lavoro concluso.</span>' : '') : '') + '</div>';
   if (conEd) document.getElementById('selEd').onchange = function () {
-    var v = this.value, e = E.filter(function (x) { return x.id === v; })[0];
-    location.href = location.pathname + (e && e.inCorso ? (ATT ? '?att=' + encodeURIComponent(ATT) : '') : '?ed=' + encodeURIComponent(v));
+    var v = this.value;
+    location.href = location.pathname + (!v ? (ATT ? '?att=' + encodeURIComponent(ATT) : '') : '?ed=' + encodeURIComponent(v)) + location.hash;
   };
   if (selAtt) document.getElementById('selAtt').onchange = function () { location.href = location.pathname + (this.value !== 'main' ? '?att=' + encodeURIComponent(this.value) : ''); };
 }
@@ -160,6 +238,154 @@ function lista() {
   document.getElementById('stat').textContent = (Q ? vis + ' risultati · ' : '') + app + ' definizioni approvate su ' + tot + ' termini';
 }
 document.getElementById('q').addEventListener('input', function (e) { Q = e.target.value.trim(); lista(); });
+
+/* ---------- viste: home, glossario, prova, squadre (indirizzo con #) ---------- */
+var VISTE = { '': 'vHome', glossario: 'vGlos', prova: 'vProva', squadre: 'vSquadre' };
+function vista() { var h = (location.hash || '').replace('#', ''); return VISTE[h] ? h : ''; }
+function vai(v) { if (vista() === v) mostra(); else location.hash = v ? '#' + v : '#'; if (!v) history.replaceState(null, '', location.pathname + location.search); mostra(); }
+function mostra() {
+  var v = vista(); fermaGioco();
+  Object.keys(VISTE).forEach(function (k) { document.getElementById(VISTE[k]).hidden = k !== v; });
+  // un gioco lasciato a metà si chiude: niente domande nascoste in giro
+  if (v !== 'prova') document.getElementById('gProva').innerHTML = '';
+  if (v !== 'squadre') document.getElementById('gSquadre').innerHTML = '';
+  if (v === 'prova') provaInizio(); else if (v === 'squadre') squadreSetup();
+  window.scrollTo({ top: 0 }); altezze();
+}
+window.addEventListener('hashchange', mostra);
+function home() {
+  document.getElementById('hAnno').textContent = G.anno ? ' · a.s. ' + G.anno : '';
+  document.getElementById('fascia').innerHTML = G.aree.map(function (a) { return '<i style="background:' + esc(a.colore) + '"></i>'; }).join('');
+  var tot = 0, app = 0; G.aree.forEach(function (a) { tot += a.termini.length; app += a.termini.filter(function (t) { return t.def; }).length; });
+  document.getElementById('hStat').textContent = app + ' definizioni approvate su ' + tot + ' termini · ' + G.aree.length + ' argomenti';
+  document.getElementById('aTiles').innerHTML = G.aree.map(function (a) {
+    return '<button class="atile" style="--c:' + esc(a.colore) + '" data-area="' + a.n + '"><span class="n">' + esc(a.numero || ('0' + a.n)) + '</span><span><b>' + esc(a.it) + '</b><span>' + a.termini.length + ' termini</span></span></button>';
+  }).join('');
+  document.querySelectorAll('.atile').forEach(function (b) { b.onclick = function () { AREA = b.getAttribute('data-area'); Q = ''; document.getElementById('q').value = ''; tabs(); lista(); vai('glossario'); }; });
+}
+document.getElementById('hForm').addEventListener('submit', function (e) {
+  e.preventDefault(); Q = document.getElementById('hq').value.trim(); AREA = 'tutte'; document.getElementById('q').value = Q; tabs(); lista(); vai('glossario');
+});
+
+/* ---------- giochi: domande con 4 definizioni prese dalle definizioni approvate ---------- */
+var GIOCO = null, TIMER = null;
+function fermaGioco() { if (TIMER) clearInterval(TIMER); TIMER = null; }
+function mescola(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+function pool() { var p = []; G.aree.forEach(function (a) { a.termini.forEach(function (t) { if (t.def) p.push({ termine: t.termine, def: t.def, area: a.n, nomeArea: a.it, colore: a.colore }); }); }); return p; }
+function domandaDa(t, P) {
+  // le definizioni sbagliate vengono di preferenza dallo stesso argomento, poi dagli altri
+  var stessa = mescola(P.filter(function (x) { return x.area === t.area && x.def !== t.def; })), altre = mescola(P.filter(function (x) { return x.area !== t.area && x.def !== t.def; }));
+  var sb = stessa.concat(altre).slice(0, 3).map(function (x) { return x.def; });
+  return { t: t, opz: mescola([t.def].concat(sb)) };
+}
+function scegli(n, P, giaUsati) {
+  var liberi = P.filter(function (x) { return !giaUsati[x.termine]; });
+  var s = mescola(liberi.length >= n ? liberi : P).slice(0, n); s.forEach(function (x) { giaUsati[x.termine] = 1; }); return s;
+}
+var LET = ['A', 'B', 'C', 'D'];
+function htmlDomanda(d, testa) {
+  return '<div class="gbox" style="border-top:6px solid ' + esc(d.t.colore) + '">' + testa +
+    '<div><div style="font-size:14px;color:var(--muto)">' + esc(d.t.nomeArea) + '</div><div class="gterm">' + esc(d.t.termine) + '</div></div>' +
+    '<div class="gtempo" id="gT"><i id="gTi" style="width:100%"></i></div><div class="gtesta" style="margin-top:-6px"><span id="gSec">60 secondi</span></div>' +
+    '<div style="display:grid;gap:8px">' + d.opz.map(function (o, i) { return '<button class="gop" data-i="' + i + '"><b>' + LET[i] + '</b><span>' + esc(o) + '</span></button>'; }).join('') + '</div>' +
+    '<div id="gEs" aria-live="polite"></div></div>';
+}
+// mostra la domanda, avvia il minuto e chiama fine(giusta) alla risposta o allo scadere
+function poniDomanda(el, d, testa, fine) {
+  el.innerHTML = htmlDomanda(d, testa); fermaGioco();
+  var scad = Date.now() + 60000, fatto = false;
+  var chiudi = function (i) {
+    if (fatto) return; fatto = true; fermaGioco();
+    var giusta = i != null && d.opz[i] === d.t.def;
+    el.querySelectorAll('.gop').forEach(function (b, k) { b.disabled = true; if (d.opz[k] === d.t.def) b.classList.add('ok'); else if (k === i) b.classList.add('no'); });
+    document.getElementById('gEs').innerHTML = '<p style="margin:0;font:800 18px Archivo,Arial,sans-serif;color:' + (giusta ? '#1F7A3D' : '#C0392B') + '">' + (giusta ? 'Giusto!' : i == null ? 'Tempo scaduto.' : 'Sbagliato.') + '</p>';
+    fine(giusta);
+  };
+  el.querySelectorAll('.gop').forEach(function (b) { b.onclick = function () { chiudi(Number(b.getAttribute('data-i'))); }; });
+  TIMER = setInterval(function () {
+    var r = scad - Date.now(), bi = document.getElementById('gTi'); if (!bi) return fermaGioco();
+    bi.style.width = Math.max(0, r / 600) + '%'; document.getElementById('gT').className = 'gtempo' + (r < 10000 ? ' poco' : '');
+    document.getElementById('gSec').textContent = Math.max(0, Math.ceil(r / 1000)) + ' secondi';
+    if (r <= 0) chiudi(null);
+  }, 200);
+}
+function pochi(el) { el.innerHTML = '<div class="gbox"><h2>Ancora un po\' di pazienza</h2><p style="margin:0">Il gioco si attiva quando nel glossario ci sono almeno 4 definizioni approvate.</p></div>'; }
+var fv = function (n) { return String(Math.round(n * 100) / 100).replace('.', ','); };
+
+/* «Mettiti alla prova»: 10 termini, punteggio da 4 (nessuna giusta) a 7,5 (tutte giuste), a quarti di punto */
+function provaInizio() {
+  var el = document.getElementById('gProva'), P = pool();
+  if (P.length < 4) return pochi(el);
+  var n = Math.min(10, P.length), lista = scegli(n, P, {});
+  GIOCO = { n: n, i: 0, giuste: 0, storia: [], dom: lista.map(function (t) { return domandaDa(t, P); }) };
+  provaDomanda();
+}
+function provaDomanda() {
+  var g = GIOCO, el = document.getElementById('gProva'), d = g.dom[g.i];
+  poniDomanda(el, d, '<div class="gtesta"><span>Mettiti alla prova · termine ' + (g.i + 1) + ' di ' + g.n + '</span><span>' + g.giuste + (g.giuste === 1 ? ' giusta' : ' giuste') + '</span></div>', function (ok) {
+    if (ok) g.giuste++; g.storia.push({ t: d.t, ok: ok });
+    document.getElementById('gEs').insertAdjacentHTML('beforeend', '<button class="gbtn" id="gAvanti" style="margin-top:10px">' + (g.i + 1 < g.n ? 'Prossimo termine' : 'Vedi il punteggio') + '</button>');
+    document.getElementById('gAvanti').onclick = function () { g.i++; if (g.i < g.n) provaDomanda(); else provaFine(); };
+    document.getElementById('gAvanti').focus();
+  });
+}
+function provaFine() {
+  var g = GIOCO, v = Math.round((4 + 3.5 * g.giuste / g.n) * 4) / 4;
+  document.getElementById('gProva').innerHTML = '<div class="gbox"><h2>Il tuo punteggio</h2><div class="gpunteggio"><b>' + fv(v) + '</b><span style="font-size:18px">su 7,5 · ' + g.giuste + ' giuste su ' + g.n + '</span></div>' +
+    '<p style="margin:0;color:var(--muto)">Ripassa i termini che hai sbagliato: la definizione giusta è qui sotto.</p>' +
+    '<ul class="grev">' + g.storia.map(function (x) { return '<li style="--c:' + (x.ok ? '#1F7A3D' : '#C0392B') + '"><b>' + (x.ok ? '✓ ' : '✗ ') + esc(x.t.termine) + '</b>' + (x.ok ? '' : '<br>' + esc(x.t.def)) + '</li>'; }).join('') + '</ul>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="gbtn" onclick="provaInizio()">Riprova con altri termini</button><button class="gbtn sec" onclick="vai(\'\')">Torna alla home</button></div></div>';
+  window.scrollTo({ top: 0 });
+}
+
+/* «Gioca a squadre»: 1-3 squadre con il loro nome, fino a 20 termini a squadra, a turno sullo stesso telefono */
+var COLSQ = ['#2E6DB4', '#B5532A', '#1F8A70'], SQ = { n: 2, nomi: ['', '', ''], termini: 10 };
+function squadreSetup() {
+  var el = document.getElementById('gSquadre'), P = pool();
+  if (P.length < 4) return pochi(el);
+  var max = Math.min(20, Math.max(1, Math.floor(P.length / SQ.n)) || 1, P.length); if (SQ.termini > max) SQ.termini = max;
+  el.innerHTML = '<div class="gbox"><h2>Gioca a squadre</h2><p style="margin:0;color:var(--muto)">Le squadre rispondono a turno: per ogni termine 4 definizioni e 1 minuto. Alla fine vince la squadra con più risposte giuste.</p>' +
+    '<div class="gform"><label>Quante squadre?</label><div class="gseg" role="group" aria-label="Numero di squadre">' + [1, 2, 3].map(function (k) { return '<button data-n="' + k + '" aria-pressed="' + (SQ.n === k) + '">' + k + '</button>'; }).join('') + '</div>' +
+    [0, 1, 2].slice(0, SQ.n).map(function (i) { return '<div><label for="sqN' + i + '">Nome della squadra ' + (i + 1) + '</label><input id="sqN' + i + '" maxlength="24" placeholder="Squadra ' + (i + 1) + '" value="' + esc(SQ.nomi[i]) + '" style="border-left:8px solid ' + COLSQ[i] + '"></div>'; }).join('') +
+    '<div><label for="sqT">Termini per squadra</label><select id="sqT">' + Array.from({ length: max }, function (_, k) { return '<option' + (k + 1 === SQ.termini ? ' selected' : '') + '>' + (k + 1) + '</option>'; }).join('') + '</select></div>' +
+    '<button class="gbtn" id="sqVia">Inizia la partita</button></div></div>';
+  el.querySelectorAll('.gseg button').forEach(function (b) { b.onclick = function () { leggiNomi(); SQ.n = Number(b.getAttribute('data-n')); squadreSetup(); }; });
+  document.getElementById('sqT').onchange = function () { SQ.termini = Number(this.value); };
+  document.getElementById('sqVia').onclick = function () { leggiNomi(); squadreInizio(); };
+}
+function leggiNomi() { for (var i = 0; i < 3; i++) { var e = document.getElementById('sqN' + i); if (e) SQ.nomi[i] = e.value.trim(); } }
+function squadreInizio() {
+  var P = pool(), usati = {};
+  var sq = Array.from({ length: SQ.n }, function (_, i) { return { nome: SQ.nomi[i] || 'Squadra ' + (i + 1), col: COLSQ[i], punti: 0, dom: scegli(SQ.termini, P, usati).map(function (t) { return domandaDa(t, P); }) }; });
+  GIOCO = { sq: sq, turno: 0, giro: 0, n: SQ.termini };
+  squadreTurno();
+}
+function tabellone(g, turno) {
+  return '<div class="gsq">' + g.sq.map(function (s, i) { return '<div style="--c:' + s.col + '"' + (i === turno ? ' class="turno"' : '') + '><b>' + esc(s.nome) + '</b><span>' + s.punti + '</span></div>'; }).join('') + '</div>';
+}
+function squadreTurno() {
+  var g = GIOCO, s = g.sq[g.turno], d = s.dom[g.giro], el = document.getElementById('gSquadre');
+  poniDomanda(el, d, tabellone(g, g.turno) + '<div class="gtesta"><span style="color:' + s.col + ';font-size:19px">Tocca a: ' + esc(s.nome) + '</span><span>termine ' + (g.giro + 1) + ' di ' + g.n + '</span></div>', function (ok) {
+    if (ok) s.punti++;
+    var ultimo = g.giro === g.n - 1 && g.turno === g.sq.length - 1;
+    var pross = g.sq[(g.turno + 1) % g.sq.length];
+    document.getElementById('gEs').insertAdjacentHTML('beforeend', (!ok ? '<p style="margin:6px 0 0">La definizione giusta è evidenziata in verde.</p>' : '') +
+      '<button class="gbtn" id="gAvanti" style="margin-top:10px">' + (ultimo ? 'Vedi la classifica' : 'Passa a ' + esc(pross.nome)) + '</button>');
+    document.getElementById('gAvanti').onclick = function () {
+      if (ultimo) return squadreFine();
+      g.turno = (g.turno + 1) % g.sq.length; if (g.turno === 0) g.giro++; squadreTurno();
+    };
+    document.getElementById('gAvanti').focus();
+  });
+}
+function squadreFine() {
+  var g = GIOCO, cl = g.sq.slice().sort(function (a, b) { return b.punti - a.punti; }), top = cl[0].punti, primi = cl.filter(function (s) { return s.punti === top; });
+  var titolo = g.sq.length === 1 ? esc(cl[0].nome) + ': ' + top + ' su ' + g.n : primi.length > 1 ? 'Pareggio tra ' + primi.map(function (s) { return esc(s.nome); }).join(' e ') : 'Vince ' + esc(primi[0].nome) + '!';
+  document.getElementById('gSquadre').innerHTML = '<div class="gbox"><h2>Classifica finale</h2><div class="vince">' + titolo + '</div>' +
+    '<ol style="margin:0;padding-left:22px;display:grid;gap:8px;font-size:18px">' + cl.map(function (s) { return '<li><b style="color:' + s.col + '">' + esc(s.nome) + '</b> · ' + s.punti + ' su ' + g.n + ' (' + Math.round(s.punti / g.n * 100) + '%)</li>'; }).join('') + '</ol>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="gbtn" onclick="squadreInizio()">Rivincita con altri termini</button><button class="gbtn sec" onclick="squadreSetup()">Cambia squadre</button><button class="gbtn sec" onclick="vai(\'\')">Torna alla home</button></div></div>';
+  window.scrollTo({ top: 0 });
+}
 window.addEventListener('resize', function () { if (G) autori(); });
 try { document.getElementById('logo').innerHTML = Poster.logo(11); } catch (e) {}
 try { AREA = localStorage.getItem('gl-area') || 'tutte'; } catch (e) {}
@@ -169,7 +395,7 @@ fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     if (!r.ok) throw new Error(r.errore || 'errore');
     G = r.dati;
     if (AREA !== 'tutte' && !G.aree.some(function (a) { return String(a.n) === String(AREA); })) AREA = 'tutte';
-    edizioni(); autori(); tabs(); lista();
+    edizioni(); autori(); tabs(); lista(); home(); mostra();
   })
   .catch(function () { document.getElementById('lista').innerHTML = '<p class="nulla">Il glossario non è raggiungibile in questo momento. Riprova tra poco.</p>'; document.getElementById('autori').innerHTML = ''; });
 

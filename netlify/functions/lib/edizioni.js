@@ -122,7 +122,31 @@ async function pubblico(db, { ed } = {}) {
     return Object.assign({}, m.pubblico, { edizioni: elenco, archiviata: true });
   }
   if (!corrente) return { aree: [], classi: {}, edizioni: elenco };
-  return Object.assign(L.pubblicoDa(corrente), { edizioni: elenco, archiviata: false });
+  const cur = L.pubblicoDa(corrente);
+  // edizione in corso da sola (scelta nel menu) oppure, di norma, il glossario completo: ogni edizione archiviata lo arricchisce
+  if (ed || !archivi.length || (db.spazio && db.spazio !== 'main')) return Object.assign(cur, { edizioni: elenco, archiviata: false, completo: false });
+  return Object.assign(unisciEdizioni(cur, archivi.filter((m) => !edCorr || m.id !== edCorr.id)), { edizioni: elenco, archiviata: false, completo: true });
+}
+/* glossario completo: le aree si uniscono per nome; un termine già presente non si ripete (vale la definizione più recente approvata) */
+function unisciEdizioni(cur, archivi) {
+  const out = Object.assign({}, cur, { aree: cur.aree.map((a) => Object.assign({}, a, { termini: a.termini.slice() })), classi: Object.assign({}, cur.classi) });
+  const nn = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  archivi.slice().sort((x, y) => String(y.as).localeCompare(String(x.as))).forEach((m) => {
+    const P = m.pubblico || {}, as = m.as || '';
+    (P.aree || []).forEach((pa) => {
+      let a = out.aree.find((x) => nn(x.it) === nn(pa.it));
+      if (!a) { a = Object.assign({}, pa, { n: out.aree.length + 1, numero: pa.numero, termini: [] }); out.aree.push(a); }
+      (pa.termini || []).forEach((t) => {
+        if (!t.def) return;
+        const gia = a.termini.find((x) => nn(x.termine) === nn(t.termine));
+        const voce = { termine: t.termine, def: t.def, autore: (t.autore || '') + (as ? ' · a.s. ' + as : '') };
+        if (!gia) a.termini.push(voce);
+        else if (!gia.def) Object.assign(gia, voce);
+      });
+    });
+    Object.keys(P.classi || {}).forEach((c) => { const k = as ? c + ' (' + as + ')' : c; if (!out.classi[k]) out.classi[k] = P.classi[c]; });
+  });
+  return out;
 }
 
 /* ---------- termini già usati e generatore ---------- */
