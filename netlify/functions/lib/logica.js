@@ -316,7 +316,8 @@ function pacchetto(stato, chi) {
     areeStd: chi.ruolo === 'docente' ? DATI.AREE : undefined,
     pacchetti: chi.ruolo === 'docente' ? (function () { const P = require('./pacchetti'); return Object.keys(P).map((id) => ({ id, nome: P[id].nome, aree: P[id].aree, termini: Object.fromEntries(Object.keys(P[id].termini).map((n) => [n, P[id].termini[n].length])) })); })() : undefined,
     areeMie: !!(Array.isArray(stato.config.aree) && stato.config.aree.length),
-    alunni: stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a) })),
+    // esclusi dallo scritto: marcati «fuori», spariscono dai cartelloni (testata e termini)
+    alunni: stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), fuori: valuta(stato, a, now).escluso || undefined })),
     termini: termini.map((t) => vistaTermine(t, chi, imp.lingue))
   };
   delete out.utente._a;
@@ -781,7 +782,7 @@ async function trasferisciTermini(db, { codice, da, a: verso, termini, scadenza 
     const ts = termini.map((id) => stato.termini.find((t) => t.id === String(id)));
     if (ts.some((t) => !t)) errore('Uno dei termini selezionati non esiste.');
     if (ts.some((t) => t.alunno_id !== src.id)) errore('Uno dei termini selezionati non è (più) assegnato a ' + src.nome + ': ricarica la pagina.');
-    if (ts.some((t) => t.stato_it === 'approvata')) errore('Un termine già approvato non si può passare: deselezionalo.');
+    if (!vSrc.escluso && ts.some((t) => t.stato_it === 'approvata')) errore('Un termine già approvato non si può passare: deselezionalo.');
     // chi cede: se è escluso si registra l'esclusione (resta escluso anche senza termini) e l'app non riassegna più nulla in automatico
     const modSrc = { riassegnato: true, riassegnati_a: [...new Set((src.riassegnati_a || (src.riassegnato_a ? [src.riassegnato_a] : [])).concat([dst.id]))] };
     modSrc.riassegnato_a = modSrc.riassegnati_a[0];
@@ -978,9 +979,11 @@ async function pubblico(db) {
 }
 function pubblicoDa(stato) {
   const imp = impostazioni(stato.config);
-  const nomi = {}; stato.alunni.forEach((a) => { nomi[a.id] = nomePubblico(a.nome); });
+  // chi è escluso dallo scritto non compare sulla pagina pubblica: né tra gli autori né accanto ai termini
+  const now = Date.now(), fuori = new Set(stato.alunni.filter((a) => valuta(stato, a, now).escluso).map((a) => a.id));
+  const nomi = {}; stato.alunni.forEach((a) => { if (!fuori.has(a.id)) nomi[a.id] = nomePubblico(a.nome); });
   const classi = {};
-  imp.classi.forEach((c) => { classi[c] = stato.alunni.filter((a) => classeDi(a) === c).sort((x, y) => x.nome.localeCompare(y.nome, 'it')).map((a) => nomePubblico(a.nome)); });
+  imp.classi.forEach((c) => { classi[c] = stato.alunni.filter((a) => classeDi(a) === c && !fuori.has(a.id)).sort((x, y) => x.nome.localeCompare(y.nome, 'it')).map((a) => nomePubblico(a.nome)); });
   const aree = CAT.areeDi(stato.config).map((a) => {
     const ts = stato.termini.filter((t) => String(t.area) === String(a.n)).sort((x, y) => Number(String(x.id).slice(2)) - Number(String(y.id).slice(2)));
     return { n: a.n, it: a.it, colore: a.colore, numero: a.numero || undefined, termini: ts.map((t) => {

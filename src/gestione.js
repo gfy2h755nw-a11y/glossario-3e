@@ -100,7 +100,7 @@ function disegnaGestione() {
       : '<label class="row" style="gap:10px;font-weight:400;cursor:pointer"><input type="checkbox" id="gsBl"' + (r.bloccoRiass ? ' checked' : '') + ' onchange="setBloccoRiass(this)" style="width:22px;height:22px"> Se viene escluso, <b>non</b> passare i suoi termini in automatico: decido io</label>') + '</div>';
   var tab = miei.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th style="width:36px"></th><th>Termine</th><th>Area</th><th>Stato</th><th style="text-align:right">Tentativi</th></tr></thead><tbody>' + miei.map(function (t) {
     var z = area(t.area) || {}, app = t.statoIt === 'approvata';
-    return '<tr><td><input type="checkbox" class="gsT" value="' + t.id + '"' + (app ? ' disabled title="Già approvato: non si passa"' : '') + ' style="width:20px;height:20px" aria-label="Seleziona ' + esc(t.it) + '"></td>' +
+    return '<tr><td><input type="checkbox" class="gsT" value="' + t.id + '"' + (app && !r.escluso ? ' disabled title="Già approvato: non si passa"' : '') + ' style="width:20px;height:20px" aria-label="Seleziona ' + esc(t.it) + '"></td>' +
       '<td><b>' + esc(t.it) + '</b>' + (t.ereditato ? '<br><span class="muted" style="font-size:13px">ricevuto da ' + esc(nomeAlunno(t.alunnoOrig)) + '</span>' : '') + '</td>' +
       '<td><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(z.colore || '#15212B') + ';margin-right:6px"></i>' + t.area + '</td><td>' + chip(t.statoIt) + '</td><td class="n">' + (t.tentIt || 0) + '</td></tr>';
   }).join('') + '</tbody></table></div>' : '<p class="muted" style="margin:0">Nessun termine assegnato in questo momento.</p>';
