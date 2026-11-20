@@ -51,6 +51,7 @@ const AZIONI = {
   quizpersonale: (d, p) => OR.quizPersonale(d, p),
   quizdimezza: (d, p) => OR.quizDimezza(d, p),
   pianoorale: (d, p) => OR.pianoOrale(d, p),
+  oraleprova: (d, p) => OR.oraleProva(d, p),
   oralepesca: (d, p) => OR.oralePesca(d, p),
   oralecambia: (d, p) => OR.oraleCambia(d, p),
   oralesalva: (d, p) => OR.oraleSalva(d, p),

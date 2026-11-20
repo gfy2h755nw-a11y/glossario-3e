@@ -56,10 +56,16 @@ function cfgQuiz(config, classe, tot, alunno) {
 /* lettura leggera (configurazione + un alunno): il quiz fa una richiesta a ogni risposta e non deve rileggere tutto il glossario */
 /* «Prova il quiz»: il docente entra con il suo codice come uno studente finto. Lo stato della prova sta nella config
    (provaQuiz, una stringa JSON per docente): nessun alunno, nessuna statistica e nessun report lo vedono. */
+/* misure da provare: 1 (vecchio link &bes=1) = senza tempo + dimezza; { s, d } = scelte nella pagina della prova */
+function besProva(bes) {
+  if (bes === 1 || bes === '1' || bes === true) return { secondi: 0, dimezza: true };
+  if (bes && typeof bes === 'object' && (bes.s || bes.d)) return { secondi: bes.s ? 0 : null, dimezza: !!bes.d };
+  return null;
+}
 function alunnoProva(config, d, bes) {
   let q = null; try { q = JSON.parse(((config.provaQuiz || {})[d.id || d.codice]) || 'null'); } catch (e) { q = null; }
   const cl = ((config.impostazioni && config.impostazioni.classi) || config.classi || ['3E'])[0];
-  return { id: '_prova', nome: 'Prova Docente', classe: cl, gruppo: 1, quiz: q, bes: bes ? { secondi: 0, dimezza: true } : null, _prova: d.id || d.codice };
+  return { id: '_prova', nome: 'Prova Docente', classe: cl, gruppo: 1, quiz: q, bes: besProva(bes), _prova: d.id || d.codice };
 }
 async function salvaQuiz(db, a, q) {
   if (a._prova) return db.scriviConfig({ provaQuiz: { [a._prova]: JSON.stringify(q) } });
@@ -216,7 +222,7 @@ async function quizRegole(db, { codice, prova, bes }) {
   const a = c && config ? await db.leggiAlunnoCodice(c) : null;
   const R = REG.di(a || prova ? config : {}).quiz;
   // con il codice di un alunno: le sue regole personali, se ne ha (nella prova del docente: quelle scelte per la prova)
-  const P = a ? cfgQuiz(config, L.classeDi(a), null, a) : prova && config ? cfgQuiz(config, null, null, { bes: bes ? { secondi: 0, dimezza: true } : null }) : null;
+  const P = a ? cfgQuiz(config, L.classeDi(a), null, a) : prova && config ? cfgQuiz(config, null, null, { bes: besProva(bes) }) : null;
   return { secondi: P ? P.secondi : R.secondi, opzioni: R.opzioni, passo: P ? P.passo : R.passo, soglia: P ? P.soglia : undefined, senzaTempo: !!(P && P.senzaTempo), dimezza: !!(P && P.dimezza) };
 }
 /* tabellone del quiz per i docenti */
@@ -273,6 +279,25 @@ async function oralePesca(db, { codice, alunno: id, nuova }) {
   const bozza = { data: new Date().toISOString(), termini, cambi: 0 };
   await db.scriviAlunno(a.id, { orale_bozza: bozza });
   return { alunno: a.id, bozza: vistaBozza(cat, bozza) };
+}
+/* simulazione dell'interrogazione: termini pescati tra tutti quelli del glossario, niente viene salvato.
+   Con termini + pos cambia solo quel termine (nella stessa area). bes = metà dei termini. */
+async function oraleProva(db, { codice, bes, termini: att, pos }) {
+  const stato = await db.leggiTutto(); docenteVoti(stato, codice);
+  const cat = catalogo(stato), aree = Object.keys(cat).map(Number).sort((x, y) => x - y), freq = {};
+  if (Array.isArray(att) && pos != null) {
+    const t0 = att[Number(pos)]; if (!t0 || !cat[t0.a]) L.errore('Termine non trovato.');
+    const vietati = {}; att.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; });
+    const s = scegliIn(cat, t0.a, 1, vietati, freq); if (!s.length) L.errore('Non ci sono altri termini disponibili in quest\'area.');
+    const nuovi = att.map((t, i) => (i === Number(pos) ? s[0] : { a: t.a, k: t.k }));
+    return { bozza: vistaBozza(cat, { data: new Date().toISOString(), termini: nuovi, cambi: 0 }) };
+  }
+  const ND = domandeDi(bes ? { bes: {} } : null, stato.config), quota = aree.map(() => Math.floor(ND / aree.length));
+  for (let i = 0, r = ND - quota.reduce((x, y) => x + y, 0); i < r; i++) quota[caso(aree.length)]++;
+  let termini = []; const vietati = {};
+  aree.forEach((ar, i) => { const s = scegliIn(cat, ar, quota[i], vietati, freq); s.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; }); termini = termini.concat(s); });
+  for (let x = termini.length - 1; x > 0; x--) { const y = caso(x + 1); [termini[x], termini[y]] = [termini[y], termini[x]]; }
+  return { bozza: vistaBozza(cat, { data: new Date().toISOString(), termini, cambi: 0 }) };
 }
 async function oraleCambia(db, { codice, alunno: id, pos }) {
   const stato = await db.leggiTutto(); docenteVoti(stato, codice);
@@ -387,4 +412,4 @@ async function quizPersonale(db, { codice, alunno: id, soglia, passo, bes }) {
   return { alunno: a.id, soglia: s, passo: p, bes: mod.bes !== undefined ? mod.bes : a.bes || null, superata: !!(mod.quiz && mod.quiz.superata) };
 }
 
-module.exports = { quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };
+module.exports = { quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, oraleProva, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };

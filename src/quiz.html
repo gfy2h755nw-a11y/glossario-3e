@@ -78,8 +78,9 @@ var Quiz = (function () {
   var box = function () { return document.getElementById('qz'); };
   // prova del docente (/quiz?prova=1, &bes=1 per provare le misure personalizzate): niente viene salvato tra i dati della classe
   var PROVA = /[?&]prova=1/.test(location.search), PMIS = PROVA && /[?&]bes=1/.test(location.search), provaAvviata = false;
+  var MIS = { s: PMIS ? 1 : 0, d: PMIS ? 1 : 0 }; // misure da provare: senza tempo, «Dimezza opzioni»
   function chiama(p) {
-    if (PROVA) { p.prova = 1; if (PMIS) p.bes = 1; }
+    if (PROVA) { p.prova = 1; if (MIS.s || MIS.d) p.bes = { s: MIS.s, d: MIS.d }; }
     return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }).then(function (r) { return r.json(); })
       .then(function (r) { if (!r.ok) throw new Error(r.errore || 'Errore'); return r.dati; });
   }
@@ -109,7 +110,9 @@ var Quiz = (function () {
   function accesso(err) {
     stop(); dom = null;
     var salvato = ''; try { salvato = localStorage.getItem(KEY) || ''; } catch (e) { /* senza memoria si scrive il codice a mano */ }
-    box().innerHTML = testa() + (PROVA ? '<div class="qz-su" style="background:#FFF3E6;border-color:#E8711A">Prova del docente' + (PMIS ? ' con le misure personalizzate (senza tempo, «Dimezza opzioni»)' : '') + ': vedi il quiz come lo vedono gli studenti. Niente viene salvato tra i dati della classe.</div>' : '') +
+    box().innerHTML = testa() + (PROVA ? '<div class="qz-su" style="background:#FFF3E6;border-color:#E8711A">Prova del docente: vedi il quiz come lo vedono gli studenti. Niente viene salvato tra i dati della classe.' +
+        '<label style="display:flex;gap:10px;align-items:center;margin-top:10px;font-weight:400"><input type="checkbox" id="qzMisS" style="width:22px;height:22px"' + (MIS.s ? ' checked' : '') + ' onchange="Quiz.misura(\'s\',this.checked)"> Senza limite di tempo (misura personalizzata)</label>' +
+        '<label style="display:flex;gap:10px;align-items:center;margin-top:6px;font-weight:400"><input type="checkbox" id="qzMisD" style="width:22px;height:22px"' + (MIS.d ? ' checked' : '') + ' onchange="Quiz.misura(\'d\',this.checked)"> Con il pulsante «Dimezza opzioni»</label></div>' : '') +
       '<div class="qz-card"><label for="qzCod">' + (PROVA ? 'Il tuo codice da docente' : 'Il tuo codice personale') + '</label>' +
       '<div class="qz-codice"><input id="qzCod" autocomplete="off" autocapitalize="characters" maxlength="12" value="' + esc(err && cod ? cod : !PROVA && /^[A-Z0-9]{4,12}$/i.test(salvato) ? salvato : '') + '">' +
       '<button class="qz-btn" id="qzVia" onclick="Quiz.via()">Inizia</button></div>' + (err ? '<p class="qz-err" role="alert">' + esc(err) + '</p>' : '') +
@@ -205,7 +208,12 @@ var Quiz = (function () {
     apri(/^[A-Za-z0-9]{4,12}$/.test(c) ? c.toUpperCase() : '');
   }
   function riprendi() { apri(cod); }
-  return { riprendi: riprendi, avvio: avvio, apri: apri, chiudi: chiudi, via: via, rispondi: rispondi, dimezza: dimezza, _pausa: 0 };
+  // prova del docente: cambiare le misure fa ripartire la prova da capo, con le regole aggiornate
+  function misura(k, v) {
+    MIS[k] = v ? 1 : 0; provaAvviata = false;
+    chiama({ azione: 'quizregole', codice: String((document.getElementById('qzCod') || {}).value || 'X').trim().toUpperCase() }).then(function (r) { if (r && r.opzioni) { R = r; var u = document.getElementById('qzReg'); if (u) u.innerHTML = regole(R); } }).catch(function () {});
+  }
+  return { riprendi: riprendi, avvio: avvio, apri: apri, chiudi: chiudi, via: via, rispondi: rispondi, dimezza: dimezza, misura: misura, _pausa: 0 };
 })();
 Quiz.avvio();
 

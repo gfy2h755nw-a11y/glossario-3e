@@ -35,8 +35,7 @@ function paginaQuiz() {
     bottoniAccessiQuiz() +
     // prova del docente: si apre la pagina del quiz in una nuova scheda, si entra con il proprio codice da docente
     '<div class="row" style="gap:8px;align-items:center"><a class="btn sec" id="qzProva" href="/quiz?prova=1" target="_blank" rel="noopener">Prova il quiz come uno studente</a>' +
-      '<a class="btn sec" id="qzProvaBes" href="/quiz?prova=1&amp;bes=1" target="_blank" rel="noopener">Prova con le misure personalizzate</a>' +
-      '<span class="muted" style="font-size:14px">si entra con il tuo codice da docente; niente finisce tra i dati della classe</span></div>' +
+      '<span class="muted" style="font-size:14px">si entra con il tuo codice da docente; di norma con il timer della classe, e puoi provare anche le misure BES (senza tempo, «Dimezza opzioni»). Niente finisce tra i dati della classe.</span></div>' +
     '<div class="row"><span class="chip s-approvata">' + sup + ' su ' + righe.length + ' hanno superato il quiz</span><span class="chip s-vuota">' + att + ' hanno fatto almeno una sessione</span>' + (fuori ? '<span class="chip s-correggere">' + fuori + ' non ammessi (scadenza passata)</span>' : '') + '</div>' +
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th><th style="text-align:right">Sessioni</th><th style="text-align:right">Tempo</th><th style="text-align:right" title="Tempo passato sul quiz fino al superamento (o fino alla scadenza)">Fino al termine</th><th style="text-align:right">Risposte</th><th style="text-align:right">Corrette</th><th style="text-align:right">Errori</th><th style="text-align:right">Termini persi</th><th>Termini indovinati</th><th>Ammissione all\'orale</th><th></th></tr></thead><tbody>';
   righe.forEach(function (r) {
@@ -83,7 +82,9 @@ function paginaOrale() {
       '<td>' + (!puo ? '' : q.superata ? '<div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ' + (o ? 'sec' : '') + ' tb" onclick="apriOrale(\'' + r.id + '\',this)">' + (v.oraleInCorso ? 'Riprendi' : o ? 'Ripeti' : 'Interroga') + '</button>' +
         (o ? '<button class="btn sec tb" onclick="annullaOrale(\'' + r.id + '\',this)">Annulla voto</button>' : '') + '</div>' : '<span class="muted" style="font-size:14px">' + (q.stato === 'scaduto' ? 'non interrogabile' : 'in attesa del quiz') + '</span>') + '</td></tr>';
   });
-  return elencoDelGiorno(righe, puo) + h + '</tbody></table></div></section>';
+  return (puo ? '<section class="card row" id="orSim" style="gap:10px;align-items:center"><b style="font-size:17px">Simulazione</b><button class="btn sec" id="orSimula" onclick="simulaOrale(false,this)">Simula un\'interrogazione</button>' +
+    '<button class="btn sec" id="orSimulaBes" onclick="simulaOrale(true,this)">Simula con ' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini (misure personalizzate)</button><span class="muted" style="font-size:14px">per provare o mostrare in classe come funziona: niente viene salvato</span></section>' : '') +
+    elencoDelGiorno(righe, puo) + h + '</tbody></table></div></section>';
 }
 /* --- calendario delle interrogazioni --- */
 function oggiIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -142,17 +143,27 @@ function apriOrale(id, btn) {
     vistaDocente(); window.scrollTo(0, 0);
   }).catch(function (e) { toast(errMsg(e), true); if (btn) btn.disabled = false; });
 }
+/* simulazione: stessa schermata dell'interrogazione, con termini pescati a caso e nessun salvataggio */
+function simulaOrale(bes, btn) {
+  if (btn) btn.disabled = true;
+  api('oraleprova', { bes: bes }).then(function (d) {
+    S.or = { alunno: '_prova', prova: true, bes: !!bes, bozza: d.bozza, esiti: d.bozza.termini.map(function () { return null; }), nota: '' };
+    vistaDocente(); window.scrollTo(0, 0);
+  }).catch(function (e) { toast(errMsg(e), true); if (btn) btn.disabled = false; });
+}
 function puntiOrale() { return S.or.esiti.reduce(function (x, y) { return x + (y || 0); }, 0); }
 function schedaOrale() {
   var o = S.or, r = (S.d.panoramica || []).filter(function (x) { return x.id === o.alunno; })[0] || {}, q = quizDi(o.alunno), vs = votiDi(o.alunno);
   var fatti = o.esiti.filter(function (e) { return e !== null; }).length, punti = puntiOrale(), tutti = fatti === o.esiti.length;
-  var h = '<section class="card stack" id="oraleScheda"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Interrogazione di ' + esc(r.nome || nomeAlunno(o.alunno)) + ' <span class="muted" style="font-weight:400;font-size:16px">' + esc(etich(r)) + '</span></h2>' +
+  if (o.prova) r = { nome: 'Simulazione' };
+  var h = '<section class="card stack" id="oraleScheda"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">' + (o.prova ? 'Simulazione dell\'interrogazione' + (o.bes ? ' · ' + o.esiti.length + ' termini' : '') : 'Interrogazione di ' + esc(r.nome || nomeAlunno(o.alunno))) + ' <span class="muted" style="font-weight:400;font-size:16px">' + (o.prova ? '' : esc(etich(r))) + '</span></h2>' +
     '<div class="row" style="gap:6px"><button class="btn sec tb" id="orPieno" onclick="schermoPieno(' + (S.orPieno ? 'false' : 'true') + ')">' + (S.orPieno ? 'Esci dallo schermo pieno' : 'Schermo pieno') + '</button><button class="btn sec tb" onclick="S.or=null;if(S.orPieno)schermoPieno(false);vistaDocente()">Torna all\'elenco</button></div></div>' +
+    (o.prova ? '<div class="note" id="orInfo">Simulazione: termini pescati a caso tra tutti quelli del glossario. Segna le risposte e cambia i termini come in un\'interrogazione vera: <b>niente viene salvato</b> e nessuno studente è coinvolto.</div>' : '' +
     '<div class="or-info" id="orInfo"><div><span class="kl">Voto dello scritto</span><b>' + (r.escluso ? 'Escluso' : fv(vs.voto)) + '</b><small>' + (r.escluso ? 'non entra nel finale' : (vs.errIt || 0) + (vs.errIt === 1 ? ' errore' : ' errori') + (vs.manuale != null ? ' · voto manuale' : '')) + '</small></div>' +
     '<div><span class="kl">Tempo nel quiz</span><b>' + (q.sessioni ? tempoMs(q.ms) : '—') + '</b><small>' + (q.sessioni ? q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') + (q.superata ? ' · ' + tempoMs(q.msFine) + ' per superarlo' : '') : 'nessuna sessione') + '</small></div>' +
     '<div><span class="kl">Risposte nel quiz</span><b>' + q.corrette + ' / ' + q.risposte + '</b><small>' + (q.risposte ? Math.round(q.corrette / q.risposte * 100) + '% corrette · ' + (q.errori || 0) + ' errori' : 'nessuna risposta') + '</small></div>' +
     '<div><span class="kl">Termini indovinati</span><b>' + q.indovinati + ' / ' + q.soglia + '</b><small>' + (q.superata ? 'quiz superato il ' + esc(dataBreve(q.superata)) : 'quiz non superato') + '</small></div></div>' +
-    (r.escluso ? '<div class="note warn"><b>Alunno escluso dallo scritto:</b> all\'orale può arrivare al massimo a ' + fv(RG().orale.maxEsclusi) + ' (' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto).</div>' : '') +
+    (r.escluso ? '<div class="note warn"><b>Alunno escluso dallo scritto:</b> all\'orale può arrivare al massimo a ' + fv(RG().orale.maxEsclusi) + ' (' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto).</div>' : '')) +
     '</section><div class="or-punti" id="orPunti" aria-live="polite"><div><span class="kl">Risposte segnate</span><b>' + fatti + ' / ' + o.esiti.length + '</b></div><div><span class="kl">Punti</span><b>' + fv(punti) + ' / ' + o.esiti.length + '</b>' + (o.esiti.length !== RG().orale.domande ? '<small>studente BES: ' + o.esiti.length + ' termini, ogni punto vale doppio</small>' : '') + '</div>' +
     '<div><span class="kl">Voto orale</span><b>' + (tutti ? fv(votoOraleDa(punti, r.escluso, o.esiti.length)) : '—') + '</b></div></div>';
   o.bozza.termini.forEach(function (t, i) {
@@ -179,7 +190,7 @@ function schedaOrale() {
 function vistaOralePos() { var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); }
 function testoSalvaOrale(calc, tutti) {
   var m = S.or && S.or.mano != null && String(S.or.mano).trim() !== '' ? S.or.mano : null;
-  return 'Salva l\'interrogazione' + (tutti ? ' · voto ' + (m != null ? esc(String(m).replace('.', ',')) + ' (tuo)' : fv(calc)) : '');
+  return (S.or && S.or.prova ? 'Concludi la simulazione' : 'Salva l\'interrogazione') + (tutti ? ' · voto ' + (m != null ? esc(String(m).replace('.', ',')) + ' (tuo)' : fv(calc)) : '');
 }
 function aggiornaSalvaOrale() {
   var b = $('orSalva'), r = (S.d.panoramica || []).filter(function (x) { return x.id === S.or.alunno; })[0] || {};
@@ -192,11 +203,17 @@ function esitoOrale(i, v) {
 }
 function cambiaOrale(i, btn) {
   btn.disabled = true;
-  api('oralecambia', { alunno: S.or.alunno, pos: i }).then(function (d) {
+  (S.or.prova ? api('oraleprova', { bes: S.or.bes, pos: i, termini: S.or.bozza.termini.map(function (t) { return { a: t.area, k: t.k }; }) }) : api('oralecambia', { alunno: S.or.alunno, pos: i })).then(function (d) {
     S.or.bozza = d.bozza; S.or.esiti[i] = null; var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); toast('Termine cambiato');
   }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
 }
 function salvaOrale(btn) {
+  if (S.or.prova) {
+    var m = S.or.mano != null && String(S.or.mano).trim() !== '' ? String(S.or.mano).trim().replace('.', ',') : null, c = fv(votoOraleDa(puntiOrale(), false, S.or.esiti.length));
+    finestra('Simulazione conclusa', '<p style="margin:0">Voto orale della simulazione: <b style="font-size:22px">' + esc(m || c) + '</b>' + (m ? ' (assegnato da te; calcolato ' + c + ')' : '') + '.</p><p class="muted" style="margin:0">Non è stato salvato nulla.</p>',
+      [{ t: 'Nuova simulazione', f: function () { var b = S.or.bes; S.or = null; simulaOrale(b); } }, { t: 'Torna all\'elenco', f: function () { S.or = null; if (S.orPieno) schermoPieno(false); vistaDocente(); } }]);
+    return;
+  }
   btn.disabled = true;
   var mano = S.or.mano != null && String(S.or.mano).trim() !== '' ? String(S.or.mano).trim() : null;
   api('oralesalva', { alunno: S.or.alunno, esiti: S.or.esiti, nota: S.or.nota, votoDocente: mano }).then(function (d) {
@@ -204,6 +221,7 @@ function salvaOrale(btn) {
   }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
 }
 function scartaOrale(btn) {
+  if (S.or.prova) { S.or = null; if (S.orPieno) schermoPieno(false); vistaDocente(); return; }
   btn.disabled = true;
   api('oraleannulla', { alunno: S.or.alunno, bozza: true }).then(function () { S.or = null; return ricarica('Interrogazione scartata'); }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
 }
