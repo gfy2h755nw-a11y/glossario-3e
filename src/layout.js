@@ -8,6 +8,7 @@ var ICO = {
   voti: '<path d="M3 4h18v16H3zM3 10h18M9 4v16"/>',
   codici: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-6"/>',
   cartelloni: '<rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+  revcart: '<rect x="3" y="2" width="12" height="17" rx="1.5"/><path d="M6 7h6M6 11h4"/><path d="M14.5 20.5l1-3.5 5.5-5.5 2.5 2.5-5.5 5.5z"/>',
   documenti: '<path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5M9 13h7M9 17h7"/>',
   impostazioni: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4.9a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.5a7 7 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-.9c.6.5 1.3.9 2 1.2L10 21h4l.5-2.5c.7-.3 1.4-.7 2-1.2l2.4.9 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/>',
   edizioni: '<path d="M3 7h18v13H3zM3 7l2-4h14l2 4M10 12h4"/>',
@@ -31,6 +32,7 @@ function PAGINE() {
     { id: 'voti', gr: 'Studenti', t: 'Voti e tabellone', vis: !!A && (PUO('voti') || PUO('studenti') || PUO('documenti')) },
     { id: 'codici', gr: 'Studenti', t: 'Codici e schede QR', vis: !!S.d.codiciAlunni && !ro },
     { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
+    { id: 'revcart', gr: 'Materiali', t: 'Revisione cartelloni', vis: !!A && PUO('documenti') && !ro, bd: S.rc && Object.keys(S.rc.cambiate).length ? Object.keys(S.rc.cambiate).length : 0 },
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
     { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
@@ -48,6 +50,11 @@ function contaSollecito() { return righeDaSollecitare().length; }
 function ricordaPag(id) { try { if (id) sessionStorage.setItem('glo_pag', id); else sessionStorage.removeItem('glo_pag'); } catch (e) { /* niente memoria: si riparte dal cruscotto */ } }
 function pagRicordata() { try { return sessionStorage.getItem('glo_pag'); } catch (e) { return null; } }
 function vai(id) {
+  if (S.rc && id !== 'revcart' && Object.keys(S.rc.cambiate).length) {
+    finestra('Modifiche non salvate', '<p style="margin:0">Nella revisione dei cartelloni ci sono correzioni non ancora salvate.</p>', [{ t: 'Esci senza salvare', warn: true, f: function () { S.rc = null; vai(id); } }]);
+    return;
+  }
+  if (id !== 'revcart') S.rc = null;
   S.or = null; S.pag = id; ricordaPag(id); document.body.classList.remove('menu-on');
   vistaDocente(); window.scrollTo(0, 0);
 }
@@ -118,6 +125,7 @@ function vistaDocente() {
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
   if (pag === 'situazione') { selSituazione(); disegnaSituazione(); }
   if (pag === 'gestione') { selGestione(); disegnaGestione(); }
+  if (pag === 'revcart') avviaRevCart();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
   if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
   if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
@@ -216,6 +224,7 @@ var PAGINA = {
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
   },
+  revcart: function () { return paginaRevCart(); },
   cartelloni: function () { return (ADM() && !RO() && S.d.areeMie ? bloccoAreeMie() : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');

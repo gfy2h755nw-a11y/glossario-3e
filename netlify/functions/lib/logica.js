@@ -583,6 +583,74 @@ async function salvaTraduzioni(db, { codice, voci }) {
   return { salvate: voci.length };
 }
 
+/* ---------- revisione dei cartelloni prima della stampa ----------
+   Il docente corregge il termine e la definizione già data (in italiano e, se c'è, in inglese).
+   La correzione vale ovunque: cartelloni, pagina pubblica, Word, quiz e interrogazione. I voti non cambiano.
+   Il testo originale resta salvato nel termine (rev_orig) e si può ripristinare. */
+const pulisciRev = (x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim();
+function voceRevisione(t, nomi) {
+  const k = indiceTermine(t), app = t.stato_it === 'approvata' && t.scelta_it != null, d = app ? t.scelta_it : k;
+  return { id: t.id, area: Number(t.area), n: k + 1, approvata: app, stato: t.stato_it || '', it: t.termine_it, defIt: testoDef(t.area, d, 'it'),
+    en: CAT.termineEn(t.area, k), defEn: testoDef(t.area, d, 'en'), alunno: nomi[t.alunno_orig || t.alunno_id] || '', classe: '',
+    rev: t.rev || null, orig: t.rev_orig || null };
+}
+async function revisioneCartelloni(db, { codice }) {
+  const stato = await db.leggiTutto();
+  permesso(identifica(stato, codice), 'documenti');
+  const nomi = {}, classi = {}; stato.alunni.forEach((a) => { nomi[a.id] = a.nome; classi[a.id] = classeDi(a); });
+  const aree = CAT.areeDi(stato.config).map((a) => ({ n: a.n, it: a.it, colore: a.colore, voci: stato.termini.filter((t) => String(t.area) === String(a.n))
+    .sort((x, y) => indiceTermine(x) - indiceTermine(y)).map((t) => Object.assign(voceRevisione(t, nomi), { classe: classi[t.alunno_orig || t.alunno_id] || '' })) }));
+  return { aree, inglese: conInglese(impostazioni(stato.config)) };
+}
+async function salvaRevisione(db, { codice, voci, ripristina }) {
+  const stato = await db.leggiTutto();
+  const chi = identifica(stato, codice); permesso(chi, 'documenti');
+  if (stato.config.archivio) errore('Edizione archiviata: non si può modificare.');
+  if (!Array.isArray(voci) || !voci.length) errore('Nessuna modifica da salvare.');
+  if (voci.length > 400) errore('Troppe modifiche in una volta.');
+  const EN = conInglese(impostazioni(stato.config));
+  const { cat, blocchi } = CAT.materializza(stato.config);
+  const ora = new Date().toISOString(), mods = [];
+  voci.forEach((v) => {
+    const t = stato.termini.find((x) => x.id === v.id); if (!t) errore('Termine non trovato.');
+    const a = cat[String(t.area)], k = indiceTermine(t), app = t.stato_it === 'approvata' && t.scelta_it != null, d = app ? t.scelta_it : k;
+    if (!a || !a[k] || !a[d]) errore('Termine non trovato nel catalogo.');
+    while (a[k].length < 4) a[k].push(''); while (a[d].length < 4) a[d].push('');
+    const prima = { it: a[k][0], defIt: a[d][1], en: CAT.con(stato.config, () => CAT.termineEn(t.area, k)), defEn: CAT.con(stato.config, () => testoDef(t.area, d, 'en')), d };
+    let nuovo;
+    if (ripristina) {
+      if (!t.rev_orig) errore('«' + t.termine_it + '»: non ci sono correzioni da annullare.');
+      const o = t.rev_orig;
+      if (o.d !== d) errore('«' + t.termine_it + '»: la definizione approvata è cambiata, correggila a mano.');
+      nuovo = { it: o.it, defIt: o.defIt, en: o.en, defEn: o.defEn };
+    } else {
+      nuovo = { it: pulisciRev(v.it), defIt: pulisciRev(v.defIt), en: pulisciRev(v.en != null ? v.en : prima.en), defEn: pulisciRev(v.defEn != null ? v.defEn : prima.defEn) };
+      const nome = '«' + (nuovo.it || t.termine_it) + '»';
+      if (!nuovo.it) errore('Scrivi il termine (era «' + t.termine_it + '»).');
+      if (nuovo.it.length > 80) errore(nome + ': termine troppo lungo (al massimo 80 caratteri).');
+      if (!nuovo.defIt) errore(nome + ': scrivi la definizione.');
+      if (nuovo.defIt.length > 400) errore(nome + ': definizione troppo lunga (al massimo 400 caratteri).');
+      if (nuovo.en.length > 100) errore(nome + ': termine inglese troppo lungo.');
+      if (nuovo.defEn.length > 400) errore(nome + ': definizione inglese troppo lunga.');
+      if (EN && !nuovo.en) errore(nome + ': manca il termine in inglese.');
+      const doppio = stato.termini.find((x) => x.id !== t.id && String(x.area) === String(t.area) && norm(x.termine_it) === norm(nuovo.it) && !voci.some((w) => w.id === x.id));
+      if (doppio) errore(nome + ': nello stesso cartellone c\'è già un termine con questo nome.');
+    }
+    a[k][0] = nuovo.it; a[d][1] = nuovo.defIt; a[k][2] = nuovo.en; a[d][3] = nuovo.defEn;
+    const uguale = ripristina || (nuovo.it === prima.it && nuovo.defIt === prima.defIt && nuovo.en === prima.en && nuovo.defEn === prima.defEn);
+    const mod = { termine_it: nuovo.it, termine_en: nuovo.en };
+    if (ripristina) Object.assign(mod, { rev: null, rev_orig: null });
+    else if (!uguale) Object.assign(mod, { rev: { da: chi.nome, at: ora }, rev_orig: t.rev_orig || prima });
+    mods.push([t.id, mod]);
+  });
+  // doppioni tra le voci salvate insieme
+  const visti = {};
+  mods.forEach(([id, m]) => { const t = stato.termini.find((x) => x.id === id), key = t.area + '|' + norm(m.termine_it); if (visti[key]) errore('«' + m.termine_it + '» compare due volte nello stesso cartellone.'); visti[key] = 1; });
+  await db.scriviConfig({ catalogo: cat, blocchi });
+  await db.transazione(async (tx) => { mods.forEach(([id, m]) => tx.scriviTermine(id, m)); });
+  return { salvate: mods.length };
+}
+
 async function votoManuale(db, { codice, alunno, voto }) {
   const stato = await db.leggiTutto();
   permesso(identifica(stato, codice), 'voti');
@@ -934,6 +1002,6 @@ function nomeClassi(stato) { const c = []; stato.alunni.forEach((a) => { const k
 function etichettaAl(a) { return /^[1-9]$/.test(String(a.gruppo)) ? classeDi(a) + '·' + a.gruppo : classeDi(a); }
 module.exports = { messaggioEsclusione,
   indiceTermine, arrotFinale,
-  traduzioni, salvaTraduzioni, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
+  traduzioni, salvaTraduzioni, revisioneCartelloni, salvaRevisione, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
   anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,
   identifica, soloAdmin, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

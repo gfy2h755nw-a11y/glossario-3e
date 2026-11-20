@@ -879,3 +879,95 @@ function salvaColleghi(btn) {
   api('colleghi', { colleghi: el }).then(function (x) { S.col = null; return ricarica(x.colleghi.length ? 'Colleghi salvati: comunica a ciascuno il suo codice' : 'Nessun collega: l\'app è solo tua'); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
+
+/* ---------- revisione dei cartelloni prima della stampa (pagina «Revisione cartelloni») ---------- */
+function avviaRevCart() {
+  if (S.rc && S.rc.dati) return disegnaRevCart();
+  if (S.rc && S.rc.carico) return;
+  S.rc = S.rc || { area: String(S.poster || 1), dati: null, cambiate: {}, filtro: 'tutti', cerca: '' };
+  S.rc.carico = true;
+  api('revisionecartelloni', {}).then(function (x) { if (!S.rc) return; S.rc.dati = x.aree; S.rc.en = x.inglese; S.rc.carico = false; disegnaRevCart(); })
+    .catch(function (e) { if (S.rc) S.rc.carico = false; toast(errMsg(e), true); var b = $('rcCorpo'); if (b) b.innerHTML = '<p class="no" style="margin:0">' + esc(errMsg(e)) + '</p>'; });
+}
+function paginaRevCart() {
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Revisione cartelloni</h2>' +
+    '<p class="muted" style="margin:0">Controllo finale prima della stampa. Per ogni termine vedi la definizione già data dall\'alunno: puoi correggere <b>il termine</b> e <b>la definizione</b>' + (EN() ? ', in italiano e in inglese' : '') + '. ' +
+    'La correzione vale ovunque: cartelloni, pagina pubblica, Word, quiz e interrogazione. I voti non cambiano. Il testo originale resta salvato e puoi ripristinarlo quando vuoi.</p></section>' +
+    '<div id="rcCorpo" class="stack"><section class="card"><p style="margin:0">Carico i termini…</p></section></div>';
+}
+function rcVal(v, campo) { var c = S.rc.cambiate[v.id]; return c && c[campo] != null ? c[campo] : v[campo]; }
+function disegnaRevCart() {
+  var R = S.rc, box = $('rcCorpo'); if (!box || !R.dati) return;
+  var A = R.dati.filter(function (a) { return String(a.n) === R.area; })[0] || R.dati[0]; R.area = String(A.n);
+  var EN2 = !!R.en, q = (R.cerca || '').toLowerCase();
+  var schede = R.dati.map(function (a) {
+    var sel = String(a.n) === R.area, cor = a.voci.filter(function (v) { return v.rev; }).length, mod = a.voci.filter(function (v) { return R.cambiate[v.id]; }).length;
+    return '<button class="btn' + (sel ? '' : ' sec') + '" style="min-height:40px' + (sel ? ';background:' + esc(a.colore) + ';border-color:' + esc(a.colore) : '') + '" onclick="rcArea(\'' + a.n + '\')">' + a.n + '. ' + esc(a.it) +
+      (cor ? ' <span style="font-weight:400;opacity:.85">· ' + cor + ' corretti</span>' : '') + (mod ? ' <span class="chip s-correggere" style="margin-left:4px">' + mod + ' da salvare</span>' : '') + '</button>';
+  }).join('');
+  var voci = A.voci.filter(function (v) {
+    if (S.filtro.classe && S.filtro.classe !== 'tutte' && v.classe !== S.filtro.classe) return false;
+    if (R.filtro === 'approvati' && !v.approvata) return false;
+    if (R.filtro === 'corretti' && !v.rev) return false;
+    if (R.filtro === 'mancanti' && v.approvata) return false;
+    if (q && (v.it + ' ' + v.defIt + ' ' + v.alunno + ' ' + v.en).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+  var app = A.voci.filter(function (v) { return v.approvata; }).length;
+  var n = Object.keys(R.cambiate).length;
+  var righe = voci.map(function (v) {
+    var st = v.approvata ? '<span class="chip s-approvata">approvata</span>' : v.stato === 'inviata' ? '<span class="chip s-inviata">da approvare</span>' : v.stato === 'correggere' ? '<span class="chip s-correggere">da correggere</span>' : '<span class="chip s-vuota">senza risposta</span>';
+    var rev = v.rev ? ' <span class="chip s-inviata" title="Corretto da ' + esc(v.rev.da) + '">corretto ' + esc(quando(v.rev.at)) + '</span>' : '';
+    var mod = R.cambiate[v.id] ? ' <span class="chip s-correggere">non salvato</span>' : '';
+    var area = function (id, campo, et, righe, max) {
+      var val = rcVal(v, campo);
+      return '<div><label for="' + id + '">' + et + '</label>' + (righe ? '<textarea id="' + id + '" rows="' + righe + '" maxlength="' + max + '" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px" oninput="rcCambia(\'' + v.id + '\',\'' + campo + '\',this.value)">' + esc(val) + '</textarea>'
+        : '<input id="' + id + '" type="text" maxlength="' + max + '" value="' + esc(val) + '" oninput="rcCambia(\'' + v.id + '\',\'' + campo + '\',this.value)">') + '</div>';
+    };
+    return '<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:14px" id="rc_' + v.id + '">' +
+      '<div class="row" style="justify-content:space-between;gap:6px"><div><b class="disp" style="font-size:15px">N. ' + v.n + '</b> <span class="muted" style="font-size:14px">' + esc(v.alunno) + (CLASSI().length > 1 && v.classe ? ' · ' + esc(v.classe) : '') + '</span></div><div class="row" style="gap:4px">' + st + rev + mod + '</div></div>' +
+      '<div class="grid2">' + area('rcI' + v.id, 'it', 'Termine', 0, 80) + (EN2 ? area('rcE' + v.id, 'en', 'Termine in inglese', 0, 100) : '<div></div>') + '</div>' +
+      area('rcD' + v.id, 'defIt', v.approvata ? 'Definizione data dall\'alunno' : 'Definizione corretta (non ancora approvata: sul cartellone non compare)', 3, 400) +
+      (EN2 ? area('rcF' + v.id, 'defEn', 'Definizione in inglese', 2, 400) : '') +
+      (v.orig ? '<div class="muted" style="font-size:13px">Originale: <b>' + esc(v.orig.it) + '</b> · ' + esc(v.orig.defIt) + '</div>' : '') +
+      '<div class="row" style="gap:6px">' + (R.cambiate[v.id] ? '<button class="btn sec" style="min-height:34px;padding:0 10px" onclick="rcAnnulla(\'' + v.id + '\')">Annulla le modifiche</button>' : '') +
+      (v.orig && !R.cambiate[v.id] ? '<button class="btn sec" style="min-height:34px;padding:0 10px" onclick="rcRipristina(\'' + v.id + '\',this)">Ripristina l\'originale</button>' : '') + '</div></div>';
+  }).join('');
+  box.innerHTML = '<section class="card stack"><div class="row" style="gap:6px">' + schede + '</div>' +
+    '<div class="grid4"><div><label for="rcFil">Mostra</label><select id="rcFil" onchange="S.rc.filtro=this.value;disegnaRevCart()">' +
+    [['tutti', 'Tutti i termini'], ['approvati', 'Solo approvati (vanno in stampa)'], ['mancanti', 'Non ancora approvati'], ['corretti', 'Già corretti da te']].map(function (o) { return '<option value="' + o[0] + '"' + (R.filtro === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+    '<div><label for="rcQ">Cerca</label><input id="rcQ" type="text" autocomplete="off" value="' + esc(R.cerca || '') + '" placeholder="termine, parola, alunno" oninput="S.rc.cerca=this.value;clearTimeout(S.rc.tq);S.rc.tq=setTimeout(function(){disegnaRevCart();var e=$(\'rcQ\');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length);}},250)"></div></div>' +
+    '<p style="margin:0">Cartellone ' + A.n + ' · ' + esc(A.it) + ': <b>' + app + ' su ' + A.voci.length + '</b> definizioni approvate (solo queste vanno in stampa) · ' + A.voci.filter(function (v) { return v.rev; }).length + ' corrette da te.</p>' +
+    '<div class="row"><button class="btn ok" id="rcSalva" onclick="rcSalva(this)"' + (n ? '' : ' disabled') + '>Salva le correzioni' + (n ? ' (' + n + ')' : '') + '</button><button class="btn sec" onclick="S.poster=' + Number(A.n) + ';vai(\'cartelloni\')">Vedi il cartellone</button></div></section>' +
+    '<section class="card stack">' + (righe || '<p class="muted" style="margin:0">Nessun termine con questi filtri.</p>') + '</section>' +
+    (n ? '<div class="row" style="position:sticky;bottom:12px;justify-content:flex-end"><button class="btn ok" onclick="rcSalva(this)">Salva le correzioni (' + n + ')</button></div>' : '');
+}
+function rcTrova(id) { var out = null; S.rc.dati.forEach(function (a) { a.voci.forEach(function (v) { if (v.id === id) out = v; }); }); return out; }
+function rcArea(n) { S.rc.area = String(n); disegnaRevCart(); window.scrollTo(0, 0); }
+function rcCambia(id, campo, val) {
+  var v = rcTrova(id), c = S.rc.cambiate[id] = S.rc.cambiate[id] || {};
+  c[campo] = val;
+  // se torna tutto come prima non c'è niente da salvare
+  if (['it', 'defIt', 'en', 'defEn'].every(function (k) { return c[k] == null || c[k].replace(/\s+/g, ' ').trim() === String(v[k] || ''); })) delete S.rc.cambiate[id];
+  var n = Object.keys(S.rc.cambiate).length;
+  [].forEach.call(document.querySelectorAll('#rcCorpo .btn.ok'), function (b) { b.disabled = !n; b.textContent = 'Salva le correzioni' + (n ? ' (' + n + ')' : ''); });
+}
+function rcAnnulla(id) { delete S.rc.cambiate[id]; disegnaRevCart(); }
+function rcDopo(r, msg) {
+  return api('revisionecartelloni', {}).then(function (x) { S.rc.dati = x.aree; return api('login'); }).then(function (d) { S.d = d; toast(msg); var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); });
+}
+function rcSalva(btn) {
+  var voci = Object.keys(S.rc.cambiate).map(function (id) { var v = rcTrova(id); return { id: id, it: rcVal(v, 'it'), defIt: rcVal(v, 'defIt'), en: rcVal(v, 'en'), defEn: rcVal(v, 'defEn') }; });
+  if (!voci.length) return;
+  btn.disabled = true; btn.textContent = 'Salvo…';
+  api('salvarevisione', { voci: voci }).then(function (r) { S.rc.cambiate = {}; return rcDopo(r, r.salvate === 1 ? 'Correzione salvata' : r.salvate + ' correzioni salvate'); })
+    .catch(function (e) { btn.disabled = false; btn.textContent = 'Salva le correzioni'; toast(errMsg(e), true); });
+}
+function rcRipristina(id, btn) {
+  var v = rcTrova(id);
+  finestra('Ripristinare l\'originale?', '<p style="margin:0">Torna il testo dell\'alunno:</p><p style="margin:0"><b>' + esc(v.orig.it) + '</b> · ' + esc(v.orig.defIt) + '</p>', [{ t: 'Ripristina', f: function () {
+    btn.disabled = true;
+    api('salvarevisione', { voci: [{ id: id }], ripristina: true }).then(function (r) { return rcDopo(r, 'Testo originale ripristinato'); })
+      .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+  } }]);
+}

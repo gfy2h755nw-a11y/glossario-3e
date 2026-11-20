@@ -32,6 +32,9 @@ const AZIONI = {
   // inglese per i cartelloni bilingui e colleghi docenti con le loro facoltà
   traduzioni: (d, p) => logica.traduzioni(d, p),
   salvatraduzioni: (d, p) => logica.salvaTraduzioni(d, p),
+  // revisione dei cartelloni prima della stampa: termine e definizione corretti dal docente
+  revisionecartelloni: (d, p) => logica.revisioneCartelloni(d, p),
+  salvarevisione: (d, p) => logica.salvaRevisione(d, p),
   colleghi: (d, p) => logica.colleghi(d, p),
   archivioconsulta: (d, p) => ED.consultaArchivio(d, p),
   archiviofile: (d, p) => ED.fileArchivio(d, p),

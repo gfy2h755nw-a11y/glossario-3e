@@ -3154,7 +3154,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '19/11/2026 · 6';
+var VERSIONE = '20/11/2026 · 1';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -5046,6 +5046,98 @@ function salvaColleghi(btn) {
     .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 
+/* ---------- revisione dei cartelloni prima della stampa (pagina «Revisione cartelloni») ---------- */
+function avviaRevCart() {
+  if (S.rc && S.rc.dati) return disegnaRevCart();
+  if (S.rc && S.rc.carico) return;
+  S.rc = S.rc || { area: String(S.poster || 1), dati: null, cambiate: {}, filtro: 'tutti', cerca: '' };
+  S.rc.carico = true;
+  api('revisionecartelloni', {}).then(function (x) { if (!S.rc) return; S.rc.dati = x.aree; S.rc.en = x.inglese; S.rc.carico = false; disegnaRevCart(); })
+    .catch(function (e) { if (S.rc) S.rc.carico = false; toast(errMsg(e), true); var b = $('rcCorpo'); if (b) b.innerHTML = '<p class="no" style="margin:0">' + esc(errMsg(e)) + '</p>'; });
+}
+function paginaRevCart() {
+  return '<section class="card stack"><h2 style="margin:0;font-size:22px">Revisione cartelloni</h2>' +
+    '<p class="muted" style="margin:0">Controllo finale prima della stampa. Per ogni termine vedi la definizione già data dall\'alunno: puoi correggere <b>il termine</b> e <b>la definizione</b>' + (EN() ? ', in italiano e in inglese' : '') + '. ' +
+    'La correzione vale ovunque: cartelloni, pagina pubblica, Word, quiz e interrogazione. I voti non cambiano. Il testo originale resta salvato e puoi ripristinarlo quando vuoi.</p></section>' +
+    '<div id="rcCorpo" class="stack"><section class="card"><p style="margin:0">Carico i termini…</p></section></div>';
+}
+function rcVal(v, campo) { var c = S.rc.cambiate[v.id]; return c && c[campo] != null ? c[campo] : v[campo]; }
+function disegnaRevCart() {
+  var R = S.rc, box = $('rcCorpo'); if (!box || !R.dati) return;
+  var A = R.dati.filter(function (a) { return String(a.n) === R.area; })[0] || R.dati[0]; R.area = String(A.n);
+  var EN2 = !!R.en, q = (R.cerca || '').toLowerCase();
+  var schede = R.dati.map(function (a) {
+    var sel = String(a.n) === R.area, cor = a.voci.filter(function (v) { return v.rev; }).length, mod = a.voci.filter(function (v) { return R.cambiate[v.id]; }).length;
+    return '<button class="btn' + (sel ? '' : ' sec') + '" style="min-height:40px' + (sel ? ';background:' + esc(a.colore) + ';border-color:' + esc(a.colore) : '') + '" onclick="rcArea(\'' + a.n + '\')">' + a.n + '. ' + esc(a.it) +
+      (cor ? ' <span style="font-weight:400;opacity:.85">· ' + cor + ' corretti</span>' : '') + (mod ? ' <span class="chip s-correggere" style="margin-left:4px">' + mod + ' da salvare</span>' : '') + '</button>';
+  }).join('');
+  var voci = A.voci.filter(function (v) {
+    if (S.filtro.classe && S.filtro.classe !== 'tutte' && v.classe !== S.filtro.classe) return false;
+    if (R.filtro === 'approvati' && !v.approvata) return false;
+    if (R.filtro === 'corretti' && !v.rev) return false;
+    if (R.filtro === 'mancanti' && v.approvata) return false;
+    if (q && (v.it + ' ' + v.defIt + ' ' + v.alunno + ' ' + v.en).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+  var app = A.voci.filter(function (v) { return v.approvata; }).length;
+  var n = Object.keys(R.cambiate).length;
+  var righe = voci.map(function (v) {
+    var st = v.approvata ? '<span class="chip s-approvata">approvata</span>' : v.stato === 'inviata' ? '<span class="chip s-inviata">da approvare</span>' : v.stato === 'correggere' ? '<span class="chip s-correggere">da correggere</span>' : '<span class="chip s-vuota">senza risposta</span>';
+    var rev = v.rev ? ' <span class="chip s-inviata" title="Corretto da ' + esc(v.rev.da) + '">corretto ' + esc(quando(v.rev.at)) + '</span>' : '';
+    var mod = R.cambiate[v.id] ? ' <span class="chip s-correggere">non salvato</span>' : '';
+    var area = function (id, campo, et, righe, max) {
+      var val = rcVal(v, campo);
+      return '<div><label for="' + id + '">' + et + '</label>' + (righe ? '<textarea id="' + id + '" rows="' + righe + '" maxlength="' + max + '" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px" oninput="rcCambia(\'' + v.id + '\',\'' + campo + '\',this.value)">' + esc(val) + '</textarea>'
+        : '<input id="' + id + '" type="text" maxlength="' + max + '" value="' + esc(val) + '" oninput="rcCambia(\'' + v.id + '\',\'' + campo + '\',this.value)">') + '</div>';
+    };
+    return '<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:14px" id="rc_' + v.id + '">' +
+      '<div class="row" style="justify-content:space-between;gap:6px"><div><b class="disp" style="font-size:15px">N. ' + v.n + '</b> <span class="muted" style="font-size:14px">' + esc(v.alunno) + (CLASSI().length > 1 && v.classe ? ' · ' + esc(v.classe) : '') + '</span></div><div class="row" style="gap:4px">' + st + rev + mod + '</div></div>' +
+      '<div class="grid2">' + area('rcI' + v.id, 'it', 'Termine', 0, 80) + (EN2 ? area('rcE' + v.id, 'en', 'Termine in inglese', 0, 100) : '<div></div>') + '</div>' +
+      area('rcD' + v.id, 'defIt', v.approvata ? 'Definizione data dall\'alunno' : 'Definizione corretta (non ancora approvata: sul cartellone non compare)', 3, 400) +
+      (EN2 ? area('rcF' + v.id, 'defEn', 'Definizione in inglese', 2, 400) : '') +
+      (v.orig ? '<div class="muted" style="font-size:13px">Originale: <b>' + esc(v.orig.it) + '</b> · ' + esc(v.orig.defIt) + '</div>' : '') +
+      '<div class="row" style="gap:6px">' + (R.cambiate[v.id] ? '<button class="btn sec" style="min-height:34px;padding:0 10px" onclick="rcAnnulla(\'' + v.id + '\')">Annulla le modifiche</button>' : '') +
+      (v.orig && !R.cambiate[v.id] ? '<button class="btn sec" style="min-height:34px;padding:0 10px" onclick="rcRipristina(\'' + v.id + '\',this)">Ripristina l\'originale</button>' : '') + '</div></div>';
+  }).join('');
+  box.innerHTML = '<section class="card stack"><div class="row" style="gap:6px">' + schede + '</div>' +
+    '<div class="grid4"><div><label for="rcFil">Mostra</label><select id="rcFil" onchange="S.rc.filtro=this.value;disegnaRevCart()">' +
+    [['tutti', 'Tutti i termini'], ['approvati', 'Solo approvati (vanno in stampa)'], ['mancanti', 'Non ancora approvati'], ['corretti', 'Già corretti da te']].map(function (o) { return '<option value="' + o[0] + '"' + (R.filtro === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+    '<div><label for="rcQ">Cerca</label><input id="rcQ" type="text" autocomplete="off" value="' + esc(R.cerca || '') + '" placeholder="termine, parola, alunno" oninput="S.rc.cerca=this.value;clearTimeout(S.rc.tq);S.rc.tq=setTimeout(function(){disegnaRevCart();var e=$(\'rcQ\');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length);}},250)"></div></div>' +
+    '<p style="margin:0">Cartellone ' + A.n + ' · ' + esc(A.it) + ': <b>' + app + ' su ' + A.voci.length + '</b> definizioni approvate (solo queste vanno in stampa) · ' + A.voci.filter(function (v) { return v.rev; }).length + ' corrette da te.</p>' +
+    '<div class="row"><button class="btn ok" id="rcSalva" onclick="rcSalva(this)"' + (n ? '' : ' disabled') + '>Salva le correzioni' + (n ? ' (' + n + ')' : '') + '</button><button class="btn sec" onclick="S.poster=' + Number(A.n) + ';vai(\'cartelloni\')">Vedi il cartellone</button></div></section>' +
+    '<section class="card stack">' + (righe || '<p class="muted" style="margin:0">Nessun termine con questi filtri.</p>') + '</section>' +
+    (n ? '<div class="row" style="position:sticky;bottom:12px;justify-content:flex-end"><button class="btn ok" onclick="rcSalva(this)">Salva le correzioni (' + n + ')</button></div>' : '');
+}
+function rcTrova(id) { var out = null; S.rc.dati.forEach(function (a) { a.voci.forEach(function (v) { if (v.id === id) out = v; }); }); return out; }
+function rcArea(n) { S.rc.area = String(n); disegnaRevCart(); window.scrollTo(0, 0); }
+function rcCambia(id, campo, val) {
+  var v = rcTrova(id), c = S.rc.cambiate[id] = S.rc.cambiate[id] || {};
+  c[campo] = val;
+  // se torna tutto come prima non c'è niente da salvare
+  if (['it', 'defIt', 'en', 'defEn'].every(function (k) { return c[k] == null || c[k].replace(/\s+/g, ' ').trim() === String(v[k] || ''); })) delete S.rc.cambiate[id];
+  var n = Object.keys(S.rc.cambiate).length;
+  [].forEach.call(document.querySelectorAll('#rcCorpo .btn.ok'), function (b) { b.disabled = !n; b.textContent = 'Salva le correzioni' + (n ? ' (' + n + ')' : ''); });
+}
+function rcAnnulla(id) { delete S.rc.cambiate[id]; disegnaRevCart(); }
+function rcDopo(r, msg) {
+  return api('revisionecartelloni', {}).then(function (x) { S.rc.dati = x.aree; return api('login'); }).then(function (d) { S.d = d; toast(msg); var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); });
+}
+function rcSalva(btn) {
+  var voci = Object.keys(S.rc.cambiate).map(function (id) { var v = rcTrova(id); return { id: id, it: rcVal(v, 'it'), defIt: rcVal(v, 'defIt'), en: rcVal(v, 'en'), defEn: rcVal(v, 'defEn') }; });
+  if (!voci.length) return;
+  btn.disabled = true; btn.textContent = 'Salvo…';
+  api('salvarevisione', { voci: voci }).then(function (r) { S.rc.cambiate = {}; return rcDopo(r, r.salvate === 1 ? 'Correzione salvata' : r.salvate + ' correzioni salvate'); })
+    .catch(function (e) { btn.disabled = false; btn.textContent = 'Salva le correzioni'; toast(errMsg(e), true); });
+}
+function rcRipristina(id, btn) {
+  var v = rcTrova(id);
+  finestra('Ripristinare l\'originale?', '<p style="margin:0">Torna il testo dell\'alunno:</p><p style="margin:0"><b>' + esc(v.orig.it) + '</b> · ' + esc(v.orig.defIt) + '</p>', [{ t: 'Ripristina', f: function () {
+    btn.disabled = true;
+    api('salvarevisione', { voci: [{ id: id }], ripristina: true }).then(function (r) { return rcDopo(r, 'Testo originale ripristinato'); })
+      .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+  } }]);
+}
+
 /* ---------- area docenti: barra dei comandi a sinistra, una pagina alla volta al centro ---------- */
 var ICO = {
   cruscotto: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -5056,6 +5148,7 @@ var ICO = {
   voti: '<path d="M3 4h18v16H3zM3 10h18M9 4v16"/>',
   codici: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7h-6"/>',
   cartelloni: '<rect x="5" y="2" width="14" height="20" rx="1.5"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+  revcart: '<rect x="3" y="2" width="12" height="17" rx="1.5"/><path d="M6 7h6M6 11h4"/><path d="M14.5 20.5l1-3.5 5.5-5.5 2.5 2.5-5.5 5.5z"/>',
   documenti: '<path d="M6 2h9l4 4v16H6z"/><path d="M14 2v5h5M9 13h7M9 17h7"/>',
   impostazioni: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4.9a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.5a7 7 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-.9c.6.5 1.3.9 2 1.2L10 21h4l.5-2.5c.7-.3 1.4-.7 2-1.2l2.4.9 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/>',
   edizioni: '<path d="M3 7h18v13H3zM3 7l2-4h14l2 4M10 12h4"/>',
@@ -5079,6 +5172,7 @@ function PAGINE() {
     { id: 'voti', gr: 'Studenti', t: 'Voti e tabellone', vis: !!A && (PUO('voti') || PUO('studenti') || PUO('documenti')) },
     { id: 'codici', gr: 'Studenti', t: 'Codici e schede QR', vis: !!S.d.codiciAlunni && !ro },
     { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
+    { id: 'revcart', gr: 'Materiali', t: 'Revisione cartelloni', vis: !!A && PUO('documenti') && !ro, bd: S.rc && Object.keys(S.rc.cambiate).length ? Object.keys(S.rc.cambiate).length : 0 },
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
     { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
@@ -5096,6 +5190,11 @@ function contaSollecito() { return righeDaSollecitare().length; }
 function ricordaPag(id) { try { if (id) sessionStorage.setItem('glo_pag', id); else sessionStorage.removeItem('glo_pag'); } catch (e) { /* niente memoria: si riparte dal cruscotto */ } }
 function pagRicordata() { try { return sessionStorage.getItem('glo_pag'); } catch (e) { return null; } }
 function vai(id) {
+  if (S.rc && id !== 'revcart' && Object.keys(S.rc.cambiate).length) {
+    finestra('Modifiche non salvate', '<p style="margin:0">Nella revisione dei cartelloni ci sono correzioni non ancora salvate.</p>', [{ t: 'Esci senza salvare', warn: true, f: function () { S.rc = null; vai(id); } }]);
+    return;
+  }
+  if (id !== 'revcart') S.rc = null;
   S.or = null; S.pag = id; ricordaPag(id); document.body.classList.remove('menu-on');
   vistaDocente(); window.scrollTo(0, 0);
 }
@@ -5166,6 +5265,7 @@ function vistaDocente() {
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
   if (pag === 'situazione') { selSituazione(); disegnaSituazione(); }
   if (pag === 'gestione') { selGestione(); disegnaGestione(); }
+  if (pag === 'revcart') avviaRevCart();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
   if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
   if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
@@ -5264,6 +5364,7 @@ var PAGINA = {
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
   },
+  revcart: function () { return paginaRevCart(); },
   cartelloni: function () { return (ADM() && !RO() && S.d.areeMie ? bloccoAreeMie() : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
