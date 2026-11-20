@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '20/11/2026 · 3';
+var VERSIONE = '20/11/2026 · 8';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -804,6 +804,24 @@ function reportPdf() {
   /* --- riepilogo personale: tempi e voti con le date --- */
   var dataAt = function (at) { var m = /^(\d\d)\/(\d\d)\/(\d{4}) (\d\d):(\d\d)/.exec(at || ''); return m ? new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]).getTime() : null; };
   var ggmm = function (v) { if (v == null) return '—'; var d = new Date(v), p2 = function (n) { return ('0' + n).slice(-2); }; return p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); };
+  /* agevolazioni e misure personalizzate (BES e regole personali): solo qui, lo studente non vede etichette */
+  function agevolazioniAlunno(r, v) {
+    var q = quizDi(r.id), o = v.orale, B = q.bes, R = RG(), voci = [];
+    if (B) {
+      voci.push('Studente con bisogni educativi speciali (BES).');
+      voci.push(B.secondi === 0 ? 'Quiz senza limite di tempo per rispondere (classe: ' + R.quiz.secondi + ' secondi).' : B.secondi ? 'Quiz con ' + B.secondi + ' secondi per rispondere (classe: ' + R.quiz.secondi + ').' : 'Quiz con lo stesso tempo della classe (' + R.quiz.secondi + ' secondi).');
+      if (B.dimezza) { var usi = (q.ultime || []).reduce(function (a, s) { return a + (s.d || 0); }, 0); voci.push('Pulsante «Dimezza opzioni» nel quiz (da ' + R.quiz.opzioni + ' a 2 definizioni)' + (usi ? ': usato ' + usi + (usi === 1 ? ' volta.' : ' volte.') : ': mai usato.')); }
+      voci.push('Interrogazione su ' + Math.max(1, Math.round(R.orale.domande / 2)) + ' termini invece di ' + R.orale.domande + ', con punteggio in proporzione (voto massimo invariato).');
+    }
+    if (q.sogliaPersonale != null) voci.push('Quiz: ' + q.sogliaPersonale + ' termini da indovinare invece di ' + (q.sogliaClasse || 'quelli della classe') + '.');
+    if (q.passoPersonale != null) voci.push('Quiz: a ogni errore si perdono ' + q.passoPersonale + (q.passoPersonale === 1 ? ' termine' : ' termini') + ' invece di ' + R.quiz.passo + '.');
+    if (q.proroga) voci.push('Proroga individuale del quiz fino a ' + oraIt(q.proroga) + '.');
+    if (r.proroga) voci.push('Proroga individuale dello scritto fino a ' + oraIt(r.proroga) + '.');
+    if (o && o.manuale) voci.push('Voto orale assegnato dal docente: ' + fv(o.voto) + ' (calcolato dalle risposte: ' + fv(o.votoCalcolato) + ').');
+    if (!voci.length) return '';
+    return '<div class="gr"><h3>Agevolazioni e misure personalizzate</h3>' + (B ? '<div class="box"><b>Prova sostenuta con l\'ausilio di strumenti compensativi e dispensativi.</b></div>' : '') +
+      '<ul style="margin:2mm 0 0;padding-left:5mm">' + voci.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>';
+  }
   function riepilogoAlunno(r, v, x, ts) {
     var q = quizDi(r.id), o = v.orale, rs = [];
     ts.forEach(function (t) { (T(t, 'it', 'storia') || []).forEach(function (k) { var d = dataAt(k.at); if (d) rs.push(d); }); });
@@ -842,7 +860,7 @@ function reportPdf() {
       '<div class="ah"><div><h1>' + esc(r.nome) + '</h1><p class="sub"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + esc(c) + (S.d.aree[r.gruppo - 1] ? ' · Gruppo ' + r.gruppo + ' · ' + esc(S.d.aree[r.gruppo - 1].it) : ' · termini di tutte le aree') + '</p></div>' +
       '<div class="voto" style="border-color:' + colCl(c) + '"><b>' + fv(v.voto) + '</b><span>su ' + fv(v.votoMax || imp.votoMax) + '</span><em>' + (v.escluso ? 'escluso' : v.manuale != null ? 'voto del docente' : 'voto calcolato') + '</em></div></div>' +
       '<div class="kpi k6">' + [[r.inviate, 'risposte inviate'], [p.n ? perc(p.ok, p.n) + '%' : '—', 'esatte al 1° tentativo'], [r.errate, 'risposte errate'], [r.approvate + '/' + r.termini, 'approvate'], [x.ultimo ? durata(x.minuti) : '—', 'tempo totale in app'], [x.accessi || 0, 'accessi']].map(function (k) { return '<div><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
-      riepilogoAlunno(r, v, x, ts) +
+      riepilogoAlunno(r, v, x, ts) + agevolazioniAlunno(r, v) +
       '<div class="gr"><h3>Stato dei ' + ts.length + ' termini</h3>' + stati + '</div>' +
       (v.escluso ? '<div class="box no">Escluso dal compito: ' + esc(v.motivo || '') + (r.riassegnatoA ? ' I termini sono passati a ' + esc(nomeAlunno(r.riassegnatoA)) + '.' : '') + '</div>' : '') +
       (v.ereditati ? '<div class="box">' + donatori(r.id).map(function (d) { var n = ts.filter(function (t) { return t.alunnoOrig === d && t.ereditato; }), sc = n[0] && n[0].scadIt; return 'Ha ricevuto <b>' + n.length + ' termini da ' + esc(nomeAlunno(d)) + '</b> (classe ' + esc(classeAl(d)) + '), escluso per la scadenza' + (sc ? '; scadenza per questi termini: ' + esc(oraIt(sc)) : '') + '.'; }).join('<br>') +

@@ -10,7 +10,7 @@ const { db: apri } = require('./firestore');
 const err = (m) => L.errore(m);
 const norm = (c) => String(c == null ? '' : c).trim().toUpperCase();
 // azioni degli alunni: l'attività si ricava dal codice
-const DA_CODICE = { login: 1, scegli: 1, presenza: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1 };
+const DA_CODICE = { login: 1, scegli: 1, presenza: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1 };
 
 // elenco in memoria per pochi secondi: il quiz fa una richiesta a ogni risposta
 let cache = { t: 0, elenco: null };

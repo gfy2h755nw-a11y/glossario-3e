@@ -18,6 +18,30 @@ var ICO = {
 };
 function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (ICO[k] || '') + '</svg>'; }
 
+/* sezioni della barra (riorganizzazione 2026-11): ogni sezione raccoglie una o più pagine di sempre,
+   che restano tutte raggiungibili come schede in cima alla pagina. gr = gruppo nella barra. */
+var SEZIONI = [
+  { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
+  { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
+  { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
+  { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
+  { id: 'votis', t: 'Voti', gr: 'La prova', ico: 'voti', fase: 4, pag: ['voti'] },
+  { id: 'studenti', t: 'Studenti', gr: 'Classe', ico: 'situazione', pag: ['situazione', 'gestione', 'codici'] },
+  { id: 'cart', t: 'Cartelloni', gr: 'Classe', ico: 'cartelloni', pag: ['cartelloni', 'revcart'] },
+  { id: 'doc', t: 'Documenti', gr: 'Classe', ico: 'documenti', pag: ['documenti'] },
+  { id: 'imp', t: 'Impostazioni', gr: 'Gestione', ico: 'impostazioni', pag: ['impostazioni'] },
+  { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
+];
+/* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
+var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
+  cartelloni: 'Anteprima e stampa', revcart: 'Revisione', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
+function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
+/* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
+function sezioniVisibili(pagine) {
+  var per = {}; pagine.forEach(function (p) { per[p.id] = p; });
+  return SEZIONI.map(function (z) { return { z: z, pp: z.pag.filter(function (id) { return per[id]; }).map(function (id) { return per[id]; }) }; }).filter(function (x) { return x.pp.length; });
+}
+
 /* le pagine, nell'ordine della barra; vis = chi la vede */
 function PAGINE() {
   var adm = ADM(), ro = RO(), A = S.d.admin;
@@ -83,11 +107,19 @@ function barraLaterale(pag, pagine) {
     return '<button class="' + (f === c ? 'on' : '') + '" aria-pressed="' + (f === c) + '" data-classe="' + esc(c) + '" onclick="filtroClasse(\'' + esc(c) + '\')">' + (c === 'tutte' ? 'Tutte' : esc(c)) + '</button>';
   }).join('') + '</div>';
   h += '</div><nav class="snav">';
-  var gr = '';
-  pagine.forEach(function (p) {
-    if (p.gr !== gr) { gr = p.gr; h += '<div class="sgr">' + gr + '</div>'; }
-    h += '<button class="sit' + (p.id === pag ? ' on' : '') + '" data-pag="' + p.id + '"' + (p.id === pag ? ' aria-current="page"' : '') + ' onclick="vai(\'' + p.id + '\')">' + svgIco(p.id) + '<span>' + esc(p.t) + '</span>' +
-      (p.bd ? '<span class="sbd' + (p.rosso ? ' r' : '') + '">' + p.bd + '</span>' : '') + '</button>';
+  var gr = null, sezAtt = sezioneDi(pag).id;
+  sezioniVisibili(pagine).forEach(function (x) {
+    var z = x.z, on = z.id === sezAtt, uno = x.pp.length === 1, bd = 0, rosso = false;
+    x.pp.forEach(function (p) { bd += p.bd || 0; if (p.bd && p.rosso) rosso = true; });
+    if (z.gr !== gr) { gr = z.gr; if (gr) h += '<div class="sgr">' + gr + '</div>'; }
+    var pags = x.pp.map(function (p) { return p.id; }).join(' ');
+    // sezione con una sola pagina: la voce è la pagina; con più pagine: la voce apre la prima e mostra le altre sotto
+    h += '<button class="sit' + (on ? ' on' : '') + (z.fase ? ' fase f' + z.fase : '') + '" data-sez="' + z.id + '" data-pags="' + pags + '"' + (uno ? ' data-pag="' + x.pp[0].id + '"' : '') + (on ? ' aria-current="page"' : '') +
+      ' onclick="vai(\'' + (on && !uno ? pag : x.pp[0].id) + '\')">' + svgIco(z.ico) + '<span>' + esc(z.t) + '</span>' + (bd && !(on && !uno) ? '<span class="sbd' + (rosso ? ' r' : '') + '">' + bd + '</span>' : '') + '</button>';
+    if (!uno) h += '<div class="ssubs' + (on ? ' aperta' : '') + '">' + x.pp.map(function (p) {
+      return '<button class="ssub' + (p.id === pag ? ' on' : '') + '" data-pag="' + p.id + '"' + (p.id === pag ? ' aria-current="page"' : '') + ' onclick="vai(\'' + p.id + '\')"><span>' + esc(SCHEDA[p.id] || p.t) + '</span>' +
+        (p.bd ? '<span class="sbd' + (p.rosso ? ' r' : '') + '">' + p.bd + '</span>' : '') + '</button>';
+    }).join('') + '</div>';
   });
   h += '</nav><div class="sfondo">';
   if (ADM() && !RO()) {
@@ -121,7 +153,7 @@ function vistaDocente() {
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
   var avvisi = RO() ? bannerArchivio() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '';
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
-    '<main class="dcont stack" id="pag-' + pag + '">' + avvisi + corpo + '</main></section></div>';
+    '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
   if (pag === 'situazione') { selSituazione(); disegnaSituazione(); }
   if (pag === 'gestione') { selGestione(); disegnaGestione(); }
@@ -129,6 +161,51 @@ function vistaDocente() {
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
   if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
   if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
+}
+
+/* in cima alla pagina: le fasi della prova (Scritto, Quiz, Orale, Voti) oppure le schede della sezione */
+function schedeSezione(pag, pagine) {
+  var vis = sezioniVisibili(pagine), z = sezioneDi(pag), tab = function (id, t, on, cl, bd) {
+    return '<button class="ptab' + (on ? ' on' : '') + (cl ? ' ' + cl : '') + '" data-tab="' + id + '"' + (on ? ' aria-current="page"' : '') + ' onclick="vai(\'' + id + '\')">' + t + (bd ? ' <span class="pbd">' + bd + '</span>' : '') + '</button>';
+  };
+  if (z.fase) {
+    var fasi = vis.filter(function (x) { return x.z.fase; });
+    if (fasi.length < 2) return '';
+    return '<nav class="ptabs fasi" aria-label="Fasi della prova">' + fasi.map(function (x) { var p = x.pp[0]; return tab(p.id, x.z.fase + ' · ' + esc(x.z.t), x.z.id === z.id, 'f' + x.z.fase, p.bd); }).join('') + '</nav>';
+  }
+  var mia = vis.filter(function (x) { return x.z.id === z.id; })[0];
+  if (!mia || mia.pp.length < 2) return '';
+  return '<nav class="ptabs" aria-label="' + esc(z.t) + '">' + mia.pp.map(function (p) { return tab(p.id, esc(SCHEDA[p.id] || p.t), p.id === pag, '', p.bd); }).join('') + '</nav>';
+}
+
+/* «Oggi»: le fasi di ogni classe e le cose da fare, in cima al quadro generale */
+function bloccoOggi() {
+  if (RO()) return '';
+  var imp = S.d.admin && S.d.admin.impostazioni, q = (imp && imp.quiz) || null, now = Date.now();
+  var cl = S.filtro.classe && S.filtro.classe !== 'tutte' ? [S.filtro.classe] : CLASSI();
+  var fasi = cl.map(function (c) {
+    var d = datePerClasse(c) || {}, sc = d.scadenzaIt ? Date.parse(d.scadenzaIt) : null, pa = d.partenza ? Date.parse(d.partenza) : null;
+    var qs = q && (q.scadenze || {})[c], qp = q && (q.partenze || {})[c];
+    var sStato = !pa || now < pa ? 'parte ' + (pa ? oraIt(d.partenza) : 'da fissare') : sc && now > sc ? 'chiuso il ' + oraIt(d.scadenzaIt) : 'scade ' + (sc ? oraIt(d.scadenzaIt) : '—');
+    var sOn = pa && now >= pa && (!sc || now <= sc);
+    var qStato = !q ? '' : !qs ? 'date da fissare' : now > Date.parse(qs) ? 'chiuso il ' + oraIt(qs) : qp && now < Date.parse(qp) ? 'dal ' + oraIt(qp) : 'aperto, fino al ' + oraIt(qs);
+    var qOn = q && qs && now <= Date.parse(qs) && !(qp && now < Date.parse(qp));
+    var f = function (n, t, st, on, fatto) { return '<div class="ofase f' + n + (on ? ' on' : '') + (fatto ? ' fatto' : '') + '"><span class="obar"></span><b>' + t + (on ? ' · in corso' : '') + '</b><span>' + esc(st) + '</span></div>'; };
+    return '<div class="card ocl"><div class="row" style="justify-content:space-between"><b class="disp" style="font-size:18px">Classe ' + esc(c) + '</b></div><div class="ofasi">' +
+      f(1, 'Scritto', sStato, sOn, sc && now > sc) + (q ? f(2, 'Quiz', qStato, qOn, qs && now > Date.parse(qs)) + f(3, 'Orale', 'dopo il quiz superato', false, false) + f(4, 'Voti', 'scritto e orale', false, false) : '') + '</div></div>';
+  }).join('');
+  var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); });
+  var riv = contaDaRivedere(), sol = righeDaSollecitare().length, rig = ts.filter(function (t) { return t.statoIt === 'correggere'; }).length;
+  var senzaQuiz = q && ADM() ? cl.filter(function (c) { return !(q.scadenze || {})[c]; }) : [];
+  var cose = [];
+  if (riv) cose.push([riv, 'Risposte da rivedere', 'aspettano la tua approvazione', 'Rivedi', "S.filtro.stato='inviata';vai('revisione')", 'i']);
+  if (sol) cose.push([sol, 'Da sollecitare', 'alunni con termini ancora senza risposta: messaggio pronto da copiare', 'Apri', "vai('sollecito')", 'w']);
+  if (rig) cose.push([rig, rig === 1 ? 'Risposta rimandata da correggere' : 'Risposte rimandate da correggere', 'gli alunni le possono correggere fino alla chiusura dell\'app', 'Vedi', "S.filtro.stato='correggere';vai('revisione')", 'w']);
+  if (senzaQuiz.length) cose.push(['!', 'Date del quiz da fissare', 'classe ' + senzaQuiz.join(' e ') + ': apertura e scadenza', 'Imposta', "vai('impostazioni')", 'q']);
+  var lista = cose.length ? cose.map(function (k) {
+    return '<div class="ocosa"><span class="on-' + k[5] + '">' + k[0] + '</span><div><b>' + esc(k[1]) + '</b><small>' + esc(k[2]) + '</small></div><button class="btn" onclick="' + k[4] + '">' + k[3] + '</button></div>';
+  }).join('') : '<div class="ocosa vuota"><span class="on-o">✓</span><div><b>Niente da fare adesso</b><small>nessuna risposta in attesa e nessuno da sollecitare</small></div></div>';
+  return '<section class="ogrid">' + fasi + '</section><section class="stack" style="gap:8px" id="dafare"><h2 style="margin:0;font-size:20px">Da fare</h2>' + lista + '</section>';
 }
 
 function cardAree() {
@@ -146,6 +223,7 @@ function cardAree() {
 
 var PAGINA = {
   cruscotto: function () {
+    var oggi = bloccoOggi();
     var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); }), n = ts.length || 1;
     var app = ts.filter(function (t) { return t.statoIt === 'approvata'; }).length, att = ts.filter(function (t) { return t.statoIt === 'inviata'; }).length;
     var sol = RO() ? null : righeDaSollecitare(), riv = contaDaRivedere();
@@ -156,7 +234,7 @@ var PAGINA = {
       ['Approvate', app + '<small> / ' + ts.length + '</small>', Math.round(app / n * 100) + '% definitive', app / n, 'var(--ok)'],
       sol ? ['Da sollecitare', sol.length, escl ? escl + (escl === 1 ? ' escluso' : ' esclusi') : 'nessun escluso', null, 'var(--err)', 'sollecito'] : ['Alunni', al.length, escl ? escl + ' esclusi' : 'nessun escluso', null, 'var(--ink)']
     ];
-    var h = '<section class="kpis">' + kpi.map(function (k) {
+    var h = oggi + '<section class="kpis">' + kpi.map(function (k) {
       var tag = k[5] ? 'button' : 'div';
       return '<' + tag + ' class="card kcard"' + (k[5] ? ' onclick="vai(\'' + k[5] + '\')"' : '') + '><div class="kl">' + k[0] + '</div><div class="kv">' + k[1] + '</div><div class="muted ks">' + k[2] + '</div>' +
         (k[3] != null ? '<div class="bar" style="margin-top:8px"><span style="width:' + Math.round(k[3] * 100) + '%;background:' + k[4] + '"></span></div>' : '') + '</' + tag + '>';

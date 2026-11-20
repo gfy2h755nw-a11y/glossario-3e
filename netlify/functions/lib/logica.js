@@ -213,7 +213,7 @@ function valuta(stato, a, now) {
   const or = a.orale && typeof a.orale.voto === 'number' ? a.orale : null;
   const ps = REG.di(stato.config).finale.pesoScritto / 100;
   const finale = or ? (escluso ? arrotFinale(or.voto) : (voto != null ? arrotFinale(voto * ps + or.voto * (1 - ps)) : null)) : null;
-  return Object.assign(c, { orale: or ? { voto: or.voto, punti: or.punti, data: or.data, docente: or.docente, escluso: !!or.escluso, cambi: or.cambi || 0, nota: or.nota || '', termini: or.termini || [] } : null, finale, oraleInCorso: !!a.orale_bozza, quizStato: qz.stato, ammesso: qz.stato === 'superato',
+  return Object.assign(c, { orale: or ? { voto: or.voto, punti: or.punti, data: or.data, docente: or.docente, manuale: !!or.manuale, votoCalcolato: or.votoCalcolato != null ? or.votoCalcolato : or.voto, escluso: !!or.escluso, cambi: or.cambi || 0, nota: or.nota || '', termini: or.termini || [] } : null, finale, oraleInCorso: !!a.orale_bozza, quizStato: qz.stato, ammesso: qz.stato === 'superato',
     id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), escluso, motivo: escluso ? motivo : '', riammesso: !!a.riammesso && !!motivo,
     votoIt, votoEn, media, calcolato, manuale, voto, mancaIt, mancaEn, votoMax: max, ereditati,
     riassegnatoA: a.riassegnato_a || null, riassegnatiA: a.riassegnati_a || (a.riassegnato_a ? [a.riassegnato_a] : []), termini: miei.length, tetto, tettoValore: imp.tetto,

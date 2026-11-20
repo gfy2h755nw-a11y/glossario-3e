@@ -198,6 +198,25 @@ function fineQuiz(q, tq) {
   if (q.stato === 'scaduto') return { t: tq(q.msFine), c: ARANCIO };
   return { t: tq(q.msFine) + ' (in corso)', c: GRIGIO };
 }
+/* elenco delle agevolazioni concesse a un alunno (report personale) */
+function agevolazioni(a, q, o, R, quando) {
+  const voci = [], B = a.bes || null;
+  if (B) {
+    voci.push('Studente con bisogni educativi speciali (BES).');
+    voci.push(B.secondi === 0 ? 'Quiz senza limite di tempo per rispondere (classe: ' + R.quiz.secondi + ' secondi).' : B.secondi ? 'Quiz con ' + B.secondi + ' secondi per rispondere (classe: ' + R.quiz.secondi + ').' : 'Quiz con lo stesso tempo della classe (' + R.quiz.secondi + ' secondi).');
+    if (B.dimezza !== false) {
+      const usi = ((a.quiz && a.quiz.sessioni) || []).reduce((s, x) => s + (x.d || 0), 0);
+      voci.push('Pulsante «Dimezza opzioni» nel quiz (da ' + R.quiz.opzioni + ' a 2 definizioni)' + (usi ? ': usato ' + usi + (usi === 1 ? ' volta.' : ' volte.') : ': mai usato.'));
+    }
+    voci.push('Interrogazione su ' + Math.max(1, Math.round(R.orale.domande / 2)) + ' termini invece di ' + R.orale.domande + ', con punteggio in proporzione (voto massimo invariato).');
+  }
+  if (q.sogliaPersonale != null) voci.push('Quiz: ' + q.sogliaPersonale + ' termini da indovinare invece di ' + (q.sogliaClasse || 'quelli della classe') + '.');
+  if (q.passoPersonale != null) voci.push('Quiz: a ogni errore si perdono ' + q.passoPersonale + (q.passoPersonale === 1 ? ' termine' : ' termini') + ' invece di ' + R.quiz.passo + '.');
+  if (q.proroga) voci.push('Proroga individuale del quiz fino a ' + quando(q.proroga) + '.');
+  if (a.proroga) voci.push('Proroga individuale dello scritto fino a ' + quando(a.proroga) + '.');
+  if (o && o.manuale) voci.push('Voto orale assegnato dal docente: ' + String(o.voto).replace('.', ',') + ' (calcolato dalle risposte: ' + String(o.votoCalcolato).replace('.', ',') + ').');
+  return { bes: !!B, voci };
+}
 function testata(doc, titolo, sotto) {
   const w = doc.page.width - 72;
   logoScuola(doc, 36, 30, 26);
@@ -343,16 +362,33 @@ function creaReport(stato, attivita, now) {
           q.superata ? 'quiz superato il ' + quando(q.superata) : '-'],
         [{ t: 'Voto scritto', b: true }, x.v.escluso ? { t: 'escluso', c: ARANCIO, b: true } : { t: fv(x.v.voto), b: true }, x.v.escluso ? (x.v.motivo || 'escluso dal compito') : x.it.errori + ' risposte errate · ' + x.it.approvate + ' / ' + x.miei.length + ' approvate' + (x.v.manuale != null ? ' · voto del docente' : ''),
           risp.length ? 'prima risposta ' + risp[0] + ' · ultima ' + risp[risp.length - 1] : 'nessuna risposta'],
-        [{ t: 'Voto orale', b: true }, { t: o ? fv(o.voto) : '-', b: true }, o ? fv(o.punti) + ' punti su ' + REG.di(stato.config).orale.domande + (o.escluso ? ' · massimo ' + fv(REG.di(stato.config).orale.maxEsclusi) : '') + (o.docente ? ' · ' + o.docente : '') : 'non ancora interrogato', o ? 'interrogazione del ' + quando(o.data) : '-'],
+        [{ t: 'Voto orale', b: true }, { t: o ? fv(o.voto) : '-', b: true }, o ? fv(o.punti) + ' punti su ' + ((o.termini && o.termini.length) || REG.di(stato.config).orale.domande) + (o.termini && o.termini.length && o.termini.length !== REG.di(stato.config).orale.domande ? ' (BES)' : '') + (o.manuale ? ' · voto del docente (calcolato ' + fv(o.votoCalcolato) + ')' : '') + (o.escluso ? ' · massimo ' + fv(REG.di(stato.config).orale.maxEsclusi) : '') + (o.docente ? ' · ' + o.docente : '') : 'non ancora interrogato', o ? 'interrogazione del ' + quando(o.data) : '-'],
         [{ t: 'Voto finale', b: true }, { t: fv(x.v.finale), b: true }, x.v.finale == null ? (q.stato === 'scaduto' ? 'senza voto: quiz non completato' : 'manca l\'orale') : x.v.escluso ? 'solo orale (escluso dallo scritto)' : (function () { const ps = REG.di(stato.config).finale.pesoScritto; return (ps === 50 ? 'media tra scritto ' : 'media pesata (' + ps + ' % scritto) tra scritto ') + fv(x.v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv(Math.round((x.v.voto * ps + o.voto * (100 - ps)) / 100 * 1000) / 1000); })(), x.v.finale != null ? 'definito il ' + quando(o.data) : '-']
       ], { fs: 8 }) + 12;
       if (yy > doc.page.height - 140) { doc.addPage({ layout: 'portrait', margin: 36 }); yy = 40; }
       // quiz nel dettaglio: indicatori e sessioni (le più recenti)
       const ses = (x.a.quiz && x.a.quiz.sessioni) || [];
+      // agevolazioni e misure personalizzate (BES e regole personali): solo nel report, lo studente non vede etichette
+      {
+        const ag = agevolazioni(x.a, q, o, REG.di(stato.config), quando);
+        if (ag.voci.length) {
+          doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Agevolazioni e misure personalizzate', 36, yy); yy = doc.y + 4;
+          if (ag.bes) {
+            const tx = 'Prova sostenuta con l\'ausilio di strumenti compensativi e dispensativi.';
+            doc.font('Helvetica-Bold').fontSize(9);
+            const h = doc.heightOfString(tx, { width: Wp - 20 }) + 12;
+            doc.roundedRect(36, yy, Wp, h, 4).fill('#EEF3FA');
+            doc.fillColor(SCURO).text(tx, 46, yy + 6, { width: Wp - 20 }); yy += h + 4;
+          }
+          // un solo paragrafo compatto, così la pagina dell'alunno resta di una pagina
+          doc.font('Helvetica').fontSize(8.5).fillColor(SCURO).text(ag.voci.map((v) => v.replace(/\.$/, '')).join('  ·  ') + '.', 36, yy, { width: Wp, lineGap: 1 });
+          yy = doc.y + 8;
+        }
+      }
       if (ses.length) {
         doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Quiz: andamento e sessioni', 36, yy); yy = doc.y + 4;
         const medio = q.risposte ? Math.round(q.ms / q.risposte / 100) / 10 : 0, scad = ses.reduce((a, b) => a + (b.s || 0), 0);
-        const ind = [['Risposte corrette', q.risposte ? Math.round(q.corrette / q.risposte * 100) + ' %' : '-'], ['Tempo medio per risposta', medio ? String(medio).replace('.', ',') + ' s su ' + REG.di(stato.config).quiz.secondi : '-'],
+        const ind = [['Risposte corrette', q.risposte ? Math.round(q.corrette / q.risposte * 100) + ' %' : '-'], ['Tempo medio per risposta', medio ? String(medio).replace('.', ',') + ' s ' + (x.a.bes && x.a.bes.secondi === 0 ? '(senza limite)' : 'su ' + ((x.a.bes && x.a.bes.secondi) || REG.di(stato.config).quiz.secondi)) : '-'],
           ['Tempi scaduti', String(scad)], ['Massimo raggiunto', q.massimo + ' / ' + q.soglia], ['Dispositivi usati', String(q.dispositivi || (ses.length ? 1 : 0))], ['Cambi di dispositivo', String(q.subentri || 0)],
           ['Tempo fino al termine', tqm(q.msFine) + (q.superata ? '' : q.stato === 'scaduto' ? ' (scaduto)' : ' (in corso)')], ['Giorni per superarlo', q.superata ? q.giorniSup + (q.giorniSup === 1 ? ' giorno' : ' giorni') : '-']];
         const w6 = Wp / 4;

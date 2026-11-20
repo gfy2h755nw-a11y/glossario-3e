@@ -684,7 +684,8 @@ var Quiz = (function () {
   }
   var R = { secondi: 60, opzioni: 4, passo: 5 };
   function regole(r) {
-    return '<li>Compare un termine con <b>' + (r.opzioni === 4 ? 'quattro' : r.opzioni) + ' definizioni</b>: scegli quella giusta entro <b>' + r.secondi + ' secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
+    return '<li>Compare un termine con <b>' + (r.opzioni === 4 ? 'quattro' : r.opzioni) + ' definizioni</b>: scegli quella giusta ' + (r.senzaTempo ? '<b>senza limite di tempo</b>' : 'entro <b>' + r.secondi + ' secondi</b>') + '. Ogni risposta giusta è un termine indovinato.</li>' +
+      (r.dimezza ? '<li>Puoi premere <b>«Dimezza opzioni»</b>: restano due definizioni, una delle quali è quella giusta.</li>' : '') +
       '<li><b>Se sbagli</b> (o lasci scadere il tempo) la risposta giusta non viene mostrata' + (r.passo ? ' e <b>torni indietro di ' + r.passo + (r.passo === 1 ? ' termine' : ' termini') + '</b>' : '') + ': per andare avanti devi studiare le definizioni.</li>' +
       '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi, entro la scadenza.</li>' +
       '<li>Il quiz è superato quando hai indovinato tutti i termini richiesti: solo allora sei <b>ammesso all\'interrogazione</b>.</li>';
@@ -699,7 +700,7 @@ var Quiz = (function () {
     var i = document.getElementById('qzCod'); i.onkeydown = function (e) { if (e.key === 'Enter') Quiz.via(); }; i.focus();
     // le regole (secondi, definizioni, termini persi) sono quelle dell'attività del codice: si chiedono appena il codice è scritto
     var ult = '', chiedi = function () { var c = String(i.value || '').trim().toUpperCase(); if (c.length < 6 || c === ult) return; ult = c;
-      chiama({ azione: 'quizregole', codice: c }).then(function (r) { if (r && r.secondi) { R = r; var u = document.getElementById('qzReg'); if (u) u.innerHTML = regole(R); } }).catch(function () { /* restano quelle di sempre */ }); };
+      chiama({ azione: 'quizregole', codice: c }).then(function (r) { if (r && r.opzioni) { R = r; var u = document.getElementById('qzReg'); if (u) u.innerHTML = regole(R); } }).catch(function () { /* restano quelle di sempre */ }); };
     i.oninput = chiedi; chiedi();
   }
   // una sola sessione per codice: gettone della sessione aperta qui e codice anonimo di questo dispositivo
@@ -720,22 +721,32 @@ var Quiz = (function () {
     }).catch(function (e) { accesso(e.message); });
   }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
-  function domanda(d) {
+  function domanda(d, tieniTempo) {
     dom = d; attesa = false;
+    var senza = !d.secondi;
     var a = { it: d.nomeArea, colore: d.colore };
     box().innerHTML = testa() + '<div id="qzNum">' + numeri() + '</div>' +
       '<div class="qz-card" style="border-top:8px solid ' + esc(a.colore || '#15212B') + '"><div class="qz-area">' + esc(a.it ? d.area + '. ' + a.it : 'Domanda ' + d.n) + '</div><div class="qz-term">' + esc(d.termine) + '</div>' +
-      '<div class="qz-orologio"><div class="qz-tempo" id="qzT"><i id="qzTi"></i></div><div class="qz-area" id="qzSec" aria-live="off">' + d.secondi + ' secondi</div></div>' +
+      (senza ? '<div class="qz-area" style="margin:6px 0 10px">Senza limite di tempo</div>' : '<div class="qz-orologio"><div class="qz-tempo" id="qzT"><i id="qzTi"></i></div><div class="qz-area" id="qzSec" aria-live="off">' + d.secondi + ' secondi</div></div>') +
       (d.lettere || ['A', 'B']).map(function (l) { return '<button class="qz-op" data-l="' + l + '" onclick="Quiz.rispondi(\'' + l + '\')"><b>' + l + '</b>' + esc(d[l]) + '</button>'; }).join('') +
+      (d.dimezza ? '<button class="qz-btn" id="qzDim" style="background:#fff;color:#15212B;border:2px solid #15212B;margin-top:4px" onclick="Quiz.dimezza()">Dimezza opzioni</button>' : '') +
       '<div id="qzEs" aria-live="polite"></div></div>';
-    scad = Date.now() + d.secondi * 1000; stop();
+    if (!tieniTempo) scad = Date.now() + d.secondi * 1000;
+    stop();
+    if (senza) { if (!tieniTempo) window.scrollTo(0, 0); return; }
     timer = setInterval(function () {
       var r = scad - Date.now(), b = document.getElementById('qzTi'); if (!b) return stop();
       b.style.width = Math.max(0, r / (d.secondi * 10)) + '%'; document.getElementById('qzT').className = 'qz-tempo' + (r < 8000 ? ' poco' : '');
       document.getElementById('qzSec').textContent = Math.max(0, Math.ceil(r / 1000)) + ' secondi';
       if (r <= 0) rispondi('');
     }, 200);
-    window.scrollTo(0, 0);
+    if (!tieniTempo) window.scrollTo(0, 0);
+  }
+  // «Dimezza opzioni»: restano due definizioni (la giusta e una sbagliata); il tempo non riparte
+  function dimezza() {
+    if (attesa || !dom) return;
+    var b = document.getElementById('qzDim'); if (b) b.disabled = true;
+    chiama({ azione: 'quizdimezza', codice: cod, tok: tok }).then(function (d) { if (!attesa) domanda(d.domanda, true); }).catch(function (e) { accesso(e.message); });
   }
   function rispondi(l) {
     if (attesa || !dom) return; attesa = true; stop();
@@ -776,7 +787,7 @@ var Quiz = (function () {
     apri(/^[A-Za-z0-9]{4,12}$/.test(c) ? c.toUpperCase() : '');
   }
   function riprendi() { apri(cod); }
-  return { riprendi: riprendi, avvio: avvio, apri: apri, chiudi: chiudi, via: via, rispondi: rispondi, _pausa: 0 };
+  return { riprendi: riprendi, avvio: avvio, apri: apri, chiudi: chiudi, via: via, rispondi: rispondi, dimezza: dimezza, _pausa: 0 };
 })();
 Quiz.avvio();
 

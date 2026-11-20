@@ -193,3 +193,44 @@ button.kcard{cursor:pointer}button.kcard:hover{border-color:#9CC3EE}
 .or-info small{color:var(--muted);font-size:13px}
 @media (max-width:760px){.or-info{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .note.ok{background:#E3F3E7;color:#12401F}
+
+/* ---------- restyling area docenti (2026-11): solo dentro .dapp, l'app degli alunni non cambia ---------- */
+.dapp{--bg:#F4F3EF;--line:#DCD9D0;background:var(--bg);--f1:#1F5FA8;--f2:#6B4FA0;--f3:#B4511A;--f4:#2E7D32}
+.dapp .card{border-color:var(--line);border-radius:16px}
+.dapp .tbar{background:#FBFAF7;border-bottom-color:var(--line)}
+.dapp .side{background:#16202A}
+.dapp .sed{background:#1E2B37}
+.dapp .seg{background:#1E2B37}
+.dapp .sit{min-height:40px;font-size:15px}
+.dapp .sit.fase::before{content:"";width:8px;height:8px;border-radius:99px;flex:none;margin:0 -2px 0 0;order:2;display:none}
+.dapp .sit.f1 svg{color:#7FB0E8}.dapp .sit.f2 svg{color:#B9A3E0}.dapp .sit.f3 svg{color:#EBA374}.dapp .sit.f4 svg{color:#86C78A}
+.dapp .sit.on svg{color:inherit}
+.dapp .sit.on.f1{color:var(--f1)}.dapp .sit.on.f2{color:#5A3F8C}.dapp .sit.on.f3{color:#9A4A00}.dapp .sit.on.f4{color:var(--f4)}
+.ssubs{display:none;flex-direction:column;gap:1px;margin:2px 0 6px 20px;padding-left:10px;border-left:2px solid #2E3D4A}
+.ssubs.aperta{display:flex}
+.ssub{display:flex;align-items:center;gap:8px;min-height:36px;padding:4px 10px;border-radius:9px;border:0;background:none;color:#B9C6D1;font:600 14px 'Atkinson Hyperlegible',system-ui,sans-serif;text-align:left;cursor:pointer;width:100%}
+.ssub:hover{background:#22323F;color:#fff}
+.ssub.on{background:#2A3A48;color:#fff;font-weight:700}
+.ssub:focus-visible{outline:3px solid #9CC3EE;outline-offset:1px}
+.ptabs{display:flex;flex-wrap:wrap;gap:4px;background:#E8E6DF;border-radius:12px;padding:4px;align-self:flex-start;max-width:100%}
+.ptab{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:9px;border:0;background:none;color:#3E4C59;font:700 15px 'Archivo',system-ui,sans-serif;cursor:pointer}
+.ptab:hover{background:rgba(255,255,255,.55)}
+.ptab.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(22,32,42,.08)}
+.ptab.on.f1{color:var(--f1)}.ptab.on.f2{color:#5A3F8C}.ptab.on.f3{color:#9A4A00}.ptab.on.f4{color:var(--f4)}
+.ptab:focus-visible{outline:3px solid #9CC3EE;outline-offset:1px}
+.pbd{font-size:12px;background:var(--ink);color:#fff;border-radius:99px;padding:1px 7px}
+.ogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+.ocl{display:flex;flex-direction:column;gap:12px}
+.ofasi{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.ofase{display:flex;flex-direction:column;gap:5px;font-size:13px;color:#3E4C59;min-width:0}
+.ofase b{font:700 13px 'Archivo',system-ui,sans-serif}
+.obar{height:6px;border-radius:9px;background:#E6E3DA}
+.ofase.f1 b{color:var(--f1)}.ofase.f2 b{color:#5A3F8C}.ofase.f3 b{color:#9A4A00}.ofase.f4 b{color:var(--f4)}
+.ofase.f1.on .obar,.ofase.f1.fatto .obar{background:var(--f1)}.ofase.f2.on .obar,.ofase.f2.fatto .obar{background:var(--f2)}
+.ofase.fatto .obar{opacity:.45}
+.ocosa{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.ocosa>span{min-width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font:800 21px 'Archivo',system-ui,sans-serif;flex:none}
+.ocosa>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ocosa b{font-size:17px}.ocosa small{font-size:14px;color:var(--muted)}
+.on-i{background:#E2ECF7;color:var(--f1)}.on-w{background:#FCEBD9;color:#9A4A00}.on-q{background:#ECE6F5;color:#5A3F8C}.on-o{background:#E3F1E4;color:var(--f4)}
+@media (max-width:600px){ .ocosa{flex-wrap:wrap} .ocosa .btn{width:100%} .ptab{padding:0 12px;font-size:14px} }
