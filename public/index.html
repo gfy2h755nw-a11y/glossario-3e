@@ -302,6 +302,16 @@ body.or-pieno .dmain{grid-column:1/-1}
 .bkagg>summary{cursor:pointer}
 .bktab td{vertical-align:top}
 .bked td{background:#F6F9FD}
+
+/* visore per l'app installata sulla schermata Home (src/visore.js) */
+#visore{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;background:#E9EEED}
+#visore .vbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#13222D;color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px))}
+#visore .vbar b{flex:1;min-width:120px;font:700 16px 'Archivo',system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#visore .vtorna{min-height:44px;padding:0 16px;border-radius:11px;border:0;background:#fff;color:#13222D;font:800 16px 'Archivo',system-ui,sans-serif;cursor:pointer}
+#visore .vazioni{display:flex;gap:8px;flex-wrap:wrap}
+#visore .vbtn{min-height:44px;padding:0 14px;border-radius:11px;border:1.5px solid #5C7380;background:transparent;color:#fff;font:700 15px 'Archivo',system-ui,sans-serif;cursor:pointer}
+#visore iframe{flex:1;width:100%;border:0;background:#fff}
+html.visore-aperto,html.visore-aperto body{overflow:hidden}
 /* ==========================================================================
    Restyling dell'area docenti (21/11/2026) — solo dentro .dapp e nella procedura guidata:
    l'app degli alunni, il quiz e la pagina pubblica non cambiano.
@@ -3386,7 +3396,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 5';
+var VERSIONE = '21/11/2026 · 6';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -4412,6 +4422,95 @@ document.addEventListener('visibilitychange', presenza);
   var c = memo(KEY_COD);
   if (c) { $('app').innerHTML = '<div class="wrap"><div class="card login">Accesso in corso…</div></div>'; entra(c); } else vistaLogin();
 })();
+
+/* ---------- app installata sulla schermata Home (iPhone, iPad, Android) ----------
+ * In questa modalità le finestre nuove (report, schede, cartelloni da stampare) e i file scaricati si aprono
+ * senza un pulsante per tornare indietro: bisognava chiudere l'app. Qui si aprono in un visore dentro l'app,
+ * con «← Torna all'app», «Stampa o salva PDF» e, per i file, «Condividi o salva» (Salva in File, Mail, AirDrop…).
+ * Nel browser normale non cambia nulla. */
+function appInstallata() {
+  try { return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches; } catch (e) { return false; }
+}
+var _apriFinestra = window.open;
+window.open = function (u) {
+  if (!appInstallata() || (u && u !== 'about:blank')) return _apriFinestra.apply(window, arguments);
+  return apriVisore();
+};
+/* finestra finta: accetta document.write / document.close / location.href come una finestra vera */
+function apriVisore(titolo) {
+  chiudiVisore();
+  var o = document.createElement('div'); o.id = 'visore'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+  o.innerHTML = '<div class="vbar"><button type="button" class="vtorna" id="vTorna">← Torna all\'app</button><b id="vTit">' + (titolo ? esc(titolo) : 'Documento') + '</b>' +
+    '<span class="vazioni"><button type="button" class="vbtn" id="vStampa">Stampa o salva PDF</button><button type="button" class="vbtn" id="vCondividi" hidden>Condividi o salva</button></span></div>' +
+    '<iframe id="vFrame" title="Documento"></iframe>';
+  document.body.appendChild(o); document.documentElement.classList.add('visore-aperto');
+  var ifr = o.querySelector('iframe'), buf = '', t = null;
+  var mostra = function () {
+    clearTimeout(t);
+    t = setTimeout(function () {
+      // la stampa automatica del documento si ferma: si stampa con il pulsante in alto
+      var html = buf.replace(/<head([^>]*)>/i, '<head$1><script>window.__stampa=window.print;window.print=function(){};<\/script>');
+      if (html === buf) html = '<script>window.__stampa=window.print;window.print=function(){};<\/script>' + buf;
+      ifr.removeAttribute('src'); ifr.srcdoc = html;
+      var m = /<title>([^<]*)<\/title>/i.exec(buf); if (m) $('vTit').textContent = m[1].replace(/&amp;/g, '&');
+    }, 30);
+  };
+  var finta = {
+    closed: false,
+    document: { write: function (s) { buf += String(s); mostra(); }, writeln: function (s) { buf += String(s) + '\n'; mostra(); }, close: function () { mostra(); }, open: function () { buf = ''; } },
+    location: {},
+    focus: function () {}, blur: function () {},
+    print: function () { stampaVisore(); },
+    close: function () { chiudiVisore(); }
+  };
+  Object.defineProperty(finta.location, 'href', { set: function (u) { clearTimeout(t); ifr.removeAttribute('srcdoc'); ifr.src = u; }, get: function () { return ifr.src || 'about:blank'; } });
+  $('vTorna').onclick = chiudiVisore;
+  $('vStampa').onclick = stampaVisore;
+  o._finta = finta;
+  setTimeout(function () { try { $('vTorna').focus(); } catch (e) {} }, 0);
+  return finta;
+}
+function stampaVisore() {
+  var f = $('vFrame'); if (!f) return;
+  try { var w = f.contentWindow; (w.__stampa || w.print).call(w); } catch (e) { toast('Da qui non riesco a stampare: usa «Condividi o salva».', true); }
+}
+function chiudiVisore() {
+  var o = $('visore'); if (!o) return;
+  if (o._finta) o._finta.closed = true;
+  if (o._url) setTimeout(function () { URL.revokeObjectURL(o._url); }, 1000);
+  o.remove(); document.documentElement.classList.remove('visore-aperto');
+}
+/* file scaricati (PDF, Word, PowerPoint, CSV, backup): nel visore con «Condividi o salva»; i PDF anche in anteprima */
+function visoreFile(nome, blob) {
+  apriVisore(nome);
+  var o = $('visore'), ifr = $('vFrame'), url = URL.createObjectURL(blob), file = null;
+  o._url = url;
+  try { file = new File([blob], nome, { type: blob.type }); } catch (e) {}
+  var puo = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
+  var pdf = /pdf/i.test(blob.type) || /\.pdf$/i.test(nome);
+  $('vStampa').hidden = !pdf;
+  $('vCondividi').hidden = !puo;
+  $('vCondividi').onclick = function () { navigator.share({ files: [file], title: nome }).catch(function () {}); };
+  if (pdf) ifr.src = url;
+  else {
+    ifr.srcdoc = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:17px system-ui,sans-serif;padding:28px;color:#13222D;line-height:1.5">' +
+      '<p style="font-size:20px;margin:0 0 8px"><b>' + esc(nome) + '</b></p><p style="margin:0 0 16px">Il file è pronto.</p>' +
+      (puo ? '<p style="margin:0">Tocca <b>«Condividi o salva»</b> in alto per salvarlo in File, mandarlo per mail o aprirlo con un\'altra app.</p>' : '<p style="margin:0"><a href="' + url + '" download="' + esc(nome) + '">Scarica il file</a></p>') + '</body>';
+  }
+}
+/* tutti i download dell'app passano da un link con l'attributo download: nell'app installata vanno nel visore */
+(function () {
+  var clic = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function () {
+    if (appInstallata() && this.hasAttribute('download') && /^blob:/.test(this.href)) {
+      var nome = this.getAttribute('download') || 'file';
+      fetch(this.href).then(function (r) { return r.blob(); }).then(function (b) { visoreFile(nome, b); }).catch(function () { clic.call(this); }.bind(this));
+      return;
+    }
+    return clic.apply(this, arguments);
+  };
+})();
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('visore')) chiudiVisore(); });
 
 </script>
 <script>

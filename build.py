@@ -38,6 +38,7 @@ html = '''<!DOCTYPE html>
 </script>
 <script>
 ''' + r('src/app.js') + '''
+''' + r('src/visore.js') + '''
 </script>
 <script>
 ''' + r('src/gestione.js') + '''
