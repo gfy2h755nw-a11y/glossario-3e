@@ -79,6 +79,7 @@ async function contestoQuiz(db, codice, prova, bes) {
   const doc = (config.docenti || []).find((d) => d.codice && String(d.codice).trim().toUpperCase() === c);
   if (prova) {
     if (!doc) L.errore('La prova del quiz è riservata ai docenti: inserisci il tuo codice da docente.');
+    if (doc.attivita && !doc.admin && config._spazio !== doc.attivita) L.errore('Con questo codice puoi entrare solo nella tua attività.');
     const a = alunnoProva(config, doc, bes), cat = CAT.materializza(config).cat;
     const cfg = Object.assign(cfgQuiz(config, a.classe, tutte(cat).length, a), { aperto: true, attesa: false, scaduto: false, scadenza: new Date(Date.now() + 86400000).toISOString() });
     return { a, cat, cfg, config };

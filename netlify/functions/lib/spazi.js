@@ -20,10 +20,32 @@ async function registro(base, fresco) {
   cache = { t: Date.now(), elenco };
   return elenco;
 }
-function svuota() { cache = { t: 0, elenco: null }; }
+function svuota() { cache = { t: 0, elenco: null }; titolari = { t: 0, mappa: null }; }
+
+/* codici dei colleghi titolari → la loro attività (in memoria per pochi secondi; il controllo vero è in identifica) */
+let titolari = { t: 0, mappa: null };
+async function mappaTitolari(base, fresco) {
+  if (!fresco && titolari.mappa && Date.now() - titolari.t < 20000) return titolari.mappa;
+  const cfg = await base.leggiConfig();
+  const m = {}; ((cfg && cfg.docenti) || []).forEach((x) => { if (x.attivita && !x.admin && x.codice) m[norm(x.codice)] = x.attivita; });
+  titolari = { t: Date.now(), mappa: m };
+  return m;
+}
 
 async function risolvi(dbf, p) {
   const base = dbf('main');
+  // collega titolare: qualunque richiesta con il suo codice va nella sua attività, e solo lì
+  if (p.codice && p.azione !== 'setup') {
+    const c = norm(p.codice);
+    let m = await mappaTitolari(base);
+    if (!m[c] && p.azione === 'login') m = await mappaTitolari(base, true);
+    if (m[c]) {
+      if (p.att && p.att !== m[c] && p.azione !== 'login') err('Con questo codice puoi entrare solo nella tua attività.');
+      const reg = await registro(base);
+      if (!reg.some((x) => x.id === m[c]) && !(await registro(base, true)).some((x) => x.id === m[c])) err('La tua attività non è più disponibile: chiedi al prof. Cerrato.');
+      return dbf(m[c]);
+    }
+  }
   if (p.att && p.att !== 'main') {
     const reg = await registro(base);
     if (!reg.some((x) => x.id === p.att) && !(await registro(base, true)).some((x) => x.id === p.att)) {
@@ -96,8 +118,11 @@ async function nuovaAttivita(d, p) {
   const nd = apri(id);
   await nd.sostituisciTutto({ config, alunni, termini: docs, attivita: [] });
   await base.scriviRegistro(reg.concat([{ id, nome, as, ed: config.edizione.id, classi: config.classi, creata: new Date().toISOString(), bozza }]));
+  // il collega riceve un codice docente valido solo per questa attività
+  let titolare = null;
+  if (conc) titolare = await impostaTitolare(base, id, conc.docente, codici.concat(alunni.map((a) => a.codice)));
   svuota();
-  return { id, nome, as, bozza, alunni: alunni.length, termini: docs.length, classi: config.classi, aree: config.aree || null };
+  return { id, nome, as, bozza, alunni: alunni.length, termini: docs.length, classi: config.classi, aree: config.aree || null, titolare };
 }
 /* togli un'attività dall'elenco: prima la si chiude agli alunni e la si archivia (resta consultabile in Archivio) */
 async function rimuovi(d, { codice, id }) {
@@ -110,13 +135,14 @@ async function rimuovi(d, { codice, id }) {
   await nd.scriviConfig({ chiusa: true });
   const arch = await ED.archivia(nd, { codice, sovrascrivi: true });
   await base.scriviRegistro(reg.filter((x) => x.id !== id));
+  await togliTitolare(base, id); // il codice del collega smette di funzionare
   svuota();
   return { id, archiviata: arch.id };
 }
 
 /* nomi, colori, numeri e motti dei cartelloni di un'attività con aree proprie (il numero di aree non cambia) */
 async function salvaAree(d, { codice, aree }) {
-  const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
+  const stato = await d.leggiTutto(); L.soloGestore(L.identifica(stato, codice));
   const vecchie = stato.config.aree;
   if (!Array.isArray(vecchie) || !vecchie.length) err('Questa attività usa le 4 aree del laboratorio: nomi e motti restano quelli.');
   if (!Array.isArray(aree) || aree.length !== vecchie.length) err('Il numero delle aree non si può cambiare.');
@@ -137,11 +163,14 @@ async function salvaConcessione(d, { codice, concessione }) {
   const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
   const conc = concessioneValida(concessione);
   await d.scriviConfig({ concessione: conc });
+  // il nome del collega titolare segue quello scritto qui
+  const base = apri('main'), cm = await base.leggiConfig(), doc = ((cm && cm.docenti) || []).find((x) => x.attivita === d.spazio && !x.admin);
+  if (doc && conc && doc.nome !== conc.docente) await base.scriviConfig({ docenti: cm.docenti.map((x) => (x === doc ? Object.assign({}, x, { nome: conc.docente }) : x)) });
   return { concessione: conc };
 }
 /* numero grande nella testata dei cartelloni (attività con le 4 aree del laboratorio); vuoto = numero normale (01, 02…) */
 async function numeriCartelloni(d, { codice, numeri }) {
-  const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
+  const stato = await d.leggiTutto(); L.soloGestore(L.identifica(stato, codice));
   if (Array.isArray(stato.config.aree) && stato.config.aree.length) err('In questa attività il numero si cambia insieme al nome dell\'area, nella pagina Cartelloni.');
   const out = {};
   Object.keys(numeri || {}).forEach((n) => {
@@ -157,10 +186,9 @@ async function numeriCartelloni(d, { codice, numeri }) {
 async function mandaLive(d, { codice }) {
   if (d.spazio === 'main') err('L\'attività principale è già attiva.');
   const base = apri('main');
-  const statoMain = await base.leggiTutto();
-  L.soloAdmin(L.identifica(statoMain, codice));
   const cfg = await d.leggiConfig();
   if (!cfg) err('Attività non trovata.');
+  L.soloGestore(L.identifica({ config: cfg, alunni: [], termini: [] }, codice));
   if (!cfg.bozza) return { live: true, gia: true };
   const imp = L.impostazioni(cfg), ora = Date.now();
   const scadute = imp.classi.filter((c) => Date.parse(L.impClasse(imp, c).scadenzaIt) <= ora);
@@ -171,4 +199,34 @@ async function mandaLive(d, { codice }) {
   svuota();
   return { live: true };
 }
-module.exports = { salvaConcessione, numeriCartelloni, mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };
+/* ---- codice del collega titolare (docente legato a una sola attività) ---- */
+async function codiciUsati(base) {
+  const reg = await registro(base, true), out = await base.codiciAlunni();
+  for (const x of reg) out.push(...await apri(x.id).codiciAlunni());
+  return out;
+}
+async function impostaTitolare(base, id, nome, usatiAlunni) {
+  const cm = await base.leggiConfig(), docenti = (cm && cm.docenti) || [];
+  const usati = new Set(docenti.map((x) => x.codice).concat(usatiAlunni || []));
+  const prima = docenti.find((x) => x.attivita === id && !x.admin);
+  const nuovo = { nome, codice: L.generaCodice(usati), lingua: 'it', admin: false, attivita: id, permessi: { revisione: true, voti: true, studenti: true, documenti: true, codici: true } };
+  await base.scriviConfig({ docenti: docenti.filter((x) => x !== prima).concat([nuovo]) });
+  titolari = { t: 0, mappa: null };
+  return { nome: nuovo.nome, codice: nuovo.codice };
+}
+async function togliTitolare(base, id) {
+  const cm = await base.leggiConfig(), docenti = (cm && cm.docenti) || [];
+  if (docenti.some((x) => x.attivita === id && !x.admin)) await base.scriviConfig({ docenti: docenti.filter((x) => !(x.attivita === id && !x.admin)) });
+  titolari = { t: 0, mappa: null };
+}
+/* dal prof. Cerrato, nelle impostazioni dell'attività del collega: nuovo codice (il vecchio smette di funzionare) o accesso tolto */
+async function codiceTitolare(d, { codice, op }) {
+  if (d.spazio === 'main') err('L\'attività principale è del prof. Cerrato.');
+  const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
+  const base = apri('main');
+  if (op === 'togli') { await togliTitolare(base, d.spazio); return { titolare: null }; }
+  const conc = stato.config.concessione;
+  if (!conc || !conc.docente) err('Prima scrivi il nome del collega (attività per un collega).');
+  return { titolare: await impostaTitolare(base, d.spazio, conc.docente, await codiciUsati(base)) };
+}
+module.exports = { codiceTitolare, salvaConcessione, numeriCartelloni, mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };

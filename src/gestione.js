@@ -733,7 +733,7 @@ function wzCrea(btn) {
     var aree = w.areeMie ? w.aree.map(function (a) { return { it: String(a.it).trim(), colore: a.colore, numero: String(a.numero || '').trim(), motto: String(a.motto || '').trim() }; }) : null;
     api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt, live: !!w.live, concessione: w.tipo === 'attivita' && w.conc ? w.conc : undefined }).then(function (x) {
       clearTimeout(_bozzaT); api('salvabozzawz', { dati: null }).catch(function () {});
-      chiudiWizard(); toast('Attività creata ' + (x.bozza ? 'in preparazione' : 'e LIVE') + ': ' + x.alunni + ' alunni, ' + x.termini + ' termini'); cambiaAttivita(x.id);
+      chiudiWizard(); toast('Attività creata ' + (x.bozza ? 'in preparazione' : 'e LIVE') + ': ' + x.alunni + ' alunni, ' + x.termini + ' termini' + (x.titolare ? '. Codice di ' + x.titolare.nome + ': ' + x.titolare.codice + ' (lo trovi in Impostazioni)' : '')); cambiaAttivita(x.id);
     }).catch(function (e) { btn.disabled = false; btn.textContent = w.live ? 'Crea e manda LIVE' : 'Crea in preparazione'; toast(errMsg(e), true); });
     return;
   }

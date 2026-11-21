@@ -63,6 +63,11 @@ function identifica(stato, codice) {
   if (doc) {
     const def = DATI.DOCENTI.find((d) => d.nome === doc.nome) || {};
     const admin = !!(doc.admin || def.admin);
+    // collega titolare di un'attività: entra solo lì (il controllo vale per ogni richiesta, qualunque cosa mostri la pagina)
+    if (doc.attivita && !admin) {
+      if (stato.config._spazio !== doc.attivita) errore('Con questo codice puoi entrare solo nella tua attività.');
+      return { ruolo: 'docente', nome: doc.nome, lingua: 'it', admin: false, gestore: true, attivita: doc.attivita, permessi: permessiDi(Object.assign({}, doc, { permessi: TUTTI_PERMESSI() }), false) };
+    }
     return { ruolo: 'docente', nome: doc.nome, lingua: doc.lingua || def.lingua || 'it', admin, permessi: permessiDi(doc, admin) };
   }
   const a = stato.alunni.find((x) => norm(x.codice) === c);
@@ -72,6 +77,7 @@ function identifica(stato, codice) {
 
 /* facoltà che il prof. Cerrato può dare a un collega (lui le ha tutte) */
 const PERMESSI = ['revisione', 'voti', 'studenti', 'documenti', 'codici'];
+const TUTTI_PERMESSI = () => { const o = {}; PERMESSI.forEach((p) => { o[p] = true; }); return o; };
 function permessiDi(doc, admin) {
   const out = {};
   PERMESSI.forEach((p) => { out[p] = admin ? true : doc.permessi ? !!doc.permessi[p] : p === 'revisione'; });
@@ -359,7 +365,8 @@ function pacchetto(stato, chi) {
         giudizi: Object.fromEntries(val.map((v) => { const a = stato.alunni.find((x) => x.id === v.id), q = out.quiz.find((x) => x.id === v.id); return [v.id, { auto: require('./giudizi').auto(v, q), mio: (a && a.giudizio) || '' }]; })),
         attivita: stato.attivita && (chi.admin || P.documenti) ? Object.fromEntries(stato.alunni.map((a) => [a.id, ATT.riepilogo(stato.attivita[a.id], now)])) : null,
         dropbox: chi.admin ? stato.dropbox || null : null,
-        colleghi: chi.admin ? (stato.config.docenti || []).filter((d) => !(d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin)).map((d) => ({ nome: d.nome, codice: d.codice, permessi: permessiDi(d, false) })) : undefined };
+        titolare: chi.admin ? ((stato.config.docenti || []).filter((d) => d.attivita && d.attivita === stato.config._spazio).map((d) => ({ nome: d.nome, codice: d.codice }))[0] || null) : undefined,
+        colleghi: chi.admin ? (stato.config.docenti || []).filter((d) => !d.attivita && !(d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin)).map((d) => ({ nome: d.nome, codice: d.codice, permessi: permessiDi(d, false) })) : undefined };
       if (!chi.admin) { out.admin.archivio = []; out.admin.archiviata = null; }
     }
   }
@@ -401,7 +408,7 @@ async function verificaPermesso(db, codice, p) {
 /* colleghi docenti: nome, codice e facoltà (il prof. Cerrato resta sempre) */
 function nuoviColleghi(config, stato, elenco) {
   const admin = (config.docenti || []).filter((d) => d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin);
-  const vecchi = (config.docenti || []).filter((d) => admin.indexOf(d) < 0);
+  const vecchi = (config.docenti || []).filter((d) => admin.indexOf(d) < 0 && !d.attivita);
   const usati = new Set(admin.map((d) => d.codice).concat((stato ? stato.alunni : []).map((a) => a.codice)));
   const nomi = new Set(admin.map((d) => d.nome.toLowerCase()));
   const out = (elenco || []).map((c) => {
@@ -417,14 +424,14 @@ function nuoviColleghi(config, stato, elenco) {
     if (!PERMESSI.some((p) => permessi[p])) errore('Dai almeno una facoltà a ' + nome + '.');
     return { nome, codice, lingua: 'it', admin: false, permessi };
   });
-  return admin.concat(out);
+  return admin.concat(out, (config.docenti || []).filter((d) => d.attivita && !d.admin));
 }
 async function colleghi(db, { codice, colleghi: elenco }) {
   const stato = await db.leggiTutto();
   soloAdmin(identifica(stato, codice));
   const docenti = nuoviColleghi(stato.config, stato, elenco);
   await db.scriviConfig({ docenti });
-  return { colleghi: docenti.filter((d) => !d.admin).map((d) => ({ nome: d.nome, codice: d.codice, permessi: d.permessi })) };
+  return { colleghi: docenti.filter((d) => !d.admin && !d.attivita).map((d) => ({ nome: d.nome, codice: d.codice, permessi: d.permessi })) };
 }
 async function verificaAdmin(db, codice) {
   const config = await db.leggiConfig();
@@ -510,11 +517,13 @@ async function approvaCorrette(db, { codice, lingua: l, area }) {
 }
 
 function soloAdmin(chi) { if (chi.ruolo !== 'docente' || !chi.admin) errore('Operazione riservata al prof. Cerrato.'); }
+/* gestione della singola attività: il prof. Cerrato oppure il collega titolare (che arriva solo nella sua) */
+function soloGestore(chi) { if (chi.ruolo !== 'docente' || !(chi.admin || chi.gestore)) errore('Operazione riservata al docente titolare.'); }
 function isoValida(s) { const t = Date.parse(s); if (!s || isNaN(t)) errore('Data non valida.'); return new Date(t).toISOString(); }
 
 async function impostazioniAdmin(db, { codice, scadenzaIt, scadenzaEn, proposta, giorniIt, giorniEn, partenza, calendario, riassegnazione, quiz }) {
   const stato = await db.leggiTutto();
-  soloAdmin(identifica(stato, codice));
+  soloGestore(identifica(stato, codice));
   const mod = {};
   if (scadenzaIt || scadenzaEn) mod.scadenze = Object.assign({}, stato.config.scadenze || {}, scadenzaIt ? { it: isoValida(scadenzaIt) } : {}, scadenzaEn ? { en: isoValida(scadenzaEn) } : {});
   if (proposta) { if (!PENALITA[proposta]) errore('Proposta non valida.'); mod.proposta = proposta; }
@@ -891,7 +900,7 @@ async function manutenzione(db, sceltaCasuale) {
 
 async function impostaChiusura(db, { codice, chiusa }) {
   const stato = await db.leggiTutto();
-  soloAdmin(identifica(stato, codice));
+  soloGestore(identifica(stato, codice));
   await db.scriviConfig({ chiusa: !!chiusa });
   return { chiusa: !!chiusa };
 }
@@ -1038,4 +1047,4 @@ module.exports = { messaggioEsclusione,
   indiceTermine, arrotFinale,
   traduzioni, salvaTraduzioni, revisioneCartelloni, salvaRevisione, salvaGiudizio, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
   anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,
-  identifica, soloAdmin, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };
+  identifica, soloAdmin, soloGestore, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };

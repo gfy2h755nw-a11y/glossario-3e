@@ -63,7 +63,7 @@ function PAGINE() {
     { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
     { id: 'revcart', gr: 'Materiali', t: 'Revisione cartelloni', vis: !!A && PUO('documenti') && !ro, bd: S.rc && Object.keys(S.rc.cambiate).length ? Object.keys(S.rc.cambiate).length : 0 },
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
-    { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: adm && !ro },
+    { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: LOC() && !ro },
     { id: 'banca', gr: 'Gestione', t: 'Banca termini', vis: adm && !ro },
     { id: 'promo', gr: 'Gestione', t: 'Promo App', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
@@ -122,7 +122,7 @@ function barraLaterale(pag, pagine) {
     var pags = x.pp.map(function (p) { return p.id; }).join(' ');
     // sezione con una sola pagina: la voce è la pagina; con più pagine: la voce apre la prima e mostra le altre sotto
     h += '<button class="sit' + (on ? ' on' : '') + (z.fase ? ' fase f' + z.fase : '') + '" data-sez="' + z.id + '" data-pags="' + pags + '"' + (uno ? ' data-pag="' + x.pp[0].id + '"' : '') + (on ? ' aria-current="page"' : '') +
-      ' onclick="vai(\'' + (on && !uno ? pag : x.pp[0].id) + '\')">' + svgIco(z.ico) + '<span>' + esc(z.t) + '</span>' + (bd && !(on && !uno) ? '<span class="sbd' + (rosso ? ' r' : '') + '">' + bd + '</span>' : '') + '</button>';
+      ' onclick="vai(\'' + (on && !uno ? pag : x.pp[0].id) + '\')">' + svgIco(z.ico) + '<span>' + esc(z.id === 'arch' && !ADM() ? 'Registro attività' : z.t) + '</span>' + (bd && !(on && !uno) ? '<span class="sbd' + (rosso ? ' r' : '') + '">' + bd + '</span>' : '') + '</button>';
     if (!uno) h += '<div class="ssubs' + (on ? ' aperta' : '') + '">' + x.pp.map(function (p) {
       return '<button class="ssub' + (p.id === pag ? ' on' : '') + '" data-pag="' + p.id + '"' + (p.id === pag ? ' aria-current="page"' : '') + ' onclick="vai(\'' + p.id + '\')"><span>' + esc(SCHEDA[p.id] || p.t) + '</span>' +
         (p.bd ? '<span class="sbd' + (p.rosso ? ' r' : '') + '">' + p.bd + '</span>' : '') + '</button>';
@@ -205,7 +205,7 @@ function bloccoOggi() {
   }).join('');
   var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); });
   var riv = contaDaRivedere(), sol = righeDaSollecitare().length, rig = ts.filter(function (t) { return t.statoIt === 'correggere'; }).length;
-  var senzaQuiz = q && ADM() ? cl.filter(function (c) { return !(q.scadenze || {})[c]; }) : [];
+  var senzaQuiz = q && LOC() ? cl.filter(function (c) { return !(q.scadenze || {})[c]; }) : [];
   var cose = [];
   if (riv) cose.push([riv, 'Risposte da rivedere', 'aspettano la tua approvazione', 'Rivedi', "S.filtro.stato='inviata';vai('revisione')", 'i']);
   if (sol) cose.push([sol, 'Da sollecitare', 'alunni con termini ancora senza risposta: messaggio pronto da copiare', 'Apri', "vai('sollecito')", 'w']);
@@ -314,10 +314,10 @@ var PAGINA = {
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
-  cartelloni: function () { return (ADM() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
+  cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
-    if (ADM() && !RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Presentazione per gli studenti</h2><div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
+    if (LOC() && !RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Presentazione per gli studenti</h2><div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
       '<span class="muted" style="font-size:14px">Slide per la classe, con partenza, scadenza, voto massimo e penalità presi da «Scadenze e valutazione».</span></section>';
     if (!RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
     return h;

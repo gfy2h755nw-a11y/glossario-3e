@@ -3410,10 +3410,13 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 8';
+var VERSIONE = '21/11/2026 · 9';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
+/* gestione dell'attività aperta: il prof. Cerrato o il collega titolare (che vede solo la sua) */
+function GEST() { return !!(S.d && S.d.utente && S.d.utente.gestore); }
+function LOC() { return ADM() || GEST(); }
 function PUO(p) { return ADM() || !!(S.d && S.d.utente && S.d.utente.permessi && S.d.utente.permessi[p]); }
 function elencoClassi(arr) { arr = arr || CLASSI(); return arr.length > 1 ? arr.slice(0, -1).join(', ') + ' e ' + arr[arr.length - 1] : arr.join(''); }
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
@@ -3456,6 +3459,7 @@ function entra(codice, riprova) {
   S.att = memo(chiaveAtt()) || null;
   api('login').then(function (d) {
     if (d.utente.ruolo !== 'docente') { S.att = null; memo(chiaveAtt(), null); }
+    if (d.utente.gestore) { S.att = d.att; memo(chiaveAtt(), d.att); } // collega titolare: sempre e solo la sua attività
     S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
     if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: EN() ? d.utente.lingua || 'it' : 'it', classe: (S.filtro && S.filtro.classe) || 'tutte' };
     render();
@@ -3842,7 +3846,7 @@ function bloccoAdmin(quale) {
     }).join('') + '</tbody></table></div>'
     : '<div class="grid2"><div><label for="pa">Partenza (uguale per ' + (CLASSI().length > 1 ? elencoClassi() : 'la classe') + ')</label><input id="pa" type="datetime-local" value="' + (imp.partenza ? isoLocale(imp.partenza) : '') + '"></div>' +
     '<div class="muted" style="align-self:end;font-size:14px">' + statoPart(imp.partenza) + '</div></div>';
-  var h = RO() || !ADM() ? '' : '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato · app ' + VERSIONE + '</span></div>' +
+  var h = RO() || !LOC() ? '' : '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato · app ' + VERSIONE + '</span></div>' +
     (CLASSI().length > 1 ? '<label class="row" style="gap:10px;font-weight:400;cursor:pointer"><input type="checkbox" id="dpc"' + (multi ? ' checked' : '') + ' onchange="S.datePerClasse=this.checked;vistaDocente();var x=$(\'dpc\');if(x)x.scrollIntoView({block:\'center\'})" style="width:22px;height:22px"> Partenza e scadenza diverse per ogni classe</label>' : '') +
     date +
     '<div class="grid2">' + (multi ? '' : '<div><label for="scIt">' + (EN() ? 'Scadenza italiano' : 'Scadenza per tutti i termini') + '</label><input id="scIt" type="datetime-local" value="' + isoLocale(imp.scadenzaIt) + '"></div>') +
@@ -5335,7 +5339,7 @@ function wzCrea(btn) {
     var aree = w.areeMie ? w.aree.map(function (a) { return { it: String(a.it).trim(), colore: a.colore, numero: String(a.numero || '').trim(), motto: String(a.motto || '').trim() }; }) : null;
     api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt, live: !!w.live, concessione: w.tipo === 'attivita' && w.conc ? w.conc : undefined }).then(function (x) {
       clearTimeout(_bozzaT); api('salvabozzawz', { dati: null }).catch(function () {});
-      chiudiWizard(); toast('Attività creata ' + (x.bozza ? 'in preparazione' : 'e LIVE') + ': ' + x.alunni + ' alunni, ' + x.termini + ' termini'); cambiaAttivita(x.id);
+      chiudiWizard(); toast('Attività creata ' + (x.bozza ? 'in preparazione' : 'e LIVE') + ': ' + x.alunni + ' alunni, ' + x.termini + ' termini' + (x.titolare ? '. Codice di ' + x.titolare.nome + ': ' + x.titolare.codice + ' (lo trovi in Impostazioni)' : '')); cambiaAttivita(x.id);
     }).catch(function (e) { btn.disabled = false; btn.textContent = w.live ? 'Crea e manda LIVE' : 'Crea in preparazione'; toast(errMsg(e), true); });
     return;
   }
@@ -5748,7 +5752,7 @@ function PAGINE() {
     { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
     { id: 'revcart', gr: 'Materiali', t: 'Revisione cartelloni', vis: !!A && PUO('documenti') && !ro, bd: S.rc && Object.keys(S.rc.cambiate).length ? Object.keys(S.rc.cambiate).length : 0 },
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
-    { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: adm && !ro },
+    { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: LOC() && !ro },
     { id: 'banca', gr: 'Gestione', t: 'Banca termini', vis: adm && !ro },
     { id: 'promo', gr: 'Gestione', t: 'Promo App', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
@@ -5807,7 +5811,7 @@ function barraLaterale(pag, pagine) {
     var pags = x.pp.map(function (p) { return p.id; }).join(' ');
     // sezione con una sola pagina: la voce è la pagina; con più pagine: la voce apre la prima e mostra le altre sotto
     h += '<button class="sit' + (on ? ' on' : '') + (z.fase ? ' fase f' + z.fase : '') + '" data-sez="' + z.id + '" data-pags="' + pags + '"' + (uno ? ' data-pag="' + x.pp[0].id + '"' : '') + (on ? ' aria-current="page"' : '') +
-      ' onclick="vai(\'' + (on && !uno ? pag : x.pp[0].id) + '\')">' + svgIco(z.ico) + '<span>' + esc(z.t) + '</span>' + (bd && !(on && !uno) ? '<span class="sbd' + (rosso ? ' r' : '') + '">' + bd + '</span>' : '') + '</button>';
+      ' onclick="vai(\'' + (on && !uno ? pag : x.pp[0].id) + '\')">' + svgIco(z.ico) + '<span>' + esc(z.id === 'arch' && !ADM() ? 'Registro attività' : z.t) + '</span>' + (bd && !(on && !uno) ? '<span class="sbd' + (rosso ? ' r' : '') + '">' + bd + '</span>' : '') + '</button>';
     if (!uno) h += '<div class="ssubs' + (on ? ' aperta' : '') + '">' + x.pp.map(function (p) {
       return '<button class="ssub' + (p.id === pag ? ' on' : '') + '" data-pag="' + p.id + '"' + (p.id === pag ? ' aria-current="page"' : '') + ' onclick="vai(\'' + p.id + '\')"><span>' + esc(SCHEDA[p.id] || p.t) + '</span>' +
         (p.bd ? '<span class="sbd' + (p.rosso ? ' r' : '') + '">' + p.bd + '</span>' : '') + '</button>';
@@ -5890,7 +5894,7 @@ function bloccoOggi() {
   }).join('');
   var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); });
   var riv = contaDaRivedere(), sol = righeDaSollecitare().length, rig = ts.filter(function (t) { return t.statoIt === 'correggere'; }).length;
-  var senzaQuiz = q && ADM() ? cl.filter(function (c) { return !(q.scadenze || {})[c]; }) : [];
+  var senzaQuiz = q && LOC() ? cl.filter(function (c) { return !(q.scadenze || {})[c]; }) : [];
   var cose = [];
   if (riv) cose.push([riv, 'Risposte da rivedere', 'aspettano la tua approvazione', 'Rivedi', "S.filtro.stato='inviata';vai('revisione')", 'i']);
   if (sol) cose.push([sol, 'Da sollecitare', 'alunni con termini ancora senza risposta: messaggio pronto da copiare', 'Apri', "vai('sollecito')", 'w']);
@@ -5999,10 +6003,10 @@ var PAGINA = {
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
-  cartelloni: function () { return (ADM() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
+  cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
-    if (ADM() && !RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Presentazione per gli studenti</h2><div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
+    if (LOC() && !RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Presentazione per gli studenti</h2><div class="row">' + CLASSI().map(function (c) { return '<button class="btn sec" onclick="presentazione(this, \'presentazionestudenti\', { classe: \'' + c + '\' })">Presentazione ' + c + ' (.pptx)</button>'; }).join('') + '</div>' +
       '<span class="muted" style="font-size:14px">Slide per la classe, con partenza, scadenza, voto massimo e penalità presi da «Scadenze e valutazione».</span></section>';
     if (!RO()) h += '<section class="card stack"><h2 style="margin:0;font-size:22px">Dati per la stampa</h2><p style="margin:0">A lavoro finito scarica i dati: servono per impaginare i 4 PDF definitivi (vanno solo le definizioni approvate).</p><div class="row"><button class="btn sec" onclick="esporta()">Scarica i dati (.json)</button></div></section>';
     return h;
@@ -6746,7 +6750,7 @@ function wzAvantiAtt(btn) {
 /* ---------- attività in preparazione (stand-by) → LIVE ---------- */
 function bannerPreparazione() {
   return '<div class="note warn wzprep" id="bannerPrep"><div><b>Attività in preparazione (stand-by).</b> Gli alunni non possono ancora entrare e l\'attività non compare nella pagina pubblica. ' +
-    'Controlla alunni, termini, cartelloni e date; stampa codici e schede. Quando sei pronto, mandala LIVE.</div>' + (ADM() ? '<button class="btn ok" onclick="mandaLive(this)">Manda LIVE</button>' : '') + '</div>';
+    'Controlla alunni, termini, cartelloni e date; stampa codici e schede. Quando sei pronto, mandala LIVE.</div>' + (LOC() ? '<button class="btn ok" onclick="mandaLive(this)">Manda LIVE</button>' : '') + '</div>';
 }
 function mandaLive(btn) {
   var cl = CLASSI(), date = (S.d.admin && S.d.admin.date) || {};
@@ -6800,7 +6804,38 @@ function bloccoConcessione() {
     '<p class="muted" style="margin:0;font-size:15px">Se scrivi il nome del collega, l\'app, i cartelloni, la pagina pubblica e i report mostrano lui come docente, con la dicitura <i>«Per gentile concessione del Prof. Danilo Cerrato»</i>. Lascia vuoto se l\'attività è tua.</p>' +
     '<div class="grid2"><div><label for="coD">Docente</label><input id="coD" type="text" maxlength="60" placeholder="es. Prof.ssa Maria Bianchi" value="' + esc(c.docente || '') + '"></div>' +
     '<div><label for="coM">Materia (facoltativa)</label><input id="coM" type="text" maxlength="60" value="' + esc(c.materia || '') + '"></div></div>' +
-    '<div><button class="btn" onclick="salvaConcessione(this)">Salva</button></div></section>';
+    '<div><button class="btn" onclick="salvaConcessione(this)">Salva</button></div>' + bloccoTitolare(c) + '</section>';
+}
+/* codice del collega titolare: entra solo in questa attività e la gestisce (tu resti l'amministratore) */
+function bloccoTitolare(c) {
+  var t = S.d.admin && S.d.admin.titolare;
+  var h = '<div class="stack" id="titBox" style="gap:8px;border-top:1px solid var(--line);padding-top:14px;margin-top:4px"><h3 style="margin:0;font-size:18px">Accesso del collega</h3>';
+  if (!c.docente) return h + '<p class="muted" style="margin:0;font-size:15px">Scrivi e salva il nome del collega: poi potrai creargli il codice per entrare.</p></div>';
+  if (!t) return h + '<p class="muted" style="margin:0;font-size:15px">' + esc(c.docente) + ' non ha ancora un codice. Con il codice entra solo in questa attività e la gestisce: risposte, quiz, interrogazioni, voti, cartelloni e documenti.</p>' +
+    '<div><button class="btn" onclick="codiceTitolare(this, \'crea\')">Crea il codice per ' + esc(c.docente) + '</button></div></div>';
+  return h + '<p class="muted" style="margin:0;font-size:15px">Con questo codice <b>' + esc(t.nome) + '</b> entra solo in questa attività e la gestisce: risposte, quiz, interrogazioni, voti, cartelloni, documenti e «Manda LIVE». Non vede le altre attività, la Banca termini, la Promo App e l\'archivio.</p>' +
+    '<div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:.15em;user-select:all" id="titCod">' + esc(t.codice) + '</div>' +
+    '<div class="row"><button class="btn" onclick="copiaTesto(messaggioTitolare(), this)">Copia codice e istruzioni</button>' +
+    '<button class="btn sec" id="titNuovo" onclick="codiceTitolare(this, \'nuovo\')">Nuovo codice</button>' +
+    '<button class="btn sec" id="titTogli" onclick="codiceTitolare(this, \'togli\')">Togli l\'accesso</button></div>' +
+    '<p class="muted" id="titAvviso" style="margin:0;font-size:14px">Con «Nuovo codice» o «Togli l\'accesso» il codice attuale smette subito di funzionare.</p></div>';
+}
+function messaggioTitolare() {
+  var t = S.d.admin.titolare;
+  return 'Ciao! Ho preparato la tua attività «' + nomeAttivita() + '» sul Glossario.\n' +
+    'Entra da qui: ' + location.origin + '/\n' +
+    'Il tuo codice docente: ' + t.codice + '\n' +
+    'Con questo codice vedi e gestisci solo la tua attività. Non darlo agli alunni.\n' +
+    'Prof. Danilo Cerrato';
+}
+function codiceTitolare(btn, op) {
+  // nuovo codice o accesso tolto: conferma dentro la pagina (secondo clic)
+  if (op !== 'crea' && !btn.dataset.ok) {
+    btn.dataset.ok = '1'; btn.textContent = op === 'togli' ? 'Sì, togli l\'accesso' : 'Sì, nuovo codice'; btn.className = 'btn'; btn.style.background = '#B3261E';
+    $('titAvviso').innerHTML = '<b>Sicuro?</b> Il codice ' + esc(S.d.admin.titolare.codice) + ' smetterà di funzionare. Clicca di nuovo per confermare.'; return;
+  }
+  btn.disabled = true;
+  api('codicetitolare', { op: op }).then(function () { return ricarica(op === 'togli' ? 'Accesso tolto' : 'Codice pronto'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 function salvaConcessione(btn) {
   btn.disabled = true;

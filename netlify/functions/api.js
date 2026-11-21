@@ -69,6 +69,7 @@ const AZIONI = {
   mandalive: (d, p) => SP.mandaLive(d, p),
   numericartelloni: (d, p) => SP.numeriCartelloni(d, p),
   concessione: (d, p) => SP.salvaConcessione(d, p),
+  codicetitolare: (d, p) => SP.codiceTitolare(d, p),
   promo: (d, p) => require('./lib/promo').entra(d, p),
   promonumeri: (d, p) => require('./lib/promo').numeriPubblici(d, p),
   promoaggiorna: (d, p) => require('./lib/promo').aggiornaNumeri(d, p),
@@ -185,7 +186,7 @@ exports.handler = async (event) => {
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
     if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita') Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]);
-    if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: await SP.elencoDocente(d) });
+    if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: dati.utente.gestore ? (await SP.elencoDocente(d)).filter((x) => x.id === d.spazio) : await SP.elencoDocente(d) });
     if (TRACCIA[p.azione] && p.codice) await traccia(d, p, event);
     return risposta(200, { ok: true, dati });
   } catch (e) {

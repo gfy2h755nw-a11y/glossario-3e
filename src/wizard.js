@@ -331,7 +331,7 @@ function wzAvantiAtt(btn) {
 /* ---------- attività in preparazione (stand-by) → LIVE ---------- */
 function bannerPreparazione() {
   return '<div class="note warn wzprep" id="bannerPrep"><div><b>Attività in preparazione (stand-by).</b> Gli alunni non possono ancora entrare e l\'attività non compare nella pagina pubblica. ' +
-    'Controlla alunni, termini, cartelloni e date; stampa codici e schede. Quando sei pronto, mandala LIVE.</div>' + (ADM() ? '<button class="btn ok" onclick="mandaLive(this)">Manda LIVE</button>' : '') + '</div>';
+    'Controlla alunni, termini, cartelloni e date; stampa codici e schede. Quando sei pronto, mandala LIVE.</div>' + (LOC() ? '<button class="btn ok" onclick="mandaLive(this)">Manda LIVE</button>' : '') + '</div>';
 }
 function mandaLive(btn) {
   var cl = CLASSI(), date = (S.d.admin && S.d.admin.date) || {};
@@ -385,7 +385,38 @@ function bloccoConcessione() {
     '<p class="muted" style="margin:0;font-size:15px">Se scrivi il nome del collega, l\'app, i cartelloni, la pagina pubblica e i report mostrano lui come docente, con la dicitura <i>«Per gentile concessione del Prof. Danilo Cerrato»</i>. Lascia vuoto se l\'attività è tua.</p>' +
     '<div class="grid2"><div><label for="coD">Docente</label><input id="coD" type="text" maxlength="60" placeholder="es. Prof.ssa Maria Bianchi" value="' + esc(c.docente || '') + '"></div>' +
     '<div><label for="coM">Materia (facoltativa)</label><input id="coM" type="text" maxlength="60" value="' + esc(c.materia || '') + '"></div></div>' +
-    '<div><button class="btn" onclick="salvaConcessione(this)">Salva</button></div></section>';
+    '<div><button class="btn" onclick="salvaConcessione(this)">Salva</button></div>' + bloccoTitolare(c) + '</section>';
+}
+/* codice del collega titolare: entra solo in questa attività e la gestisce (tu resti l'amministratore) */
+function bloccoTitolare(c) {
+  var t = S.d.admin && S.d.admin.titolare;
+  var h = '<div class="stack" id="titBox" style="gap:8px;border-top:1px solid var(--line);padding-top:14px;margin-top:4px"><h3 style="margin:0;font-size:18px">Accesso del collega</h3>';
+  if (!c.docente) return h + '<p class="muted" style="margin:0;font-size:15px">Scrivi e salva il nome del collega: poi potrai creargli il codice per entrare.</p></div>';
+  if (!t) return h + '<p class="muted" style="margin:0;font-size:15px">' + esc(c.docente) + ' non ha ancora un codice. Con il codice entra solo in questa attività e la gestisce: risposte, quiz, interrogazioni, voti, cartelloni e documenti.</p>' +
+    '<div><button class="btn" onclick="codiceTitolare(this, \'crea\')">Crea il codice per ' + esc(c.docente) + '</button></div></div>';
+  return h + '<p class="muted" style="margin:0;font-size:15px">Con questo codice <b>' + esc(t.nome) + '</b> entra solo in questa attività e la gestisce: risposte, quiz, interrogazioni, voti, cartelloni, documenti e «Manda LIVE». Non vede le altre attività, la Banca termini, la Promo App e l\'archivio.</p>' +
+    '<div style="font-family:monospace;font-size:22px;font-weight:700;letter-spacing:.15em;user-select:all" id="titCod">' + esc(t.codice) + '</div>' +
+    '<div class="row"><button class="btn" onclick="copiaTesto(messaggioTitolare(), this)">Copia codice e istruzioni</button>' +
+    '<button class="btn sec" id="titNuovo" onclick="codiceTitolare(this, \'nuovo\')">Nuovo codice</button>' +
+    '<button class="btn sec" id="titTogli" onclick="codiceTitolare(this, \'togli\')">Togli l\'accesso</button></div>' +
+    '<p class="muted" id="titAvviso" style="margin:0;font-size:14px">Con «Nuovo codice» o «Togli l\'accesso» il codice attuale smette subito di funzionare.</p></div>';
+}
+function messaggioTitolare() {
+  var t = S.d.admin.titolare;
+  return 'Ciao! Ho preparato la tua attività «' + nomeAttivita() + '» sul Glossario.\n' +
+    'Entra da qui: ' + location.origin + '/\n' +
+    'Il tuo codice docente: ' + t.codice + '\n' +
+    'Con questo codice vedi e gestisci solo la tua attività. Non darlo agli alunni.\n' +
+    'Prof. Danilo Cerrato';
+}
+function codiceTitolare(btn, op) {
+  // nuovo codice o accesso tolto: conferma dentro la pagina (secondo clic)
+  if (op !== 'crea' && !btn.dataset.ok) {
+    btn.dataset.ok = '1'; btn.textContent = op === 'togli' ? 'Sì, togli l\'accesso' : 'Sì, nuovo codice'; btn.className = 'btn'; btn.style.background = '#B3261E';
+    $('titAvviso').innerHTML = '<b>Sicuro?</b> Il codice ' + esc(S.d.admin.titolare.codice) + ' smetterà di funzionare. Clicca di nuovo per confermare.'; return;
+  }
+  btn.disabled = true;
+  api('codicetitolare', { op: op }).then(function () { return ricarica(op === 'togli' ? 'Accesso tolto' : 'Codice pronto'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 function salvaConcessione(btn) {
   btn.disabled = true;

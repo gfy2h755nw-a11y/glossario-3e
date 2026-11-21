@@ -50,10 +50,13 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 8';
+var VERSIONE = '21/11/2026 · 9';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
+/* gestione dell'attività aperta: il prof. Cerrato o il collega titolare (che vede solo la sua) */
+function GEST() { return !!(S.d && S.d.utente && S.d.utente.gestore); }
+function LOC() { return ADM() || GEST(); }
 function PUO(p) { return ADM() || !!(S.d && S.d.utente && S.d.utente.permessi && S.d.utente.permessi[p]); }
 function elencoClassi(arr) { arr = arr || CLASSI(); return arr.length > 1 ? arr.slice(0, -1).join(', ') + ' e ' + arr[arr.length - 1] : arr.join(''); }
 function CLASSI() { return (S.d && S.d.config && S.d.config.classi) || ['3E']; }
@@ -96,6 +99,7 @@ function entra(codice, riprova) {
   S.att = memo(chiaveAtt()) || null;
   api('login').then(function (d) {
     if (d.utente.ruolo !== 'docente') { S.att = null; memo(chiaveAtt(), null); }
+    if (d.utente.gestore) { S.att = d.att; memo(chiaveAtt(), d.att); } // collega titolare: sempre e solo la sua attività
     S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
     if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: EN() ? d.utente.lingua || 'it' : 'it', classe: (S.filtro && S.filtro.classe) || 'tutte' };
     render();
@@ -482,7 +486,7 @@ function bloccoAdmin(quale) {
     }).join('') + '</tbody></table></div>'
     : '<div class="grid2"><div><label for="pa">Partenza (uguale per ' + (CLASSI().length > 1 ? elencoClassi() : 'la classe') + ')</label><input id="pa" type="datetime-local" value="' + (imp.partenza ? isoLocale(imp.partenza) : '') + '"></div>' +
     '<div class="muted" style="align-self:end;font-size:14px">' + statoPart(imp.partenza) + '</div></div>';
-  var h = RO() || !ADM() ? '' : '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato · app ' + VERSIONE + '</span></div>' +
+  var h = RO() || !LOC() ? '' : '<section class="card stack admin"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Partenza, scadenza e valutazione</h2><span class="chip s-vuota">Solo prof. Cerrato · app ' + VERSIONE + '</span></div>' +
     (CLASSI().length > 1 ? '<label class="row" style="gap:10px;font-weight:400;cursor:pointer"><input type="checkbox" id="dpc"' + (multi ? ' checked' : '') + ' onchange="S.datePerClasse=this.checked;vistaDocente();var x=$(\'dpc\');if(x)x.scrollIntoView({block:\'center\'})" style="width:22px;height:22px"> Partenza e scadenza diverse per ogni classe</label>' : '') +
     date +
     '<div class="grid2">' + (multi ? '' : '<div><label for="scIt">' + (EN() ? 'Scadenza italiano' : 'Scadenza per tutti i termini') + '</label><input id="scIt" type="datetime-local" value="' + isoLocale(imp.scadenzaIt) + '"></div>') +

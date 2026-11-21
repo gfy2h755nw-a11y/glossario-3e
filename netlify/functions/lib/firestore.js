@@ -25,11 +25,13 @@ function conDocenti(config, mainSnap) {
   if (config && mainSnap && mainSnap.exists) config.docenti = (mainSnap.data() || {}).docenti || [];
   return config;
 }
-function compone(cfgSnap, aluSnap, terSnap, mainSnap) {
+/* attività da cui viene la configurazione (non si salva): serve a fermare i codici dei colleghi legati a un'altra attività */
+function segna(config, ns) { if (config) Object.defineProperty(config, '_spazio', { value: ns, enumerable: false, configurable: true }); return config; }
+function compone(cfgSnap, aluSnap, terSnap, mainSnap, ns) {
   if (!cfgSnap.exists) throw Object.assign(new Error('Glossario non ancora configurato: apri la pagina /setup.html.'), { utente: true });
   const alunni = aluSnap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
   const termini = terSnap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
-  const config = conDocenti(cfgSnap.data(), mainSnap);
+  const config = segna(conDocenti(cfgSnap.data(), mainSnap), ns || 'main');
   CAT.imposta(config); // catalogo dei termini dell'edizione in corso
   return { config, alunni, termini };
 }
@@ -51,12 +53,12 @@ function db(spazio) {
     spazio: ns,
     async leggiTutto() {
       const [c, a, t, m] = await Promise.all([cfgRef.get(), f.collection(COL.alunni).get(), f.collection(COL.termini).get(), leggiMain()]);
-      return compone(c, a, t, m);
+      return compone(c, a, t, m, ns);
     },
     async leggiConfig() {
       const [c, m] = await Promise.all([cfgRef.get(), leggiMain()]);
       if (!c.exists) return null;
-      const cfg = conDocenti(c.data(), m); CAT.imposta(cfg); return cfg;
+      const cfg = segna(conDocenti(c.data(), m), ns); CAT.imposta(cfg); return cfg;
     },
     async scriviConfig(mod) {
       if (!principale && mod && mod.docenti) { const { docenti, ...resto } = mod; await mainRef.set({ docenti }, { merge: true }); if (Object.keys(resto).length) await cfgRef.set(resto, { merge: true }); return; }
@@ -186,12 +188,12 @@ function db(spazio) {
         const ctx = {
           async leggiTutto() {
             const [c, a, t, m] = await Promise.all([tx.get(cfgRef), tx.get(f.collection(COL.alunni)), tx.get(f.collection(COL.termini)), principale ? null : tx.get(mainRef)]);
-            return compone(c, a, t, m);
+            return compone(c, a, t, m, ns);
           },
           // lettura leggera: config + alunni + un solo termine (≈18 letture invece di ≈97)
           async leggiTermine(id) {
             const [c, a, t, m] = await Promise.all([tx.get(cfgRef), tx.get(f.collection(COL.alunni)), tx.get(f.collection(COL.termini).doc(String(id))), principale ? null : tx.get(mainRef)]);
-            const st = compone(c, a, { docs: [] }, m);
+            const st = compone(c, a, { docs: [] }, m, ns);
             if (t.exists) st.termini = [Object.assign({ id: t.id }, t.data())];
             return st;
           },
