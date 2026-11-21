@@ -60,7 +60,7 @@ const AZIONI = {
   // segnale di presenza (ogni minuto, app aperta in primo piano): serve solo al registro attività
   presenza: async () => ({}),
   // pagina pubblica /glossario: nessun codice richiesto, solo definizioni approvate
-  pubblico: async (d, p) => Object.assign(await ED.pubblico(d, { ed: p.ed }), { spazi: await SP.elencoPubblico(d), att: d.spazio }),
+  pubblico: (d, p) => pubblicoInCache(d, p),
   // attività parallele: nuova attività con classi, aree, termini e regole propri; elenco; rimozione dall'elenco (i dati restano in archivio)
   nuovaattivita: (d, p) => SP.nuovaAttivita(d, p),
   attivitaelenco: (d, p) => SP.elenco(d, p),
@@ -127,6 +127,30 @@ async function traccia(d, p, event) {
   } catch (e) { console.error('registro attività:', e.message); }
 }
 
+/* ---------- meno letture sul database ----------
+   1) il controllo degli esclusi (manutenzione) legge tutto il glossario: dopo la scadenza si fa al massimo ogni 5 minuti
+      per istanza, e di nuovo subito dopo ogni modifica fatta da un docente (proroghe, riammissioni, impostazioni…);
+   2) la pagina pubblica e i giochi usano una copia dei dati che si rinnova ogni 2 minuti. */
+const TEST = !!process.env.SETUP_KEY && process.env.SETUP_KEY === 'chiave-prova' && /localhost/.test(process.env.URL || '');
+const MANUT_MS = 5 * 60 * 1000, PUBBLICO_MS = 2 * 60 * 1000;
+const manutUltima = {}, cachePubblico = {};
+const SOLO_LETTURA = { login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+async function manutenzioneSeServe(d) {
+  const k = d.spazio || 'main', now = Date.now();
+  if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;
+  await logica.manutenzione(d);
+  manutUltima[k] = now;
+}
+async function pubblicoInCache(d, p) {
+  const k = (d.spazio || 'main') + '|' + (p.ed || ''), c = cachePubblico[k], now = Date.now();
+  if (!TEST && c && now - c.t < PUBBLICO_MS) return c.dati;
+  const dati = Object.assign(await ED.pubblico(d, { ed: p.ed }), { spazi: await SP.elencoPubblico(d), att: d.spazio });
+  cachePubblico[k] = { t: now, dati };
+  return dati;
+}
+// limite giornaliero del database superato (piano gratuito di Firebase): messaggio chiaro invece del codice tecnico
+const QUOTA = /RESOURCE_EXHAUSTED|Quota exceeded/i;
+
 const risposta = (status, body) => ({
   statusCode: status,
   headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
@@ -143,8 +167,10 @@ exports.handler = async (event) => {
     // attività: quella scelta dal docente (att) oppure, per gli alunni, quella del loro codice
     const d = await SP.risolvi(db, p);
     if (p.azione !== 'setup' && d.spazio === 'main') await logica.migra(d);
-    if (p.azione === 'login' || p.azione === 'scegli') await logica.manutenzione(d);
+    if (p.azione === 'login' || p.azione === 'scegli') await manutenzioneSeServe(d);
     const dati = await fn(d, p);
+    // dopo una modifica del docente il prossimo accesso rifà subito il controllo degli esclusi
+    if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: await SP.elencoDocente(d) });
     if (TRACCIA[p.azione] && p.codice) await traccia(d, p, event);
     return risposta(200, { ok: true, dati });
@@ -154,6 +180,7 @@ exports.handler = async (event) => {
       return risposta(400, { errore: e.message });
     }
     console.error(e);
+    if (QUOTA.test(e.message || '')) return risposta(503, { errore: 'In questo momento il glossario non è raggiungibile per troppi accessi. Riprova più tardi: i tuoi dati sono al sicuro.' });
     return risposta(500, { errore: 'Errore del server: ' + (e.message || 'riprova tra poco.') });
   }
 };
