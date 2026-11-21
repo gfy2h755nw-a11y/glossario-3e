@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 6';
+var VERSIONE = '21/11/2026 · 7';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -99,6 +99,8 @@ function entra(codice, riprova) {
     S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
     if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: EN() ? d.utente.lingua || 'it' : 'it', classe: (S.filtro && S.filtro.classe) || 'tutte' };
     render();
+    // apertura con Dante e il motto: una volta al giorno per dispositivo (src/intro.js)
+    if (!window.__noIntro && introDaMostrare()) mostraIntro();
   }).catch(function (e) {
     // l'attività ricordata non c'è più: si torna a quella principale
     if (S.att && !riprova && /non c'è più/.test(errMsg(e))) { memo(chiaveAtt(), null); S.att = null; return entra(codice, true); }

@@ -39,6 +39,7 @@ html = '''<!DOCTYPE html>
 <script>
 ''' + r('src/app.js') + '''
 ''' + r('src/visore.js') + '''
+''' + r('src/intro.js') + '''
 </script>
 <script>
 ''' + r('src/gestione.js') + '''
