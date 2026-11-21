@@ -164,13 +164,9 @@ function mescola(arr, seme) {
 }
 /* richiesta: { '1': quanti, ... }; escludi: termini da non proporre (già scartati dal docente o già scelti) */
 /* fonte di un'area: 'banca:N' (banca delle 4 aree del laboratorio) oppure 'pk:ID:N' (area N di un elenco pronto) */
-function elencoFonte(f) {
-  const m = /^banca:(\d)$/.exec(f || '');
-  if (m) { if (!BANCA[m[1]]) err('Area della banca non trovata.'); return BANCA[m[1]]; }
-  const k = /^pk:([a-z0-9-]+):(\d)$/.exec(f || '');
-  const P = k ? require('./pacchetti')[k[1]] : null;
-  if (!P || !P.termini[k[2]]) err('Elenco di termini non trovato.');
-  return P.termini[k[2]];
+function elencoFonte(f, E) {
+  if (!/^(banca:\d|pk:[a-z0-9-]+:\d)$/.test(f || '') || !E[f]) err('Elenco di termini non trovato.');
+  return E[f];
 }
 async function generaTermini(db, { codice, richiesta, escludi, seme, pacchetto, fonti }) {
   const { stato } = await adminDa(db, codice);
@@ -181,7 +177,9 @@ async function generaTermini(db, { codice, richiesta, escludi, seme, pacchetto, 
   const F = fonti && typeof fonti === 'object' ? Object.keys(fonti).filter((n) => /^[1-6]$/.test(n) && fonti[n] !== 'mia') : null;
   const P = !F && pacchetto ? require('./pacchetti')[pacchetto] : null;
   if (!F && pacchetto && !P) err('Elenco di termini non trovato.');
-  const fonte = F ? Object.fromEntries(F.map((n) => [n, elencoFonte(fonti[n])])) : P ? P.termini : BANCA;
+  // banca e elenchi pronti con le modifiche fatte dal docente nella pagina «Banca termini»
+  const E = await require('./banca').elenchi(db);
+  const fonte = F ? Object.fromEntries(F.map((n) => [n, elencoFonte(fonti[n], E)])) : Object.fromEntries((P ? Object.keys(P.termini) : AREE).map((n) => [n, E[P ? 'pk:' + pacchetto + ':' + n : 'banca:' + n] || []]));
   (F || (P ? Object.keys(P.termini) : AREE)).forEach((n) => {
     const chiesti = Math.max(0, Math.min(500, Number((richiesta || {})[n]) || 0));
     const liberi = fonte[n].map((x, i) => ({ t: x[0], d: x[1], i })).filter((x) => !via.has(SIM.chiave(x.t)) && !SIM.trovaSimile(x.t, x.d, usati));

@@ -44,6 +44,7 @@ html = '''<!DOCTYPE html>
 ''' + r('src/layout.js') + '''
 ''' + r('src/orale.js') + '''
 ''' + r('src/wizard.js') + '''
+''' + r('src/banca.js') + '''
 </script>
 </body>
 </html>

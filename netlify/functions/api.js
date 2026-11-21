@@ -67,6 +67,10 @@ const AZIONI = {
   rimuoviattivita: (d, p) => SP.rimuovi(d, p),
   salvaaree: (d, p) => SP.salvaAree(d, p),
   mandalive: (d, p) => SP.mandaLive(d, p),
+  banca: (d, p) => require('./lib/banca').banca(d, p),
+  bancasalva: (d, p) => require('./lib/banca').salva(d, p),
+  bozzawz: (d, p) => require('./lib/bozza').leggi(d, p),
+  salvabozzawz: (d, p) => require('./lib/bozza').salva(d, p),
   // solo prof. Cerrato: backup, ripristino, Dropbox
   backup: async (d, p) => { await logica.verificaAdmin(d, p.codice); return auto.backupDa(await d.backupGrezzo(true), Date.now()); },
   ripristina: async (d, p) => {
@@ -135,7 +139,7 @@ async function traccia(d, p, event) {
 const TEST = !!process.env.SETUP_KEY && process.env.SETUP_KEY === 'chiave-prova' && /localhost/.test(process.env.URL || '');
 const MANUT_MS = 5 * 60 * 1000, PUBBLICO_MS = 2 * 60 * 1000;
 const manutUltima = {}, cachePubblico = {};
-const SOLO_LETTURA = { login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+const SOLO_LETTURA = { banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;

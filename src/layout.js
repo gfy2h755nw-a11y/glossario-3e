@@ -30,11 +30,12 @@ var SEZIONI = [
   { id: 'cart', t: 'Cartelloni', gr: 'Classe', ico: 'cartelloni', pag: ['cartelloni', 'revcart'] },
   { id: 'doc', t: 'Documenti', gr: 'Classe', ico: 'documenti', pag: ['documenti'] },
   { id: 'imp', t: 'Impostazioni', gr: 'Gestione', ico: 'impostazioni', pag: ['impostazioni'] },
+  { id: 'bancas', t: 'Banca termini', gr: 'Gestione', ico: 'documenti', pag: ['banca'] },
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
 var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
-  cartelloni: 'Anteprima e stampa', revcart: 'Revisione', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
+  cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
 function sezioniVisibili(pagine) {
@@ -59,6 +60,7 @@ function PAGINE() {
     { id: 'revcart', gr: 'Materiali', t: 'Revisione cartelloni', vis: !!A && PUO('documenti') && !ro, bd: S.rc && Object.keys(S.rc.cambiate).length ? Object.keys(S.rc.cambiate).length : 0 },
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
     { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: adm && !ro },
+    { id: 'banca', gr: 'Gestione', t: 'Banca termini', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
     { id: 'registro', gr: 'Gestione', t: adm && !ro ? 'Registro e backup' : 'Registro delle attività', vis: (adm && !ro) || !!(A && A.attivita) }
   ].filter(function (p) { return p.vis; });
@@ -158,6 +160,7 @@ function vistaDocente() {
   if (pag === 'situazione') { selSituazione(); disegnaSituazione(); }
   if (pag === 'gestione') { selGestione(); disegnaGestione(); }
   if (pag === 'revcart') avviaRevCart();
+  if (pag === 'banca') avviaBanca();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
   if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
   if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
@@ -303,6 +306,7 @@ var PAGINA = {
       '</tbody></table></div></section>';
   },
   revcart: function () { return paginaRevCart(); },
+  banca: function () { return paginaBanca(); },
   cartelloni: function () { return (ADM() && !RO() && S.d.areeMie ? bloccoAreeMie() : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');

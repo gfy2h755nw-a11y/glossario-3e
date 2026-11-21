@@ -383,7 +383,13 @@ async function login(db, { codice }) {
   if (chi.ruolo === 'docente' && (chi.admin || (chi.permessi || {}).documenti) && db.leggiAttivita) {
     [stato.attivita, stato.dropbox, stato.archivio] = await Promise.all([db.leggiAttivita(), DBX.statoPubblico(db), db.leggiArchivi ? db.leggiArchivi().then(elencoLeggero) : []]);
   }
-  return pacchetto(stato, chi);
+  const out = pacchetto(stato, chi);
+  // conteggi della banca e degli elenchi pronti con le modifiche del docente
+  if (chi.ruolo === 'docente' && out.pacchetti) {
+    const c = await require('./banca').conteggi(db);
+    out.banca = c.banca; out.pacchetti.forEach((p) => { if (c.pk[p.id]) p.termini = c.pk[p.id]; });
+  }
+  return out;
 }
 /* controllo leggero (solo config) per le azioni del prof. Cerrato */
 async function verificaPermesso(db, codice, p) {

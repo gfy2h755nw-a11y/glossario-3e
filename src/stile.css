@@ -283,3 +283,7 @@ body.or-pieno .dmain{grid-column:1/-1}
 [hidden]{display:none!important}
 .wzprep{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .sed-b{color:#9A4A00;font-weight:800}
+.bkagg{border:2px dashed var(--line);border-radius:12px;padding:10px 14px}
+.bkagg>summary{cursor:pointer}
+.bktab td{vertical-align:top}
+.bked td{background:#F6F9FD}

@@ -1,0 +1,6 @@
+node_modules/
+.netlify/
+*.json.key
+service-account*.json
+test/shots/
+test/export-prova.json

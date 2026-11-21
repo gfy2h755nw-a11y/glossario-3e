@@ -62,6 +62,12 @@ function db(spazio) {
       if (!principale && mod && mod.docenti) { const { docenti, ...resto } = mod; await mainRef.set({ docenti }, { merge: true }); if (Object.keys(resto).length) await cfgRef.set(resto, { merge: true }); return; }
       await cfgRef.set(mod, { merge: true });
     },
+    /* bozza della procedura «Nuova attività» (una sola, del prof. Cerrato) */
+    async leggiBozzaWz() { const s = await f.collection(COL.config).doc('_bozzawz').get(); return s.exists ? s.data() : null; },
+    async scriviBozzaWz(dati) { const r = f.collection(COL.config).doc('_bozzawz'); if (dati) await r.set(dati); else await r.delete(); },
+    /* modifiche alla banca termini (un documento per tutte le attività) */
+    async leggiBanca() { const s = await f.collection(COL.config).doc('_banca').get(); return s.exists ? s.data() : null; },
+    async scriviBanca(dati) { await f.collection(COL.config).doc('_banca').set(dati); },
     /* elenco delle attività parallele (senza la principale) */
     async leggiRegistro() { const s = await f.collection(COL.config).doc(REGISTRO).get(); return s.exists ? ((s.data() || {}).elenco || []) : []; },
     async scriviRegistro(elenco) { await f.collection(COL.config).doc(REGISTRO).set({ elenco }); },

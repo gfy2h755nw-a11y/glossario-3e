@@ -20,6 +20,7 @@ function nuovaClasseAtt() { return { nome: '', n: 0, righe: [], tpa: 10, max: 10
 function prepAttivita() {
   var w = S.wz;
   w.areeMie = true; w.pacchetto = null; w.aree = []; w.classi = [nuovaClasseAtt()]; w.regoleAperte = false;
+  setTimeout(controllaBozzaWz, 0);
 }
 
 function paginaAttivita() {
@@ -30,10 +31,11 @@ function paginaAttivita() {
   }).join('') + '</ol>';
   var corpo = p === 1 ? attPasso1() : p === 2 ? attPasso2() : p === 3 ? attPasso3() : p === 4 ? attPasso4() : p === 5 ? attPasso5() : p === 6 ? attPasso6() : p === 7 ? passo2Html() : passo3Html();
   var h = testata('Nuova attività') + '<main class="wrap stack"><div id="wz" class="stack">' +
-    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:28px">Nuova attività</h1><button class="btn sec" onclick="chiudiWizard()">Annulla e torna all\'area docenti</button></div>' +
+    '<section class="card stack"><div class="row" style="justify-content:space-between"><h1 class="disp" style="margin:0;font-size:28px">Nuova attività</h1><div class="row" style="gap:8px"><span id="wzSalv" class="muted" style="font-size:14px">' + (w._salvata ? 'Bozza salvata alle ' + oraBreveWz(w._salvata) : '') + '</span>' + (w._salvata ? '<button class="btn sec" style="min-height:38px" onclick="ricominciaWz()">Ricomincia da capo</button>' : '') + '<button class="btn sec" onclick="chiudiWizard()">Esci (la bozza resta salvata)</button></div></div>' +
     '<p class="muted" style="margin:0">Un\'attività nuova che <b>corre in parallelo</b> a quelle in corso, senza toccarle: classi, alunni, aree, cartelloni, termini e regole propri.</p>' + barra + '</section>' +
     '<section class="card stack"><h2 style="margin:0;font-size:23px">' + p + '. ' + PASSI_ATT[p - 1] + '</h2>' + corpo + (p <= 6 ? navAtt() : '') + '</section></div></main>';
   $('app').innerHTML = h;
+  salvaBozzaWz();
   var f = document.querySelector('#wz section:last-child input, #wz section:last-child select');
   if (f && p !== S.wz._ultimoFocus) { S.wz._ultimoFocus = p; try { f.focus({ preventScroll: true }); } catch (e) {} }
 }
@@ -332,4 +334,37 @@ function mandaLive(btn) {
       btn.disabled = true;
       api('mandalive', {}).then(function () { return ricarica('Attività LIVE: gli alunni possono entrare'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
     } }]);
+}
+
+/* ---------- bozza salvata sul server: si riprende anche da un altro dispositivo ---------- */
+var _bozzaT = null;
+function oraBreveWz(iso) { var d = new Date(iso); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function salvaBozzaWz() {
+  var w = S.wz;
+  if (!w || w.tipo !== 'attivita' || (w.passo === 1 && !String(w.nome || '').trim())) return;
+  clearTimeout(_bozzaT);
+  _bozzaT = setTimeout(function () {
+    if (S.wz !== w) return;
+    var c = {}; Object.keys(w).forEach(function (k) { if (k.charAt(0) !== '_' && k !== 'disp') c[k] = w[k]; });
+    api('salvabozzawz', { dati: JSON.stringify(c) }).then(function (x) {
+      if (S.wz !== w) return; w._salvata = x.salvata; var e = $('wzSalv'); if (e) e.textContent = 'Bozza salvata alle ' + oraBreveWz(x.salvata);
+    }).catch(function () {});
+  }, 800);
+}
+function controllaBozzaWz() {
+  var w0 = S.wz;
+  api('bozzawz', {}).then(function (x) {
+    if (!x || !x.dati || S.wz !== w0 || w0.passo !== 1 || String(w0.nome || '').trim()) return;
+    var b; try { b = JSON.parse(x.dati); } catch (e) { return; }
+    var al = (b.classi || []).reduce(function (s, c) { return s + (c.n || 0); }, 0);
+    finestra('Riprendere la nuova attività?', '<p style="margin:0">Hai una procedura lasciata a metà, salvata ' + esc(oraIt(x.salvata)) + ':</p><ul style="margin:0;padding-left:20px">' +
+      '<li><b>' + esc(b.nome || 'senza nome') + '</b>' + (b.as ? ' · ' + esc(b.as) : '') + '</li><li>' + (b.classi || []).map(function (c) { return esc(c.nome || '?'); }).join(', ') + (al ? ' · ' + al + ' alunni' : '') + '</li>' +
+      '<li>arrivata al passo ' + b.passo + ' di 8 (' + esc(PASSI_ATT[(b.passo || 1) - 1]) + ')</li></ul>',
+      [{ t: 'Riprendi da dove ero', f: function () { b._salvata = x.salvata; b.tipo = 'attivita'; S.wz = b; disegnaWizard(); } },
+       { t: 'Ricomincia da capo', warn: true, f: function () { api('salvabozzawz', { dati: null }).catch(function () {}); } }]);
+  }).catch(function () {});
+}
+function ricominciaWz() {
+  finestra('Ricominciare da capo?', '<p style="margin:0">La bozza salvata viene cancellata e la procedura riparte dal passo 1.</p>',
+    [{ t: 'Ricomincia da capo', warn: true, f: function () { clearTimeout(_bozzaT); api('salvabozzawz', { dati: null }).then(function () { S.wz = null; apriWizard('attivita'); }).catch(function (e) { toast(errMsg(e), true); }); } }]);
 }
