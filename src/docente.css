@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Restyling dell'area docenti (21/11/2026) — solo dentro .dapp e nella procedura guidata:
+   l'app degli alunni, il quiz e la pagina pubblica non cambiano.
+   Identità: «laboratorio» — fondo chiaro e freddo, barra laterale chiara, verde acqua come colore
+   d'azione, i quattro colori delle fasi (scritto, quiz, orale, voti) e icone in riquadri colorati.
+   ========================================================================== */
+.dapp{
+  --ink:#13222D; --ink2:#3D4D59; --muted:#5F6E7A; --line:#E0E5E3; --bg:#F2F5F4; --card:#fff;
+  --acc:#0E7C7B; --acc-d:#095F5E; --acc-l:#E2F1F0; --acc-ll:#F1F8F7;
+  --f1:#1F5FA8; --f2:#6B4FA0; --f3:#B4511A; --f4:#2E7D32;
+  --f1l:#E6EEF8; --f2l:#EFEAF7; --f3l:#FBEDE3; --f4l:#E6F2E6;
+  --gl:#ECEFF1; --om:0 1px 2px rgba(19,34,45,.05),0 6px 18px rgba(19,34,45,.05);
+  background:var(--bg); color:var(--ink);
+}
+
+/* ---------- barra laterale chiara ---------- */
+.dapp .side{background:#fff;color:var(--ink);border-right:1px solid var(--line);gap:10px;padding:16px 12px 12px}
+.dapp .slogo{background:var(--acc);color:#fff;border-radius:11px;box-shadow:0 2px 6px rgba(14,124,123,.3)}
+.dapp .sbrand b{color:var(--ink)}
+.dapp .sbrand span{color:var(--muted);opacity:1}
+.dapp .smenu-x{color:var(--ink)}
+.dapp .sed{background:var(--acc-ll);border:1px solid #CFE5E3;color:var(--ink2)}
+.dapp .sed b{color:var(--ink)}
+.dapp .sed-l{color:var(--acc-d);opacity:1}
+.dapp .sed-c{color:#9A4A00}
+.dapp .sed-b{color:#B4511A}
+.dapp .sed.arch{background:#FBEDE3;border-color:#F0CDB1}
+.dapp .sbtn-arch{background:var(--ink);color:#fff}
+.dapp .seg{background:#E3ECEA}
+.dapp .seg button{color:var(--ink2)}
+.dapp .seg button.on{background:#fff;color:var(--acc-d);box-shadow:0 1px 2px rgba(19,34,45,.12)}
+.dapp .satt span{color:var(--muted)}
+.dapp .satt select{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.dapp .snuovaatt{border:1px dashed #A9CFCC;color:var(--acc-d);background:#fff}
+.dapp .snuovaatt:hover{background:var(--acc-ll);border-color:var(--acc);color:var(--acc-d)}
+.dapp .snav{scrollbar-color:#C9D3D0 transparent;gap:2px}
+.dapp .sgr{color:#8A979F;padding:10px 10px 4px}
+.dapp .sit{color:var(--ink2);font-weight:700;padding:5px 8px;gap:10px;min-height:42px;--c:var(--acc);--cl:var(--acc-l)}
+.dapp .sit:hover{background:#F2F5F4;color:var(--ink)}
+/* icona in un riquadro colorato: colore della fase (prova) o del gruppo */
+.dapp .sit svg{box-sizing:content-box;width:18px;height:18px;padding:6px;border-radius:9px;background:var(--cl);color:var(--c);stroke-width:2}
+.dapp .sit.f1{--c:var(--f1);--cl:var(--f1l)}.dapp .sit.f2{--c:var(--f2);--cl:var(--f2l)}.dapp .sit.f3{--c:var(--f3);--cl:var(--f3l)}.dapp .sit.f4{--c:var(--f4);--cl:var(--f4l)}
+.dapp .sit[data-sez="oggi"]{--c:#13222D;--cl:#E9EDEF}
+.dapp .sit[data-sez="imp"],.dapp .sit[data-sez="bancas"],.dapp .sit[data-sez="arch"]{--c:#4A5A68;--cl:var(--gl)}
+.dapp .sit.f1 svg,.dapp .sit.f2 svg,.dapp .sit.f3 svg,.dapp .sit.f4 svg{color:var(--c)}
+.dapp .sit.on{background:var(--cl);color:var(--ink);box-shadow:inset 3px 0 0 var(--c)}
+.dapp .sit.on svg{background:var(--c);color:#fff}
+.dapp .sit.on.f1,.dapp .sit.on.f2,.dapp .sit.on.f3,.dapp .sit.on.f4{color:var(--ink)}
+.dapp .sbd{background:#FFD866;color:#3D2E00}
+.dapp .sbd.r{background:#F7D3CF;color:#8A1C14}
+.dapp .ssubs{border-left-color:var(--line);margin:2px 0 6px 25px}
+.dapp .ssub{color:var(--ink2)}
+.dapp .ssub:hover{background:#F2F5F4;color:var(--ink)}
+.dapp .ssub.on{background:var(--acc-l);color:var(--acc-d)}
+.dapp .snuova{border-radius:12px;box-shadow:0 2px 8px rgba(232,113,26,.28)}
+.dapp .srosso{background:#fff;color:#B3261E;border:2px solid #E7B9B5;padding:10px 12px}
+.dapp .srosso:hover{background:#FDF1F0;border-color:#B3261E}
+.dapp .srosso svg{stroke:#B3261E}
+.dapp .schiusa{border-color:#9BC59D;color:#1E5C22;background:#F1F8F1}
+.dapp .spiede{color:#8A979F}
+.dapp .spiede button{color:var(--ink2)}
+.dapp .sit:focus-visible,.dapp .seg button:focus-visible,.dapp .ssub:focus-visible{outline:3px solid #8FD0CD;outline-offset:1px}
+
+/* ---------- barra in alto ---------- */
+.dapp .tbar{background:rgba(242,245,244,.9);backdrop-filter:saturate(1.4) blur(8px);-webkit-backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+.dapp .ttit h1{font-size:25px;letter-spacing:-.01em}
+.dapp .tchip{background:#fff;border:1px solid var(--line);color:var(--ink2)}
+.dapp .smenu{background:#fff;border-color:var(--line)}
+
+/* ---------- contenuto ---------- */
+.dapp .card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--om)}
+.dapp .admin{border:1px solid var(--line);box-shadow:var(--om),inset 0 3px 0 var(--acc)}
+.dapp .btn{background:var(--acc);border-color:var(--acc);color:#fff;border-radius:11px}
+.dapp .btn:hover{background:var(--acc-d);border-color:var(--acc-d)}
+.dapp .btn.sec{background:#fff;color:var(--ink);border:1.5px solid #CBD4D1}
+.dapp .btn.sec:hover{background:var(--acc-ll);border-color:var(--acc);color:var(--acc-d)}
+.dapp .btn.ok{background:var(--f4);border-color:var(--f4)}
+.dapp .btn.ok:hover{background:#225F26;border-color:#225F26}
+.dapp .btn.warn{background:#fff;color:#B3261E;border-color:#E7B9B5}
+.dapp .btn.warn:hover{background:#FDF1F0;border-color:#B3261E}
+.dapp .btn[disabled]{opacity:.5}
+.dapp input[type=text],.dapp input[type=number],.dapp input[type=password],.dapp input[type=datetime-local],.dapp textarea,.dapp select{border:1.5px solid #CFD8D5;border-radius:10px;background:#fff}
+.dapp input:focus,.dapp textarea:focus,.dapp select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(14,124,123,.18)}
+
+/* schede in cima alla pagina: sottolineate, colore della fase */
+.dapp .ptabs{background:none;border-bottom:1px solid var(--line);border-radius:0;padding:0;gap:2px;align-self:stretch}
+.dapp .ptab{border-radius:9px 9px 0 0;min-height:42px;color:var(--muted);box-shadow:none;margin-bottom:-1px;border-bottom:3px solid transparent}
+.dapp .ptab:hover{background:rgba(255,255,255,.7);color:var(--ink)}
+.dapp .ptab.on{background:none;color:var(--acc-d);border-bottom-color:var(--acc);box-shadow:none}
+.dapp .ptab.on.f1{color:var(--f1);border-bottom-color:var(--f1)}.dapp .ptab.on.f2{color:var(--f2);border-bottom-color:var(--f2)}
+.dapp .ptab.on.f3{color:var(--f3);border-bottom-color:var(--f3)}.dapp .ptab.on.f4{color:var(--f4);border-bottom-color:var(--f4)}
+.dapp .pbd{background:var(--ink)}
+
+/* cruscotto */
+.dapp .kcard{position:relative;overflow:hidden}
+.dapp .kcard::before{content:"";position:absolute;left:0;top:0;right:0;height:4px;background:var(--acc)}
+.dapp .kpis>.kcard:nth-child(1)::before{background:var(--f1)}.dapp .kpis>.kcard:nth-child(2)::before{background:#E0A100}
+.dapp .kpis>.kcard:nth-child(3)::before{background:var(--f4)}.dapp .kpis>.kcard:nth-child(4)::before{background:var(--f3)}
+.dapp .kl{color:var(--muted)}
+.dapp .kv{font-weight:800;letter-spacing:-.02em}
+.dapp button.kcard:hover{border-color:var(--acc)}
+.dapp .ocosa{border:1px solid var(--line);box-shadow:var(--om);transition:border-color .15s}
+.dapp .ocosa:hover{border-color:#B9D9D6}
+.dapp .ocosa>span{border-radius:13px}
+.dapp .obar{background:#E4E9E7}
+
+/* tabelle */
+.dapp .tbl th{font:700 12.5px 'Archivo',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1.5px solid var(--line)}
+.dapp .tbl td{border-bottom-color:#EDF0EF}
+.dapp .tbl tbody tr:hover td{background:#F7FAF9}
+.dapp .voce{border-bottom-color:#EDF0EF}
+
+/* avvisi */
+.dapp .note{border-radius:12px}
+.dapp .wzprep{background:#FFF7EC;border:1px solid #F3D3AE}
+
+/* procedura guidata «Nuova attività»: stessi colori */
+#wz .btn{border-radius:11px}
+#wz .wzpassi li.ora>span{background:#0E7C7B;border-color:#0E7C7B}
+#wz .wzpassi li.ora>span b{color:#0E7C7B}
+#wz .wzpassi li.fatto>*{border-color:#9FD0CC;color:#095F5E}
+#wz .wzpassi li.fatto>* b{background:#0E7C7B}
+
+/* telefono */
+@media (max-width:980px){
+  .dapp .side{box-shadow:8px 0 24px rgba(19,34,45,.15)}
+  .dapp .tbar{background:#fff}
+}
+/* barra più compatta: tutte le voci visibili anche su schermi bassi */
+.dapp .sit{min-height:38px;padding:3px 8px}
+.dapp .sit svg{padding:5px}
+.dapp .sgr{padding:8px 10px 2px}
+.dapp .sed{padding:8px 10px}
+.dapp .snuova{padding:9px 12px}
+.dapp .snuova small{font-size:11.5px}
+.dapp .srosso{padding:8px 12px;font-size:14px}

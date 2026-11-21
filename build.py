@@ -25,7 +25,7 @@ html = '''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-title" content="Glossario">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>''' + FONT_CSS + '''</style>
-<style>''' + r('src/stile.css') + '''</style>
+<style>''' + r('src/stile.css') + r('src/docente.css') + '''</style>
 </head>
 <body>
 <div id="app"></div>

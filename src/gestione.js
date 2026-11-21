@@ -232,6 +232,19 @@ function bloccoEdizioni() {
     (lista ? '<h3 style="margin:8px 0 0;font-size:18px">Archivio</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Edizione</th><th>a.s.</th><th>Classi</th><th style="text-align:right">Alunni</th><th style="text-align:right">Approvate</th><th style="text-align:right">Media</th><th></th></tr></thead><tbody>' + lista + '</tbody></table></div>'
       : '<p class="muted" style="margin:0;font-size:14px">Archivio vuoto: nessuna edizione conclusa finora.</p>') + '</section>';
 }
+/* cartelloni con le 4 aree del laboratorio: si può cambiare il numero grande nella testata */
+function bloccoNumeri() {
+  return '<details class="card stack" id="numeriCart"><summary style="cursor:pointer"><b style="font-size:18px">Numeri dei cartelloni</b> <span class="muted" style="font-size:14px">· il numero grande nella testata</span></summary>' +
+    '<p class="muted" style="margin:8px 0;font-size:14px">Scrivi il numero da stampare in alto su ogni cartellone (fino a 3 caratteri: 01, 7, A1…). Lascia vuoto per il numero normale.</p>' +
+    '<div class="grid4">' + S.d.aree.map(function (a) {
+      return '<div><label for="nuC' + a.n + '"><span class="wzq" style="background:' + esc(a.colore) + '"></span> ' + esc(a.it) + '</label><input id="nuC' + a.n + '" type="text" maxlength="3" placeholder="0' + a.n + '" value="' + esc(a.numero || '') + '"></div>';
+    }).join('') + '</div><div><button class="btn" onclick="salvaNumeri(this)">Salva i numeri</button></div></details>';
+}
+function salvaNumeri(btn) {
+  var numeri = {}; S.d.aree.forEach(function (a) { numeri[a.n] = $('nuC' + a.n).value; });
+  btn.disabled = true;
+  api('numericartelloni', { numeri: numeri }).then(function () { return ricarica('Numeri dei cartelloni salvati'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
 /* cartelloni di un'attività con aree proprie: nome, colore, numero in alto e motto, modificabili anche dopo la creazione */
 function bloccoAreeMie() {
   return '<section class="card stack admin" id="areeMie"><details' + (S.areeAperte ? ' open' : '') + ' ontoggle="S.areeAperte=this.open"><summary style="cursor:pointer;font-weight:800;font-size:18px">Nomi, numeri e motti dei cartelloni</summary>' +

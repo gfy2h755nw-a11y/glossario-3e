@@ -314,7 +314,8 @@ function pacchetto(stato, chi) {
       riassegnazione: imp.riassegnazione,
       docenti: (stato.config.docenti || []).map((d) => d.nome) },
     ora: new Date(now).toISOString(),
-    aree: CAT.aree(),
+    // numero in alto sui cartelloni: quello scelto dal docente (pagina Cartelloni), altrimenti 01, 02…
+    aree: CAT.aree().map((a) => (stato.config.numeriCartelloni && stato.config.numeriCartelloni[a.n] ? Object.assign({}, a, { numero: stato.config.numeriCartelloni[a.n] }) : a)),
     regole: REG.di(stato.config),
     areeStd: chi.ruolo === 'docente' ? DATI.AREE : undefined,
     banca: chi.ruolo === 'docente' ? Object.fromEntries(Object.keys(BANCA).map((n) => [n, BANCA[n].length])) : undefined,
@@ -1015,7 +1016,7 @@ function pubblicoDa(stato) {
   imp.classi.forEach((c) => { classi[c] = stato.alunni.filter((a) => classeDi(a) === c && !fuori.has(a.id)).sort((x, y) => x.nome.localeCompare(y.nome, 'it')).map((a) => nomePubblico(a.nome)); });
   const aree = CAT.areeDi(stato.config).map((a) => {
     const ts = stato.termini.filter((t) => String(t.area) === String(a.n)).sort((x, y) => Number(String(x.id).slice(2)) - Number(String(y.id).slice(2)));
-    return { n: a.n, it: a.it, colore: a.colore, numero: a.numero || undefined, termini: ts.map((t) => {
+    return { n: a.n, it: a.it, colore: a.colore, numero: a.numero || (stato.config.numeriCartelloni || {})[a.n] || undefined, termini: ts.map((t) => {
       const ok = t.stato_it === 'approvata' && t.scelta_it != null;
       return { n: Number(String(t.id).slice(2)), termine: t.termine_it, def: ok ? testoDef(t.area, t.scelta_it, 'it') : '', autore: ok ? (nomi[t.alunno_id] || '') : '' };
     }) };

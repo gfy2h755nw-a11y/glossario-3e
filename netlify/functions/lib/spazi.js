@@ -121,6 +121,20 @@ async function salvaAree(d, { codice, aree }) {
   await d.scriviConfig({ aree: nuove });
   return { aree: nuove };
 }
+/* numero grande nella testata dei cartelloni (attività con le 4 aree del laboratorio); vuoto = numero normale (01, 02…) */
+async function numeriCartelloni(d, { codice, numeri }) {
+  const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
+  if (Array.isArray(stato.config.aree) && stato.config.aree.length) err('In questa attività il numero si cambia insieme al nome dell\'area, nella pagina Cartelloni.');
+  const out = {};
+  Object.keys(numeri || {}).forEach((n) => {
+    if (!/^[1-9]$/.test(n)) err('Cartellone non valido.');
+    const v = String(numeri[n] == null ? '' : numeri[n]).trim();
+    if (v.length > 3) err('Il numero del cartellone ha al massimo 3 caratteri.');
+    if (v) out[n] = v;
+  });
+  await d.scriviConfig({ numeriCartelloni: out });
+  return { numeri: out };
+}
 /* attività in preparazione → LIVE: da qui gli alunni possono entrare con il loro codice */
 async function mandaLive(d, { codice }) {
   if (d.spazio === 'main') err('L\'attività principale è già attiva.');
@@ -139,4 +153,4 @@ async function mandaLive(d, { codice }) {
   svuota();
   return { live: true };
 }
-module.exports = { mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };
+module.exports = { numeriCartelloni, mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };

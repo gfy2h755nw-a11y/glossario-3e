@@ -67,6 +67,7 @@ const AZIONI = {
   rimuoviattivita: (d, p) => SP.rimuovi(d, p),
   salvaaree: (d, p) => SP.salvaAree(d, p),
   mandalive: (d, p) => SP.mandaLive(d, p),
+  numericartelloni: (d, p) => SP.numeriCartelloni(d, p),
   banca: (d, p) => require('./lib/banca').banca(d, p),
   bancasalva: (d, p) => require('./lib/banca').salva(d, p),
   bozzawz: (d, p) => require('./lib/bozza').leggi(d, p),
