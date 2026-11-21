@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 7';
+var VERSIONE = '21/11/2026 · 8';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -135,7 +135,7 @@ function vistaEscluso() {
 function vistaAttesa() {
   var p = S.d.partenza, u = S.d.utente;
   $('app').innerHTML = testata(u.nome + ' · Classe ' + (u.classe || '3E')) + '<main class="wrap stack"><section class="card stack">' +
-    '<div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">Glossario odontotecnico</div>' +
+    '<div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + esc(Poster.titolo()) + '</div>' +
     '<h1 style="margin:0;font-size:28px;line-height:1.15">Il compito non è ancora partito</h1>' +
     (S.d.inPreparazione ? '<p style="margin:0">L\'attività è in preparazione: il prof. Cerrato la aprirà a breve. Torna a controllare nei prossimi giorni.</p>' : p ? '<p style="margin:0">Si parte <b>' + esc(oraIt(p)) + '</b>. Da quel momento qui trovi i tuoi <b>' + TPA() + ' termini</b>.</p>' + cdHtml(p)
       : '<p style="margin:0">Il prof. Cerrato non ha ancora fissato la partenza. Torna a controllare nei prossimi giorni.</p>') +
@@ -284,6 +284,10 @@ function disegnaPoster(n) {
 window.addEventListener('resize', function () { if (S.poster && $('pbox')) disegnaPoster(S.poster); });
 
 /* ---------- alunno ---------- */
+/* attività offerta a un collega: dati per cartelloni, report e piè di pagina */
+Poster.conc = function () { return S.d && S.d.config && S.d.config.concessione || null; };
+function rigaConcessione() { var c = Poster.conc(); return c ? '<p class="conc">Per gentile concessione del Prof. Danilo Cerrato</p>' : ''; }
+function docenteAtt() { var c = Poster.conc(); return c ? c.docente + (c.materia ? ' · ' + c.materia : '') : 'Prof. Danilo Cerrato · Laboratorio odontotecnico'; }
 function vistaAlunno() {
   var u = S.d.utente, a = area(u.gruppo);
   var miei = S.d.termini.filter(function (t) { return t.alunno === u.id; });
@@ -305,7 +309,7 @@ function vistaAlunno() {
   if (S.d.config.chiusa) h += '<div class="note warn"><b>L\'app è chiusa.</b> Le scelte non sono più modificabili.</div>';
   h += bloccoVoto() + bloccoScadenze(miei) + bloccoTappe();
   h += miei.map(cardAlunno).join('');
-  h += bloccoPoster(pn) + '</main>';
+  h += bloccoPoster(pn) + rigaConcessione() + '</main>';
   $('app').innerHTML = h; disegnaPoster(pn); avviaCountdown();
 }
 function cardAlunno(t) {
@@ -747,11 +751,11 @@ function reportPdf() {
   }).join('') + '</tbody></table>' : '';
 
   function testata(sotto) {
-    return '<header><div class="lg0">' + logo(17) + '<div><b>Istituto Barsanti - sede Salvetti</b><span>Massa · Laboratorio odontotecnico · a.s. ' + esc((S.d.config.edizione || {}).as || '2026/27') + '</span></div></div>' +
-      '<div class="dx"><b>Glossario odontotecnico</b><span>' + esc(sotto) + '</span></div></header>';
+    return '<header><div class="lg0">' + logo(17) + '<div><b>Istituto Barsanti - sede Salvetti</b><span>Massa' + (Poster.materia() ? ' · ' + esc(Poster.materia()) : '') + ' · a.s. ' + esc((S.d.config.edizione || {}).as || '2026/27') + '</span></div></div>' +
+      '<div class="dx"><b>' + esc(Poster.titolo()) + '</b><span>' + esc(sotto) + '</span></div></header>';
   }
   var npag = 0, totPag = 2 + PAN.length;
-  function piede() { npag++; return '<footer><span>Report del glossario · ' + esc(titoloCl) + ' · generato il ' + esc(oggi) + ' · Prof. Danilo Cerrato</span><span>' + npag + ' / ' + totPag + '</span></footer>'; }
+  function piede() { npag++; return '<footer><span>Report del glossario · ' + esc(titoloCl) + ' · generato il ' + esc(oggi) + ' · ' + esc(Poster.conc() ? Poster.conc().docente + ' · Per gentile concessione del Prof. Danilo Cerrato' : 'Prof. Danilo Cerrato') + '</span><span>' + npag + ' / ' + totPag + '</span></footer>'; }
 
   var pag1 = '<section class="pg">' + testata(titoloCl) +
     '<h1>Report del lavoro · ' + esc(titoloCl) + '</h1><p class="sub">' + (imp.partenza ? 'Partenza ' + esc(oraIt(imp.partenza)) + ' · ' : '') + 'Scadenza ' + esc(oraIt(imp.scadenzaIt)) + ' · situazione al ' + esc(oggi) + '</p>' +
@@ -927,7 +931,7 @@ function esporta() {
 }
 function stampaCodici() {
   var righe = S.d.codiciAlunni.map(function (a) {
-    return '<div class="s"><div><b>' + esc(a.nome) + '</b> · ' + esc(etich(a)) + '<br><span>Glossario odontotecnico · ' + esc(location.origin) + '</span></div><div class="c">' + esc(a.codice) + '</div></div>';
+    return '<div class="s"><div><b>' + esc(a.nome) + '</b> · ' + esc(etich(a)) + '<br><span>' + esc(Poster.titolo()) + ' · ' + esc(location.origin) + '</span></div><div class="c">' + esc(a.codice) + '</div></div>';
   }).join('');
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
@@ -1031,7 +1035,7 @@ function stampaSchede(classe) {
     var ar = area(a.gruppo) || {};
     var link = base + '?c=' + encodeURIComponent(a.codice);
     return '<section class="pg">' +
-      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">Glossario odontotecnico' + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(a.classe || '3E') + ' · a.s. 2026/27</div></div></header>' +
+      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(a.classe || '3E') + ' · a.s. 2026/27</div></div></header>' +
       '<div class="nome">' + esc(a.nome) + '</div>' +
       '<div class="gr" style="border-color:' + esc(ar.colore || '#15212B') + '">Classe ' + esc(a.classe || '3E') + (ar.it ? ' · Gruppo ' + esc(a.gruppo) + ' · ' + esc(ar.it) : ' · termini di tutte le aree') + '</div>' +
       '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo glossario.</b></p></div>' +
@@ -1043,7 +1047,7 @@ function stampaSchede(classe) {
       
       (imp ? '<div class="sca">' + (imp.partenza ? '<div><span>Partenza</span><b>' + esc(oraIt(imp.partenza)) + '</b></div>' : '') + '<div><span>' + (EN() ? 'Scadenza italiano' : 'Scadenza') + '</span><b>' + esc(oraIt(imp.scadenzaIt)) + '</b></div>' + (EN() ? '<div><span>Scadenza inglese</span><b>' + esc(oraIt(imp.scadenzaEn)) + '</b></div>' : '') + '</div>' : '') +
       '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: chi li ha può rispondere al posto tuo. Chi a una scadenza ha anche un solo termine senza risposta viene escluso e prende 4 nello scritto per mancata consegna.</div>' +
-      '<footer>Prof. Danilo Cerrato · Laboratorio odontotecnico' + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer>' +
+      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · Per gentile concessione del Prof. Danilo Cerrato' : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer>' +
       '</section>';
   }).join('');
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +

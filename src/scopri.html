@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Glossario odontotecnico · per i colleghi</title>
+<!--FONTI-->
+<style>
+:root{--perg:#F6F0E3;--perg2:#EFE4CC;--ink:#13222D;--ink2:#3D4D59;--muted:#617080;--line:#E3DCCB;--card:#FFFDF8;
+  --acc:#0E7C7B;--acc-d:#095F5E;--acc-l:#E2F1F0;--rosso:#A3221A;--oro:#B08A3E;
+  --f1:#1F5FA8;--f2:#6B4FA0;--f3:#B4511A;--f4:#2E7D32;--f1l:#E6EEF8;--f2l:#EFEAF7;--f3l:#FBEDE3;--f4l:#E6F2E6;
+  --H:'Archivo',system-ui,sans-serif;--T:'Atkinson Hyperlegible',system-ui,sans-serif;--L:'Cormorant Garamond',Georgia,serif}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--perg);color:var(--ink);font:17px/1.6 var(--T);-webkit-font-smoothing:antialiased}
+img{max-width:100%}
+a{color:var(--acc-d)}
+.w{max-width:1120px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--H);letter-spacing:-.015em;text-wrap:balance;margin:0}
+h2{font-size:clamp(30px,4.4vw,46px);line-height:1.08;font-weight:800}
+h3{font-size:20px;font-weight:800}
+.eyebrow{font:700 13px var(--H);letter-spacing:.16em;text-transform:uppercase;color:var(--acc-d)}
+.lead{font-size:clamp(18px,2vw,21px);color:var(--ink2);max-width:60ch}
+section{padding-block:clamp(56px,9vw,104px)}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:50px;padding:0 22px;border-radius:12px;font:700 16px var(--H);text-decoration:none;border:2px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer}
+.btn:hover{background:var(--acc-d);border-color:var(--acc-d)}
+.btn.sec{background:transparent;color:var(--ink);border-color:#CDBF9F}
+.btn.sec:hover{background:#fff;border-color:var(--acc);color:var(--acc-d)}
+/* rivelazione allo scorrimento */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+
+/* barra */
+.nav{position:sticky;top:0;z-index:20;background:rgba(246,240,227,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.nav .w{display:flex;align-items:center;gap:18px;min-height:62px}
+.logo{display:flex;align-items:center;gap:10px;font:800 16px var(--H);text-decoration:none;color:var(--ink)}
+.lgs{display:block;flex:none;width:38px;height:38px;border-radius:3px}
+.lgt{display:flex;flex-direction:column;line-height:1.15}.lgt small{font:600 11.5px var(--H);color:var(--muted);letter-spacing:.02em}
+.scuola{display:flex;align-items:center;gap:14px;margin-bottom:22px}.scuola .lgs{width:58px;height:58px}.scuola b{display:block;font:800 16px var(--H)}.scuola span{font-size:14px;color:var(--muted)}
+.lgc{width:48px;height:48px;margin:0 auto 6px}
+.nav nav{display:flex;gap:4px;margin-left:auto}
+.nav nav a{font:700 14.5px var(--H);color:var(--ink2);text-decoration:none;padding:8px 12px;border-radius:9px}
+.nav nav a:hover{background:#fff;color:var(--ink)}
+@media (max-width:860px){.nav nav{display:none}.nav .btn{margin-left:auto}}
+.nav .btn{min-height:40px;padding:0 14px;font-size:14.5px}
+
+/* apertura */
+.hero{padding-block:clamp(40px,7vw,84px) clamp(48px,8vw,96px);background:radial-gradient(ellipse at 75% 30%,#FFF9EC 0%,var(--perg) 55%,var(--perg2) 100%);overflow:hidden}
+.hero .w{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(24px,5vw,64px);align-items:center}
+.hero h1{font-size:clamp(38px,6.2vw,70px);line-height:1.02;font-weight:800;margin:14px 0 18px}
+.hero h1 em{font-style:normal;color:var(--acc)}
+.hero .cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.firma{margin-top:22px;font-size:15px;color:var(--muted)}
+.firma b{color:var(--ink)}
+.ritratto{position:relative;justify-self:center;width:min(100%,400px)}
+.dwrap{position:relative;width:78%;margin:0 auto;aspect-ratio:656/757;-webkit-mask-image:linear-gradient(180deg,#000 76%,transparent 100%);mask-image:linear-gradient(180deg,#000 76%,transparent 100%)}
+.dwrap img,.dwrap svg{position:absolute;inset:0;width:100%;height:100%}
+.dwrap img{opacity:0;animation:fa 1.2s 1.9s ease forwards}
+.dwrap .tp{fill:none;stroke:#2A1A12;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:tr 1.9s ease-in-out forwards}
+.dwrap svg{animation:fo .8s 2.9s ease forwards}
+.motto{margin:-8px 0 0;text-align:center;font:italic 600 clamp(26px,3.4vw,38px)/1.05 var(--L);opacity:0;animation:fa 1s 2.6s ease forwards}
+.motto b{font-style:normal;font-family:'Cinzel Decorative',var(--L);color:var(--rosso);font-size:1.25em}
+.motto small{display:block;margin-top:8px;font:600 12px var(--H);letter-spacing:.14em;text-transform:uppercase;color:#7A6246}
+@keyframes tr{to{stroke-dashoffset:0}}@keyframes fa{to{opacity:1}}@keyframes fo{to{opacity:0}}
+@media (max-width:860px){.hero .w{grid-template-columns:1fr}.ritratto{order:-1;width:min(70%,280px)}}
+
+/* numeri */
+.garanzia{display:flex;gap:16px;align-items:flex-start;margin:28px 0 6px;padding:20px 22px;border-radius:16px;background:var(--acc-l);border:1.5px solid var(--acc)}
+.garanzia svg{flex:none;width:38px;height:38px;fill:none;stroke:var(--acc);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.garanzia b{font:800 19px/1.25 var(--H);color:var(--acc-d)}.garanzia p{margin:6px 0 0;color:var(--ink2)}
+.doc-pres{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:clamp(22px,4vw,48px);align-items:center;margin-top:30px}
+.doc-pres figure{margin:0}.doc-pres img,.doc-rep img{display:block;width:100%;height:auto}
+.doc-pres h3{font-size:24px}.doc-pres p{color:var(--ink2);margin:10px 0 0}
+.doc-rep{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(18px,3vw,36px);margin-top:44px;align-items:start}
+.doc-rep figure{margin:0}.doc-rep figcaption{margin-bottom:16px;color:var(--ink2)}.doc-rep figcaption b{display:block;font:800 19px/1.3 var(--H);color:var(--ink);margin-bottom:4px}
+@media (max-width:820px){.doc-pres,.doc-rep{grid-template-columns:minmax(0,1fr)}}
+.numeri{background:var(--ink);color:#fff;padding-block:34px}
+.numeri .w{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.numeri div b{display:block;font:800 clamp(34px,5vw,54px)/1 var(--H);letter-spacing:-.02em}
+.numeri div span{color:#B9C6CE;font-size:15px}
+.numeri p{grid-column:1/-1;margin:6px 0 0;color:#8A9AA5;font-size:13px}
+@media (max-width:700px){.numeri .w{grid-template-columns:repeat(2,minmax(0,1fr))}.numeri .w>div:nth-child(5){grid-column:1/-1}}
+
+/* idea */
+.tre{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:38px}
+.tre article{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}
+.tre .ic{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;margin-bottom:14px}
+.tre p{margin:8px 0 0;color:var(--ink2)}
+@media (max-width:820px){.tre{grid-template-columns:1fr}}
+.ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* percorso */
+.perc{background:#fff;border-block:1px solid var(--line)}
+.tappe{display:grid;gap:clamp(40px,6vw,72px);margin-top:44px;position:relative}
+.tappa{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(22px,4vw,56px);align-items:center;padding-top:clamp(28px,4vw,40px);border-top:1px solid var(--line)}
+.tappa .nt{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--c);color:#fff;font:900 20px var(--H)}
+.tappa h3{font-size:clamp(24px,3vw,30px);margin-top:12px;color:var(--ink)}
+.tappa .sott{margin:6px 0 18px;color:var(--c);font:700 17px var(--H)}
+.tappa .vi{min-width:0}
+@media (max-width:820px){.tappa{grid-template-columns:minmax(0,1fr)}}
+.fasi{display:flex;gap:8px;flex-wrap:wrap;margin:34px 0 22px}
+.fasi button{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 18px;border-radius:14px;border:2px solid var(--line);background:#fff;font:800 16px var(--H);color:var(--ink2);cursor:pointer}
+.fasi button i{font-style:normal;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cl);color:var(--c);font-size:14px}
+.fasi button[aria-selected=true]{border-color:var(--c);color:var(--ink);background:var(--cl)}
+.fasi button[aria-selected=true] i{background:var(--c);color:#fff}
+.fase{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:center}
+.fase[hidden]{display:none}
+.chi{display:grid;gap:14px}
+.chi div{border-left:4px solid var(--c);background:var(--cl);border-radius:0 14px 14px 0;padding:14px 18px}
+.chi b{display:block;font:800 13px var(--H);letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:4px}
+.chi p{margin:0}
+@media (max-width:860px){.fase{grid-template-columns:1fr}}
+
+/* finte schermate */
+.tel{width:min(100%,300px);margin:0 auto;border-radius:38px;background:#13222D;padding:12px;box-shadow:0 24px 50px rgba(19,34,45,.22)}
+.tel .sc{border-radius:28px;background:#F4F3EF;overflow:hidden;min-height:540px;font-size:13px}
+.tel .tb{background:#13222D;color:#fff;padding:14px 16px 10px;font:800 14px var(--H);display:flex;justify-content:space-between}
+.pc{border-radius:16px;background:#fff;border:1px solid var(--line);box-shadow:0 24px 50px rgba(19,34,45,.14);overflow:hidden;font-size:13px}
+.pc .tb{display:flex;gap:6px;padding:10px 12px;background:#F2F5F4;border-bottom:1px solid var(--line)}
+.pc .tb i{width:10px;height:10px;border-radius:50%;background:#D9D2C1}
+.mc{background:#fff;border-radius:14px;margin:12px;padding:14px;border:1px solid #E6E3DA}
+.op{display:flex;gap:8px;align-items:flex-start;border:1.5px solid #E2DED3;border-radius:10px;padding:8px 10px;margin-top:7px;line-height:1.35}
+.op.on{border-color:var(--f1);background:var(--f1l)}
+.op span{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid #B8B2A3;display:grid;place-items:center;font:800 11px var(--H)}
+.op.on span{background:var(--f1);border-color:var(--f1);color:#fff}
+.pill{display:inline-block;border-radius:99px;padding:2px 9px;font:700 11px var(--H)}
+.bar{height:8px;border-radius:9px;background:#E7E3D8;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:9px}
+.riga{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #EFEBE2}
+.mbtn{display:inline-block;border-radius:9px;padding:7px 12px;font:800 12px var(--H);color:#fff}
+table.vt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.vt th{text-align:left;font:700 10.5px var(--H);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1.5px solid var(--line)}
+table.vt td{padding:9px 10px;border-bottom:1px solid #EFEBE2}
+table.vt td.n{text-align:right;font-weight:800;font-family:var(--H)}
+
+/* cartellone */
+.cart{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(24px,5vw,60px);align-items:center}
+.poster{width:min(100%,420px);margin:0 auto;background:#fff;box-shadow:0 26px 60px rgba(19,34,45,.25);transform:rotate(-2deg);padding:0;line-height:0}
+.poster img{display:block;width:100%;height:auto}
+.poster .ph{background:linear-gradient(135deg,#B5532A,#D4743F);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:flex-start}
+.poster .ph small{font:700 8px var(--H);letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.poster .ph b{display:block;font:800 22px/1 var(--H)}
+.poster .ph em{font:italic 600 11px var(--L)}
+.poster .ph strong{font:900 44px/1 var(--H)}
+.poster .gr{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:10px}
+.poster .gr div{border:1px solid #EDE7DA;border-radius:4px;padding:5px}
+.poster .gr b{display:block;font:800 7.5px var(--H);color:#B5532A}
+.poster .gr i{display:block;height:3px;border-radius:2px;background:#E2E4E6;margin-top:3px}
+.poster .pf{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:3px solid #B5532A;font:700 8px var(--H);color:#5B6976}
+.qr{width:38px;height:38px;background:repeating-conic-gradient(#13222D 0 25%,#fff 0 50%) 0 0/9px 9px;border:3px solid #fff;outline:1px solid #13222D}
+@media (max-width:860px){.cart{grid-template-columns:1fr}}
+
+/* vantaggi */
+.sei{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:38px}
+.sei article{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+.sei article p{margin:6px 0 0;color:var(--ink2);font-size:16px}
+@media (max-width:900px){.sei{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.sei{grid-template-columns:1fr}}
+
+/* adottarla */
+.ado{background:var(--ink);color:#fff}
+.ado .eyebrow{color:#7FD1CC}
+.ado .lead{color:#C6D2D9}
+.passi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:38px;counter-reset:p}
+.passi article{background:#1C2F3C;border:1px solid #2C4352;border-radius:18px;padding:24px;position:relative}
+.passi article::before{counter-increment:p;content:counter(p);position:absolute;top:-16px;left:22px;width:34px;height:34px;border-radius:50%;background:var(--acc);display:grid;place-items:center;font:800 16px var(--H)}
+.passi p{margin:8px 0 0;color:#C6D2D9;font-size:16px}
+.materie{display:flex;flex-wrap:wrap;gap:8px;margin-top:30px}
+.materie span{border:1px solid #3A5566;border-radius:99px;padding:6px 14px;font:700 14px var(--H);color:#DDE6EB}
+@media (max-width:820px){.passi{grid-template-columns:1fr;gap:26px}}
+
+/* privacy e faq */
+.due{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,5vw,60px)}
+.lista{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:12px}
+.lista li{display:flex;gap:12px;align-items:flex-start}
+.lista li::before{content:"";flex:none;width:22px;height:22px;margin-top:3px;border-radius:50%;background:var(--acc-l) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23095F5E' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center/14px no-repeat}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 18px;margin-top:10px}
+details summary{cursor:pointer;font:800 17px var(--H);padding:12px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
+details summary::after{content:"+";font-size:22px;line-height:1;color:var(--acc)}
+details[open] summary::after{content:"–"}
+details p{margin:0 0 14px;color:var(--ink2)}
+@media (max-width:860px){.due{grid-template-columns:1fr}}
+
+/* contatto */
+.fine{text-align:center;background:radial-gradient(ellipse at 50% 0%,#FFF9EC,var(--perg2))}
+.fine h2{max-width:20ch;margin:0 auto}
+.fine .lead{margin:16px auto 0}
+.fine .contatto{margin-top:26px;display:inline-flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px 28px}
+.fine .contatto b{font:800 20px var(--H)}
+footer{padding:28px 0 calc(28px + env(safe-area-inset-bottom,0px));color:var(--muted);font-size:14px;text-align:center}
+
+/* accesso */
+#accesso{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(19,34,45,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#accesso[hidden]{display:none}
+#accesso form{width:min(100%,440px);background:var(--card);border-radius:22px;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.3)}
+#accesso h2{font-size:26px}
+#accesso p{color:var(--ink2);margin:8px 0 18px}
+#accesso label{display:block;font:700 14px var(--H);margin:12px 0 6px}
+#accesso input{width:100%;min-height:48px;border:1.5px solid #D5CBB3;border-radius:11px;padding:0 14px;font:inherit;background:#fff}
+#accesso input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(14,124,123,.18)}
+#accesso .btn{width:100%;justify-content:center;margin-top:20px}
+#accesso .err{color:#B3261E;font-weight:700;min-height:1.4em;margin:10px 0 0}
+#accesso small{display:block;margin-top:14px;color:var(--muted);font-size:13px}
+.note-es{font-size:13px;color:var(--muted);margin-top:16px}
+</style>
+</head>
+<body>
+<div id="accesso">
+  <form id="fAcc" novalidate>
+    <span class="eyebrow">Pagina riservata ai colleghi</span>
+    <h2 style="margin-top:8px">Benvenuta, benvenuto.</h2>
+    <p>Per entrare scrivi il tuo nome e cognome.</p>
+    <label for="aNome">Nome</label><input id="aNome" autocomplete="given-name" required>
+    <label for="aCogn">Cognome</label><input id="aCogn" autocomplete="family-name" required>
+    <button class="btn" type="submit">Entra</button>
+    <p class="err" id="aErr" role="alert"></p>
+  </form>
+</div>
+
+<header class="nav"><div class="w">
+  <a class="logo" href="#top"><svg class="lgs" viewBox="0 0 100 100" role="img" aria-label="Logo dell'IIS Barsanti"><rect width="100" height="100" fill="#EA3628"/><text x="15" y="15.5" textLength="66" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">BARSANTI</text><text x="15" y="98" textLength="65" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">SALVETTI</text><text transform="translate(83.5 19) rotate(90)" textLength="64" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">FIORILLO</text><text transform="translate(16.5 84) rotate(-90)" textLength="63" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">EINAUDI</text><text x="19" y="81" textLength="61" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:900;fill:#fff;font-size:88px">B</text></svg><span class="lgt"><b>Glossario odontotecnico</b><small>IIS «L. Barsanti» · Massa</small></span></a>
+  <nav aria-label="Sezioni"><a href="#idea">L'idea</a><a href="#percorso">Come funziona</a><a href="#documenti">I documenti</a><a href="#adottarla">Adottarla</a><a href="#faq">Domande</a></nav>
+  <a class="btn" href="#contatti">Parliamone</a>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="w">
+  <div class="rv">
+    <div class="scuola"><svg class="lgs" viewBox="0 0 100 100" role="img" aria-label="Logo dell'IIS Barsanti"><rect width="100" height="100" fill="#EA3628"/><text x="15" y="15.5" textLength="66" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">BARSANTI</text><text x="15" y="98" textLength="65" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">SALVETTI</text><text transform="translate(83.5 19) rotate(90)" textLength="64" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">FIORILLO</text><text transform="translate(16.5 84) rotate(-90)" textLength="63" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">EINAUDI</text><text x="19" y="81" textLength="61" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:900;fill:#fff;font-size:88px">B</text></svg><div><b>Istituto di Istruzione Superiore «L. Barsanti»</b><span>sede Salvetti · Massa · indirizzo odontotecnico</span></div></div>
+    <span class="eyebrow">Per i colleghi</span>
+    <h1>I termini del laboratorio diventano <em>un progetto di classe</em>.</h1>
+    <p class="lead">Un'app web pensata per l'indirizzo odontotecnico: ogni alunno costruisce una parte del glossario, il docente guida, corregge e valuta, e alla fine la classe stampa i cartelloni e pubblica il suo glossario.</p>
+    <div class="cta"><a class="btn" href="#percorso">Guarda come funziona</a><a class="btn sec" href="#contatti">Parliamone</a></div>
+    <p class="firma">Ideata e curata dal <b>prof. Danilo Cerrato</b>, Laboratorio odontotecnico.</p>
+  </div>
+  <div class="ritratto"><div id="ritratto"></div><p class="motto" lang="la"><b>N</b>omina sunt consequentia rerum<small>Dante · Vita Nuova, XIII</small></p></div>
+</div></section>
+
+<div class="numeri"><div class="w">
+  <div class="rv"><b id="nClassi">–</b><span>classi coinvolte</span></div>
+  <div class="rv"><b id="nAlunni">–</b><span>alunni al lavoro</span></div>
+  <div class="rv"><b id="nTermini">–</b><span>termini assegnati</span></div>
+  <div class="rv"><b id="nPerc">–</b><span>definizioni approvate</span></div>
+  <div class="rv"><b id="nTempo">–</b><span>tempo totale in app</span></div>
+  <p><span id="nAgg">Dati reali dell'app, in aggiornamento…</span> Nomi e voti nelle immagini sono di esempio.</p>
+</div></div>
+
+<section id="perche"><div class="w">
+  <div class="rv"><span class="eyebrow">Il problema</span><h2 style="margin-top:10px;max-width:24ch">Il lessico tecnico, studiato a memoria, si dimentica.</h2>
+  <p class="lead" style="margin-top:14px">Le definizioni ripetute la sera prima della verifica durano poco, e correggere e valutare decine di elaborati porta via ore. Serve un modo in cui gli alunni usino le parole e il docente abbia tutto sotto mano.</p></div>
+</div></section>
+
+<section class="perc" id="idea"><div class="w">
+  <div class="rv"><span class="eyebrow">L'idea</span><h2 style="margin-top:10px;max-width:22ch">Parole in azione, non a memoria.</h2>
+  <p class="lead" style="margin-top:14px">La classe costruisce insieme il proprio glossario: ognuno ha la sua parte di lavoro e il risultato è di tutti.</p></div>
+  <div class="tre">
+    <article class="rv"><div class="ic" style="background:var(--f1l);color:var(--f1)"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 14.5l2 2 4-4.5"/></svg></div><h3>Gli alunni scelgono</h3><p>A ogni alunno toccano i suoi termini: per ognuno sceglie la definizione corretta tra quelle proposte, da casa e dal telefono. Quanti termini a testa lo decidi tu: è tutto personalizzabile.</p></article>
+    <article class="rv"><div class="ic" style="background:var(--acc-l);color:var(--acc)"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg></div><h3>Il docente approva</h3><p>Le scelte corrette si approvano tutte insieme; quelle sbagliate tornano all'alunno con un commento.</p></article>
+    <article class="rv"><div class="ic" style="background:var(--f3l);color:var(--f3)"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="13" rx="1.5"/><path d="M12 16v5M8 21h8M8 7.5h8M8 11h5"/></svg></div><h3>La classe espone</h3><p>Le definizioni approvate diventano cartelloni 70×100 e alimentano una pagina pubblica, raggiungibile con il QR stampato. Sulla pagina pubblica, oltre a ricercare termini e definizioni, è possibile esercitarsi e sfidarsi a squadre.</p></article>
+  </div>
+</div></section>
+
+<section id="percorso"><div class="w">
+  <div class="rv"><span class="eyebrow">Come funziona</span><h2 style="margin-top:10px">Quattro tappe, un voto finale chiaro.</h2>
+  <p class="lead" style="margin-top:14px">Per ogni tappa: cosa fa l'alunno, cosa fa il docente e come appare nell'app.</p></div>
+  <div class="tappe">
+  <article class="tappa rv" style="--c:var(--f1);--cl:var(--f1l)">
+    <div class="tx"><span class="nt">1</span><h3>Lo scritto</h3><p class="sott">Ogni alunno sceglie le definizioni dei suoi termini.</p><div class="chi"><div><b>L'alunno</b><p>Entra con il suo codice personale, vede i suoi termini e per ognuno sceglie la definizione corretta. Se il docente la rimanda indietro, può correggerla fino alla scadenza.</p></div>
+      <div><b>Il docente</b><p>Vede le risposte arrivare in tempo reale, approva in un colpo tutte le scelte giuste, rimanda le altre con un commento e sollecita chi è in ritardo con un messaggio pronto.</p></div></div></div>
+    <div class="vi"><div class="tel"><div class="sc"><div class="tb"><span>I miei termini</span><span>7 di 10</span></div>
+      <div class="mc"><span class="pill" style="background:var(--f1l);color:var(--f1)">Area 1 · Anatomia</span><h3 style="font-size:19px;margin-top:8px">Dentina</h3>
+        <div class="op"><span>A</span>Tessuto che riveste la radice e ancora il dente all'osso.</div>
+        <div class="op on"><span>B</span>Tessuto mineralizzato giallastro sotto lo smalto, che forma la maggior parte del dente.</div>
+        <div class="op"><span>C</span>Parte molle all'interno del dente, con vasi e nervi.</div>
+        <div class="op"><span>D</span>Strato esterno trasparente della corona.</div>
+        <div style="margin-top:12px"><span class="mbtn" style="background:var(--f1)">Invia la scelta</span></div></div>
+      <div class="mc" style="display:flex;justify-content:space-between;align-items:center"><span>Approvate</span><b>5 su 10</b></div></div></div></div>
+  </article>
+  <article class="tappa rv" style="--c:var(--f2);--cl:var(--f2l)">
+    <div class="tx"><span class="nt">2</span><h3>Il quiz</h3><p class="sott">Tutta la classe ripassa tutto il glossario.</p><div class="chi"><div><b>L'alunno</b><p>Un termine alla volta, quattro definizioni e un minuto per rispondere. Ogni errore fa tornare indietro di qualche termine: si supera arrivando in fondo a tutto il glossario della classe.</p></div>
+      <div><b>Il docente</b><p>Segue il tabellone: dove è arrivato ognuno, quante sessioni, quanto tempo. Per chi ne ha bisogno imposta soglie personali, più tempo o il pulsante «Dimezza le opzioni».</p></div></div></div>
+    <div class="vi"><div class="tel"><div class="sc"><div class="tb"><span>Quiz del glossario</span><span>128 / 260</span></div>
+      <div class="mc" style="text-align:center"><svg width="110" height="110" viewBox="0 0 110 110" aria-label="42 secondi"><circle cx="55" cy="55" r="46" fill="none" stroke="#EFEAF7" stroke-width="10"/><circle cx="55" cy="55" r="46" fill="none" stroke="#6B4FA0" stroke-width="10" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="87" transform="rotate(-90 55 55)"/><text x="55" y="63" text-anchor="middle" font-family="Archivo" font-weight="800" font-size="26" fill="#13222D">42</text></svg>
+        <h3 style="font-size:19px;margin-top:4px">Chamfer</h3>
+        <div class="op" style="text-align:left"><span>A</span>Margine di preparazione a gradino con angolo retto.</div>
+        <div class="op" style="text-align:left"><span>B</span>Margine curvo e inclinato che raccorda parete e gengiva.</div>
+        <div class="op" style="text-align:left"><span>C</span>Elemento che sostituisce il dente mancante in un ponte.</div>
+        <div class="op" style="text-align:left"><span>D</span>Rivestimento ceramico della superficie vestibolare.</div></div>
+      <div class="mc"><div class="bar"><i style="width:49%;background:var(--f2)"></i></div></div></div></div></div>
+  </article>
+  <article class="tappa rv" style="--c:var(--f3);--cl:var(--f3l)">
+    <div class="tx"><span class="nt">3</span><h3>L'interrogazione</h3><p class="sott">Solo chi ha superato il quiz viene interrogato.</p><div class="chi"><div><b>L'alunno</b><p>Chi ha superato il quiz viene interrogato di persona su alcuni termini estratti a caso dall'app: niente domande preparate, nessun vantaggio per nessuno.</p></div>
+      <div><b>Il docente</b><p>Interroga, se vuole, con l’aiuto del tablet o del PC: ha a video i termini, il voto dello scritto e il tempo passato nel quiz. Segna risposta giusta, parziale o sbagliata: il voto si calcola da solo, oppure lo decide lui.</p></div></div></div>
+    <div class="vi"><div class="pc"><div class="tb"><i></i><i></i><i></i></div><div style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><h3 style="font-size:18px">Interrogazione · Sara M.</h3><span class="pill" style="background:var(--f3l);color:var(--f3)">4ª domanda di 10</span></div>
+      <div class="riga"><span>1. Moncone sfilabile</span><b style="color:var(--f4)">giusta</b></div>
+      <div class="riga"><span>2. Cappetta</span><b style="color:var(--f4)">giusta</b></div>
+      <div class="riga"><span>3. Lacca spaziatrice</span><b style="color:var(--f3)">parziale</b></div>
+      <div class="riga"><span><b>4. Ribasatura</b></span><span><span class="mbtn" style="background:var(--f4)">Giusta</span> <span class="mbtn" style="background:var(--f3)">½</span> <span class="mbtn" style="background:#B3261E">Sbagliata</span></span></div>
+      <div style="display:flex;gap:18px;margin-top:14px"><div><small style="color:var(--muted)">Scritto</small><br><b style="font:800 22px var(--H)">7,5</b></div><div><small style="color:var(--muted)">Orale finora</small><br><b style="font:800 22px var(--H)">4,25</b></div><div><small style="color:var(--muted)">Tempo nel quiz</small><br><b style="font:800 22px var(--H)">2 h 10'</b></div></div></div></div></div>
+  </article>
+  <article class="tappa rv" style="--c:var(--f4);--cl:var(--f4l)">
+    <div class="tx"><span class="nt">4</span><h3>Il voto</h3><p class="sott">Scritto, orale e voto finale, già calcolati.</p><div class="chi"><div><b>L'alunno</b><p>Conosce fin dall'inizio le regole: quanto vale ogni errore, come si arriva al voto. Niente sorprese.</p></div>
+      <div><b>Il docente</b><p>Ha il tabellone con scritto, orale e voto finale, il giudizio già scritto da rifinire, il report PDF per la scuola e il file pronto per Argo.</p></div></div></div>
+    <div class="vi"><div class="pc"><div class="tb"><i></i><i></i><i></i></div><img src="/promo-tabellone.webp" alt="Il tabellone dei voti dell'app, con la scritta fac simile" width="1100" height="810" loading="lazy" style="display:block;width:100%;height:auto"></div></div>
+  </article>
+  </div>
+</div></section>
+
+<section class="perc" id="cartelloni"><div class="w cart">
+  <div class="rv"><span class="eyebrow">Il risultato</span><h2 style="margin-top:10px">Il lavoro della classe, appeso in laboratorio.</h2>
+    <p class="lead" style="margin-top:14px">Un cartellone 70×100 per area, impaginato in automatico con i termini dalla A alla Z, i nomi degli autori abbreviati e un QR che porta alla pagina pubblica del glossario.</p>
+    <ul class="lista"><li>PDF pronto per la tipografia, uno per pagina</li><li>Revisione finale delle definizioni prima della stampa</li><li>Numero e colore della testata a tua scelta</li><li>Pagina pubblica con ricerca, «Mettiti alla prova» e gioco a squadre</li></ul></div>
+  <figure class="poster rv"><img src="/promo-cartellone.webp" alt="Un cartellone del glossario, area Occlusione e gnatologia, con la scritta fac simile" width="900" height="1286" loading="lazy"></figure>
+</div></section>
+
+<section id="documenti"><div class="w">
+  <div class="rv"><span class="eyebrow">Cosa ti ritrovi pronto</span><h2 style="margin-top:10px;max-width:26ch">Una volta impostata l'attività, i documenti li prepara l'app.</h2></div>
+  <div class="doc-pres rv">
+    <div><h3>1 · La presentazione per i ragazzi</h3>
+      <p>Con un clic l'app genera una presentazione PowerPoint su misura per la classe, costruita sulle impostazioni che hai scelto: il compito da fare, le regole da osservare e i tempi da rispettare, con le date vere di partenza e scadenza.</p>
+      <ul class="lista"><li>Il percorso in quattro tappe: scritto, quiz, interrogazione, voto</li><li>Come si calcolano i voti, con esempi</li><li>Il calendario con partenza e scadenze</li><li>Come entrare nell'app e le domande frequenti</li><li>File .pptx modificabile: la proietti in classe e la condividi</li></ul></div>
+    <figure class="pc"><div class="tb"><i></i><i></i><i></i></div><img src="/promo-slide.webp" alt="Quattro diapositive della presentazione per gli studenti, con la scritta fac simile" width="1100" height="630" loading="lazy"></figure>
+  </div>
+  <div class="doc-rep">
+    <figure class="rv"><figcaption><b>2 · Il report complessivo</b>Situazione della classe con numeri, grafici, tabellone degli alunni, quiz, interrogazioni e voti finali, e il criterio di valutazione scritto per esteso. PDF pronto per la scuola.</figcaption>
+      <div class="pc"><div class="tb"><i></i><i></i><i></i></div><img src="/promo-report.webp" alt="Prima pagina del report complessivo della classe, con la scritta fac simile" width="1100" height="1105" loading="lazy"></div></figure>
+    <figure class="rv"><figcaption><b>3 · Il report di ogni studente</b>Una pagina per alunno: risposte, errori, tempo in app, quiz, interrogazione e voto finale con le date. Utile per i colloqui con le famiglie e per il consiglio di classe.</figcaption>
+      <div class="pc"><div class="tb"><i></i><i></i><i></i></div><img src="/promo-report-alunno.webp" alt="Pagina del report di un singolo alunno, con la scritta fac simile" width="1100" height="902" loading="lazy"></div></figure>
+  </div>
+</div></section>
+
+<section class="perc" id="controllo"><div class="w">
+  <div class="rv"><span class="eyebrow">Sotto il tuo controllo</span><h2 style="margin-top:10px;max-width:24ch">Decidi tu, l'app fa i conti.</h2></div>
+  <div class="garanzia rv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4.5"/></svg><div><b>Termini e definizioni li decide il docente.</b><p>Niente intelligenza artificiale, niente errori: ogni termine e ogni definizione che gli alunni vedono è scelto e approvato da te. Tutto sotto controllo.</p></div></div>
+  <div class="due" style="margin-top:34px">
+  <div class="rv"><h3 style="font-size:22px">I dati degli alunni restano al loro posto.</h3>
+    <ul class="lista"><li>Ogni alunno entra con un codice personale, senza email né password da ricordare.</li><li>Sui cartelloni e sulla pagina pubblica compaiono solo nome e iniziale del cognome.</li><li>Le misure per gli alunni con bisogni educativi speciali non sono mai visibili agli studenti.</li><li>Sei tu a decidere chi dei colleghi vede cosa: nessun accesso senza il tuo permesso.</li><li>Backup automatici e archivio delle edizioni concluse.</li></ul></div>
+  <div class="rv"><h3 style="font-size:22px">Cosa ci guadagni</h3>
+    <ul class="lista"><li>Correzione guidata: le scelte giuste si approvano insieme, per le altre un commento e un clic.</li><li>Voti trasparenti: regole fissate all'inizio e voto calcolato, puoi sempre metterne uno tuo.</li><li>Pronto per Argo: voti e giudizi in un file da caricare o da copiare nel registro.</li><li>Inclusione: più tempo, meno opzioni o meno termini per chi ne ha bisogno, senza etichette visibili.</li><li>Gli alunni lavorano dal telefono; tu correggi quando vuoi e interroghi, se vuoi, con l’aiuto del tablet o del PC.</li></ul></div>
+  </div>
+</div></section>
+
+<section class="ado" id="adottarla"><div class="w">
+  <div class="rv"><span class="eyebrow">Adottarla</span><h2 style="margin-top:10px;max-width:22ch">Dalla tua classe al primo cartellone, in tre passi.</h2>
+  <p class="lead" style="margin-top:14px">Il prof. Cerrato ti apre un'attività tutta tua, separata dalle altre: tu vedi solo le tue classi, con la tua materia.</p></div>
+  <div class="passi">
+    <article class="rv"><h3>Prepari l'attività</h3><p>Una procedura guidata in otto passi: classi e alunni, aree, termini a testa, date, regole. Si salva da sola mentre la compili.</p></article>
+    <article class="rv"><h3>Controlli in stand-by</h3><p>Finché non sei pronto l'attività resta in preparazione: stampi codici e schede, gli alunni non vedono ancora nulla.</p></article>
+    <article class="rv"><h3>Mandi LIVE</h3><p>Un pulsante e si parte: gli alunni entrano con il loro codice, tu segui tutto dal cruscotto.</p></article>
+  </div>
+  <p class="rv" style="margin-top:40px;font:800 18px var(--H)">Non solo odontotecnica: funziona con qualsiasi materia che abbia un lessico da imparare.</p>
+  <div class="materie rv"><span>Scienze dei materiali</span><span>Anatomia</span><span>Inglese tecnico</span><span>Chimica</span><span>Diritto e legislazione</span><span>Rappresentazione e modellazione</span><span>Igiene</span></div>
+</div>
+</div></section>
+
+<section id="faq"><div class="w" style="max-width:820px">
+  <div class="rv"><span class="eyebrow">Domande</span><h2 style="margin-top:10px">Le domande dei colleghi.</h2>
+    <details><summary>Quanto tempo richiede al docente?</summary><p>La preparazione di un'attività richiede una mezz'ora. Durante lo scritto bastano pochi minuti al giorno per approvare le risposte; le interrogazioni durano 5–10 minuti ad alunno.</p></details>
+    <details><summary>Gli alunni devono installare qualcosa?</summary><p>No. Si apre dal browser del telefono; chi vuole può aggiungerla alla schermata Home come un'app.</p></details>
+    <details><summary>Le definizioni le scrive un'intelligenza artificiale?</summary><p>No. Termini e definizioni li decide il docente: l'app non inventa nulla, distribuisce, controlla e conta. Niente errori, tutto sotto controllo.</p></details>
+    <details><summary>Posso usare i miei termini?</summary><p>Sì: puoi partire dalla banca termini già pronta o scrivere le tue aree e i tuoi termini, anche incollandoli da Excel.</p></details>
+    <details><summary>E a fine anno?</summary><p>L'edizione si chiude e va in archivio con report e voti; il glossario resta online e cresce con le edizioni successive.</p></details>
+    <details><summary>Quanto costa?</summary><p>Per l'uso a scuola non ci sono costi per i colleghi né per gli alunni.</p></details>
+  </div>
+</div>
+</div></section>
+
+<section class="fine" id="contatti"><div class="w">
+  <span class="eyebrow">Proviamola insieme</span>
+  <h2 style="margin-top:10px">Vuoi provarla con una tua classe?</h2>
+  <p class="lead">Parlane con il prof. Cerrato: ti mostra l'app dal vivo e ti prepara un'attività su misura.</p>
+  <div class="contatto"><svg class="lgs lgc" viewBox="0 0 100 100" role="img" aria-label="Logo dell'IIS Barsanti"><rect width="100" height="100" fill="#EA3628"/><text x="15" y="15.5" textLength="66" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">BARSANTI</text><text x="15" y="98" textLength="65" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">SALVETTI</text><text transform="translate(83.5 19) rotate(90)" textLength="64" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">FIORILLO</text><text transform="translate(16.5 84) rotate(-90)" textLength="63" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">EINAUDI</text><text x="19" y="81" textLength="61" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:900;fill:#fff;font-size:88px">B</text></svg><b>prof. Danilo Cerrato</b><span>Laboratorio odontotecnico · IIS «L. Barsanti», sede Salvetti</span><a href="mailto:danilo.cerrato@ebarsanti.edu.it">danilo.cerrato@ebarsanti.edu.it</a><a href="tel:+393358163818">335 8163818</a></div>
+</div></section>
+</main>
+<footer><div class="w">Glossario odontotecnico · a cura del prof. Danilo Cerrato · IIS «L. Barsanti», Massa</div></footer>
+
+<script>
+/*INTRO*/
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  // ritratto di Dante: tratto che si disegna, poi colore (stessi contorni dell'apertura dell'app)
+  $('ritratto').innerHTML = imgDante().replace('<div class="dwrap">', '<div class="dwrap">');
+  // rivelazione allo scorrimento e contatori
+  var conta = function (el) { if (!el.hasAttribute('data-n')) return; var n = Number(el.getAttribute('data-n')), s = el.getAttribute('data-s') || '', t0 = performance.now();
+    (function f(t) { var p = Math.min(1, (t - t0) / 1200), v = Math.round(n * (1 - Math.pow(1 - p, 3))); el.textContent = v.toLocaleString('it-IT') + s; if (p < 1) requestAnimationFrame(f); })(t0); };
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; e.target.classList.add('in'); var b = e.target.querySelector('[data-n]'); if (b) conta(b); io.unobserve(e.target); }); }, { threshold: .15 }) : null;
+  document.querySelectorAll('.rv').forEach(function (el) { if (io) io.observe(el); else el.classList.add('in'); });
+  // accesso con nome e cognome (il codice è nel link)
+  var codice = (new URLSearchParams(location.search).get('c') || '').trim();
+  var chiave = 'promo_' + codice;
+  // numeri reali (solo totali): classi, alunni, termini, % approvate, tempo in app, data di aggiornamento
+  var mostraNumeri = function (n) {
+    if (!n) return;
+    var ore = Math.round((n.minuti || 0) / 60);
+    var v = [['nClassi', n.classi], ['nAlunni', n.alunni], ['nTermini', n.termini], ['nPerc', n.perc, '%'], ['nTempo', n.minuti < 60 ? n.minuti : ore, n.minuti < 60 ? ' min' : ' h']];
+    v.forEach(function (x) { var el = $(x[0]); el.setAttribute('data-n', x[1] || 0); el.setAttribute('data-s', x[2] || ''); if (el.parentNode.classList.contains('in') || !io) conta(el); });
+    var d = new Date(n.aggiornato);
+    $('nAgg').textContent = 'Dati reali dell\'app, aggiornati al ' + d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) + ', ore ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) + '.';
+  };
+  if (codice) PROMO.numeri(codice).then(mostraNumeri).catch(function () { $('nAgg').textContent = ''; });
+  try { var g = JSON.parse(localStorage.getItem(chiave) || 'null'); if (g && g.nome) $('accesso').hidden = true; } catch (e) {}
+  $('fAcc').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var nome = $('aNome').value.trim(), cogn = $('aCogn').value.trim();
+    if (nome.length < 2 || cogn.length < 2) { $('aErr').textContent = 'Scrivi nome e cognome.'; return; }
+    var btn = ev.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Un attimo…';
+    PROMO.entra(codice, nome, cogn).then(function (x) {
+      try { localStorage.setItem(chiave, JSON.stringify({ nome: nome, cognome: cogn })); } catch (e) {}
+      $('accesso').hidden = true; window.scrollTo(0, 0); mostraNumeri(x && x.numeri);
+    }).catch(function (e) { btn.disabled = false; btn.textContent = 'Entra'; $('aErr').textContent = e.message || 'Accesso non riuscito.'; });
+  });
+  setTimeout(function () { if (!$('accesso').hidden) $('aNome').focus(); }, 50);
+})();
+</script>
+</body>
+</html>

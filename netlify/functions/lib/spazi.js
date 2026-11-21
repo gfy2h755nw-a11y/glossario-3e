@@ -90,6 +90,9 @@ async function nuovaAttivita(d, p) {
   // di solito si crea in preparazione (stand-by): gli alunni non entrano finché il docente non la manda LIVE
   const bozza = p.live !== true;
   if (bozza) config.bozza = true;
+  // attività offerta a un collega: il suo nome come docente e «Per gentile concessione del Prof. Danilo Cerrato» ovunque
+  const conc = concessioneValida(p.concessione);
+  if (conc) config.concessione = conc;
   const nd = apri(id);
   await nd.sostituisciTutto({ config, alunni, termini: docs, attivita: [] });
   await base.scriviRegistro(reg.concat([{ id, nome, as, ed: config.edizione.id, classi: config.classi, creata: new Date().toISOString(), bozza }]));
@@ -120,6 +123,21 @@ async function salvaAree(d, { codice, aree }) {
   const nuove = ED.validaAree(aree);
   await d.scriviConfig({ aree: nuove });
   return { aree: nuove };
+}
+function concessioneValida(c) {
+  if (!c || typeof c !== 'object') return null;
+  const docente = String(c.docente || '').replace(/\s+/g, ' ').trim(), materia = String(c.materia || '').replace(/\s+/g, ' ').trim();
+  if (!docente) return null;
+  if (docente.length > 60 || materia.length > 60) err('Nome del docente e materia: al massimo 60 caratteri.');
+  return { docente, materia };
+}
+/* attività di un collega: docente e materia da stampare, con la dicitura di concessione (vuoto = attività del prof. Cerrato) */
+async function salvaConcessione(d, { codice, concessione }) {
+  if (d.spazio === 'main') err('L\'attività principale è del prof. Cerrato.');
+  const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
+  const conc = concessioneValida(concessione);
+  await d.scriviConfig({ concessione: conc });
+  return { concessione: conc };
 }
 /* numero grande nella testata dei cartelloni (attività con le 4 aree del laboratorio); vuoto = numero normale (01, 02…) */
 async function numeriCartelloni(d, { codice, numeri }) {
@@ -153,4 +171,4 @@ async function mandaLive(d, { codice }) {
   svuota();
   return { live: true };
 }
-module.exports = { numeriCartelloni, mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };
+module.exports = { salvaConcessione, numeriCartelloni, mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };

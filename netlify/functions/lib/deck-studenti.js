@@ -51,6 +51,7 @@ function contesto(classe, imp, stato) {
   return { ed, al, ts, perAl, tpa, gruppi, classi, nt, auto: imp.riassegnazione !== 'manuale' };
 }
 async function creaDeckStudenti(classe, imp, now, stato) {
+  const INT = require('./intestazione'), CFG = stato && stato.config, CONC = INT.conc(CFG);
   // la presentazione originale di 3E e 3F (edizione 2026/27) resta quella; per le altre classi si usano i dati reali
   const orig = !stato || (L.edizioneDi(stato.config).id === '2026-27-1' && (classe === '3E' || classe === '3F'));
   const X = orig ? null : contesto(classe, imp, stato);
@@ -80,9 +81,13 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   const pres = new pptxgen();
   pres.layout = 'LAYOUT_WIDE';
   pres.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial' };
-  pres.title = 'Glossario odontotecnico – il percorso completo per la classe ' + CL;
-  pres.author = 'Prof. Danilo Cerrato';
+  pres.title = INT.titolo(CFG) + ' – il percorso completo per la classe ' + CL;
+  pres.author = INT.docente(CFG);
+  const GLMAT = CONC ? (INT.materia(CFG) ? INT.materia(CFG).toLowerCase() : 'questa materia') : 'odontotecnica';
   const C = pres.SchemeColor;
+  const ILPROF = CONC ? 'il docente' : 'il prof. Cerrato', ILPROF_C = CONC ? 'Il docente' : 'Il prof. Cerrato', ALPROF = CONC ? 'al docente' : 'al prof. Cerrato';
+  const PROFN = CONC ? INT.docente(CFG) : 'Prof. Cerrato', LUOGO = CONC ? 'in classe' : 'in laboratorio', LEZIONI = CONC ? 'lezioni in classe' : 'lezioni di laboratorio';
+
   const AC = [C.accent1, C.accent2, C.accent3, C.accent4];
 
   pres.defineSlideMaster({
@@ -94,7 +99,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
     title: 'Contenuto', background: { color: C.background1 },
     objects: [
       { placeholder: { options: { name: 'title', type: 'title', x: 0.6, y: 0.4, w: 12.1, h: 0.8, fontSize: 34, bold: true, color: C.text1, valign: 'middle', align: 'left', margin: 0 }, text: '' } },
-      { text: { text: 'Glossario odontotecnico · Classe ' + CL + ' · Istituto Barsanti - sede Salvetti', options: { x: 0.6, y: 7.0, w: 9, h: 0.3, fontSize: 10, color: HEX.muted, margin: 0 } } }
+      { text: { text: INT.titolo(CFG) + ' · Classe ' + CL + ' · Istituto Barsanti - sede Salvetti', options: { x: 0.6, y: 7.0, w: 9, h: 0.3, fontSize: 10, color: HEX.muted, margin: 0 } } }
     ],
     slideNumber: { x: 12.2, y: 7.0, w: 0.5, h: 0.3, fontSize: 10, color: HEX.muted, align: 'right' }
   });
@@ -130,10 +135,10 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   /* 1 · Copertina */
   pres.addSection({ title: 'Il progetto' });
   let s = pres.addSlide({ masterName: 'Scura', sectionTitle: 'Il progetto' });
-  s.addText('Glossario odontotecnico', { placeholder: 'title' });
+  s.addText(INT.titolo(CFG), { placeholder: 'title' });
   s.addText('Il percorso completo · classe ' + CL, { placeholder: 'body' });
   T(s, 'ISTITUTO BARSANTI - SEDE SALVETTI · CLASSE ' + CL + ' · A.S. ' + AS, { x: 0.7, y: 1.1, w: 7.8, h: 0.4, fontSize: 12, bold: true, color: '9FB3C6', charSpacing: 1.5 });
-  T(s, [{ text: 'Laboratorio odontotecnico · Prof. Danilo Cerrato' }],
+  T(s, CONC ? [{ text: (INT.materia(CFG) ? INT.materia(CFG) + ' · ' : '') + INT.docente(CFG), options: { breakLine: true } }, { text: INT.CONCESSIONE, options: { italic: true, fontSize: 12 } }] : [{ text: 'Laboratorio odontotecnico · Prof. Danilo Cerrato' }],
     { x: 0.7, y: 5.75, w: 7.6, h: 0.8, fontSize: 15, color: 'C9D6E2', paraSpaceAfter: 4 });
   for (let i = 0; i < Math.min(4, NA); i++) poster(s, i, 8.7 + (i % 2) * 2.15, 0.6 + Math.floor(i / 2) * 3.15, 2.0, 2.857);
   s.addNotes('Il percorso completo del glossario: lo scritto, il quiz, l\'interrogazione, il voto finale e i cartelloni. Per ogni tappa: cosa fare, come si usa l\'app dal telefono, le scadenze e le regole.');
@@ -141,9 +146,9 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   /* 2 · Perché */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Il progetto' });
   s.addText('Perché lo facciamo', { placeholder: 'title' });
-  const why = [[fa.FaCommentDots, 'Parlare da odontotecnici', 'Il lessico preciso fa parte del mestiere: con il dentista, in laboratorio, all\'esame.', 0],
-    [fa.FaPrint, 'Un lavoro che resta', 'I cartelloni restano appesi in laboratorio: un riferimento per voi e per le classi che verranno.', 1],
-    [fa.FaUsers, 'Lavorare con una scadenza vera', 'Come in un laboratorio: ognuno ha il suo compito, il risultato è di tutti e va consegnato in tempo.', 3]];
+  const why = [(CONC ? [fa.FaCommentDots, 'Parlare con precisione', 'Il lessico preciso della materia fa la differenza: nelle verifiche, nelle relazioni, all\'esame.', 0] : [fa.FaCommentDots, 'Parlare da odontotecnici', 'Il lessico preciso fa parte del mestiere: con il dentista, ' + LUOGO + ', all\'esame.', 0]),
+    [fa.FaPrint, 'Un lavoro che resta', 'I cartelloni restano appesi ' + LUOGO + ': un riferimento per voi e per le classi che verranno.', 1],
+    [fa.FaUsers, 'Lavorare con una scadenza vera', (CONC ? 'Come nel lavoro vero' : 'Come in un laboratorio') + ': ognuno ha il suo compito, il risultato è di tutti e va consegnato in tempo.', 3]];
   for (let i = 0; i < why.length; i++) {
     const y = 1.65 + i * 1.7;
     s.addShape(pres.shapes.OVAL, { x: 0.8, y, w: 1.1, h: 1.1, fill: { color: AC[why[i][3]] }, line: { color: AC[why[i][3]] }, objectName: 'Cerchio ' + (i + 1) });
@@ -158,7 +163,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   s.addText('Il percorso in quattro tappe', { placeholder: 'title' });
   const tappe4 = [[fa.FaHandPointer, '1 · Lo scritto', 'Ognuno risponde ai suoi ' + TPA + ' termini scegliendo la definizione giusta. Dà il voto dello scritto, che fa media con l\'orale.', HEX.a[0]],
     [fa.FaCheckDouble, '2 · Il quiz', 'Dal telefono, su ' + (SOG === TOT ? 'tutti i ' + TOT + ' termini' : SOG + ' termini') + ' della classe. Non dà voto: serve per essere ammessi.', HEX.a[1]],
-    [fa.FaComments, '3 · L\'interrogazione', 'Solo per chi ha superato il quiz: ' + ND + ' termini, a voce, in laboratorio. Dà il voto orale.', HEX.a[2]],
+    [fa.FaComments, '3 · L\'interrogazione', 'Solo per chi ha superato il quiz: ' + ND + ' termini, a voce, ' + LUOGO + '. Dà il voto orale.', HEX.a[2]],
     [fa.FaStar, '4 · Voto finale', MEDIA + ' tra scritto e orale. Poi le definizioni approvate vanno sui cartelloni.', HEX.a[3]]];
   for (let i = 0; i < tappe4.length; i++) {
     const x = 0.6 + i * 3.1;
@@ -182,7 +187,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   const cal = [[PART ? breve(PART) : '—', 'Si apre lo scritto', PART ? conOra(PART) : 'la partenza la fissa il prof. nell\'app', HEX.ink],
     [breve(SCAD), 'Scadenza dello scritto', conOra(SCAD) + ': risposta a tutti e ' + TPA + ' i termini', HEX.a[0]],
     [QS ? breve(QS) : 'Da fissare', 'Scadenza del quiz', QS ? conOra(QS) + ': quiz superato, altrimenti niente interrogazione' : 'la data la comunica il prof. dopo lo scritto, e la trovi anche nella pagina del quiz', HEX.red],
-    ['Dopo', 'Interrogazioni', 'in laboratorio, solo per chi ha superato il quiz', HEX.a[2]],
+    ['Dopo', 'Interrogazioni', '' + LUOGO + ', solo per chi ha superato il quiz', HEX.a[2]],
     ['Infine', 'Voto finale e cartelloni', media + ' tra scritto e orale; le definizioni approvate vanno in stampa', HEX.a[3]]];
   const passoC = 10.74 / (cal.length - 1);
   s.addShape(pres.shapes.LINE, { x: 1.3, y: 3.15, w: 10.74, h: 0, line: { color: HEX.line, width: 4 }, objectName: 'Linea del tempo' });
@@ -203,11 +208,11 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Tappa 1 · Lo scritto' });
   s.addText('Tappa 1 · Lo scritto in breve', { placeholder: 'title' })
   T(s, [
-    { text: orig ? 'La 3E e la 3F costruiscono insieme un glossario tecnico di odontotecnica.' : (X.classi.length > 1 ? 'Le classi ' + CLASSI_TXT + ' costruiscono insieme un glossario tecnico di odontotecnica.' : 'La ' + CL + ' costruisce un glossario tecnico di odontotecnica.'), options: { bold: true, color: C.text1, breakLine: true } },
+    { text: orig ? 'La 3E e la 3F costruiscono insieme un glossario tecnico di odontotecnica.' : (X.classi.length > 1 ? 'Le classi ' + CLASSI_TXT + ' costruiscono insieme un glossario tecnico di ' + GLMAT + '.' : 'La ' + CL + ' costruisce un glossario tecnico di ' + GLMAT + '.'), options: { bold: true, color: C.text1, breakLine: true } },
     { text: F ? 'Ognuno di voi ha ' + TPA + ' termini, presi da ' + (NA > 1 ? 'tutte e ' + NAW + ' le aree' : 'un\'unica area') + '.' : 'Ognuno di voi ha ' + TPA + ' termini della sua area.', options: { bullet: true, breakLine: true } },
     { text: 'Per ogni termine sceglie la definizione giusta tra 8 alternative.', options: { bullet: true, breakLine: true } },
-    { text: 'Il prof. Cerrato controlla ogni scelta e la approva.', options: { bullet: true, breakLine: true } },
-    { text: 'Le definizioni approvate finiscono su ' + (NA === 1 ? 'un cartellone' : NA + ' cartelloni') + ' 70×100 stampati e appesi in laboratorio' + (orig ? ', con i nomi di tutte e due le classi.' : ', con i vostri nomi.'), options: { bullet: true } }
+    { text: '' + ILPROF_C + ' controlla ogni scelta e la approva.', options: { bullet: true, breakLine: true } },
+    { text: 'Le definizioni approvate finiscono su ' + (NA === 1 ? 'un cartellone' : NA + ' cartelloni') + ' 70×100 stampati e appesi ' + LUOGO + '' + (orig ? ', con i nomi di tutte e due le classi.' : ', con i vostri nomi.'), options: { bullet: true } }
   ], { x: 0.6, y: 1.6, w: 5.8, h: 4.8, fontSize: 18, paraSpaceAfter: 10 });
   [[String(TPA), 'termini a testa'], ['8', 'alternative per ogni scelta'], [String(orig ? NT : X.nt), 'termini per area'], [String(NA), NA === 1 ? 'cartellone 70×100' : 'cartelloni 70×100']].forEach((st, i) => {
     const x = 6.9 + (i % 2) * 2.95, y = 1.6 + Math.floor(i / 2) * 2.45;
@@ -284,7 +289,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Tappa 1 · Lo scritto' });
   s.addText('Il percorso di ogni termine', { placeholder: 'title' });
   const passi = [[fa.FaHandPointer, 'Scegli', 'la definizione giusta tra 8 alternative', HEX.a[0]],
-    [fa.FaUserCheck, 'Prof. Cerrato', 'approva, oppure te la rimanda con un commento', HEX.a[0]],
+    [fa.FaUserCheck, PROFN, 'approva, oppure te la rimanda con un commento', HEX.a[0]],
     [fa.FaRedo, 'Correggi', 'se è stata rimandata, scegline un\'altra', HEX.a[2]],
     [fa.FaPrint, 'Cartellone', 'le definizioni approvate vanno in stampa', HEX.a[3]]];
   for (let i = 0; i < passi.length; i++) {
@@ -346,7 +351,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   // riquadro dell'app prima della partenza, disegnato con la data vera
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.88, y: 1.58, w: 5.19, h: 4.84, fill: { color: C.background2 }, line: { color: HEX.line, width: 1 }, rectRadius: 0.15, objectName: 'Cornice attesa' });
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 1.0, y: 1.7, w: 4.95, h: 4.6, fill: { color: 'FFFFFF' }, line: { color: HEX.line, width: 0.75 }, rectRadius: 0.12, objectName: 'Schermata attesa' });
-  T(s, 'GLOSSARIO ODONTOTECNICO', { x: 1.3, y: 1.95, w: 4.4, h: 0.3, fontSize: 11, bold: true, color: HEX.muted, charSpacing: 2 });
+  T(s, INT.titolo(CFG).toUpperCase(), { x: 1.3, y: 1.95, w: 4.4, h: 0.3, fontSize: 11, bold: true, color: HEX.muted, charSpacing: 2 });
   T(s, 'Il compito non è ancora partito', { x: 1.3, y: 2.3, w: 4.4, h: 0.9, fontSize: 22, bold: true, color: C.text1 });
   T(s, PART ? [{ text: 'Si parte ' }, { text: conOra(PART).replace(', ore', ' alle'), options: { bold: true } }, { text: '. Da quel momento qui trovi i tuoi ' }, { text: TPA + ' termini', options: { bold: true } }, { text: '.' }]
     : 'Il prof. non ha ancora fissato la partenza.', { x: 1.3, y: 3.25, w: 4.4, h: 0.8, fontSize: 14 });
@@ -383,14 +388,14 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 7.15, y: 2.1, w: 5.6, h: 4.0, fill: { color: C.background2 }, line: { color: HEX.line, width: 1 }, rectRadius: 0.15, objectName: 'Cornice esclusione' });
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 7.35, y: 2.3, w: 5.2, h: 3.6, fill: { color: HEX.errbg }, line: { color: HEX.red, width: 2.5 }, rectRadius: 0.12, objectName: 'Messaggio esclusione' });
   T(s, L.messaggioEsclusione(stato ? stato.config : {}), { x: 7.6, y: 2.5, w: 4.7, h: 2.6, fontSize: 17, bold: true, color: C.accent6, valign: 'middle' });
-  T(s, 'Per chiarimenti parla con il prof. Cerrato.', { x: 7.6, y: 5.2, w: 4.7, h: 0.5, fontSize: 14, color: C.accent6 });
+  T(s, 'Per chiarimenti parla con ' + ILPROF + '.', { x: 7.6, y: 5.2, w: 4.7, h: 0.5, fontSize: 14, color: C.accent6 });
   T(s, 'Quello che vedresti entrando nell\'app', { x: 7.15, y: 1.55, w: 5.6, h: 0.4, fontSize: 14, italic: true, color: HEX.muted });
 
   /* 15b · Riassegnazione */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: 'Tappa 1 · Lo scritto' });
   s.addText('Se un compagno viene escluso', { placeholder: 'title' });
   const AUTO = imp.riassegnazione !== 'manuale';
-  const ria = [[fa.FaRandom, 'I suoi termini passano a un altro', AUTO ? 'L\'app li assegna da sola, a sorte, a un compagno non escluso della stessa classe.' : 'Decide il prof. Cerrato a chi passarli, tra i compagni non esclusi.'],
+  const ria = [[fa.FaRandom, 'I suoi termini passano a un altro', AUTO ? 'L\'app li assegna da sola, a sorte, a un compagno non escluso della stessa classe.' : 'Decide ' + ILPROF + ' a chi passarli, tra i compagni non esclusi.'],
     [fa.FaUserPlus, AUTO ? 'Uno solo a testa' : 'Scelta del docente', AUTO ? 'Nessuno riceve i termini di più di un compagno.' : 'Il prof. può dividerli tra più compagni o lasciarli fermi.'],
     [fa.FaHourglassHalf, 'Nuove scadenze per quei termini', (AUTO ? imp.giorniIt + ' giorni da quando li ricevi' : 'La scadenza la fissa il prof. quando te li passa') + '. In ritardo: niente esclusione, ma voto dello scritto massimo 6.'],
     [fa.FaStar, 'Voto massimo ' + VE, 'Chi riceve i termini di un altro può arrivare a ' + VE + ' invece che a ' + VM + ', con le stesse penalità.'],
@@ -406,7 +411,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   T(s, [{ text: 'Esempio', options: { bold: true, color: C.text1, breakLine: true } },
     ...(orig ? [
     { text: F ? 'Taddei (3F) non risponde in tempo: è esclusa e prende ' + VX + ' nello scritto.' : 'Tonlorenzi (3E, area 4) non risponde in tempo: è escluso e prende ' + VX + ' nello scritto.', options: { breakLine: true } },
-    { text: F ? 'L\'app sorteggia Balleri, sempre della 3F: ora ha 20 termini.' : 'L\'app sorteggia Bertelà, sempre della 3E: ora ha 20 termini, 10 di anatomia e 10 di laboratorio.', options: { breakLine: true } },
+    { text: CONC ? 'L\'app sorteggia un compagno della stessa classe: ora ha il doppio dei termini.' : F ? 'L\'app sorteggia Balleri, sempre della 3F: ora ha 20 termini.' : 'L\'app sorteggia Bertelà, sempre della 3E: ora ha 20 termini, 10 di anatomia e 10 di laboratorio.', options: { breakLine: true } },
     { text: (F ? 'Balleri può arrivare a ' + VE + ' e il suo nome va sui cartelloni al posto di Taddei.' : 'Bertelà può arrivare a ' + VE + ' e il suo nome va sul cartellone 4 al posto di Tonlorenzi.'), options: { breakLine: true } },
     { text: 'Se però ' + (F ? 'Balleri' : 'Bertelà') + ' non risponde in tempo ai termini ricevuti, non è escluso: il voto dello scritto scende a 6 (se era 6 o più; se era sotto 6 resta quello).' }] : (() => {
       const e1 = X.al.length > 1 ? cogn(X.al[X.al.length - 1]) : 'Un alunno', e2 = X.al.length > 1 ? cogn(X.al[0]) : 'un compagno';
@@ -423,7 +428,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   s.addText('Come si calcola il voto dello scritto', { placeholder: 'title' });
   [[HEX.a[0], 'Si parte da ' + VM, 'Ogni risposta sbagliata: −' + PEN.toFixed(2).replace('.', ',') + '. Non si scende sotto ' + VMIN + '. Anche una risposta poi corretta conta come errore.'],
     [HEX.a[3], 'Fino a ' + VE, 'Chi riceve i termini di un compagno escluso parte da ' + VE + ', con le stesse penalità.'],
-    [HEX.ink, 'Voto del docente', 'Il prof. Cerrato può sempre correggere il voto a mano: in quel caso vale il suo.']].forEach((v, i) => {
+    [HEX.ink, 'Voto del docente', '' + ILPROF_C + ' può sempre correggere il voto a mano: in quel caso vale il suo.']].forEach((v, i) => {
     const x = 0.6 + i * 4.1;
     card(s, x, 1.5, 3.85, 2.5, null, v[1]);
     s.addShape(pres.shapes.RECTANGLE, { x, y: 1.5, w: 3.85, h: 0.12, fill: { color: v[0] }, line: { color: v[0] }, objectName: 'Fascia ' + v[1] });
@@ -536,7 +541,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   const SEZO = 'Tappa 3 · L\'interrogazione';
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: SEZO });
   s.addText('Solo dopo il quiz: l\'interrogazione orale', { placeholder: 'title' });
-  passiN(s, [['Chi viene interrogato', 'Solo chi ha superato il quiz. Il prof. chiama gli ammessi in laboratorio.'],
+  passiN(s, [['Chi viene interrogato', 'Solo chi ha superato il quiz. ' + (CONC ? 'Il docente' : 'Il prof.') + ' chiama gli ammessi ' + LUOGO + '.'],
     ['' + ND + ' termini a sorte', 'L\'app li pesca tra tutti i ' + TOT + ' termini, mai tra i tuoi termini dello scritto.'],
     ['Rispondi a voce', 'Per ogni termine spieghi la definizione con parole tue, ma con il lessico giusto.'],
     ['Ogni risposta vale', 'Corretta 1 punto, parziale ½ punto, sbagliata 0.']], 0.6, 1.55, 7.0, 1.28);
@@ -588,7 +593,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   /* Cartelloni */
   s = pres.addSlide({ masterName: 'Contenuto', sectionTitle: SEZV });
   s.addText('Il risultato: ' + (NA === 1 ? 'un cartellone' : NAW + ' cartelloni') + ' 70×100', { placeholder: 'title' });
-  T(s, 'Stampati e appesi in laboratorio, con il logo della scuola e i nomi di ' + CLASSI_TXT + '. Le definizioni approvate restano sui cartelloni con il tuo nome, anche se non superi il quiz.', { x: 0.6, y: 1.15, w: 12.1, h: 0.65, fontSize: 16 });
+  T(s, 'Stampati e appesi ' + LUOGO + ', con il logo della scuola e i nomi di ' + CLASSI_TXT + '. Le definizioni approvate restano sui cartelloni con il tuo nome, anche se non superi il quiz.', { x: 0.6, y: 1.15, w: 12.1, h: 0.65, fontSize: 16 });
   const wP = Math.min(2.8, (12.1 - (NA - 1) * 0.2) / NA), hP = Math.min(4.0, wP * 1.43), x0P = 0.6 + (12.1 - (NA * wP + (NA - 1) * 0.2)) / 2;
   ARX.forEach((a, i) => { poster(s, i, x0P + i * (wP + 0.2), 1.95, wP, hP); T(s, a.n + '. ' + a.it, { x: x0P + i * (wP + 0.2), y: 1.95 + hP + 0.1, w: wP, h: 0.6, fontSize: NA > 4 ? 11 : 13, bold: true, color: CUSTOM ? ACOL[i] : AC[i], align: 'center' }); });
 
@@ -598,7 +603,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
   s.addText('Dal telefono, senza sorprese', { placeholder: 'title' });
   const tel = [[fa.FaStar, 'Salva la pagina del quiz', 'Aggiungila alla schermata Home del telefono: la ritrovi con un tocco.'],
     [fa.FaClock, 'Connessione e batteria', 'Prima di una sessione di quiz: rete stabile e batteria carica. Il tempo scorre anche se la pagina si blocca.'],
-    [fa.FaBookOpen, 'Studia prima del quiz', 'Libro, appunti e lezioni di laboratorio: è lì che si studia per il quiz e per l\'interrogazione.'],
+    [fa.FaBookOpen, 'Studia prima del quiz', 'Libro, appunti e ' + LEZIONI + ': è lì che si studia per il quiz e per l\'interrogazione.'],
     [fa.FaKey, 'Un solo codice', 'Lo stesso codice personale vale per lo scritto e per il quiz. Non darlo a nessuno.']];
   for (let i = 0; i < tel.length; i++) {
     const x = 0.6 + (i % 2) * 6.2, y = 1.5 + Math.floor(i / 2) * 2.55;
@@ -616,8 +621,8 @@ async function creaDeckStudenti(classe, imp, now, stato) {
     [fa.FaClock, 'Scritto: rispetta la scadenza', 'Un solo termine senza risposta = mancata consegna, voto ' + VX + '.'],
     [fa.FaSearch, 'Quiz: studia tutti i termini', 'Non solo i tuoi: le domande sono su tutti i ' + TOT + '.'],
     [fa.FaHourglassHalf, 'Quiz: non aspettare l\'ultimo giorno', SOG + ' termini, un errore = −' + PASSO + '. Servono più sessioni.'],
-    [fa.FaComments, 'Orale: parla da odontotecnico', 'Definizioni precise, con il lessico giusto.'],
-    [fa.FaKey, 'Il codice è solo tuo', 'Se lo perdi o hai dubbi, chiedi al prof. Cerrato prima delle scadenze.']];
+    [fa.FaComments, (CONC ? 'Orale: usa il lessico giusto' : 'Orale: parla da odontotecnico'), 'Definizioni precise, con il lessico giusto.'],
+    [fa.FaKey, 'Il codice è solo tuo', 'Se lo perdi o hai dubbi, chiedi ' + ALPROF + ' prima delle scadenze.']];
   for (let i = 0; i < reg.length; i++) {
     const x = 0.6 + (i % 2) * 6.2, y = 1.5 + Math.floor(i / 2) * 1.75, colr = i === 1 || i === 3 ? HEX.red : HEX.a[i % 4];
     card(s, x, y, 5.9, 1.55, null, 'Regola ' + (i + 1));

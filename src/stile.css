@@ -297,3 +297,5 @@ body.or-pieno .dmain{grid-column:1/-1}
 #visore .vbtn{min-height:44px;padding:0 14px;border-radius:11px;border:1.5px solid #5C7380;background:transparent;color:#fff;font:700 15px 'Archivo',system-ui,sans-serif;cursor:pointer}
 #visore iframe{flex:1;width:100%;border:0;background:#fff}
 html.visore-aperto,html.visore-aperto body{overflow:hidden}
+.conc{margin:8px 0 0;text-align:center;font:italic 15px/1.4 Georgia,serif;color:var(--muted,#5B6976)}
+.sconc{font:italic 12.5px/1.35 Georgia,serif;color:#5F6E7A;padding:2px 4px}

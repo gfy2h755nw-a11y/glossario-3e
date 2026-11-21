@@ -717,6 +717,7 @@ function passo3Html() {
 function riepilogoRegoleWz() {
   var R = S.wz.regole, w = S.wz, oMax = Math.round((R.orale.base + R.orale.passo * R.orale.domande) * 1000) / 1000, oEx = Math.round((R.orale.base + R.orale.passoEsclusi * R.orale.domande) * 1000) / 1000;
   return '<div class="stack" style="gap:4px"><b>Attività: ' + esc(w.nome) + ' · a.s. ' + esc(w.as) + '</b>' +
+    (w.tipo === 'attivita' && w.conc ? '<span>Attività per <b>' + esc(w.conc.docente) + '</b>' + (w.conc.materia ? ' (' + esc(w.conc.materia) + ')' : '') + ' · <i>Per gentile concessione del Prof. Danilo Cerrato</i></span>' : '') +
     '<span>Cartelloni: ' + (w.areeMie ? w.aree.map(function (a, i) { return (a.numero || (i + 1)) + '. ' + esc(a.it) + (a.motto ? ' («' + esc(a.motto) + '»)' : ''); }).join(' · ') : 'le 4 aree del laboratorio') + '</span>' +
     '<span>Scritto: da ' + fv(R.scritto.votoMax) + ', −' + fv(R.scritto.penalita) + ' per errore, minimo ' + fv(R.scritto.votoMin) + '; mancata consegna ' + fv(R.scritto.votoEsclusione) + '.</span>' +
     '<span>Quiz: ' + R.quiz.secondi + ' secondi, ' + R.quiz.opzioni + ' definizioni, −' + R.quiz.passo + ' termini a ogni errore.</span>' +
@@ -730,7 +731,7 @@ function wzCrea(btn) {
   btn.disabled = true; btn.textContent = 'Creazione in corso…';
   if (w.tipo === 'attivita') {
     var aree = w.areeMie ? w.aree.map(function (a) { return { it: String(a.it).trim(), colore: a.colore, numero: String(a.numero || '').trim(), motto: String(a.motto || '').trim() }; }) : null;
-    api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt, live: !!w.live }).then(function (x) {
+    api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt, live: !!w.live, concessione: w.tipo === 'attivita' && w.conc ? w.conc : undefined }).then(function (x) {
       clearTimeout(_bozzaT); api('salvabozzawz', { dati: null }).catch(function () {});
       chiudiWizard(); toast('Attività creata ' + (x.bozza ? 'in preparazione' : 'e LIVE') + ': ' + x.alunni + ' alunni, ' + x.termini + ' termini'); cambiaAttivita(x.id);
     }).catch(function (e) { btn.disabled = false; btn.textContent = w.live ? 'Crea e manda LIVE' : 'Crea in preparazione'; toast(errMsg(e), true); });

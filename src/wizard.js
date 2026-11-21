@@ -52,7 +52,13 @@ function wzSaltaA(p) { if (S.wz.passo <= 6) leggiAtt(); S.wz.passo = p; disegnaW
 function attPasso1() {
   var w = S.wz;
   return '<div class="grid2"><div><label for="wzNome">Nome dell\'attività</label><input id="wzNome" type="text" placeholder="es. Glossario di quarta 4E" value="' + esc(w.nome) + '"><small class="muted" style="font-size:13px">Compare nell\'area docenti, sui cartelloni e nei report.</small></div>' +
-    '<div><label for="wzAs">Anno scolastico</label><input id="wzAs" type="text" placeholder="2026/27" value="' + esc(w.as) + '"></div></div>';
+    '<div><label for="wzAs">Anno scolastico</label><input id="wzAs" type="text" placeholder="2026/27" value="' + esc(w.as) + '"></div></div>' +
+    '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:16px;margin-bottom:6px">Di chi è l\'attività</legend>' +
+    [['mia', 'È una mia attività'], ['collega', 'È per un collega: sull\'app, sui cartelloni, sulla pagina pubblica e nei report compare il suo nome con la dicitura <i>«Per gentile concessione del Prof. Danilo Cerrato»</i>']].map(function (x) {
+      var on = (w.conc ? 'collega' : 'mia') === x[0];
+      return '<label class="op' + (on ? ' on' : '') + '"><input type="radio" name="wzChi" value="' + x[0] + '"' + (on ? ' checked' : '') + ' onchange="leggiAtt();S.wz.conc=this.value===\'collega\'?(S.wz.conc||{docente:\'\',materia:\'\'}):null;disegnaWizard()"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' +
+    (w.conc ? '<div class="grid2"><div><label for="wzCd">Docente (come deve comparire)</label><input id="wzCd" type="text" maxlength="60" placeholder="es. Prof.ssa Maria Bianchi" value="' + esc(w.conc.docente) + '"></div>' +
+      '<div><label for="wzCm">Materia (facoltativa)</label><input id="wzCm" type="text" maxlength="60" placeholder="es. Scienze dei materiali dentali" value="' + esc(w.conc.materia) + '"></div></div>' : '');
 }
 
 /* ---------- 2. Classe e alunni ---------- */
@@ -232,6 +238,7 @@ function attPasso6() {
 function leggiAtt() {
   var w = S.wz, v = function (id) { var e = $(id); return e ? e.value : null; };
   if ($('wzNome')) { w.nome = v('wzNome'); w.as = String(v('wzAs')).trim(); }
+  if ($('wzCd') && w.conc) { w.conc.docente = v('wzCd'); w.conc.materia = v('wzCm'); }
   w.classi.forEach(function (c, i) {
     if ($('wzC' + i)) c.nome = String(v('wzC' + i) || '').trim().toUpperCase().replace(/\s+/g, '');
     if ($('wzN' + i)) { c.righe = righeClasse(c).map(function (r, k) { return { c: ($('wzAc' + i + '_' + k) || { value: r.c }).value, n: ($('wzAn' + i + '_' + k) || { value: r.n }).value }; }); }
@@ -263,6 +270,7 @@ function erroriPasso(p) {
   if (p === 1) {
     if (!String(w.nome).trim()) e.push('Dai un nome all\'attività.');
     if (!/^\d{4}\/\d{2}$/.test(w.as)) e.push('Anno scolastico nel formato 2026/27.');
+    if (w.conc && !String(w.conc.docente || '').trim()) e.push('Scrivi il nome del collega che userà l\'attività.');
   }
   if (p === 2) {
     var nomi = {};
@@ -367,4 +375,19 @@ function controllaBozzaWz() {
 function ricominciaWz() {
   finestra('Ricominciare da capo?', '<p style="margin:0">La bozza salvata viene cancellata e la procedura riparte dal passo 1.</p>',
     [{ t: 'Ricomincia da capo', warn: true, f: function () { clearTimeout(_bozzaT); api('salvabozzawz', { dati: null }).then(function () { S.wz = null; apriWizard('attivita'); }).catch(function (e) { toast(errMsg(e), true); }); } }]);
+}
+
+/* ---------- attività di un collega: «Per gentile concessione del Prof. Danilo Cerrato» ---------- */
+function bloccoConcessione() {
+  if (!ADM() || RO() || !S.d.att || S.d.att === 'main') return '';
+  var c = S.d.config.concessione || {};
+  return '<section class="card stack" id="concBox"><h2 style="margin:0;font-size:22px">Attività per un collega</h2>' +
+    '<p class="muted" style="margin:0;font-size:15px">Se scrivi il nome del collega, l\'app, i cartelloni, la pagina pubblica e i report mostrano lui come docente, con la dicitura <i>«Per gentile concessione del Prof. Danilo Cerrato»</i>. Lascia vuoto se l\'attività è tua.</p>' +
+    '<div class="grid2"><div><label for="coD">Docente</label><input id="coD" type="text" maxlength="60" placeholder="es. Prof.ssa Maria Bianchi" value="' + esc(c.docente || '') + '"></div>' +
+    '<div><label for="coM">Materia (facoltativa)</label><input id="coM" type="text" maxlength="60" value="' + esc(c.materia || '') + '"></div></div>' +
+    '<div><button class="btn" onclick="salvaConcessione(this)">Salva</button></div></section>';
+}
+function salvaConcessione(btn) {
+  btn.disabled = true;
+  api('concessione', { concessione: { docente: $('coD').value, materia: $('coM').value } }).then(function () { return ricarica('Salvato'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }

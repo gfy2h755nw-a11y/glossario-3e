@@ -62,6 +62,9 @@ function db(spazio) {
       if (!principale && mod && mod.docenti) { const { docenti, ...resto } = mod; await mainRef.set({ docenti }, { merge: true }); if (Object.keys(resto).length) await cfgRef.set(resto, { merge: true }); return; }
       await cfgRef.set(mod, { merge: true });
     },
+    /* pagina per i colleghi: codice del link e visite */
+    async leggiPromo() { const s = await f.collection(COL.config).doc('_promo').get(); return s.exists ? s.data() : null; },
+    async scriviPromo(dati) { await f.collection(COL.config).doc('_promo').set(dati); },
     /* bozza della procedura «Nuova attività» (una sola, del prof. Cerrato) */
     async leggiBozzaWz() { const s = await f.collection(COL.config).doc('_bozzawz').get(); return s.exists ? s.data() : null; },
     async scriviBozzaWz(dati) { const r = f.collection(COL.config).doc('_bozzawz'); if (dati) await r.set(dati); else await r.delete(); },

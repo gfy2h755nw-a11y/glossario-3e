@@ -58,6 +58,7 @@ footer{margin:40px 0 0;padding:26px 0 40px;text-align:center;color:var(--muto);f
 footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:30px;color:var(--ink);margin-bottom:4px}
 /* ---------- home, «Mettiti alla prova», «Gioca a squadre» ---------- */
 .vista[hidden]{display:none!important}
+.conc-riga[hidden]{display:none!important}.conc-riga{display:block}
 .hero{margin:18px 0 0;background:var(--carta);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(21,33,43,.08)}
 .hero .fascia{display:flex;height:10px}.hero .fascia i{flex:1}
 .hero .in{padding:22px 22px 20px;display:grid;gap:10px}
@@ -116,7 +117,7 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
 <header class="top" id="top">
   <div class="wrap">
     <div class="lg" id="logo"></div>
-    <div><b>Glossario odontotecnico</b><span id="sottotit">Prof. Danilo Cerrato · Laboratorio odontotecnico</span></div>
+    <div><b class="tit-gl">Glossario odontotecnico</b><span id="sottotit">Prof. Danilo Cerrato · Laboratorio odontotecnico</span></div>
     <div class="dx"><span>Istituto Barsanti - sede Salvetti</span><span>Massa</span></div>
   </div>
   <div class="aut"><div class="wrap" id="autori"><p>Caricamento…</p></div></div>
@@ -126,8 +127,8 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
   <!-- HOME -->
   <section class="vista" id="vHome">
     <div class="hero"><div class="fascia" id="fascia"></div><div class="in">
-      <h1>Glossario odontotecnico</h1>
-      <p class="ist"><b>IIS «L. Barsanti» · sede Salvetti · Massa</b><br>Laboratorio odontotecnico · a cura del <b>prof. Danilo Cerrato</b><span id="hAnno"></span></p>
+      <h1 class="tit-gl">Glossario odontotecnico</h1>
+      <p class="ist"><b>IIS «L. Barsanti» · sede Salvetti · Massa</b><br><span class="mat-gl">Laboratorio odontotecnico · </span><span class="cura-pre">a cura del </span><b class="cura-doc">prof. Danilo Cerrato</b><span id="hAnno"></span><span class="conc-riga" hidden style="display:block;font-style:italic"></span></p>
       <p class="mot">Nomina sunt consequentia rerum.</p>
       <form class="hcerca" id="hForm" role="search"><label for="hq" style="position:absolute;left:-9999px">Ricerca libera nel glossario</label><input id="hq" type="search" placeholder="Cerca un termine o una parola…" autocomplete="off"><button type="submit">Cerca</button></form>
       <p class="stat" id="hStat"></p>
@@ -157,7 +158,7 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
   </section>
   <footer>
     <div class="motto">Nomina sunt consequentia rerum.</div>
-    <div style="margin-top:10px">Glossario realizzato dalle classi <span id="clf">3E e 3F</span> · a cura del prof. Danilo Cerrato</div><div>Istituto di Istruzione Superiore «L. Barsanti» · sede Salvetti · Massa · Laboratorio odontotecnico</div>
+    <div style="margin-top:10px">Glossario realizzato dalle classi <span id="clf">3E e 3F</span> · <span class="cura-pre">a cura del </span><span class="cura-doc">prof. Danilo Cerrato</span></div><div class="conc-riga" hidden style="font-style:italic"></div><div>Istituto di Istruzione Superiore «L. Barsanti» · sede Salvetti · Massa<span class="mat-gl"> · Laboratorio odontotecnico</span></div>
   </footer>
 </main>
 <script>
@@ -167,6 +168,7 @@ footer .motto{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;f
 // il quiz ha una pagina a sé: un vecchio link con ?quiz=CODICE porta lì
 try { var vq = new URLSearchParams(location.search).get('quiz'); if (vq !== null) location.replace('/quiz' + (/^[A-Za-z0-9]{4,12}$/.test(vq) ? '?c=' + encodeURIComponent(vq) : '')); } catch (e) { /* niente */ }
 var G = null, AREA = 'tutte', Q = '';
+if (typeof Poster !== 'undefined') Poster.conc = function () { return G && G.concessione ? { docente: G.docente, materia: G.materia } : null; };
 var ED = (function () { try { return new URLSearchParams(location.search).get('ed') || ''; } catch (e) { return ''; } })();
 var ATT = (function () { try { return new URLSearchParams(location.search).get('att') || ''; } catch (e) { return ''; } })();
 var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -190,7 +192,18 @@ function autori() {
   altezze();
 }
 function edizioni() {
-  document.getElementById('sottotit').textContent = 'Prof. Danilo Cerrato · Laboratorio odontotecnico · a.s. ' + (G.anno || '');
+  document.getElementById('sottotit').textContent = (G.docente || 'Prof. Danilo Cerrato') + (G.materia ? ' · ' + G.materia : '') + ' · a.s. ' + (G.anno || '');
+  // attività di un collega: nome del docente e dicitura di concessione
+  if (G.concessione) {
+    document.querySelectorAll('.cura-doc').forEach(function (e) { e.textContent = G.docente; });
+    document.querySelectorAll('.cura-pre').forEach(function (e) { e.textContent = 'a cura di '; });
+    document.querySelectorAll('.conc-riga').forEach(function (e) { e.textContent = G.concessione; e.hidden = false; });
+    // la materia del collega al posto del laboratorio odontotecnico
+    var tit = G.materia ? 'Glossario di ' + G.materia : 'Glossario';
+    document.querySelectorAll('.tit-gl').forEach(function (e) { e.textContent = tit; });
+    document.querySelectorAll('.mat-gl').forEach(function (e) { e.textContent = G.materia ? (e.textContent.charAt(0) === ' ' ? ' · ' + G.materia : G.materia + ' · ') : ''; });
+    document.title = tit + ' · IIS Barsanti, Massa';
+  }
   var el = document.getElementById('edz'), E = G.edizioni || [], SP = G.spazi || [];
   var cur = (G.edizione || {}).id;
   // attività in corso in parallelo (classi diverse, cartelloni diversi): si sceglie quale glossario consultare

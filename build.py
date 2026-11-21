@@ -47,6 +47,7 @@ html = '''<!DOCTYPE html>
 ''' + r('src/orale.js') + '''
 ''' + r('src/wizard.js') + '''
 ''' + r('src/banca.js') + '''
+''' + r('src/promo.js') + '''
 </script>
 </body>
 </html>
@@ -62,3 +63,15 @@ print('public/glossario.html', len(con))
 qz = r('src/quiz.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
 open(os.path.join(B, 'public/quiz.html'), 'w', encoding='utf-8').write(qz)
 print('public/quiz.html', len(qz))
+# pagina di presentazione per i colleghi (/scopri?c=CODICE): si entra con nome e cognome, la visita va nella sezione «Promo App»
+PROMO_JS = '''var PROMO = { entra: function (c, nome, cognome) {
+  return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promo', c: c, nome: nome, cognome: cognome }) })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.ok) throw new Error(j.errore || 'Accesso non riuscito.'); return j.dati || {}; }); });
+}, numeri: function (c) {
+  return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promonumeri', c: c }) })
+    .then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) throw new Error(j.errore); return j.dati.numeri; });
+} };
+'''
+sc = r('src/scopri.html').replace('<!--FONTI-->', '<style>' + FONT_CSS + '</style>').replace('/*INTRO*/', r('src/intro.js') + '\n' + PROMO_JS)
+open(os.path.join(B, 'public/scopri.html'), 'w', encoding='utf-8').write(sc)
+print('public/scopri.html', len(sc))

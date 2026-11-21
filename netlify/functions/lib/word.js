@@ -26,6 +26,7 @@ function cella(figli, o) {
 async function creaWord(stato, now) {
   now = now || Date.now();
   const imp = logica.impostazioni(stato.config);
+  const INT = require('./intestazione'), CFG = stato.config, TIT = INT.titolo(CFG), MAT = INT.materia(CFG);
   const classi = imp.classi.filter((c) => stato.alunni.some((a) => logica.classeDi(a) === c));
   const aree = {}; require('./catalogo').areeDi(stato.config).forEach((a) => { aree[a.n] = a; });
   const ord = (t) => Number(t.area) * 1000 + Number(String(t.id).slice(2));
@@ -34,8 +35,8 @@ async function creaWord(stato, now) {
   const W = [700, 2500, 5300, 1138]; // larghezze colonne (totale 9638 = A4 con margini 2 cm)
 
   const corpo = [
-    new D.Paragraph({ heading: D.HeadingLevel.TITLE, children: [t('Glossario odontotecnico · definizioni approvate', { bold: true, size: 36, color: INK })] }),
-    new D.Paragraph({ spacing: { after: 80 }, children: [t('Istituto Barsanti - sede Salvetti, Massa · Laboratorio odontotecnico · a.s. ' + imp.edizione.as, { size: 20, color: MUTO })] }),
+    new D.Paragraph({ heading: D.HeadingLevel.TITLE, children: [t(TIT + ' · definizioni approvate', { bold: true, size: 36, color: INK })] }),
+    new D.Paragraph({ spacing: { after: 80 }, children: [t('Istituto Barsanti - sede Salvetti, Massa' + (MAT ? ' · ' + MAT : '') + ' · a.s. ' + imp.edizione.as + (INT.conc(CFG) ? ' · ' + INT.docente(CFG) + ' · ' + INT.CONCESSIONE : ''), { size: 20, color: MUTO })] }),
     new D.Paragraph({ spacing: { after: 240 }, children: [t('Classi ' + classi.join(' e ') + ' · aggiornato al ' + dataIt(now) + ' · definizioni approvate: ' + approvate + ' su ' + tutti.length, { size: 20, color: MUTO })] })
   ];
 
@@ -80,11 +81,11 @@ async function creaWord(stato, now) {
   });
 
   const doc = new D.Document({
-    creator: 'Prof. Danilo Cerrato', title: 'Glossario odontotecnico - definizioni approvate', description: 'Termini assegnati e definizioni approvate per studente',
+    creator: INT.docente(CFG), title: TIT + ' - definizioni approvate', description: 'Termini assegnati e definizioni approvate per studente',
     styles: { default: { document: { run: { font: 'Arial', size: 20 } } } },
     sections: [{
       properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } },
-      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, children: [t('Glossario odontotecnico · Prof. Danilo Cerrato · pagina ', { size: 16, color: MUTO }), new D.TextRun({ children: [D.PageNumber.CURRENT], size: 16, color: MUTO, font: 'Arial' })] })] }) },
+      footers: { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.RIGHT, children: [t(TIT + ' · ' + INT.docente(CFG) + (INT.conc(CFG) ? ' · ' + INT.CONCESSIONE : '') + ' · pagina ', { size: 16, color: MUTO }), new D.TextRun({ children: [D.PageNumber.CURRENT], size: 16, color: MUTO, font: 'Arial' })] })] }) },
       children: corpo
     }]
   });

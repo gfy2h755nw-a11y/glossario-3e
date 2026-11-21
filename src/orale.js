@@ -244,7 +244,7 @@ function stampaAccessiQuiz(classe) {
   var pagine = lista.map(function (a) {
     var link = base + '?c=' + encodeURIComponent(a.codice), qa = quizDi(a.id), sq = qa.scadenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).scadenze || {})[a.classe || '3E'];
     return '<section class="pg">' +
-      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">Glossario odontotecnico · Classe ' + esc(a.classe || '3E') + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
+      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + ' · Classe ' + esc(a.classe || '3E') + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
       '<div class="tit">Quiz del glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
       '<div class="gr">Classe ' + esc(a.classe || '3E') + ' · accesso personale al quiz · seconda parte della prova</div>' +
       '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo quiz.</b></p></div>' +
@@ -258,7 +258,7 @@ function stampaAccessiQuiz(classe) {
       '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca ' + RG().orale.domande + ' termini e tu dai la definizione. ' +
       'Chi non completa il quiz entro la scadenza non viene interrogato e resta senza voto. Voto orale fino a ' + fv(RG().orale.max) + '; il voto finale è la ' + mediaTxt() + '.</div>' +
       '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: le sessioni fatte con il tuo codice risultano tue.</div>' +
-      '<footer>Prof. Danilo Cerrato · Laboratorio odontotecnico</footer></section>';
+      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + '</footer></section>';
   }).join('');
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '.pg{width:210mm;height:297mm;padding:16mm 18mm 14mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +

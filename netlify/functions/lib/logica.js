@@ -308,7 +308,7 @@ function pacchetto(stato, chi) {
   }
   const out = {
     utente: chi,
-    config: { bozza: !!stato.config.bozza, chiusa: !!stato.config.chiusa, tappe: tappe(imp, chi.ruolo === 'alunno' ? chi.classe : null), lingue: imp.lingue, classi: imp.classi, partenza: imp.partenza,
+    config: { concessione: stato.config.concessione || null, bozza: !!stato.config.bozza, chiusa: !!stato.config.chiusa, tappe: tappe(imp, chi.ruolo === 'alunno' ? chi.classe : null), lingue: imp.lingue, classi: imp.classi, partenza: imp.partenza,
       terminiPerAlunno: chi.ruolo === 'alunno' ? (stato.termini.filter((t) => t.alunno_id === chi.id && !t.ereditato).length || termPerAlunno(imp0, chi.classe)) : DATI.TERMINI_PER_ALUNNO,
       scadenzaIt: imp.scadenzaIt, scadenzaEn: imp.scadenzaEn, proroga: chi.ruolo === 'alunno' ? !!(chi._a && chi._a.proroga) : undefined, edizione: imp.edizione,
       riassegnazione: imp.riassegnazione,
@@ -1021,7 +1021,8 @@ function pubblicoDa(stato) {
       return { n: Number(String(t.id).slice(2)), termine: t.termine_it, def: ok ? testoDef(t.area, t.scelta_it, 'it') : '', autore: ok ? (nomi[t.alunno_id] || '') : '' };
     }) };
   });
-  return { docente: 'Prof. Danilo Cerrato', materia: 'Laboratorio odontotecnico', scuola: 'Istituto Barsanti - sede Salvetti, Massa', anno: imp.edizione.as,
+  const conc = stato.config.concessione;
+  return { docente: conc ? conc.docente : 'Prof. Danilo Cerrato', materia: conc ? conc.materia || '' : 'Laboratorio odontotecnico', concessione: conc ? 'Per gentile concessione del Prof. Danilo Cerrato' : '', scuola: 'Istituto Barsanti - sede Salvetti, Massa', anno: imp.edizione.as,
     edizione: { id: imp.edizione.id, nome: imp.edizione.nome, as: imp.edizione.as }, classi, aree, aggiornato: new Date().toISOString() };
 }
 

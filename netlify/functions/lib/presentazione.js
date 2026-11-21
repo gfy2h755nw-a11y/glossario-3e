@@ -28,7 +28,8 @@ function impostaAree(config) {
   return ar;
 }
 let CLS = 'Classe 3E';
-const FOOT = (en) => 'Glossario odontotecnico' + (en ? ' bilingue' : '') + ' · ' + CLS + ' · Istituto Barsanti - sede Salvetti';
+let TITOLO = 'Glossario odontotecnico';
+const FOOT = (en) => TITOLO + (en ? ' bilingue' : '') + ' · ' + CLS + ' · Istituto Barsanti - sede Salvetti';
 
 /* ---------- utilità ---------- */
 const parti = (ms) => { const p = {}; new Intl.DateTimeFormat('it-IT', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(ms)).forEach((x) => { p[x.type] = x.value; }); return p; };
@@ -130,7 +131,9 @@ async function creaPresentazione(stato, attivita, now) {
   pres.layout = 'LAYOUT_16x9';
   pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
   pres.title = 'Glossario ' + CL + ' - Report dell\'attività';
-  pres.author = 'Prof. Danilo Cerrato';
+  const INT = require('./intestazione'), CFG = stato.config, CONC = INT.conc(CFG);
+  TITOLO = INT.titolo(CFG);
+  pres.author = INT.docente(CFG);
   pres.company = 'Istituto Barsanti - sede Salvetti';
 
   const logo = (x, y, s) => [
@@ -166,10 +169,10 @@ async function creaPresentazione(stato, attivita, now) {
   /* 1. copertina */
   sezione('Apertura');
   let s = pres.addSlide({ masterName: 'Copertina', sectionTitle: 'Apertura' });
-  s.addText(EN ? 'Glossario odontotecnico bilingue' : 'Glossario odontotecnico', { placeholder: 'title' });
+  s.addText(INT.titolo(CFG) + (EN ? ' bilingue' : ''), { placeholder: 'title' });
   s.addText([
     { text: 'Report dell\'attività · ' + CLS + ' · a.s. ' + logica.impostazioni(stato.config).edizione.as, options: { bold: true, color: 'FFFFFF', breakLine: true } },
-    { text: EN ? 'Prof. Danilo Cerrato (Laboratorio odontotecnico) · Prof.ssa Federica Aliboni (Inglese tecnico)' : 'Prof. Danilo Cerrato · Laboratorio odontotecnico', options: { breakLine: true } },
+    { text: CONC ? INT.firma(CFG) : EN ? 'Prof. Danilo Cerrato (Laboratorio odontotecnico) · Prof.ssa Federica Aliboni (Inglese tecnico)' : 'Prof. Danilo Cerrato · Laboratorio odontotecnico', options: { breakLine: true } },
     { text: 'Istituto Barsanti - sede Salvetti · aggiornato a ' + dataLunga(now), options: { fontSize: 13 } }
   ], { placeholder: 'body' });
   s.addNotes('Report generato automaticamente dall\'app del glossario: i numeri sono quelli del momento in cui è stato creato.');

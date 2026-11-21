@@ -236,13 +236,15 @@ function creaReport(stato, attivita, now) {
   const CL = logica.nomeClassi(stato), CLS = CL.indexOf(' e ') > 0 ? 'Classi ' + CL : 'Classe ' + CL;
   const pg = parti(now), generato = GG[new Date(new Date(now).toLocaleString('en-US', { timeZone: TZ })).getDay()] + ' ' + pg.day + '/' + pg.month + '/' + pg.year + ' alle ' + pg.hour + ':' + pg.minute;
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 36, bufferPages: true,
-    info: { Title: 'Report Glossario ' + CL, Author: 'Prof. Danilo Cerrato', Subject: 'Glossario odontotecnico' + (EN ? ' bilingue' : '') + ' - ' + CLS } });
+    info: { Title: 'Report Glossario ' + CL, Author: stato.config.concessione ? stato.config.concessione.docente : 'Prof. Danilo Cerrato', Subject: require('./intestazione').titolo(stato.config) + (EN ? ' bilingue' : '') + ' - ' + CLS } });
   const pezzi = []; doc.on('data', (b) => pezzi.push(b));
   const fine = new Promise((ok) => doc.on('end', () => ok(Buffer.concat(pezzi))));
-  const sotto = 'Istituto Barsanti - sede Salvetti · a.s. ' + imp.edizione.as + ' · Prof. Danilo Cerrato' + (EN ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato ' + generato;
+  // attività di un collega: il suo nome e la dicitura di concessione
+  const conc = stato.config.concessione;
+  const sotto = 'Istituto Barsanti - sede Salvetti · a.s. ' + imp.edizione.as + ' · ' + (conc ? conc.docente + ' · Per gentile concessione del Prof. Danilo Cerrato' : 'Prof. Danilo Cerrato') + (EN ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato ' + generato;
 
   /* --- pagina 1: sintesi --- */
-  let y = testata(doc, 'Glossario odontotecnico' + (EN ? ' bilingue' : '') + ' · Report · ' + CLS, sotto);
+  let y = testata(doc, require('./intestazione').titolo(stato.config) + (EN ? ' bilingue' : '') + ' · Report · ' + CLS, sotto);
   const W = doc.page.width - 72;
   const totT = stato.termini.length;
   const appr = (l) => stato.termini.filter((t) => campo(t, l, 'stato') === 'approvata').length;

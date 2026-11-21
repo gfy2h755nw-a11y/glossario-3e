@@ -81,7 +81,7 @@ async function contestoQuiz(db, codice, prova, bes) {
     if (!doc) L.errore('La prova del quiz è riservata ai docenti: inserisci il tuo codice da docente.');
     const a = alunnoProva(config, doc, bes), cat = CAT.materializza(config).cat;
     const cfg = Object.assign(cfgQuiz(config, a.classe, tutte(cat).length, a), { aperto: true, attesa: false, scaduto: false, scadenza: new Date(Date.now() + 86400000).toISOString() });
-    return { a, cat, cfg };
+    return { a, cat, cfg, config };
   }
   const a = await db.leggiAlunnoCodice(c);
   if (a && config.bozza) L.errore('L\'attività non è ancora iniziata: il professore la aprirà a breve.');
@@ -90,7 +90,7 @@ async function contestoQuiz(db, codice, prova, bes) {
     L.errore('Codice non riconosciuto. Controlla di averlo scritto bene.');
   }
   const cat = CAT.materializza(config).cat;
-  return { a, cat, cfg: cfgQuiz(config, L.classeDi(a), tutte(cat).length, a) };
+  return { a, cat, cfg: cfgQuiz(config, L.classeDi(a), tutte(cat).length, a), config };
 }
 const giorno = (iso) => new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 function controllaAccesso(q, cfg) {
@@ -158,7 +158,7 @@ function vistaDomanda(cat, cur, n, cfg) {
    mentre la precedente era ancora attiva (segnale per il docente). */
 const SUBENTRO_MS = 10 * 60000;
 async function quizInizio(db, { codice, disp, prova, bes, daCapo }) {
-  const { a, cat, cfg } = await contestoQuiz(db, codice, prova, bes);
+  const { a, cat, cfg, config } = await contestoQuiz(db, codice, prova, bes);
   if (a._prova && daCapo) a.quiz = null; // la prova riparte da zero
   controllaAccesso(a.quiz, cfg);
   const v = a.quiz || {};
@@ -174,7 +174,7 @@ async function quizInizio(db, { codice, disp, prova, bes, daCapo }) {
   q.sessioni.push({ i: ora, f: ora, ms: 0, r: 0, c: 0, e: 0, s: 0, n: 0, p: 0 });
   q.corrente = nuovaDomanda(cat, q, true, cfg.opzioni);
   await salvaQuiz(db, a, q);
-  return { tok: q.sess.tok, nome: L.nomePubblico(a.nome), stato: perStudente(riepilogoQuiz(q, cfg)), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
+  return { conc: config.concessione || null, tok: q.sess.tok, nome: L.nomePubblico(a.nome), stato: perStudente(riepilogoQuiz(q, cfg)), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
 }
 async function quizRisposta(db, { codice, scelta, pausa, tok, prova, bes }) {
   const { a, cat, cfg } = await contestoQuiz(db, codice, prova, bes);

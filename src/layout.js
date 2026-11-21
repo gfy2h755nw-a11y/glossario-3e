@@ -12,6 +12,7 @@ var ICO = {
   revcart: '<rect x="3" y="2" width="12" height="17" rx="1.5"/><path d="M6 7h6M6 11h4"/><path d="M14.5 20.5l1-3.5 5.5-5.5 2.5 2.5-5.5 5.5z"/>',
   documenti: '<path d="M8 3h8l4 4v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M16 3v4h4"/><path d="M3 7v12a3 3 0 0 0 3 3h9"/><path d="M10 12h6M10 15.5h4"/>',
   impostazioni: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  promo: '<path d="M3 10.5v3a1 1 0 0 0 1 1h2l5 4V5.5l-5 4H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
   banca: '<path d="M4 19.5V5a2 2 0 0 1 2-2h4v18H6a2 2 0 0 1-2-1.5z"/><path d="M10 3h4v18h-4"/><path d="m15.2 4.2 3.8-1 3 17-3.8 1z"/>',
   edizioni: '<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/>',
   quiz: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5M12 2.5V6"/>',
@@ -33,11 +34,12 @@ var SEZIONI = [
   { id: 'doc', t: 'Documenti', gr: 'Classe', ico: 'documenti', pag: ['documenti'] },
   { id: 'imp', t: 'Impostazioni', gr: 'Gestione', ico: 'impostazioni', pag: ['impostazioni'] },
   { id: 'bancas', t: 'Banca termini', gr: 'Gestione', ico: 'banca', pag: ['banca'] },
+  { id: 'promos', t: 'Promo App', gr: 'Gestione', ico: 'promo', pag: ['promo'] },
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
 var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
-  cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
+  cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', promo: 'Colleghi e numeri', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
 function sezioniVisibili(pagine) {
@@ -63,6 +65,7 @@ function PAGINE() {
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
     { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: adm && !ro },
     { id: 'banca', gr: 'Gestione', t: 'Banca termini', vis: adm && !ro },
+    { id: 'promo', gr: 'Gestione', t: 'Promo App', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
     { id: 'registro', gr: 'Gestione', t: adm && !ro ? 'Registro e backup' : 'Registro delle attività', vis: (adm && !ro) || !!(A && A.attivita) }
   ].filter(function (p) { return p.vis; });
@@ -132,7 +135,7 @@ function barraLaterale(pag, pagine) {
     h += archiviata ? '<div class="schiusa">Edizione chiusa e archiviata</div>'
       : '<button class="srosso" id="bChiudiEd" onclick="chiudiEdizione(this)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Chiudi l\'edizione in corso</button>';
   }
-  h += '<div class="spiede"><span>app ' + esc(VERSIONE) + '</span><button onclick="esci()">Esci</button></div></div></aside>';
+  h += (S.d.config.concessione ? '<div class="sconc">Per gentile concessione del Prof. Danilo Cerrato</div>' : '') + '<div class="spiede"><span>app ' + esc(VERSIONE) + '</span><button onclick="esci()">Esci</button></div></div></aside>';
   return h;
 }
 
@@ -163,6 +166,7 @@ function vistaDocente() {
   if (pag === 'gestione') { selGestione(); disegnaGestione(); }
   if (pag === 'revcart') avviaRevCart();
   if (pag === 'banca') avviaBanca();
+  if (pag === 'promo') avviaPromo();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
   if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
   if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
@@ -309,6 +313,7 @@ var PAGINA = {
   },
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
+  promo: function () { return paginaPromo(); },
   cartelloni: function () { return (ADM() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
@@ -318,7 +323,7 @@ var PAGINA = {
     return h;
   },
   impostazioni: function () {
-    return bloccoAdmin('imp') + bloccoQuizImp() + '<section class="card stack" id="accesso"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
+    return bloccoConcessione() + bloccoAdmin('imp') + bloccoQuizImp() + '<section class="card stack" id="accesso"><h2 style="margin:0;font-size:22px">Accesso degli alunni</h2><p style="margin:0">L\'app è <b>' + (S.d.config.chiusa ? 'chiusa' : 'aperta') + '</b>' + (S.d.config.chiusa ? ': gli alunni vedono le scelte ma non possono modificarle.' : ': gli alunni possono scegliere e inviare.') + '</p>' +
       '<div class="row"><button class="btn ' + (S.d.config.chiusa ? 'ok' : 'warn') + '" onclick="chiusura(' + (!S.d.config.chiusa) + ')">' + (S.d.config.chiusa ? 'Riapri l\'app agli alunni' : 'Chiudi l\'app agli alunni') + '</button></div></section>';
   },
   edizioni: function () { return bloccoChiusuraEdizione() + bloccoEdizioni() + bloccoColleghi(); },
