@@ -30,6 +30,8 @@ async function risolvi(dbf, p) {
       if (p.azione === 'pubblico') return base; // link vecchio della pagina pubblica: si mostra il glossario principale
       err('Questa attività non c\'è più: ricarica la pagina.');
     }
+    // attività in preparazione: non compare nella pagina pubblica
+    if (p.azione === 'pubblico' && reg.some((x) => x.id === p.att && x.bozza)) return base;
     return dbf(p.att);
   }
   if (p.att === 'main' || !DA_CODICE[p.azione] || !p.codice) return base;
@@ -50,13 +52,13 @@ async function elencoDocente(d) {
   const base = apri('main'), reg = await registro(base, true);
   const cm = (await base.configPrincipale()) || {};
   const ed = L.edizioneDi(cm);
-  return [{ id: 'main', nome: ed.nome, as: ed.as, classi: L.impostazioni(cm).classi }].concat(reg.map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi })));
+  return [{ id: 'main', nome: ed.nome, as: ed.as, classi: L.impostazioni(cm).classi }].concat(reg.map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi, bozza: !!x.bozza })));
 }
 /* elenco per la pagina pubblica (solo nomi) */
 async function elencoPubblico(d) {
   const reg = await registro(apri('main'));
   if (!reg.length) return [];
-  return elencoDocente(d).then((e) => e.map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi })));
+  return elencoDocente(d).then((e) => e.filter((x) => !x.bozza).map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi })));
 }
 async function elenco(d, { codice }) {
   const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
@@ -85,11 +87,14 @@ async function nuovaAttivita(d, p) {
   const edMain = L.edizioneDi(statoMain.config);
   config.edizione.id = await ED.nuovoIdEdizione(base, as, [edMain.id].concat(reg.map((x) => x.ed || '')));
   delete config.docenti; // i docenti sono quelli dell'attività principale
+  // di solito si crea in preparazione (stand-by): gli alunni non entrano finché il docente non la manda LIVE
+  const bozza = p.live !== true;
+  if (bozza) config.bozza = true;
   const nd = apri(id);
   await nd.sostituisciTutto({ config, alunni, termini: docs, attivita: [] });
-  await base.scriviRegistro(reg.concat([{ id, nome, as, ed: config.edizione.id, classi: config.classi, creata: new Date().toISOString() }]));
+  await base.scriviRegistro(reg.concat([{ id, nome, as, ed: config.edizione.id, classi: config.classi, creata: new Date().toISOString(), bozza }]));
   svuota();
-  return { id, nome, as, alunni: alunni.length, termini: docs.length, classi: config.classi, aree: config.aree || null };
+  return { id, nome, as, bozza, alunni: alunni.length, termini: docs.length, classi: config.classi, aree: config.aree || null };
 }
 /* togli un'attività dall'elenco: prima la si chiude agli alunni e la si archivia (resta consultabile in Archivio) */
 async function rimuovi(d, { codice, id }) {
@@ -116,4 +121,22 @@ async function salvaAree(d, { codice, aree }) {
   await d.scriviConfig({ aree: nuove });
   return { aree: nuove };
 }
-module.exports = { salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };
+/* attività in preparazione → LIVE: da qui gli alunni possono entrare con il loro codice */
+async function mandaLive(d, { codice }) {
+  if (d.spazio === 'main') err('L\'attività principale è già attiva.');
+  const base = apri('main');
+  const statoMain = await base.leggiTutto();
+  L.soloAdmin(L.identifica(statoMain, codice));
+  const cfg = await d.leggiConfig();
+  if (!cfg) err('Attività non trovata.');
+  if (!cfg.bozza) return { live: true, gia: true };
+  const imp = L.impostazioni(cfg), ora = Date.now();
+  const scadute = imp.classi.filter((c) => Date.parse(L.impClasse(imp, c).scadenzaIt) <= ora);
+  if (scadute.length) err('La scadenza dello scritto è già passata per ' + scadute.join(', ') + ': aggiornala in «Scadenze e valutazione» prima di andare LIVE.');
+  await d.scriviConfig({ bozza: false, live: new Date().toISOString() });
+  const reg = await registro(base, true);
+  await base.scriviRegistro(reg.map((x) => (x.id === d.spazio ? Object.assign({}, x, { bozza: false }) : x)));
+  svuota();
+  return { live: true };
+}
+module.exports = { mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };

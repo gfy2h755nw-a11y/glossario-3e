@@ -292,6 +292,9 @@ function pacchetto(stato, chi) {
     // l'alunno vede partenza della sua classe e scadenza personale (classe o proroga)
     imp = Object.assign(impClasse(imp0, chi.classe), { scadenzaIt: new Date(scadenzaAlunno(imp0, chi._a)).toISOString() });
     const nMiei = stato.termini.filter((t) => t.alunno_id === chi.id && !t.ereditato).length || termPerAlunno(imp0, chi.classe);
+    // attività in preparazione (stand-by): l'alunno aspetta come prima della partenza, senza data
+    if (stato.config.bozza) return { utente: { ruolo: 'alunno', nome: chi.nome, classe: chi.classe }, nonPartito: true, partenza: null, inPreparazione: true, ora: new Date(now).toISOString(),
+      config: { chiusa: !!stato.config.chiusa, classi: imp.classi, scadenzaIt: imp.scadenzaIt, terminiPerAlunno: nMiei, lingue: imp.lingue, proroga: !!chi._a.proroga, edizione: imp.edizione } };
     // prima della partenza: solo il conto alla rovescia
     if (!partito(imp, now)) return { utente: { ruolo: 'alunno', nome: chi.nome, classe: chi.classe }, nonPartito: true, partenza: imp.partenza, ora: new Date(now).toISOString(),
       config: { chiusa: !!stato.config.chiusa, classi: imp.classi, scadenzaIt: imp.scadenzaIt, terminiPerAlunno: nMiei, lingue: imp.lingue, proroga: !!chi._a.proroga, edizione: imp.edizione } };
@@ -305,7 +308,7 @@ function pacchetto(stato, chi) {
   }
   const out = {
     utente: chi,
-    config: { chiusa: !!stato.config.chiusa, tappe: tappe(imp, chi.ruolo === 'alunno' ? chi.classe : null), lingue: imp.lingue, classi: imp.classi, partenza: imp.partenza,
+    config: { bozza: !!stato.config.bozza, chiusa: !!stato.config.chiusa, tappe: tappe(imp, chi.ruolo === 'alunno' ? chi.classe : null), lingue: imp.lingue, classi: imp.classi, partenza: imp.partenza,
       terminiPerAlunno: chi.ruolo === 'alunno' ? (stato.termini.filter((t) => t.alunno_id === chi.id && !t.ereditato).length || termPerAlunno(imp0, chi.classe)) : DATI.TERMINI_PER_ALUNNO,
       scadenzaIt: imp.scadenzaIt, scadenzaEn: imp.scadenzaEn, proroga: chi.ruolo === 'alunno' ? !!(chi._a && chi._a.proroga) : undefined, edizione: imp.edizione,
       riassegnazione: imp.riassegnazione,
@@ -314,6 +317,7 @@ function pacchetto(stato, chi) {
     aree: CAT.aree(),
     regole: REG.di(stato.config),
     areeStd: chi.ruolo === 'docente' ? DATI.AREE : undefined,
+    banca: chi.ruolo === 'docente' ? Object.fromEntries(Object.keys(BANCA).map((n) => [n, BANCA[n].length])) : undefined,
     pacchetti: chi.ruolo === 'docente' ? (function () { const P = require('./pacchetti'); return Object.keys(P).map((id) => ({ id, nome: P[id].nome, aree: P[id].aree, termini: Object.fromEntries(Object.keys(P[id].termini).map((n) => [n, P[id].termini[n].length])) })); })() : undefined,
     areeMie: !!(Array.isArray(stato.config.aree) && stato.config.aree.length),
     // esclusi dallo scritto: marcati «fuori», spariscono dai cartelloni (testata e termini)
@@ -430,7 +434,7 @@ async function scegli(db, { codice, id, lingua: l, lettera }) {
     if (chi.ruolo !== 'alunno') errore('Solo gli alunni scelgono le definizioni.');
     const now = Date.now(), imp = impostazioni(stato.config);
     if (valuta(stato, chi._a, now).escluso) errore(messaggioEsclusione(stato.config));
-    if (!partito(impClasse(imp, chi.classe), now)) errore('Il compito non è ancora partito.');
+    if (stato.config.bozza || !partito(impClasse(imp, chi.classe), now)) errore('Il compito non è ancora partito.');
     if (stato.config.chiusa) errore("L'app è chiusa: le scelte non sono più modificabili.");
     lingua(l, stato);
     const t = trova(stato, id);
@@ -867,7 +871,7 @@ async function manutenzione(db, sceltaCasuale) {
   // prima della scadenza di italiano non può esserci nessun escluso: basta una lettura
   if (db.leggiConfig) {
     const cfg = await db.leggiConfig();
-    if (!cfg || Date.now() <= primaScadenza(impostazioni(cfg))) return [];
+    if (!cfg || cfg.bozza || Date.now() <= primaScadenza(impostazioni(cfg))) return [];
   }
   return db.transazione(async (tx) => {
     const stato = await tx.leggiTutto();

@@ -84,6 +84,7 @@ async function contestoQuiz(db, codice, prova, bes) {
     return { a, cat, cfg };
   }
   const a = await db.leggiAlunnoCodice(c);
+  if (a && config.bozza) L.errore('L\'attività non è ancora iniziata: il professore la aprirà a breve.');
   if (!a) {
     if ((config.docenti || []).some((d) => d.codice && String(d.codice).trim().toUpperCase() === c)) L.errore('Il quiz è riservato agli alunni: inserisci il tuo codice personale.');
     L.errore('Codice non riconosciuto. Controlla di averlo scritto bene.');

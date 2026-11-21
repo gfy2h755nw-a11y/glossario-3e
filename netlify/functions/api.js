@@ -66,6 +66,7 @@ const AZIONI = {
   attivitaelenco: (d, p) => SP.elenco(d, p),
   rimuoviattivita: (d, p) => SP.rimuovi(d, p),
   salvaaree: (d, p) => SP.salvaAree(d, p),
+  mandalive: (d, p) => SP.mandaLive(d, p),
   // solo prof. Cerrato: backup, ripristino, Dropbox
   backup: async (d, p) => { await logica.verificaAdmin(d, p.codice); return auto.backupDa(await d.backupGrezzo(true), Date.now()); },
   ripristina: async (d, p) => {
@@ -171,6 +172,8 @@ exports.handler = async (event) => {
     const dati = await fn(d, p);
     // dopo una modifica del docente il prossimo accesso rifà subito il controllo degli esclusi
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
+    // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
+    if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita') Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]);
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: await SP.elencoDocente(d) });
     if (TRACCIA[p.azione] && p.codice) await traccia(d, p, event);
     return risposta(200, { ok: true, dati });

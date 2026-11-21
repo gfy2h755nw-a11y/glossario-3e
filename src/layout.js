@@ -95,12 +95,12 @@ function barraLaterale(pag, pagine) {
   } else {
     var arch = S.d.admin && S.d.admin.archiviata && ed.id && S.d.admin.archiviata === ed.id;
     h += '<div class="sed"><div class="sed-l">' + (arch ? 'EDIZIONE CHIUSA E ARCHIVIATA' : 'EDIZIONE IN CORSO') + '</div><b>' + esc(ed.nome || ('Glossario ' + cl.join(' e '))) + '</b>' + (ed.as ? ' · a.s. ' + esc(ed.as) : '') +
-      (S.d.config.chiusa ? '<div class="sed-c">App chiusa agli alunni</div>' : '');
+      (S.d.config.bozza ? '<div class="sed-c sed-b">IN PREPARAZIONE · non ancora LIVE</div>' : S.d.config.chiusa ? '<div class="sed-c">App chiusa agli alunni</div>' : '');
   }
   // attività parallele: si sceglie su quale lavorare (ognuna con classi, cartelloni, quiz e regole propri)
   var sp = S.d.spazi || [];
   if (!RO() && sp.length > 1) h += '<label class="satt"><span>Attività</span><select id="selAtt" onchange="cambiaAttivita(this.value)">' + sp.map(function (x) {
-    return '<option value="' + esc(x.id) + '"' + (x.id === (S.d.att || 'main') ? ' selected' : '') + '>' + esc(x.nome) + ' · ' + esc((x.classi || []).join(', ')) + '</option>';
+    return '<option value="' + esc(x.id) + '"' + (x.id === (S.d.att || 'main') ? ' selected' : '') + '>' + esc(x.nome) + ' · ' + esc((x.classi || []).join(', ')) + (x.bozza ? ' · in preparazione' : '') + '</option>';
   }).join('') + '</select></label>';
   if (!RO() && ADM()) h += '<button class="snuovaatt" onclick="apriWizard(\'attivita\')">+ Nuova attività</button>';
   if (cl.length > 1) h += '<div class="seg" role="group" aria-label="Filtra per classe">' + ['tutte'].concat(cl).map(function (c) {
@@ -151,7 +151,7 @@ function vistaDocente() {
   S.pag = pag;
   var p = pagine.filter(function (x) { return x.id === pag; })[0];
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
-  var avvisi = RO() ? bannerArchivio() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '';
+  var avvisi = RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '';
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
     '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));

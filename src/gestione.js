@@ -252,9 +252,9 @@ function salvaAreeMie(btn) {
 function bloccoAttivitaParallele() {
   var sp = S.d.spazi || [], cur = S.d.att || 'main';
   var righe = sp.map(function (x) {
-    return '<tr><td><b>' + esc(x.nome) + '</b>' + (x.id === cur ? ' <span class="chip s-approvata">aperta</span>' : '') + (x.id === 'main' ? '<br><span class="muted" style="font-size:13px">attività principale</span>' : '') + '</td><td>' + esc(x.as || '') + '</td><td>' + esc((x.classi || []).join(', ')) + '</td>' +
+    return '<tr><td><b>' + esc(x.nome) + '</b>' + (x.id === cur ? ' <span class="chip s-approvata">aperta</span>' : '') + (x.bozza ? ' <span class="chip s-correggere">in preparazione</span>' : '') + (x.id === 'main' ? '<br><span class="muted" style="font-size:13px">attività principale</span>' : '') + '</td><td>' + esc(x.as || '') + '</td><td>' + esc((x.classi || []).join(', ')) + '</td>' +
       '<td><div class="row" style="gap:6px;flex-wrap:wrap">' + (x.id !== cur ? '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="cambiaAttivita(\'' + esc(x.id) + '\')">Apri</button>' : '') +
-      '<a class="btn sec" style="min-height:36px;padding:0 10px;display:inline-flex;align-items:center" href="/glossario' + (x.id !== 'main' ? '?att=' + encodeURIComponent(x.id) : '') + '" target="_blank" rel="noopener">Pagina pubblica</a>' +
+      (x.bozza ? '' : '<a class="btn sec" style="min-height:36px;padding:0 10px;display:inline-flex;align-items:center" href="/glossario' + (x.id !== 'main' ? '?att=' + encodeURIComponent(x.id) : '') + '" target="_blank" rel="noopener">Pagina pubblica</a>') +
       (x.id !== 'main' ? '<button class="btn sec" style="min-height:36px;padding:0 10px" onclick="togliAttivita(\'' + esc(x.id) + '\',this)">Chiudi e archivia</button>' : '') + '</div></td></tr>';
   }).join('');
   return '<section class="card stack admin" id="attivitaPar"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Attività in parallelo</h2><button class="btn" onclick="apriWizard(\'attivita\')">+ Nuova attività</button></div>' +
@@ -383,6 +383,7 @@ function apriWizard(tipo) {
     Object.assign(S.wz, { nome: '', as: as, areeMie: false, aree: [{ it: '', colore: '#2E6DB4' }, { it: '', colore: '#1F8A70' }, { it: '', colore: '#B5532A' }],
       regole: { scritto: { votoMax: 7.5, penalita: 0.5, votoMin: 4, votoEsclusione: 4, votoMaxErede: 9.5, tetto: 6 }, quiz: { secondi: 60, opzioni: 4, passo: 5 }, orale: { domande: 10, base: 3, passo: 0.5, passoEsclusi: 0.25 }, finale: { pesoScritto: 50 } } });
     if (Rg.scritto) { S.wz.regole.scritto.votoMaxErede = Rg.scritto.votoMaxErede; S.wz.regole.scritto.tetto = Rg.scritto.tetto; }
+    prepAttivita();
   }
   disegnaWizard();
 }
@@ -440,7 +441,8 @@ function riprendiClasse(i, cl) {
 }
 function disegnaWizard() {
   var w = S.wz; if (!w) return;
-  if (w.tipo === 'edizione' || w.tipo === 'attivita') return paginaNuovaEdizione();
+  if (w.tipo === 'attivita') return paginaAttivita();
+  if (w.tipo === 'edizione') return paginaNuovaEdizione();
   var o = $('wz');
   if (!o) { o = document.createElement('div'); o.id = 'wz'; o.setAttribute('style', 'position:fixed;inset:0;background:rgba(21,33,43,.6);z-index:40;overflow:auto;padding:16px'); document.body.appendChild(o); }
   var titolo = w.tipo === 'edizione' ? 'Nuova edizione del glossario' : 'Aggiungi una classe a questa edizione';
@@ -591,10 +593,10 @@ function wzAvanti1(btn) {
 function passo2Html() {
   var w = S.wz, ok = true;
   var h = (w.ridotto ? '<div class="note warn" style="margin:0">La banca non ha abbastanza termini nuovi per ' + w.ridotto.da + ' a testa: ognuno ne riceve <b>' + w.ridotto.a + '</b>. Se vuoi arrivare a ' + w.ridotto.da + ', <button class="btn sec" style="min-height:32px;padding:0 10px;font-size:14px" onclick="tornaAlMassimo()">torna a ' + w.ridotto.da + ' a testa</button> e aggiungi i termini mancanti scritti da te.</div>' : '') +
-    (w.tipo === 'attivita' && w.areeMie && !w.pacchetto ? '<p style="margin:0">Scrivi o incolla i termini di ogni area, uno per riga: <i>termine | definizione corretta</i> (va bene anche copiare due colonne da Excel). Servono esattamente i termini indicati per ogni area; ogni area ne ha almeno 8.</p>' :
+    (w.tipo === 'attivita' && w.aree && w.aree.length && w.aree.every(function (a) { return (a.fonte || 'mia') === 'mia'; }) ? '<p style="margin:0">Scrivi o incolla i termini di ogni area, uno per riga: <i>termine | definizione corretta</i> (va bene anche copiare due colonne da Excel). Servono esattamente i termini indicati per ogni area; ogni area ne ha almeno 8.</p>' :
     '<p style="margin:0">Termini nuovi proposti per area, già controllati: nessuno è uguale o simile a quelli dell\'edizione in corso, del 2026/27 e delle edizioni in archivio. Puoi sostituirli uno per uno, toglierli o aggiungere termini tuoi.</p>');
-  var mie = w.tipo === 'attivita' && w.areeMie && !w.pacchetto;
   wzAreeN().forEach(function (n) {
+    var mie = w.tipo === 'attivita' && (w.aree && w.aree[0] && w.aree[0].fonte !== undefined ? wzAreaMia(n) : (w.areeMie && !w.pacchetto));
     var a = wzArea(n) || { it: 'Area ' + n, colore: '#15212B' }, lista = w.termini[n], serve = w.fab[n];
     if (!serve) return;
     if (lista.length !== serve) ok = false;
@@ -611,7 +613,7 @@ function passo2Html() {
       '<textarea id="wzX' + n + '" rows="4" style="width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:10px" placeholder="Ponte su impianti | Protesi fissa che poggia su due o più impianti."></textarea>' +
       '<div><button class="btn sec" style="min-height:36px" onclick="wzMiei(\'' + n + '\',this)">Controlla e aggiungi</button></div></div></details></section>';
   });
-  return h + '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=1;disegnaWizard()">Indietro</button><button class="btn" onclick="S.wz.passo=3;disegnaWizard()"' + (ok ? '' : ' disabled') + '>Avanti: riepilogo</button></div>' +
+  return h + '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="wzVai(-1)">Indietro</button><button class="btn" onclick="wzVai(1)"' + (ok ? '' : ' disabled') + '>Avanti: riepilogo</button></div>' +
     (ok ? '' : '<p class="muted" style="margin:0;text-align:right;font-size:14px">Per andare avanti ogni area deve avere esattamente i termini che servono.</p>');
 }
 function wzcAggiungi() { leggiPasso1(); S.wz.colleghi.push({ nome: '', codice: null, permessi: { revisione: true } }); disegnaWizard(); }
@@ -638,7 +640,7 @@ function wzSostituisci(n, k, btn) {
   var w = S.wz, vecchio = w.termini[n][k];
   btn.disabled = true;
   var ric = {}; ric[n] = 1;
-  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, fonti: wzFonti(), seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
     if (!x.aree[n].length) { btn.disabled = false; toast('La banca non ha altri termini liberi per quest\'area: aggiungine uno tuo.', true); return; }
     w.scartati.push(vecchio.t); w.termini[n][k] = { t: x.aree[n][0][0], d: x.aree[n][0][1], o: 'banca' }; disegnaWizard();
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
@@ -647,7 +649,7 @@ function wzTogli(n, k) { var x = S.wz.termini[n].splice(k, 1)[0]; if (x && x.o =
 function wzAltri(n, btn) {
   var w = S.wz, ric = {}; ric[n] = w.fab[n] - w.termini[n].length;
   btn.disabled = true;
-  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
+  api('generatermini', { richiesta: ric, escludi: escludiWz(), pacchetto: S.wz.pacchetto || undefined, fonti: wzFonti(), seme: Math.floor(Math.random() * 1e9) }).then(function (x) {
     x.aree[n].forEach(function (y) { w.termini[n].push({ t: y[0], d: y[1], o: 'banca' }); });
     if (x.mancano[n]) toast('La banca non ha abbastanza termini liberi in quest\'area: ne mancano ' + x.mancano[n] + ', aggiungili tu.', true);
     disegnaWizard();
@@ -695,7 +697,9 @@ function passo3Html() {
     (w.tipo === 'edizione' ? ' Edizione: <b>' + esc(w.nome) + '</b>, a.s. ' + esc(w.as) + '. Colleghi: ' + (w.colleghi.length ? w.colleghi.map(function (c) { return esc(c.nome) + ' (' + FACOLTA.filter(function (f) { return c.permessi[f[0]]; }).map(function (f) { return f[1].toLowerCase(); }).join(', ') + ')'; }).join('; ') : 'nessuno') + '. Penalità: proposta ' + w.proposta + ' (' + (w.proposta === 'A' ? '−0,25' : '−0,50') + ' per errore). Termini ricevuti: ' + w.giorniIt + ' giorni. Termini degli esclusi: ' + (w.riassegnazione === 'manuale' ? 'decidi tu.' : 'in automatico, a sorte.') : '') + '</p>' +
     (w.tipo === 'attivita' ? riepilogoRegoleWz() : '') +
     avvisi.map(function (a) { return '<p class="note" style="margin:0">' + esc(a) + '</p>'; }).join('') +
-    '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="S.wz.passo=2;disegnaWizard()">Indietro</button><button class="btn ok" onclick="wzCrea(this)">' + (w.tipo === 'edizione' ? 'Crea la nuova edizione' : w.tipo === 'attivita' ? 'Crea l\'attività' : 'Aggiungi la classe') + '</button></div>';
+    (w.tipo === 'attivita' ? '<fieldset class="ops" style="gap:8px"><legend style="font-weight:700;font-size:16px;margin-bottom:6px">Quando la creo</legend>' +
+      [['bozza', '<b>Resta in preparazione (stand-by)</b>: controlli e sistemi tutto, stampi codici e schede; gli alunni non possono entrare e l\'attività non compare nella pagina pubblica. Quando sei pronto premi <b>«Manda LIVE»</b>.'], ['live', '<b>Va subito LIVE</b>: gli alunni entrano con il loro codice dalla partenza che hai fissato.']].map(function (x) { var on = (w.live ? 'live' : 'bozza') === x[0]; return '<label class="op' + (on ? ' on' : '') + '"><input type="radio" name="wzLive" value="' + x[0] + '"' + (on ? ' checked' : '') + ' onchange="S.wz.live=this.value===\'live\';segna(this);$(\'wzCreaBtn\').textContent=S.wz.live?\'Crea e manda LIVE\':\'Crea in preparazione\'"><span>' + x[1] + '</span></label>'; }).join('') + '</fieldset>' : '') +
+    '<div class="row" style="justify-content:space-between"><button class="btn sec" onclick="wzVai(-1)">Indietro</button><button class="btn ok" id="wzCreaBtn" onclick="wzCrea(this)">' + (w.tipo === 'edizione' ? 'Crea la nuova edizione' : w.tipo === 'attivita' ? (w.live ? 'Crea e manda LIVE' : 'Crea in preparazione') : 'Aggiungi la classe') + '</button></div>';
 }
 function riepilogoRegoleWz() {
   var R = S.wz.regole, w = S.wz, oMax = Math.round((R.orale.base + R.orale.passo * R.orale.domande) * 1000) / 1000, oEx = Math.round((R.orale.base + R.orale.passoEsclusi * R.orale.domande) * 1000) / 1000;
@@ -713,9 +717,9 @@ function wzCrea(btn) {
   btn.disabled = true; btn.textContent = 'Creazione in corso…';
   if (w.tipo === 'attivita') {
     var aree = w.areeMie ? w.aree.map(function (a) { return { it: String(a.it).trim(), colore: a.colore, numero: String(a.numero || '').trim(), motto: String(a.motto || '').trim() }; }) : null;
-    api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt }).then(function (x) {
-      chiudiWizard(); toast('Attività creata: ' + x.alunni + ' alunni, ' + x.termini + ' termini'); cambiaAttivita(x.id);
-    }).catch(function (e) { btn.disabled = false; btn.textContent = 'Crea l\'attività'; toast(errMsg(e), true); });
+    api('nuovaattivita', { nome: w.nome, as: w.as, classi: classi, termini: termini, aree: aree, regole: w.regole, riassegnazione: w.riassegnazione, giorniIt: w.giorniIt, live: !!w.live }).then(function (x) {
+      chiudiWizard(); toast('Attività creata ' + (x.bozza ? 'in preparazione' : 'e LIVE') + ': ' + x.alunni + ' alunni, ' + x.termini + ' termini'); cambiaAttivita(x.id);
+    }).catch(function (e) { btn.disabled = false; btn.textContent = w.live ? 'Crea e manda LIVE' : 'Crea in preparazione'; toast(errMsg(e), true); });
     return;
   }
   var p = w.tipo === 'edizione' ? api('nuovaedizione', { nome: w.nome, as: w.as, classi: classi, termini: termini, riassegnazione: w.riassegnazione, proposta: w.proposta, giorniIt: w.giorniIt, colleghi: w.colleghi.filter(function (c) { return String(c.nome).trim(); }) }) : api('aggiungiclasse', { classe: classi[0], termini: termini });

@@ -261,3 +261,25 @@ body.or-pieno .or-b{min-height:62px;font-size:20px}
 .sk-r small{grid-column:1/-1;color:var(--muted);font-size:13px}
 body.or-pieno .dapp{grid-template-columns:minmax(0,1fr)}
 body.or-pieno .dmain{grid-column:1/-1}
+
+/* procedura guidata «Nuova attività» */
+.wzpassi{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.wzpassi li>span,.wzpassi li>button{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 12px;font:700 14px 'Archivo',system-ui,sans-serif;border:2px solid var(--line);background:#fff;color:var(--ink2)}
+.wzpassi li>button{cursor:pointer}
+.wzpassi li>* b{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink);font-size:12px}
+.wzpassi li.fatto>*{border-color:#9BC59D;color:#1E5C22}
+.wzpassi li.fatto>* b{background:#2E7D32;color:#fff}
+.wzpassi li.ora>span{border-color:#15212B;background:#15212B;color:#fff}
+.wzpassi li.ora>span b{background:#fff;color:#15212B}
+.wzcl{border:2px solid var(--line);border-radius:12px;padding:12px 14px}
+.wzcl>legend{font-weight:800;padding:0 6px}
+.wzal{min-width:420px}
+.wzal td{padding:4px 6px}
+.wzal input{width:100%;min-height:40px}
+.wzq{display:inline-block;flex:none;width:18px;height:18px;border-radius:5px;vertical-align:-3px}
+.wzfonti>legend{font-weight:700;font-size:15px;margin-bottom:6px}
+.wzfonti .op{align-items:center}
+.wzarea{background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px}
+[hidden]{display:none!important}
+.wzprep{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.sed-b{color:#9A4A00;font-weight:800}

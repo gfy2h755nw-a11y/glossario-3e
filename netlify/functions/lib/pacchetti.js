@@ -285,6 +285,46 @@ module.exports = {
   [
    "Scanner a luce strutturata",
    "Scanner che proietta sull'oggetto righe di luce e ne calcola la forma da come si deformano."
+  ],
+  [
+   "Percorso utensile",
+   "Traiettoria calcolata dal software CAM che la fresa segue per ricavare il pezzo dal disco."
+  ],
+  [
+   "Blocchetto CAD/CAM",
+   "Piccolo blocco di ceramica, composito o resina su un supporto metallico, da cui si fresa un singolo restauro."
+  ],
+  [
+   "Ceramica ibrida",
+   "Materiale fresabile formato da una rete ceramica infiltrata di resina, meno fragile della ceramica pura."
+  ],
+  [
+   "Piattaforma di costruzione",
+   "Piano della stampante 3D su cui si attacca il primo strato e su cui cresce il pezzo stampato."
+  ],
+  [
+   "Slicer",
+   "Software che divide il modello 3D in strati sottili e prepara il file che la stampante deve eseguire."
+  ],
+  [
+   "Tempo di esposizione",
+   "Secondi di luce dati a ogni strato di resina; se è sbagliato il pezzo esce fragile o deformato."
+  ],
+  [
+   "Stitching",
+   "Unione automatica delle singole immagini acquisite dallo scanner in un unico modello tridimensionale."
+  ],
+  [
+   "Pulizia della mesh",
+   "Eliminazione delle parti inutili della scansione, come lingua, guance o bordi dell'impronta."
+  ],
+  [
+   "Ripetibilità",
+   "Capacità di uno scanner o di una macchina di dare sempre lo stesso risultato ripetendo la stessa operazione."
+  ],
+  [
+   "Formato 3MF",
+   "Formato di file 3D più recente dell'STL che conserva anche colori, materiali e informazioni di stampa."
   ]
  ],
  "2": [
@@ -576,6 +616,75 @@ module.exports = {
    "Restauro adesivo",
    "Restauro fissato con tecniche adesive, che permette preparazioni più conservative del dente."
   ]
+,
+  [
+   "Corona fusa integrale",
+   "Corona interamente in lega metallica, senza rivestimento estetico; molto resistente, adatta ai settori posteriori."
+  ],
+  [
+   "Corona Richmond",
+   "Corona e perno radicolare realizzati in un unico pezzo, usata su denti trattati con poca corona residua."
+  ],
+  [
+   "Pontic igienico",
+   "Elemento intermedio sollevato dalla cresta, con superficie inferiore convessa che si pulisce facilmente."
+  ],
+  [
+   "Preparazione a lama di coltello",
+   "Preparazione senza un vero gradino, con margine sottilissimo; conserva tessuto ma rende difficile leggere il limite."
+  ],
+  [
+   "Filo retrattore",
+   "Filo sottile inserito nel solco gengivale prima dell'impronta per scostare la gengiva e mostrare il margine."
+  ],
+  [
+   "Cementazione convenzionale",
+   "Fissaggio della corona con cementi che trattengono per attrito, come fosfato di zinco e vetroionomero."
+  ],
+  [
+   "Cemento provvisorio",
+   "Cemento poco tenace che fissa i provvisori e permette di toglierli senza danneggiare il moncone."
+  ],
+  [
+   "Bonder",
+   "Strato intermedio applicato sulla lega per migliorare l'adesione della ceramica e ridurre le bolle."
+  ],
+  [
+   "Massa cervicale",
+   "Ceramica più satura di colore usata vicino al colletto per imitare la dentina che traspare."
+  ],
+  [
+   "Micro-layering",
+   "Stratificazione di uno strato sottilissimo di ceramica sopra una struttura quasi a forma piena."
+  ],
+  [
+   "Raffreddamento controllato",
+   "Discesa lenta della temperatura dopo la cottura per evitare tensioni e crepe nella ceramica."
+  ],
+  [
+   "Tessitura superficiale",
+   "Rilievi e linee sulla superficie vestibolare del dente, riprodotti per riflettere la luce in modo naturale."
+  ],
+  [
+   "Sovracontorno",
+   "Corona con volume eccessivo vicino alla gengiva, che trattiene placca e infiamma i tessuti."
+  ],
+  [
+   "Basculamento",
+   "Movimento oscillante della corona sul moncone, segno di un adattamento non corretto."
+  ],
+  [
+   "Perle ritentive",
+   "Piccole sfere sulla struttura metallica che creano ritenzione meccanica per la resina estetica."
+  ],
+  [
+   "Bisello",
+   "Smusso sottile del bordo della preparazione che rende il margine più netto e facile da sigillare."
+  ],
+  [
+   "Allungamento di corona clinica",
+   "Intervento che sposta gengiva e osso verso la radice per scoprire più dente sano su cui preparare la corona."
+  ]
  ],
  "3": [
   [
@@ -857,6 +966,70 @@ module.exports = {
   [
    "Lunghezza implantare",
    "Altezza dell'impianto, scelta in base all'osso disponibile e alla distanza da nervi e seno mascellare."
+  ],
+  [
+   "Impianto zigomatico",
+   "Impianto molto lungo ancorato nell'osso zigomatico, usato quando il mascellare superiore è troppo riassorbito."
+  ],
+  [
+   "Impianto bone level",
+   "Impianto inserito con la testa a livello dell'osso; la connessione con l'abutment resta sotto la gengiva."
+  ],
+  [
+   "Collo implantare",
+   "Parte superiore dell'impianto, spesso liscia, a contatto con l'osso marginale e con i tessuti molli."
+  ],
+  [
+   "Tecnica sommersa",
+   "Impianto coperto dalla gengiva durante la guarigione e scoperto con un secondo piccolo intervento."
+  ],
+  [
+   "Impianto post-estrattivo",
+   "Impianto inserito nello stesso intervento in cui si estrae il dente, direttamente nell'alveolo."
+  ],
+  [
+   "Torque di inserimento",
+   "Forza di rotazione misurata mentre l'impianto viene avvitato nell'osso; indica la sua stabilità iniziale."
+  ],
+  [
+   "Stabilità secondaria",
+   "Stabilità che l'impianto acquista nei mesi successivi grazie alla formazione di nuovo osso attorno."
+  ],
+  [
+   "Quoziente di stabilità implantare",
+   "Valore da 1 a 100, misurato con la frequenza di risonanza, che indica quanto è stabile l'impianto."
+  ],
+  [
+   "Classificazione di Lekholm e Zarb",
+   "Suddivisione dell'osso in quattro tipi, da D1 molto compatto a D4 molto spugnoso, utile a pianificare l'impianto."
+  ],
+  [
+   "Innesto osseo autologo",
+   "Osso prelevato dallo stesso paziente e trapiantato dove manca, per permettere l'inserimento dell'impianto."
+  ],
+  [
+   "Membrana riassorbibile",
+   "Barriera di collagene che protegge l'innesto osseo dai tessuti molli e si dissolve da sola."
+  ],
+  [
+   "Fenotipo gengivale",
+   "Spessore e qualità della gengiva, sottile o spessa, che influenzano estetica e stabilità attorno all'impianto."
+  ],
+  [
+   "Abutment in zirconia",
+   "Pilastro in zirconia, chiaro e biocompatibile, che evita il riflesso grigio del titanio sotto gengive sottili."
+  ],
+  [
+   "Cantilever su impianti",
+   "Parte della protesi che sporge oltre l'ultimo impianto; se è troppo lunga sovraccarica viti e osso."
+  ],
+  [
+   "Condizionamento dei tessuti molli",
+   "Modellazione graduale della gengiva con il provvisorio per ottenere un profilo naturale attorno alla corona."
+  ],
+  [
+   "Passaporto implantare",
+   "Tessera consegnata al paziente con marca, modello, misura e lotto degli impianti inseriti."
   ]
  ],
  "4": [
@@ -1135,6 +1308,66 @@ module.exports = {
   [
    "Dente incluso",
    "Dente che non riesce a erompere e resta nell'osso, spesso il canino superiore."
+  ],
+  [
+   "Regolatore di funzione di Fränkel",
+   "Apparecchio funzionale con scudi laterali e labiali che allontanano guance e labbra per favorire lo sviluppo delle arcate."
+  ],
+  [
+   "Apparecchio di Herbst",
+   "Apparecchio fisso con pistoni telescopici che tengono la mandibola in avanti per correggere la seconda classe."
+  ],
+  [
+   "Pista di Planas",
+   "Placca con piste in resina sui settori posteriori che guidano i movimenti della mandibola e ne stimolano la crescita."
+  ],
+  [
+   "Vite a ventaglio",
+   "Vite di espansione che apre la placca soprattutto nella parte anteriore, a forma di ventaglio."
+  ],
+  [
+   "Gancio a palla",
+   "Gancio in filo con una piccola sfera all'estremità che si inserisce nello spazio tra due denti."
+  ],
+  [
+   "Gancio a freccia",
+   "Gancio di Schwarz con punte a forma di freccia che fanno presa negli spazi interdentali."
+  ],
+  [
+   "Molla a Z",
+   "Molla in filo piegata a zeta, montata sulla placca per spingere in fuori un singolo dente."
+  ],
+  [
+   "Slot del bracket",
+   "Scanalatura del bracket in cui si inserisce l'arco; le misure più comuni sono 0,018 e 0,022 pollici."
+  ],
+  [
+   "Ortodonzia linguale",
+   "Tecnica con bracket incollati sulla faccia interna dei denti, invisibili quando il paziente sorride."
+  ],
+  [
+   "Legatura metallica",
+   "Filo d'acciaio sottilissimo attorcigliato attorno alle alette per bloccare saldamente l'arco nel bracket."
+  ],
+  [
+   "Mentoniera",
+   "Apparecchio extraorale che appoggia sul mento e frena la crescita in avanti della mandibola."
+  ],
+  [
+   "Ortodonzia intercettiva",
+   "Trattamento precoce in dentatura mista che corregge un problema prima che si aggravi."
+  ],
+  [
+   "Canino ectopico",
+   "Canino che si sviluppa fuori dalla sua posizione normale e rischia di restare incluso."
+  ],
+  [
+   "Indice IOTN",
+   "Indice che classifica la gravità della malocclusione e il bisogno di trattamento ortodontico."
+  ],
+  [
+   "Apparecchio di Crozat",
+   "Apparecchio mobile tutto in metallo, con fili e ganci, che sposta i denti con molle sottili."
   ]
  ]
 }

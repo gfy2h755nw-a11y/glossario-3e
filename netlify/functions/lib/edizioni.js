@@ -163,16 +163,26 @@ function mescola(arr, seme) {
   const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a;
 }
 /* richiesta: { '1': quanti, ... }; escludi: termini da non proporre (già scartati dal docente o già scelti) */
-async function generaTermini(db, { codice, richiesta, escludi, seme, pacchetto }) {
+/* fonte di un'area: 'banca:N' (banca delle 4 aree del laboratorio) oppure 'pk:ID:N' (area N di un elenco pronto) */
+function elencoFonte(f) {
+  const m = /^banca:(\d)$/.exec(f || '');
+  if (m) { if (!BANCA[m[1]]) err('Area della banca non trovata.'); return BANCA[m[1]]; }
+  const k = /^pk:([a-z0-9-]+):(\d)$/.exec(f || '');
+  const P = k ? require('./pacchetti')[k[1]] : null;
+  if (!P || !P.termini[k[2]]) err('Elenco di termini non trovato.');
+  return P.termini[k[2]];
+}
+async function generaTermini(db, { codice, richiesta, escludi, seme, pacchetto, fonti }) {
   const { stato } = await adminDa(db, codice);
   const usati = await terminiUsati(db, stato.config);
   const via = new Set((escludi || []).map((t) => SIM.chiave(t)));
   const aree = {}, disponibili = {}, mancano = {};
-  // elenco pronto (aree scelte per un'attività nuova) oppure banca delle 4 aree del laboratorio
-  const P = pacchetto ? require('./pacchetti')[pacchetto] : null;
-  if (pacchetto && !P) err('Elenco di termini non trovato.');
-  const fonte = P ? P.termini : BANCA;
-  (P ? Object.keys(P.termini) : AREE).forEach((n) => {
+  // fonti scelte area per area (procedura guidata), elenco pronto intero oppure banca delle 4 aree del laboratorio
+  const F = fonti && typeof fonti === 'object' ? Object.keys(fonti).filter((n) => /^[1-6]$/.test(n) && fonti[n] !== 'mia') : null;
+  const P = !F && pacchetto ? require('./pacchetti')[pacchetto] : null;
+  if (!F && pacchetto && !P) err('Elenco di termini non trovato.');
+  const fonte = F ? Object.fromEntries(F.map((n) => [n, elencoFonte(fonti[n])])) : P ? P.termini : BANCA;
+  (F || (P ? Object.keys(P.termini) : AREE)).forEach((n) => {
     const chiesti = Math.max(0, Math.min(500, Number((richiesta || {})[n]) || 0));
     const liberi = fonte[n].map((x, i) => ({ t: x[0], d: x[1], i })).filter((x) => !via.has(SIM.chiave(x.t)) && !SIM.trovaSimile(x.t, x.d, usati));
     disponibili[n] = liberi.length;

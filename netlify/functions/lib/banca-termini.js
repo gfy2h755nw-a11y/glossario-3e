@@ -322,6 +322,26 @@ module.exports = {
     // qualità e sicurezza
     ['Controllo qualità', 'Verifica finale del manufatto (adattamento, contatti, superfici) prima della consegna.'],
     ['Tracciabilità', 'Registrazione dei materiali e dei lotti usati per ogni dispositivo, per poterli ricostruire in caso di problemi.'],
-    ['Smaltimento dei rifiuti', 'Raccolta e conferimento dei rifiuti di laboratorio secondo le norme, compresi quelli pericolosi.']
+    ['Smaltimento dei rifiuti', 'Raccolta e conferimento dei rifiuti di laboratorio secondo le norme, compresi quelli pericolosi.'],
+    // strumentario (scelti dal prof. Cerrato il 21/11/2026)
+    ['Lecron', 'Strumento a doppia estremità, una a lama e una a spatola, per intagliare e modellare la cera.'],
+    ['Strumenti di Thomas', 'Serie di strumenti per la tecnica additiva: portano la cera goccia a goccia per costruire cuspidi e creste.'],
+    ['Brunitore', 'Strumento a punta arrotondata che liscia e adatta i bordi di lamine e metalli sul modello.'],
+    ['Compasso di Willis', 'Calibro a squadra che misura la dimensione verticale del volto, dalla base del naso al mento.'],
+    ['Piano di Fox', 'Righello a forcella che verifica il parallelismo del piano occlusale con la linea bipupillare e il piano di Camper.'],
+    ['Manipolo', 'Impugnatura collegata al micromotore in cui si inserisce lo strumento rotante; può essere dritto o angolato.'],
+    ['Contrangolo', 'Manipolo con testina angolata che permette di lavorare nelle zone più difficili da raggiungere.'],
+    ['Turbina da laboratorio', 'Manipolo ad aria compressa ad altissima velocità, usato soprattutto per rifinire zirconia e ceramica.'],
+    ['Feltrino', 'Ruota o cono di feltro che con la pasta lucidante dà la brillantezza finale a metalli e resine.'],
+    ['Tavolozza umidificata', 'Vassoio con spugna imbevuta d\'acqua che mantiene umide le masse ceramiche durante la stratificazione.'],
+    ['Base per cilindro', 'Base in gomma su cui si fissa il perno di colata e si appoggia il cilindro durante la messa in rivestimento.'],
+    ['Microsabbiatrice', 'Sabbiatrice con ugello sottile a penna per trattare piccole zone come margini e interni delle corone.'],
+    ['Pinza di Adams', 'Pinza ortodontica a becchi robusti per piegare i ganci di Adams e le anse dei fili.'],
+    ['Staffa per muffole', 'Morsetto che tiene chiuse le due metà della muffola durante la polimerizzazione.'],
+    ['Termoformatrice', 'Apparecchio che scalda una lamina di plastica e la modella sul modello per pressione o depressione.'],
+    ['Lampada fotopolimerizzatrice', 'Apparecchio a luce blu o UV che indurisce compositi e resine fotopolimerizzabili.'],
+    ['Spettrofotometro dentale', 'Strumento elettronico che rileva il colore del dente e lo traduce nei codici della scala colori.'],
+    ['Compressore', 'Macchina che fornisce aria compressa pulita e secca a sabbiatrice, turbina e soffiatore.'],
+    ['Pistola ad aria', 'Ugello collegato all\'aria compressa per pulire il lavoro da polveri e residui.']
   ]
 };

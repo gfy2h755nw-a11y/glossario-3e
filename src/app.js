@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 1';
+var VERSIONE = '21/11/2026 · 3';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -135,9 +135,9 @@ function vistaAttesa() {
   $('app').innerHTML = testata(u.nome + ' · Classe ' + (u.classe || '3E')) + '<main class="wrap stack"><section class="card stack">' +
     '<div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">Glossario odontotecnico</div>' +
     '<h1 style="margin:0;font-size:28px;line-height:1.15">Il compito non è ancora partito</h1>' +
-    (p ? '<p style="margin:0">Si parte <b>' + esc(oraIt(p)) + '</b>. Da quel momento qui trovi i tuoi <b>' + TPA() + ' termini</b>.</p>' + cdHtml(p)
+    (S.d.inPreparazione ? '<p style="margin:0">L\'attività è in preparazione: il prof. Cerrato la aprirà a breve. Torna a controllare nei prossimi giorni.</p>' : p ? '<p style="margin:0">Si parte <b>' + esc(oraIt(p)) + '</b>. Da quel momento qui trovi i tuoi <b>' + TPA() + ' termini</b>.</p>' + cdHtml(p)
       : '<p style="margin:0">Il prof. Cerrato non ha ancora fissato la partenza. Torna a controllare nei prossimi giorni.</p>') +
-    '<p class="muted" style="margin:0">Scadenza per rispondere a tutti i termini: ' + esc(oraIt(S.d.config.scadenzaIt)) + '.</p></section></main>';
+    (S.d.inPreparazione ? '' : '<p class="muted" style="margin:0">Scadenza per rispondere a tutti i termini: ' + esc(oraIt(S.d.config.scadenzaIt)) + '.</p>') + '</section></main>';
   avviaCountdown();
   if (p) { var ms = Date.parse(p) - Date.now(); if (ms > 0 && ms < 86400000) S.timerPartenza = setTimeout(function () { entra(S.codice); }, ms + 1500); }
 }
