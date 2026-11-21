@@ -54,11 +54,16 @@ const AZIONI = {
   oraleprova: (d, p) => OR.oraleProva(d, p),
   oralepesca: (d, p) => OR.oralePesca(d, p),
   oralecambia: (d, p) => OR.oraleCambia(d, p),
+  oralecatalogo: (d, p) => OR.oraleCatalogo(d, p),
+  oraleimposta: (d, p) => OR.oraleImposta(d, p),
+  oralesceglieuno: (d, p) => OR.oraleScegliUno(d, p),
   oralesalva: (d, p) => OR.oraleSalva(d, p),
   oraleannulla: (d, p) => OR.oraleAnnulla(d, p),
   setup: (d, p) => logica.setup(d, p, process.env.SETUP_KEY),
   // segnale di presenza (ogni minuto, app aperta in primo piano): serve solo al registro attività
   presenza: async () => ({}),
+  // ripasso sulla pagina pubblica (codice dell'alunno ricordato sul dispositivo): il tempo va nel suo registro
+  presenzapubblica: async (d, p) => { const a = p.codice ? await d.alunnoDaCodice(p.codice) : null; return a ? { nome: logica.nomePubblico(a.nome) } : {}; },
   // pagina pubblica /glossario: nessun codice richiesto, solo definizioni approvate
   pubblico: (d, p) => pubblicoInCache(d, p),
   // attività parallele: nuova attività con classi, aree, termini e regole propri; elenco; rimozione dall'elenco (i dati restano in archivio)
@@ -130,7 +135,7 @@ const AZIONI = {
     return Object.assign(r, { stato: await DBX.statoPubblico(d) });
   }
 };
-const TRACCIA = { login: 'login', scegli: 'scegli', presenza: 'presenza' };
+const TRACCIA = { login: 'login', scegli: 'scegli', presenza: 'presenza', presenzapubblica: 'pubblica' };
 async function traccia(d, p, event) {
   try {
     const a = await d.alunnoDaCodice(p.codice);
@@ -147,7 +152,7 @@ async function traccia(d, p, event) {
 const TEST = !!process.env.SETUP_KEY && process.env.SETUP_KEY === 'chiave-prova' && /localhost/.test(process.env.URL || '');
 const MANUT_MS = 5 * 60 * 1000, PUBBLICO_MS = 2 * 60 * 1000;
 const manutUltima = {}, cachePubblico = {};
-const SOLO_LETTURA = { promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+const SOLO_LETTURA = { presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;
@@ -186,6 +191,7 @@ exports.handler = async (event) => {
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
     if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita') Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]);
+    if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'alunno') dati.att = d.spazio; // link alla pagina pubblica della sua attività
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: dati.utente.gestore ? (await SP.elencoDocente(d)).filter((x) => x.id === d.spazio) : await SP.elencoDocente(d) });
     if (TRACCIA[p.azione] && p.codice) await traccia(d, p, event);
     return risposta(200, { ok: true, dati });

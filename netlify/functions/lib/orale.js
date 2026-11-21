@@ -249,13 +249,23 @@ function usciti(stato, a) {
   });
   return n;
 }
+/* evidenza per il docente: per ogni termine già uscito nella classe, chi l'ha avuto (nome breve) */
+function chiUsati(stato, a) {
+  const n = {}, cl = L.classeDi(a);
+  stato.alunni.filter((x) => x.id !== a.id && L.classeDi(x) === cl).forEach((x) => {
+    const nome = L.nomePubblico(x.nome);
+    ((x.orale && x.orale.termini) || []).forEach((t) => { const k = chiave(t.a, t.k); (n[k] = n[k] || []).push(nome); });
+    ((x.orale_bozza && x.orale_bozza.termini) || []).forEach((t) => { const k = chiave(t.a, t.k); (n[k] = n[k] || []).push(nome + ' (in corso)'); });
+  });
+  return n;
+}
 function scegliIn(cat, area, quanti, vietati, freq) {
   const cand = cat[area].map((x, k) => ({ a: Number(area), k, f: freq[chiave(area, k)] || 0, z: caso(1000000) })).filter((x) => !vietati[chiave(x.a, x.k)]);
   cand.sort((x, y) => x.f - y.f || x.z - y.z);
   return cand.slice(0, quanti).map((x) => ({ a: x.a, k: x.k }));
 }
-function vistaBozza(cat, b) {
-  return { data: b.data, cambi: b.cambi || 0, termini: b.termini.map((t) => ({ area: t.a, k: t.k, it: cat[t.a][t.k][0], def: cat[t.a][t.k][1] })) };
+function vistaBozza(cat, b, chi) {
+  return { data: b.data, cambi: b.cambi || 0, scelti: !!b.scelti, termini: b.termini.map((t) => ({ area: t.a, k: t.k, it: cat[t.a][t.k][0], def: cat[t.a][t.k][1], usati: chi ? (chi[chiave(t.a, t.k)] || []) : [] })) };
 }
 async function oralePesca(db, { codice, alunno: id, nuova }) {
   const stato = await db.leggiTutto(); docenteVoti(stato, codice);
@@ -265,7 +275,7 @@ async function oralePesca(db, { codice, alunno: id, nuova }) {
     const rq = riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a), null, a));
     L.errore(a.nome + ' non è ammesso all\'interrogazione: non ha completato il quiz (' + rq.indovinati + ' termini su ' + rq.soglia + ').');
   }
-  if (a.orale_bozza && !nuova) return { alunno: a.id, bozza: vistaBozza(cat, a.orale_bozza) };
+  if (a.orale_bozza && !nuova) return { alunno: a.id, bozza: vistaBozza(cat, a.orale_bozza, chiUsati(stato, a)) };
   const aree = Object.keys(cat).map(Number).sort((x, y) => x - y), miei = propri(stato, a), freq = usciti(stato, a);
   // 10 domande: parti uguali per area, il resto alle aree a rotazione (cambia a ogni interrogazione della classe)
   const fatte = stato.alunni.filter((x) => L.classeDi(x) === L.classeDi(a) && (x.orale || x.orale_bozza) && x.id !== a.id).length;
@@ -280,7 +290,7 @@ async function oralePesca(db, { codice, alunno: id, nuova }) {
   for (let x = termini.length - 1; x > 0; x--) { const y = caso(x + 1); [termini[x], termini[y]] = [termini[y], termini[x]]; }
   const bozza = { data: new Date().toISOString(), termini, cambi: 0 };
   await db.scriviAlunno(a.id, { orale_bozza: bozza });
-  return { alunno: a.id, bozza: vistaBozza(cat, bozza) };
+  return { alunno: a.id, bozza: vistaBozza(cat, bozza, chiUsati(stato, a)) };
 }
 /* simulazione dell'interrogazione: termini pescati tra tutti quelli del glossario, niente viene salvato.
    Con termini + pos cambia solo quel termine (nella stessa area). bes = metà dei termini. */
@@ -308,9 +318,60 @@ async function oraleCambia(db, { codice, alunno: id, pos }) {
   const vietati = propri(stato, a); b.termini.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; });
   const s = scegliIn(cat, b.termini[pos].a, 1, vietati, usciti(stato, a));
   if (!s.length) L.errore('Non ci sono altri termini disponibili in quest\'area.');
-  const bozza = { data: b.data, termini: b.termini.map((t, i) => (i === Number(pos) ? s[0] : t)), cambi: (b.cambi || 0) + 1 };
+  const bozza = { data: b.data, termini: b.termini.map((t, i) => (i === Number(pos) ? s[0] : t)), cambi: (b.cambi || 0) + 1, scelti: !!b.scelti };
   await db.scriviAlunno(a.id, { orale_bozza: bozza });
-  return { alunno: a.id, bozza: vistaBozza(cat, bozza) };
+  return { alunno: a.id, bozza: vistaBozza(cat, bozza, chiUsati(stato, a)) };
+}
+/* ---- termini scelti dal docente ----
+   elenco di tutti i termini del glossario per l'alunno: i suoi dello scritto non si possono scegliere,
+   per gli altri si vede chi li ha già avuti all'interrogazione */
+function ammesso(stato, a) {
+  if (!(a.quiz && a.quiz.superata)) {
+    const rq = riepilogoQuiz(a.quiz, cfgQuiz(stato.config, L.classeDi(a), null, a));
+    L.errore(a.nome + ' non è ammesso all\'interrogazione: non ha completato il quiz (' + rq.indovinati + ' termini su ' + rq.soglia + ').');
+  }
+}
+async function oraleCatalogo(db, { codice, alunno: id }) {
+  const stato = await db.leggiTutto(); docenteVoti(stato, codice);
+  const a = alunno(stato, id), cat = catalogo(stato), miei = propri(stato, a), chi = chiUsati(stato, a);
+  ammesso(stato, a);
+  const aree = Object.keys(cat).map(Number).sort((x, y) => x - y);
+  return { domande: domandeDi(a, stato.config), aree: aree.map((ar) => ({ area: ar, termini: cat[ar].map((x, k) => ({ k, it: x[0], suo: !!miei[chiave(ar, k)], usati: chi[chiave(ar, k)] || [] })) })) };
+}
+function terminiValidi(stato, a, cat, termini, max) {
+  if (!Array.isArray(termini) || !termini.length) L.errore('Scegli almeno un termine.');
+  if (termini.length > max) L.errore('Al massimo ' + max + ' termini.');
+  const miei = propri(stato, a), visti = {};
+  return termini.map((t) => {
+    const ar = Number(t && t.a), k = Number(t && t.k);
+    if (!cat[ar] || !Number.isInteger(k) || !cat[ar][k]) L.errore('Termine non trovato.');
+    const c = chiave(ar, k);
+    if (miei[c]) L.errore('«' + cat[ar][k][0] + '» è un termine del suo scritto: scegline un altro.');
+    if (visti[c]) L.errore('«' + cat[ar][k][0] + '» è stato scelto due volte.');
+    visti[c] = 1;
+    return { a: ar, k };
+  });
+}
+/* interrogazione con i termini scelti dal docente (sostituisce quella in corso, se c'è) */
+async function oraleImposta(db, { codice, alunno: id, termini }) {
+  const stato = await db.leggiTutto(); docenteVoti(stato, codice);
+  const a = alunno(stato, id), cat = catalogo(stato);
+  ammesso(stato, a);
+  const scelti = terminiValidi(stato, a, cat, termini, 30);
+  const bozza = { data: new Date().toISOString(), termini: scelti, cambi: 0, scelti: true };
+  await db.scriviAlunno(a.id, { orale_bozza: bozza });
+  return { alunno: a.id, bozza: vistaBozza(cat, bozza, chiUsati(stato, a)) };
+}
+/* un solo termine sostituito con quello scelto dal docente */
+async function oraleScegliUno(db, { codice, alunno: id, pos, termine }) {
+  const stato = await db.leggiTutto(); docenteVoti(stato, codice);
+  const a = alunno(stato, id), cat = catalogo(stato), b = a.orale_bozza;
+  if (!b || !b.termini || !b.termini[pos]) L.errore('Interrogazione non trovata: riaprila.');
+  const nuovi = b.termini.map((t, i) => (i === Number(pos) ? termine : t));
+  const validi = terminiValidi(stato, a, cat, nuovi, 30);
+  const bozza = { data: b.data, termini: validi, cambi: (b.cambi || 0) + 1, scelti: !!b.scelti };
+  await db.scriviAlunno(a.id, { orale_bozza: bozza });
+  return { alunno: a.id, bozza: vistaBozza(cat, bozza, chiUsati(stato, a)) };
 }
 async function oraleSalva(db, { codice, alunno: id, esiti, nota, votoDocente }) {
   const stato = await db.leggiTutto(), chi = docenteVoti(stato, codice);
@@ -326,7 +387,7 @@ async function oraleSalva(db, { codice, alunno: id, esiti, nota, votoDocente }) 
     if (!isFinite(mano) || mano < 1 || mano > 10 || Math.abs(Math.round(mano * 4) - mano * 4) > 1e-9) L.errore('Voto orale: da 1 a 10, a quarti di voto (es. 6,25 · 6,5 · 6,75).');
   }
   const orale = { data: new Date().toISOString(), docente: chi.nome, escluso, punti, voto: mano != null ? mano : calc, votoCalcolato: calc, manuale: mano != null, cambi: b.cambi || 0, nota: String(nota || '').replace(/\s+/g, ' ').trim().slice(0, 300),
-    domande: b.termini.length, bes: !!a.bes,
+    domande: b.termini.length, bes: !!a.bes, scelti: !!b.scelti,
     termini: b.termini.map((t, i) => ({ a: t.a, k: t.k, it: cat[t.a][t.k][0], e: esiti[i] })) };
   const storico = (a.orale_storico || []).concat(a.orale ? [a.orale] : []).slice(-5);
   await db.scriviAlunno(a.id, { orale, orale_bozza: null, orale_storico: storico });
@@ -361,7 +422,8 @@ async function pianoOrale(db, { codice, alunno: id, data, ora }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data)) || isNaN(Date.parse(data))) L.errore('Data dell\'interrogazione non valida.');
   let h = null;
   if (ora !== undefined && ora !== null && ora !== '') { h = Number(ora); if (!Number.isInteger(h) || h < 1 || h > 10) L.errore('Ora di lezione: da 1 a 10.'); }
-  const piano = { data: String(data), ora: h };
+  // giorno in cui è stata programmata (resta quello della prima volta): da lì si conta il ripasso sulla pagina pubblica
+  const piano = { data: String(data), ora: h, fissata: (a.orale_piano && a.orale_piano.fissata) || new Date().toISOString() };
   await db.scriviAlunno(a.id, { orale_piano: piano });
   return { alunno: a.id, piano };
 }
@@ -414,4 +476,4 @@ async function quizPersonale(db, { codice, alunno: id, soglia, passo, bes }) {
   return { alunno: a.id, soglia: s, passo: p, bes: mod.bes !== undefined ? mod.bes : a.bes || null, superata: !!(mod.quiz && mod.quiz.superata) };
 }
 
-module.exports = { quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, oraleProva, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };
+module.exports = { oraleCatalogo, oraleImposta, oraleScegliUno, quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, oraleProva, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };

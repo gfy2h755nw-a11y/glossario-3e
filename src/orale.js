@@ -60,13 +60,14 @@ function paginaQuiz() {
 
 /* --- interrogazione orale --- */
 function paginaOrale() {
+  if (S.orSc) return schedaScelta();
   if (S.or) return schedaOrale();
   var righe = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); });
   var fatte = righe.filter(function (r) { return votiDi(r.id).orale; }).length, puo = PUO('voti') && !RO();
   var amm = righe.filter(function (r) { return quizDi(r.id).superata; }).length, fuori = righe.filter(function (r) { return quizDi(r.id).stato === 'scaduto'; }).length;
   var h = '<section class="card stack" id="oraleTab"><h2 style="margin:0;font-size:22px">Interrogazioni</h2>' +
     '<p class="muted" style="margin:0"><b>È ammesso all\'interrogazione solo chi ha superato il quiz</b> entro la scadenza: gli altri non vengono interrogati e restano senza voto (le loro definizioni restano sui cartelloni). ' +
-    'Per ogni alunno ammesso l\'app pesca <b>' + RG().orale.domande + ' termini</b> tra tutti quelli del glossario (mai i suoi, bilanciati sulle aree, di preferenza i meno usciti nella classe). ' +
+    'Per ogni alunno ammesso <b>scegli tu i termini</b> oppure li fai pescare dal glossario (' + RG().orale.domande + ', bilanciati sulle aree, di preferenza i meno usciti nella classe). In entrambi i casi <b>mai i termini del suo scritto</b>, e vedi quali termini sono già stati usati. ' +
     'Ogni risposta vale 1 punto se corretta, ½ se parziale, 0 se sbagliata. <b>' + regolaOrale() + '</b> (massimo ' + fv(RG().orale.max) + '); per gli esclusi dallo scritto ' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto (massimo ' + fv(RG().orale.maxEsclusi) + '). ' +
     'Il <b>voto finale</b> è la ' + mediaTxt() + ' (per gli esclusi vale solo l\'orale): oltre il mezzo voto si arrotonda all\'intero superiore, sotto a quello inferiore (7,75 → 8 · 7,5 → 7,5 · 7,4 → 7).</p>' +
     '<div class="row"><span class="chip s-approvata">' + amm + ' su ' + righe.length + ' ammessi (quiz superato)</span><span class="chip s-vuota">' + fatte + ' interrogati</span>' + (fuori ? '<span class="chip s-correggere">' + fuori + ' non ammessi: senza voto</span>' : '') + scadenzeQuiz() + '</div>' +
@@ -84,7 +85,7 @@ function paginaOrale() {
   });
   return (puo ? '<section class="card row" id="orSim" style="gap:10px;align-items:center"><b style="font-size:17px">Simulazione</b><button class="btn sec" id="orSimula" onclick="simulaOrale(false,this)">Simula un\'interrogazione</button>' +
     '<button class="btn sec" id="orSimulaBes" onclick="simulaOrale(true,this)">Simula con ' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini (misure personalizzate)</button><span class="muted" style="font-size:14px">per provare o mostrare in classe come funziona: niente viene salvato</span></section>' : '') +
-    elencoDelGiorno(righe, puo) + h + '</tbody></table></div></section>';
+    (puo ? bloccoProgramma(righe) : '') + elencoDelGiorno(righe, puo) + h + '</tbody></table></div>' + terminiUsatiOrale(righe) + '</section>';
 }
 /* --- calendario delle interrogazioni --- */
 function oggiIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -93,7 +94,7 @@ function celPiano(r, q, o, puo) {
   var p = q.piano;
   if (!q.superata || o) return p && !o ? '<span class="muted" style="font-size:13px">' + esc(giornoIt(p.data)) + '</span>' : '';
   if (!puo) return p ? esc(giornoIt(p.data)) + (p.ora ? ' · ' + p.ora + 'ª ora' : '') : '<span class="muted">da programmare</span>';
-  return '<div class="row" style="gap:4px;flex-wrap:nowrap"><input type="date" aria-label="Giorno dell\'interrogazione di ' + esc(r.nome) + '" data-pgiorno="' + r.id + '" value="' + (p ? p.data : '') + '" onchange="salvaPiano(\'' + r.id + '\')" style="min-height:38px;max-width:150px">' +
+  return '<div class="row" style="gap:4px;flex-wrap:nowrap">' + (p ? '<button class="btn sec tb" title="Copia il messaggio per ' + esc(r.nome) + '" onclick="copiaTesto(messaggioOrale(\'' + r.id + '\'), this)">Messaggio</button>' : '') + '<input type="date" aria-label="Giorno dell\'interrogazione di ' + esc(r.nome) + '" data-pgiorno="' + r.id + '" value="' + (p ? p.data : '') + '" onchange="salvaPiano(\'' + r.id + '\')" style="min-height:38px;max-width:150px">' +
     '<select aria-label="Ora di lezione" data-pora="' + r.id + '" onchange="salvaPiano(\'' + r.id + '\')" style="min-height:38px;max-width:86px"><option value="">ora</option>' +
     [1, 2, 3, 4, 5, 6, 7, 8].map(function (h) { return '<option value="' + h + '"' + (p && p.ora === h ? ' selected' : '') + '>' + h + 'ª</option>'; }).join('') + '</select></div>';
 }
@@ -101,7 +102,8 @@ function salvaPiano(id) {
   var g = document.querySelector('[data-pgiorno="' + id + '"]'), o = document.querySelector('[data-pora="' + id + '"]');
   api('pianoorale', { alunno: id, data: g ? g.value : '', ora: o ? o.value : '' }).then(function (x) {
     var q = quizDi(id); q.piano = x.piano;
-    toast(x.piano ? nomeAlunno(id) + ': ' + giornoIt(x.piano.data) + (x.piano.ora ? ', ' + x.piano.ora + 'ª ora' : '') : nomeAlunno(id) + ': da programmare');
+    toast(x.piano ? nomeAlunno(id) + ': ' + giornoIt(x.piano.data) + (x.piano.ora ? ', ' + x.piano.ora + 'ª ora' : '') + ' · lo vedrà nell\'app' : nomeAlunno(id) + ': da programmare');
+    var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); return;
     var b = $('orGiorno'); if (b) b.outerHTML = elencoDelGiorno((S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }), PUO('voti') && !RO());
   }).catch(function (e) { toast(errMsg(e), true); });
 }
@@ -136,7 +138,25 @@ function schermoPieno(on) {
   try { if (on && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {}); else if (!on && document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* va bene anche senza */ }
   var y = window.scrollY; vistaDocente(); window.scrollTo(0, y);
 }
+/* evidenza: termini già usati nelle interrogazioni concluse delle classi mostrate */
+function terminiUsatiOrale(righe) {
+  var m = {}, n = 0;
+  righe.forEach(function (r) { var o = votiDi(r.id).orale; ((o && o.termini) || []).forEach(function (t) { var k = t.a + '-' + t.k; if (!m[k]) { m[k] = { a: t.a, it: t.it, chi: [] }; n++; } m[k].chi.push(r.nome); }); });
+  if (!n) return '<p class="muted" id="orUsati" style="margin:0;font-size:14px">Nessun termine ancora usato nelle interrogazioni.</p>';
+  var L = Object.keys(m).map(function (k) { return m[k]; }).sort(function (x, y) { return x.a - y.a || String(x.it).localeCompare(String(y.it)); });
+  return '<details id="orUsati" class="card" style="padding:14px 18px"><summary style="font-weight:800;cursor:pointer">Termini già usati nelle interrogazioni (' + n + ')</summary>' +
+    '<div style="overflow-x:auto;margin-top:10px"><table class="tbl"><thead><tr><th>Area</th><th>Termine</th><th style="text-align:right">Volte</th><th>Interrogati</th></tr></thead><tbody>' +
+    L.map(function (x) { var a = area(x.a) || {}; return '<tr><td><i class="dot" style="background:' + esc(a.colore || '#15212B') + '"></i>' + esc(a.it || x.a) + '</td><td><b>' + esc(x.it || '') + '</b></td><td class="n">' + x.chi.length + '</td><td>' + esc(x.chi.join(', ')) + '</td></tr>'; }).join('') +
+    '</tbody></table></div></details>';
+}
+/* due modi: pescare dal glossario o scegliere i termini (riprende quella in corso, se c'è) */
 function apriOrale(id, btn) {
+  if (votiDi(id).oraleInCorso) return pescaOrale(id, btn);
+  finestra('Interrogazione di ' + nomeAlunno(id), '<p style="margin:0">Come vuoi scegliere i termini? In entrambi i casi non escono i termini del suo scritto, e vedi quali sono già stati usati.</p>', [
+    { t: 'Scegli tu i termini', s: 'dall\'elenco del glossario, area per area', f: function () { apriSceltaOrale(id, null); } },
+    { t: 'Pesca dal glossario', s: RG().orale.domande + ' termini bilanciati sulle aree, di preferenza i meno usciti nella classe; poi puoi cambiarli', f: function () { pescaOrale(id, null); } }]);
+}
+function pescaOrale(id, btn) {
   if (btn) btn.disabled = true;
   api('oralepesca', { alunno: id }).then(function (d) {
     S.or = { alunno: id, bozza: d.bozza, esiti: d.bozza.termini.map(function () { return null; }), nota: '' };
@@ -162,14 +182,17 @@ function schedaOrale() {
     '<div class="or-info" id="orInfo"><div><span class="kl">Voto dello scritto</span><b>' + (r.escluso ? 'Escluso' : fv(vs.voto)) + '</b><small>' + (r.escluso ? 'non entra nel finale' : (vs.errIt || 0) + (vs.errIt === 1 ? ' errore' : ' errori') + (vs.manuale != null ? ' · voto manuale' : '')) + '</small></div>' +
     '<div><span class="kl">Tempo nel quiz</span><b>' + (q.sessioni ? tempoMs(q.ms) : '—') + '</b><small>' + (q.sessioni ? q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') + (q.superata ? ' · ' + tempoMs(q.msFine) + ' per superarlo' : '') : 'nessuna sessione') + '</small></div>' +
     '<div><span class="kl">Risposte nel quiz</span><b>' + q.corrette + ' / ' + q.risposte + '</b><small>' + (q.risposte ? Math.round(q.corrette / q.risposte * 100) + '% corrette · ' + (q.errori || 0) + ' errori' : 'nessuna risposta') + '</small></div>' +
+    (function () { var x = ((S.d.admin || {}).attivita || {})[o.alunno] || {}; return '<div><span class="kl">Ripasso sulla pagina pubblica</span><b>' + (x.minutiPubblica ? durata(x.minutiPubblica) : '—') + '</b><small>' + (x.minutiPubblica ? (x.sessioniPubblica || 0) + (x.sessioniPubblica === 1 ? ' sessione' : ' sessioni') + (x.ripassoPrep != null ? ' · ' + durata(x.ripassoPrep) + ' da quando è programmata' : '') + (x.ultimoPubblica ? ' · ultimo ' + esc(dataBreve(x.ultimoPubblica)) : '') : 'nessun ripasso registrato') + '</small></div>' +
+      '<div><span class="kl">Tempo totale in app</span><b>' + (x.minuti ? durata(x.minuti) : '—') + '</b><small>' + (x.minutiAlGiorno != null && x.minuti ? durata(x.minutiAlGiorno) + ' al giorno su ' + x.giorniAttivita + ' giorni · ' : '') + (x.giorni ? x.giorni + (x.giorni === 1 ? ' giorno attivo' : ' giorni attivi') : 'nessun accesso') + '</small></div>'; })() +
     '<div><span class="kl">Termini indovinati</span><b>' + q.indovinati + ' / ' + q.soglia + '</b><small>' + (q.superata ? 'quiz superato il ' + esc(dataBreve(q.superata)) : 'quiz non superato') + '</small></div></div>' +
     (r.escluso ? '<div class="note warn"><b>Alunno escluso dallo scritto:</b> all\'orale può arrivare al massimo a ' + fv(RG().orale.maxEsclusi) + ' (' + fv(RG().orale.base) + ' + ' + frz(RG().orale.passoEsclusi) + ' per punto).</div>' : '')) +
-    '</section><div class="or-punti" id="orPunti" aria-live="polite"><div><span class="kl">Risposte segnate</span><b>' + fatti + ' / ' + o.esiti.length + '</b></div><div><span class="kl">Punti</span><b>' + fv(punti) + ' / ' + o.esiti.length + '</b>' + (o.esiti.length !== RG().orale.domande ? '<small>studente BES: ' + o.esiti.length + ' termini, ogni punto vale doppio</small>' : '') + '</div>' +
+    '</section><div class="or-punti" id="orPunti" aria-live="polite"><div><span class="kl">Risposte segnate</span><b>' + fatti + ' / ' + o.esiti.length + '</b></div><div><span class="kl">Punti</span><b>' + fv(punti) + ' / ' + o.esiti.length + '</b>' + (o.esiti.length !== RG().orale.domande ? '<small>' + (o.bozza.scelti ? o.esiti.length + ' termini scelti da te' : 'studente BES: ' + o.esiti.length + ' termini') + ', ogni punto vale ' + (RG().orale.domande / o.esiti.length === 2 ? 'doppio' : 'come ' + fv(Math.round(RG().orale.domande / o.esiti.length * 100) / 100) + ' punti') + '</small>' : '') + '</div>' +
     '<div><span class="kl">Voto orale</span><b>' + (tutti ? fv(votoOraleDa(punti, r.escluso, o.esiti.length)) : '—') + '</b></div></div>';
   o.bozza.termini.forEach(function (t, i) {
     var a = area(t.area) || {}, e = o.esiti[i];
     h += '<section class="card or-voce" data-pos="' + i + '" style="border-left:8px solid ' + esc(a.colore || '#15212B') + '"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="muted" style="font-size:13px">' + (i + 1) + ' di ' + o.bozza.termini.length + ' · ' + esc(a.it || '') + '</div>' +
-      '<div class="or-term">' + esc(t.it) + '</div></div><button class="btn sec tb" onclick="cambiaOrale(' + i + ',this)">Cambia termine</button></div>' +
+      '<div class="or-term">' + esc(t.it) + '</div>' + (o.prova ? '' : '<div class="or-usato">' + ((t.usati || []).length ? 'Già usato con ' + esc(t.usati.join(', ')) : 'Mai usato in questa classe') + '</div>') + '</div>' +
+      '<div class="row" style="gap:6px"><button class="btn sec tb" onclick="cambiaOrale(' + i + ',this)">Pesca un altro</button>' + (o.prova ? '' : '<button class="btn sec tb" onclick="apriSceltaOrale(S.or.alunno,' + i + ')">Scegli tu</button>') + '</div></div>' +
       '<p class="or-def"><span class="muted" style="font-size:13px;display:block">Definizione corretta (la vedi solo tu)</span>' + esc(t.def) + '</p>' +
       '<div class="row or-esiti" role="group" aria-label="Esito della risposta ' + (i + 1) + '">' + [[1, 'Corretta', 'ok'], [0.5, 'Parziale', 'mz'], [0, 'Sbagliata', 'no']].map(function (x) {
         return '<button class="or-b ' + x[2] + (e === x[0] ? ' on' : '') + '" aria-pressed="' + (e === x[0]) + '" onclick="esitoOrale(' + i + ',' + x[0] + ')">' + x[1] + ' <small>' + fv(x[0]) + '</small></button>'; }).join('') + '</div></section>';
@@ -394,4 +417,115 @@ function copiaTesto(t, btn) {
   var area = function () { finestra('Copia il testo', '<textarea style="width:100%;min-height:140px;font:inherit">' + esc(t) + '</textarea>', []); };
   var fatto = function () { if (btn) { var o = btn.textContent; btn.textContent = 'Copiato'; setTimeout(function () { btn.textContent = o; }, 1500); } toast('Testo copiato'); };
   try { navigator.clipboard.writeText(t).then(fatto, area); } catch (e) { area(); }
+}
+
+/* ---------- scelta dei termini dell'interrogazione ----------
+ * tutti i termini del glossario, area per area: quelli del suo scritto non si possono scegliere;
+ * accanto a ogni termine, chi l'ha già avuto all'interrogazione. pos = null: tutti i termini; pos = n: solo quello */
+function apriSceltaOrale(id, pos) {
+  api('oralecatalogo', { alunno: id }).then(function (d) {
+    var sel = pos != null && S.or && S.or.bozza ? [] : [];
+    S.orSc = { alunno: id, dati: d, pos: pos, sel: sel, nasc: false };
+    vistaDocente(); window.scrollTo(0, 0);
+  }).catch(function (e) { toast(errMsg(e), true); });
+}
+function schedaScelta() {
+  var c = S.orSc, d = c.dati, uno = c.pos != null, nome = nomeAlunno(c.alunno);
+  var inUso = {}; if (uno && S.or && S.or.bozza) S.or.bozza.termini.forEach(function (t, i) { if (i !== c.pos) inUso[t.area + '-' + t.k] = 1; });
+  var h = '<section class="card stack" id="orScelta"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2 style="margin:0;font-size:22px">' +
+    (uno ? 'Scegli il termine ' + (c.pos + 1) + ' per ' + esc(nome) : 'Scegli i termini per ' + esc(nome)) + '</h2>' +
+    '<p class="muted" style="margin:4px 0 0;font-size:15px">I termini del suo scritto non si possono scegliere. Accanto a ogni termine vedi chi l\'ha già avuto all\'interrogazione.' + (uno ? '' : ' Consigliati: <b>' + d.domande + '</b>.') + '</p></div>' +
+    '<button class="btn sec tb" onclick="S.orSc=null;vistaDocente()">Annulla</button></div>' +
+    '<div class="row" style="gap:10px"><input id="orScQ" type="search" placeholder="Cerca un termine" oninput="filtraScelta()" style="flex:1;min-width:200px">' +
+    '<label class="row" style="gap:6px;font-weight:700"><input type="checkbox" id="orScN" onchange="S.orSc.nasc=this.checked;filtraScelta()" style="width:20px;height:20px"> Nascondi i già usati</label></div>' +
+    (uno ? '' : '<div class="row" style="justify-content:space-between;position:sticky;top:0;background:var(--card,#fff);padding:8px 0;z-index:2"><b id="orScN2">Scelti: 0 / ' + d.domande + '</b><button class="btn ok" id="orScVia" disabled onclick="iniziaScelta(this)">Inizia l\'interrogazione</button></div>') + '</section>';
+  d.aree.forEach(function (g) {
+    var a = area(g.area) || {};
+    h += '<section class="card stack or-sc-area" style="border-left:8px solid ' + esc(a.colore || '#15212B') + '"><h3 style="margin:0;font-size:18px">' + esc(a.it || ('Area ' + g.area)) + '</h3><div class="or-sc-lista">' +
+      g.termini.map(function (t) {
+        var k = g.area + '-' + t.k, blocc = t.suo || inUso[k], us = (t.usati || []).length;
+        return '<label class="or-sc' + (blocc ? ' no' : '') + '" data-k="' + k + '" data-it="' + esc(String(t.it).toLowerCase()) + '" data-us="' + (us ? 1 : 0) + '">' +
+          '<input type="' + (uno ? 'radio' : 'checkbox') + '" name="orSc" value="' + k + '"' + (blocc ? ' disabled' : '') + ' onchange="sceltaCambia(this)">' +
+          '<span><b>' + esc(t.it) + '</b>' + (t.suo ? '<small class="or-sc-suo">termine del suo scritto</small>' : inUso[k] ? '<small>già in questa interrogazione</small>' : us ? '<small class="or-sc-us">già usato con ' + esc(t.usati.join(', ')) + '</small>' : '<small>mai usato</small>') + '</span></label>';
+      }).join('') + '</div></section>';
+  });
+  if (uno) h += '<section class="card row"><button class="btn ok" id="orScVia" disabled onclick="usaScelta(this)">Usa questo termine</button><button class="btn sec" onclick="S.orSc=null;vistaDocente()">Annulla</button></section>';
+  return h;
+}
+function filtraScelta() {
+  var q = ($('orScQ').value || '').trim().toLowerCase(), nasc = S.orSc.nasc;
+  document.querySelectorAll('.or-sc').forEach(function (el) {
+    var vede = (!q || el.getAttribute('data-it').indexOf(q) >= 0) && !(nasc && el.getAttribute('data-us') === '1' && !el.querySelector('input').checked);
+    el.hidden = !vede;
+  });
+}
+function sceltaCambia(inp) {
+  var c = S.orSc, p = inp.value.split('-'), t = { a: Number(p[0]), k: Number(p[1]) };
+  if (c.pos != null) c.sel = [t];
+  else if (inp.checked) c.sel.push(t);
+  else c.sel = c.sel.filter(function (x) { return !(x.a === t.a && x.k === t.k); });
+  var b = $('orScVia'); if (b) b.disabled = !c.sel.length;
+  var n = $('orScN2'); if (n) n.textContent = 'Scelti: ' + c.sel.length + ' / ' + c.dati.domande;
+}
+function iniziaScelta(btn) {
+  btn.disabled = true;
+  var id = S.orSc.alunno;
+  api('oraleimposta', { alunno: id, termini: S.orSc.sel }).then(function (d) {
+    S.orSc = null; S.or = { alunno: id, bozza: d.bozza, esiti: d.bozza.termini.map(function () { return null; }), nota: '' };
+    vistaDocente(); window.scrollTo(0, 0);
+  }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function usaScelta(btn) {
+  btn.disabled = true;
+  var pos = S.orSc.pos;
+  api('oralesceglieuno', { alunno: S.orSc.alunno, pos: pos, termine: S.orSc.sel[0] }).then(function (d) {
+    S.orSc = null; S.or.bozza = d.bozza; S.or.esiti[pos] = null; vistaDocente(); toast('Termine cambiato');
+    setTimeout(function () { var el = document.querySelector('.or-voce[data-pos="' + pos + '"]'); if (el) el.scrollIntoView({ block: 'center' }); }, 50);
+  }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+
+/* ---------- programmazione delle interrogazioni ----------
+ * ammessi (quiz superato) non ancora interrogati e senza data: si spuntano, si sceglie giorno e ora, e la data
+ * compare nell'app dello studente con l'invito a prepararsi sulla pagina pubblica. Messaggi pronti da copiare. */
+function messaggioOrale(id) {
+  var p = quizDi(id).piano; if (!p) return '';
+  var nome = String(nomeAlunno(id)).split(' ').slice(-1)[0];
+  return 'Ciao ' + nome + ', hai superato il quiz del glossario: la tua interrogazione è fissata per ' + giornoOrale(p) + '.\n' +
+    'Preparati ripassando termini e definizioni sulla pagina pubblica: ' + urlPubblico() + '\n' +
+    'Trovi la data anche nell\'app del glossario.';
+}
+function bloccoProgramma(righe) {
+  var da = righe.filter(function (r) { var q = quizDi(r.id); return q.superata && !votiDi(r.id).orale && !q.piano; });
+  var fiss = righe.filter(function (r) { var q = quizDi(r.id); return q.superata && !votiDi(r.id).orale && q.piano; });
+  var h = '<section class="card stack" id="orProg"><h3 style="margin:0;font-size:19px">Programma le interrogazioni</h3>' +
+    '<p class="muted" style="margin:0;font-size:14px">Chi ha superato il quiz ha diritto all\'interrogazione. Fissa la data: lo studente la vede nella sua app, con l\'invito a prepararsi sulla pagina pubblica del glossario. Puoi anche copiare il messaggio e mandarlo tu.</p>';
+  if (da.length) h += '<div class="stack" style="gap:6px"><b style="font-size:15px">Da programmare (' + da.length + ')</b><div class="row" style="gap:6px 14px">' +
+    da.map(function (r) { return '<label class="row" style="gap:6px;font-weight:600"><input type="checkbox" class="orPrSel" value="' + r.id + '" style="width:20px;height:20px"> ' + esc(r.nome) + ' <span class="muted" style="font-weight:400">' + esc(etich(r)) + '</span></label>'; }).join('') + '</div>' +
+    '<div class="row" style="gap:8px;align-items:center"><input type="date" id="orPrData" aria-label="Giorno dell\'interrogazione" value="' + oggiIso() + '" style="min-height:42px;width:auto">' +
+    '<select id="orPrOra" aria-label="Ora di lezione" style="min-height:42px;width:auto;max-width:200px"><option value="">ora (facoltativa)</option>' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (x) { return '<option value="' + x + '">' + x + 'ª ora</option>'; }).join('') + '</select>' +
+    '<button class="btn" id="orPrVai" onclick="fissaInterrogazioni(this)">Fissa la data per i selezionati</button></div></div>';
+  else h += '<p style="margin:0;font-size:15px">' + (fiss.length ? 'Tutti gli ammessi hanno una data.' : 'Nessuno studente da programmare: compariranno qui quando superano il quiz.') + '</p>';
+  if (fiss.length) h += '<div class="stack" style="gap:6px"><div class="row" style="justify-content:space-between;align-items:center"><b style="font-size:15px">Già programmati (' + fiss.length + ')</b>' +
+    '<button class="btn sec tb" id="orPrCopia" onclick="copiaTesto(messaggiProgrammati(), this)">Copia tutti i messaggi</button></div>' +
+    '<ul style="margin:0;padding-left:20px">' + fiss.sort(function (a, b) { var p = quizDi(a.id).piano, q = quizDi(b.id).piano; return (p.data + (p.ora || 9)).localeCompare(q.data + (q.ora || 9)); }).map(function (r) {
+      return '<li><b>' + esc(r.nome) + '</b> · ' + esc(giornoOrale(quizDi(r.id).piano)) + ' <button class="btn sec tb" onclick="copiaTesto(messaggioOrale(\'' + r.id + '\'), this)">Messaggio</button></li>'; }).join('') + '</ul></div>';
+  return h + '</section>';
+}
+function messaggiProgrammati() {
+  return (S.d.panoramica || []).filter(function (r) { var q = quizDi(r.id); return inClasse(r.id) && q.superata && !votiDi(r.id).orale && q.piano; })
+    .map(function (r) { return nomeAlunno(r.id) + ' — ' + messaggioOrale(r.id); }).join('\n\n');
+}
+function fissaInterrogazioni(btn) {
+  var ids = [].slice.call(document.querySelectorAll('.orPrSel:checked')).map(function (x) { return x.value; });
+  var data = $('orPrData').value, ora = $('orPrOra').value;
+  if (!ids.length) { toast('Spunta almeno uno studente', true); return; }
+  if (!data) { toast('Scegli il giorno', true); return; }
+  btn.disabled = true;
+  var fatti = 0;
+  (function prossimo() {
+    if (fatti >= ids.length) { toast(ids.length + (ids.length === 1 ? ' interrogazione fissata' : ' interrogazioni fissate') + ' per ' + giornoOrale({ data: data, ora: ora ? Number(ora) : null }) + ': gli studenti la vedono nell\'app'); var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); return; }
+    var id = ids[fatti];
+    api('pianoorale', { alunno: id, data: data, ora: ora }).then(function (x) { quizDi(id).piano = x.piano; fatti++; prossimo(); })
+      .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); });
+  })();
 }

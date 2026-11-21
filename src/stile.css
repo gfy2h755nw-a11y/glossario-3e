@@ -187,7 +187,7 @@ button.kcard{cursor:pointer}button.kcard:hover{border-color:#9CC3EE}
 .or-b.on small{color:#fff}
 .or-b:focus-visible{outline:3px solid #9CC3EE;outline-offset:2px}
 
-.or-info{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.or-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .or-info div{background:#F6F8FA;border-radius:12px;padding:10px 12px}
 .or-info b{display:block;font:900 22px 'Archivo',system-ui,sans-serif}
 .or-info small{color:var(--muted);font-size:13px}

@@ -35,7 +35,7 @@ function righeAlunni(stato, attivita, now) {
   const imp = logica.impostazioni(stato.config);
   return stato.alunni.map((a) => {
     const v = logica.valuta(stato, a, now);
-    const r = ATT.riepilogo(attivita[a.id], now);
+    const r = Object.assign(ATT.riepilogo(attivita[a.id], now), logica.studioDi(Object.assign({}, stato, { attivita }), a, now));
     const miei = stato.termini.filter((t) => t.alunno_id === a.id);
     const conta = (l, cond) => miei.filter((t) => cond(t, l)).length;
     const lingua = (l) => ({ risposte: conta(l, (t) => campo(t, l, 'tent') > 0), approvate: conta(l, (t) => campo(t, l, 'stato') === 'approvata'),
@@ -337,7 +337,7 @@ function creaReport(stato, attivita, now) {
     doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Attività nell\'app', 36, yy); yy = doc.y + 4;
     const disp = Object.keys(x.r.dispositivi).map((k) => k + ' ' + x.r.dispositivi[k]).join(', ') || '-';
     const att = [['Primo accesso', x.r.primo ? quando(x.r.primo) : 'mai'], ['Ultimo accesso', x.r.ultimo ? quando(x.r.ultimo) : 'mai'], ['Accessi', String(x.r.accessi)],
-      ['Giorni attivi', String(x.r.giorni)], ['Tempo con l\'app aperta', x.r.ultimo ? durata(x.r.minuti) : '-'], ['Dispositivi', disp]];
+      ['Giorni attivi', String(x.r.giorni)], ['Tempo con l\'app aperta', x.r.ultimo ? durata(x.r.minuti) + (x.r.minutiPubblica ? ' (ripasso ' + durata(x.r.minutiPubblica) + ')' : '') : '-'], ['Dispositivi', disp]];
     const w6 = Wp / 3;
     att.forEach((b, i) => {
       const cx = 36 + (i % 3) * w6, cy = yy + Math.floor(i / 3) * 30;
@@ -357,6 +357,9 @@ function creaReport(stato, attivita, now) {
       const sr = Wp / cr.reduce((s, c) => s + c.w, 0); cr.forEach((c) => { c.w *= sr; });
       yy = tabella(doc, 36, yy, cr, [
         [{ t: 'Tempo in app', b: true }, { t: durata(x.r.ultimo ? x.r.minuti : null), b: true }, x.r.accessi + ' accessi · ' + x.r.giorni + ' giorni attivi', x.r.ultimo ? 'primo accesso ' + quando(x.r.primo) + ' · ultimo ' + quando(x.r.ultimo) : 'nessun accesso'],
+      ].concat(x.r.ultimo && x.r.minutiAlGiorno != null ? [[{ t: 'Tempo al giorno', b: true }, { t: durata(x.r.minutiAlGiorno), b: true }, 'tempo totale in app (pagina pubblica compresa) diviso ' + x.r.giorniAttivita + (x.r.giorniAttivita === 1 ? ' giorno' : ' giorni'), 'dall\'inizio dello scritto ' + (x.a.orale ? 'al giorno dell\'interrogazione' : 'a oggi')]] : [],
+        x.r.ripassoPrep != null ? [[{ t: 'Ripasso per l\'interrogazione', b: true }, { t: durata(x.r.ripassoPrep), b: true }, 'sulla pagina pubblica · ' + durata(x.r.ripassoPrepAlGiorno) + ' al giorno su ' + x.r.giorniPrep + (x.r.giorniPrep === 1 ? ' giorno' : ' giorni'), 'dalla programmazione ' + (x.a.orale ? 'al giorno dell\'interrogazione' : 'a oggi')]] : [],
+        x.r.minutiPubblica ? [[{ t: 'Ripasso pagina pubblica', b: true }, { t: durata(x.r.minutiPubblica), b: true }, x.r.sessioniPubblica + ' sessioni · già compreso nel tempo in app', x.r.ultimoPubblica ? 'ultimo ripasso ' + quando(x.r.ultimoPubblica) : '']] : [], [
         [{ t: 'Tempo sul quiz', b: true }, { t: q.sessioni ? tqm(q.ms) : '-', b: true }, q.sessioni + ' sessioni · ' + q.corrette + ' corrette e ' + q.errori + ' errori su ' + q.risposte + ' risposte · ' + q.persi + ' termini persi · ' + q.indovinati + ' / ' + q.soglia + ' indovinati (massimo ' + q.massimo + ')',
           (q.sessioni ? 'prima sessione ' + quando(q.prima) + ' · ultima ' + quando(q.ultima) : 'nessuna sessione') + (q.scadenza ? ' · scadenza ' + quando(q.scadenza) + (q.proroga ? ' (proroga individuale)' : '') : '')],
         [{ t: 'Ammissione all\'orale', b: true }, q.stato === 'superato' ? { t: 'ammesso', c: VERDE, b: true } : { t: q.stato === 'scaduto' ? 'non ammesso' : '-', c: q.stato === 'scaduto' ? ARANCIO : SCURO, b: true },
@@ -366,7 +369,7 @@ function creaReport(stato, attivita, now) {
           risp.length ? 'prima risposta ' + risp[0] + ' · ultima ' + risp[risp.length - 1] : 'nessuna risposta'],
         [{ t: 'Voto orale', b: true }, { t: o ? fv(o.voto) : '-', b: true }, o ? fv(o.punti) + ' punti su ' + ((o.termini && o.termini.length) || REG.di(stato.config).orale.domande) + (o.termini && o.termini.length && o.termini.length !== REG.di(stato.config).orale.domande ? ' (BES)' : '') + (o.manuale ? ' · voto del docente (calcolato ' + fv(o.votoCalcolato) + ')' : '') + (o.escluso ? ' · massimo ' + fv(REG.di(stato.config).orale.maxEsclusi) : '') + (o.docente ? ' · ' + o.docente : '') : 'non ancora interrogato', o ? 'interrogazione del ' + quando(o.data) : '-'],
         [{ t: 'Voto finale', b: true }, { t: fv(x.v.finale), b: true }, x.v.finale == null ? (q.stato === 'scaduto' ? 'senza voto: quiz non completato' : 'manca l\'orale') : x.v.escluso ? 'solo orale (escluso dallo scritto)' : (function () { const ps = REG.di(stato.config).finale.pesoScritto; return (ps === 50 ? 'media tra scritto ' : 'media pesata (' + ps + ' % scritto) tra scritto ') + fv(x.v.voto) + ' e orale ' + fv(o.voto) + ' = ' + fv(Math.round((x.v.voto * ps + o.voto * (100 - ps)) / 100 * 1000) / 1000); })(), x.v.finale != null ? 'definito il ' + quando(o.data) : '-']
-      ], { fs: 8 }) + 12;
+      ]), { fs: 8 }) + 12;
       if (yy > doc.page.height - 140) { doc.addPage({ layout: 'portrait', margin: 36 }); yy = 40; }
       // quiz nel dettaglio: indicatori e sessioni (le più recenti)
       const ses = (x.a.quiz && x.a.quiz.sessioni) || [];

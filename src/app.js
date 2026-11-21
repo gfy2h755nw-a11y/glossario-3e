@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 9';
+var VERSIONE = '21/11/2026 · 10';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -250,11 +250,15 @@ function avvisoMancanti(aree) {
     'Sul cartellone questi termini escono con la sola scritta «Definizione a cura di…». ' + m.per.filter(function (x) { return x.manca; }).map(function (x) { return 'Area ' + x.n + ': ' + x.manca; }).join(' · ') + '.</div>';
 }
 /* app dell'alunno: a che punto è con il quiz (compare solo quando il docente lo ha aperto) */
+/* giorno e ora dell'interrogazione, per esteso: «giovedì 26 novembre, 2ª ora» */
+function giornoOrale(p) { var x = p.data.split('-'), g = new Date(+x[0], +x[1] - 1, +x[2]).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }); return g + (p.ora ? ', ' + p.ora + 'ª ora' : ''); }
 function notaQuizAlunno(q) {
   if (q && q.stato === 'chiuso' && q.partenza && q.scadenza) return '<div class="note" id="notaQuiz"><b>Seconda parte della prova: il quiz.</b> Si apre il <b>' + esc(oraIt(q.partenza)) + '</b> e si chiude il ' + esc(oraIt(q.scadenza)) + '. Dovrai indovinare ' + q.soglia + ' termini per essere ammesso all\'interrogazione.</div>';
   if (!q || q.stato === 'chiuso') return '';
   var link = '<a href="/quiz" target="_blank" rel="noopener">Apri il quiz</a>';
-  if (q.stato === 'superato') return '<div class="note ok" id="notaQuiz"><b>Quiz superato:</b> sei ammesso all\'interrogazione orale.</div>';
+  if (q.stato === 'superato') return q.piano ? '<div class="note ok" id="notaQuiz"><b>La tua interrogazione è fissata per ' + esc(giornoOrale(q.piano)) + '.</b> Hai superato il quiz e sei ammesso all\'interrogazione orale, la verifica finale. ' +
+      'Preparati ripassando i termini e le definizioni del glossario sulla pagina pubblica: <a href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico());return false"><b>apri la pagina pubblica del glossario</b></a> (puoi anche usare «Mettiti alla prova»).</div>'
+    : '<div class="note ok" id="notaQuiz"><b>Quiz superato:</b> sei ammesso all\'interrogazione orale. Il docente fisserà la data: la troverai qui.</div>';
   if (q.stato === 'scaduto') return '<div class="note warn" id="notaQuiz"><b>Quiz non completato entro la scadenza</b> (' + q.indovinati + ' termini su ' + q.soglia + '): non sei ammesso all\'interrogazione.</div>';
   return '<div class="note" id="notaQuiz"><b>Seconda parte della prova: il quiz.</b> Devi indovinare ' + q.soglia + ' termini entro ' + esc(oraIt(q.scadenza)) + ' per essere ammesso all\'interrogazione. Sei a <b>' + q.indovinati + ' su ' + q.soglia + '</b>. ' + link + '</div>';
 }
@@ -292,6 +296,30 @@ window.addEventListener('resize', function () { if (S.poster && $('pbox')) diseg
 Poster.conc = function () { return S.d && S.d.config && S.d.config.concessione || null; };
 function rigaConcessione() { var c = Poster.conc(); return c ? '<p class="conc">Per gentile concessione del Prof. Danilo Cerrato</p>' : ''; }
 function docenteAtt() { var c = Poster.conc(); return c ? c.docente + (c.materia ? ' · ' + c.materia : '') : 'Prof. Danilo Cerrato · Laboratorio odontotecnico'; }
+function nomeProprio(n) { var p = String(n || '').trim().split(/\s+/); return p.length > 1 ? p[p.length - 1] : p[0] || ''; }
+function schermataAmmesso(h, qv) {
+  var v = S.d.voto, nome = esc(nomeProprio(S.d.utente.nome)), card;
+  var tit = function (col, t) { return '<div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px;color:' + col + '">' + t + '</div>'; };
+  var big = function (t) { return '<div style="font:900 34px/1.05 Archivo,system-ui,sans-serif;color:#15212B">' + t + '</div>'; };
+  var par = function (t) { return '<p style="margin:0;font-size:17px;line-height:1.5">' + t + '</p>'; };
+  if (v.orale) {
+    card = '<section class="card stack" id="schermataAmmesso" data-tappa="svolta" style="border-top:8px solid #15212B;gap:14px">' + tit('#15212B', 'Interrogazione svolta') + big('Grazie, ' + nome + '!') +
+      par('Hai concluso il percorso del glossario.') + par('Il voto lo trovi sul <b>registro Argo</b>.') + '</section>';
+  } else if (qv.piano) {
+    var g = giornoOrale({ data: qv.piano.data }), gg = g.charAt(0).toUpperCase() + g.slice(1), sp = gg.indexOf(' ');
+    card = '<section class="card stack" id="schermataAmmesso" data-tappa="data" style="border-top:8px solid #B4511A;gap:14px">' + tit('#B4511A', 'La tua interrogazione') +
+      '<div>' + big(esc(gg.slice(0, sp)) + '<br>' + esc(gg.slice(sp + 1))) + (qv.piano.ora ? '<div style="font:700 20px/1.3 Archivo,system-ui,sans-serif;color:#B4511A;margin-top:6px">' + qv.piano.ora + 'ª ora</div>' : '') + '</div>' +
+      par('Ciao <b>' + nome + '</b>, hai superato il quiz! Ora preparati all\'interrogazione, la verifica finale.') +
+      par('Esercitati sulla <b>pagina pubblica del glossario</b>: ripassa termini e definizioni e mettiti alla prova con i quiz.') +
+      '<a class="btn" id="esercitati" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico());return false" style="justify-content:center;min-height:56px;font-size:19px;text-decoration:none">Esercitati ora →</a>' +
+      '<p class="muted" style="margin:0;font-size:14px">In bocca al lupo!</p></section>';
+  } else {
+    card = '<section class="card stack" id="schermataAmmesso" data-tappa="superato" style="border-top:8px solid #2E7D32;gap:14px">' + tit('#2E7D32', 'Quiz superato') + big('Complimenti,<br>' + nome + '!') +
+      par('Hai superato il quiz: ora ti aspetta l\'interrogazione, la verifica finale.') +
+      par('Il docente a breve fisserà la data dell\'interrogazione: la troverai qui, appena entri nell\'app.') + '</section>';
+  }
+  $('app').innerHTML = h + card + rigaConcessione() + '</main>';
+}
 function vistaAlunno() {
   var u = S.d.utente, a = area(u.gruppo);
   var miei = S.d.termini.filter(function (t) { return t.alunno === u.id; });
@@ -300,6 +328,9 @@ function vistaAlunno() {
   if (!a) a = { n: '', it: 'Termini di tutte ' + (S.d.aree.length > 1 ? 'e ' + (['', '', 'due', 'tre', 'quattro', 'cinque', 'sei'][S.d.aree.length] || S.d.aree.length) + ' ' : '') + 'le aree', en: '', colore: '#15212B', tutte: true };
   var n = function (l) { return miei.filter(function (t) { return T(t, l, 'stato') === 'approvata'; }).length; };
   var h = testata(u.nome + ' · ' + (a.tutte ? 'Classe ' + u.classe : 'Classe ' + (u.classe || '3E') + ' · Gruppo ' + u.gruppo)) + '<main class="wrap stack">';
+  // quiz superato: da qui lo studente vede solo la sua tappa (complimenti → data dell'interrogazione → esito), mai più i dati precedenti
+  var qv = S.d.voto && S.d.voto.quiz;
+  if (qv && qv.stato === 'superato') return schermataAmmesso(h, qv);
   h += '<section class="card" style="border-top:8px solid ' + a.colore + '"><div class="muted disp" style="font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px">' + (a.tutte ? 'Classe ' + esc(u.classe) : 'Area ' + a.n) + '</div>' +
     '<h1 style="margin:2px 0 0;font-size:30px;line-height:1.1">' + esc(a.it) + '</h1>' + (EN() ? '<div class="term-en" style="color:' + a.colore + '">' + esc(a.en) + '</div>' : '') +
     '<p style="margin:12px 0 0">Ciao <b>' + esc(u.nome) + '</b>. Per ognuno dei tuoi <b>' + miei.length + ' termini</b> scegli la definizione giusta tra 8 alternative' + (EN() ? '. Prima in italiano: quando il prof. Cerrato la approva, si sblocca la scelta in inglese, rivista dalla prof.ssa Aliboni.' : ': il prof. Cerrato le controlla e le approva.') + '</p>' +
@@ -775,7 +806,7 @@ function reportPdf() {
     var rr = PAN.filter(function (r) { return (r.classe || '3E') === c; });
     return '<tr class="sez"><td colspan="10"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + c + ' · ' + rr.length + ' alunni · tempo totale in app ' + durata(tempo(rr)) + '</td></tr>' + rr.map(function (r) {
       var v = voti[r.id] || {}, p = primo(termDi(r.id)), x = att[r.id] || {};
-      return '<tr><td>' + esc(r.nome) + (v.ereditati ? ' <span class="tag">erede di ' + esc(donatori(r.id).map(cognome).join(', ') || '—') + '</span>' : '') + (v.escluso ? ' <span class="tag no">escluso</span>' : '') + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c">' + r.inviate + '</td><td class="c">' + (p.n ? p.ok + '/' + p.n : '—') + '</td><td class="c">' + r.errate + '</td><td class="c">' + r.approvate + '/' + r.termini + '</td><td class="c">' + (x.accessi || 0) + '</td><td class="c"><b>' + (x.ultimo ? durata(x.minuti) : '—') + '</b></td>' +
+      return '<tr><td>' + esc(r.nome) + (v.ereditati ? ' <span class="tag">erede di ' + esc(donatori(r.id).map(cognome).join(', ') || '—') + '</span>' : '') + (v.escluso ? ' <span class="tag no">escluso</span>' : '') + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c">' + r.inviate + '</td><td class="c">' + (p.n ? p.ok + '/' + p.n : '—') + '</td><td class="c">' + r.errate + '</td><td class="c">' + r.approvate + '/' + r.termini + '</td><td class="c">' + (x.accessi || 0) + '</td><td class="c"><b>' + (x.ultimo ? durata(x.minuti) : '—') + '</b>' + '</td>' +
         '<td class="vb">' + barraVoto(v.voto, c) + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.manuale != null ? '<span class="m"> man.</span>' : '') + '</td></tr>';
     }).join('');
   }).join('');
@@ -838,7 +869,8 @@ function reportPdf() {
     var prima = rs.length ? Math.min.apply(null, rs) : null, ultima = rs.length ? Math.max.apply(null, rs) : null;
     var riga = function (voce, valore, det, date) { return '<tr><td><b>' + voce + '</b></td><td class="c"><b style="font-size:11pt">' + valore + '</b></td><td>' + det + '</td><td>' + date + '</td></tr>'; };
     return '<table class="tab riep"><thead><tr><th style="width:19%">Riepilogo</th><th class="c" style="width:13%">Valore</th><th style="width:34%">Dettaglio</th><th>Date</th></tr></thead><tbody>' +
-      riga('Tempo in app', x.ultimo ? durata(x.minuti) : '—', (x.accessi || 0) + ' accessi · ' + (x.giorni || 0) + ' giorni attivi', x.ultimo ? 'primo accesso ' + ggmm(x.primo) + '<br>ultimo accesso ' + ggmm(x.ultimo) : '<span class="m">nessun accesso</span>') +
+      riga('Tempo in app', x.ultimo ? durata(x.minuti) : '—', (x.accessi || 0) + ' accessi · ' + (x.giorni || 0) + ' giorni attivi' + (x.ultimo && x.minutiAlGiorno != null ? '<br><b>' + durata(x.minutiAlGiorno) + ' al giorno</b> su ' + x.giorniAttivita + (x.giorniAttivita === 1 ? ' giorno' : ' giorni') + ' (dall\'inizio dello scritto ' + (o ? 'all\'interrogazione' : 'a oggi') + ')' : ''), x.ultimo ? 'primo accesso ' + ggmm(x.primo) + '<br>ultimo accesso ' + ggmm(x.ultimo) : '<span class="m">nessun accesso</span>') +
+      (x.minutiPubblica ? riga('Ripasso sulla pagina pubblica', durata(x.minutiPubblica), (x.sessioniPubblica || 0) + (x.sessioniPubblica === 1 ? ' sessione' : ' sessioni') + ' · già compreso nel tempo in app' + (x.ripassoPrep != null ? '<br><b>per l\'interrogazione: ' + durata(x.ripassoPrep) + '</b> (' + durata(x.ripassoPrepAlGiorno) + ' al giorno su ' + x.giorniPrep + (x.giorniPrep === 1 ? ' giorno' : ' giorni') + ', dalla programmazione ' + (o ? 'all\'interrogazione' : 'a oggi') + ')' : ''), x.ultimoPubblica ? 'ultimo ripasso ' + ggmm(x.ultimoPubblica) : '') : '') +
       riga('Tempo sul quiz', q.sessioni ? tq(q.ms) : '—', q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') + ' · ' + q.corrette + ' corrette e ' + (q.errori || 0) + ' errori su ' + q.risposte + ' risposte · ' + (q.persi || 0) + ' termini persi · ' + q.indovinati + ' / ' + q.soglia + ' indovinati' + (q.massimo > q.indovinati ? ' (massimo ' + q.massimo + ')' : ''),
         (q.sessioni ? 'prima sessione ' + ggmm(q.prima) + '<br>ultima sessione ' + ggmm(q.ultima) : '<span class="m">nessuna sessione</span>') + (q.scadenza ? '<br>scadenza ' + ggmm(q.scadenza) + (q.proroga ? ' (proroga individuale)' : '') : '')) +
       riga('Tempo fino al termine', q.sessioni ? tq(q.msFine) : '—', q.stato === 'superato' ? 'tempo passato sul quiz fino al superamento (il ripasso successivo non conta)' : q.stato === 'scaduto' ? 'tutto il tempo passato sul quiz fino alla scadenza' : q.sessioni ? 'quiz ancora in corso: tempo finora' : '<span class="m">nessuna sessione</span>',
@@ -878,7 +910,7 @@ function reportPdf() {
       (v.manuale != null ? '<div class="box">Voto inserito dal docente; voto calcolato dall\'app: ' + fv(v.calcolato) + '.</div>' : '') +
       '<table class="tab' + (lungo ? ' fitto' : '') + '"><thead><tr><th class="c" style="width:5%">N.</th><th style="width:24%">Termine</th><th class="c" style="width:10%">Tentativi</th><th class="c" style="width:8%">Punti</th><th>Definizione scelta</th><th class="c" style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table>' +
       '<p style="margin:2mm 0 0;font-size:8.5pt">Punti persi: <b>' + punti(r.errate) + '</b> (' + r.errate + ' risposte errate × ' + fv(PEN) + ') · si parte da ' + fv(v.votoMax || imp.votoMax) + ', voto minimo ' + fv(imp.votoMin) + '.</p>' +
-      '<p class="m" style="margin-top:1mm">Tempo totale in app ' + (x.ultimo ? durata(x.minuti) : '—') + ' · primo accesso ' + esc(quando(x.primo)) + ' · ultimo accesso ' + esc(quando(x.ultimo)) + ' · giorni attivi ' + (x.giorni || 0) + '</p></div>' +
+      '<p class="m" style="margin-top:1mm">Tempo totale in app ' + (x.ultimo ? durata(x.minuti) : '—') + (x.minutiPubblica ? ' (di cui ' + durata(x.minutiPubblica) + ' di ripasso sulla pagina pubblica)' : '') + ' · primo accesso ' + esc(quando(x.primo)) + ' · ultimo accesso ' + esc(quando(x.ultimo)) + ' · giorni attivi ' + (x.giorni || 0) + '</p></div>' +
       piede() + '</section>';
   }).join('');
 

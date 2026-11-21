@@ -131,6 +131,11 @@ function impClasse(imp, classe) {
   return Object.assign({}, imp, { partenza: c.partenza !== undefined ? c.partenza : imp.partenza, scadenzaIt: c.scadenzaIt || imp.scadenzaIt });
 }
 /* scadenza personale (ms): quella della classe, oppure la proroga se più tarda */
+/* tempo di studio per giorno (dall'inizio dello scritto all'interrogazione) e ripasso dalla programmazione all'interrogazione */
+function studioDi(stato, a, now) {
+  const imp = impostazioni(stato.config);
+  return require('./attivita').studio((stato.attivita || {})[a.id], { partenza: impClasse(imp, classeDi(a)).partenza, fissata: a.orale_piano && a.orale_piano.fissata, fine: a.orale && a.orale.data }, now);
+}
 function scadenzaAlunno(imp, a) {
   const base = Date.parse(impClasse(imp, classeDi(a)).scadenzaIt), p = a && a.proroga ? Date.parse(a.proroga) : 0;
   return Math.max(base, p || 0);
@@ -336,7 +341,7 @@ function pacchetto(stato, chi) {
     const v = valuta(stato, chi._a || stato.alunni.find((a) => a.id === chi.id), now);
     out.voto = { voto: v.voto, votoIt: v.votoIt, votoEn: v.votoEn, media: v.media, manuale: v.manuale != null, escluso: v.escluso, votoMax: v.votoMax, ereditati: v.ereditati,
       tetto: v.tetto, tettoValore: v.tettoValore, calcolato: v.calcolato, orale: v.orale ? { voto: v.orale.voto, punti: v.orale.punti, data: v.orale.data } : null, finale: v.finale,
-      quiz: (function () { const o = require('./orale'), aa = chi._a || stato.alunni.find((a) => a.id === chi.id), r = o.riepilogoQuiz(aa.quiz, o.cfgQuiz(stato.config, classeDi(aa), null, aa)); return { stato: r.stato, indovinati: r.indovinati, soglia: r.soglia, scadenza: r.scadenza, superata: r.superata }; })(),
+      quiz: (function () { const o = require('./orale'), aa = chi._a || stato.alunni.find((a) => a.id === chi.id), r = o.riepilogoQuiz(aa.quiz, o.cfgQuiz(stato.config, classeDi(aa), null, aa)); return { stato: r.stato, indovinati: r.indovinati, soglia: r.soglia, scadenza: r.scadenza, superata: r.superata, piano: r.superata && !aa.orale ? aa.orale_piano || null : null }; })(),
       errIt: v.it.errate, errEn: v.en.errate, invIt: v.it.inviate, invEn: v.en.inviate, errate: v.errate, corrette: v.corrette, inviate: v.inviate, ratio: ratio(imp) };
   }
   if (chi.ruolo === 'docente') {
@@ -363,7 +368,7 @@ function pacchetto(stato, chi) {
           calcolato: v.calcolato, manuale: v.manuale, escluso: v.escluso, riammesso: v.riammesso, motivo: v.motivo })),
         // giudizio breve per alunno: quello generato dai dati e, se c'è, quello scritto dal docente
         giudizi: Object.fromEntries(val.map((v) => { const a = stato.alunni.find((x) => x.id === v.id), q = out.quiz.find((x) => x.id === v.id); return [v.id, { auto: require('./giudizi').auto(v, q), mio: (a && a.giudizio) || '' }]; })),
-        attivita: stato.attivita && (chi.admin || P.documenti) ? Object.fromEntries(stato.alunni.map((a) => [a.id, ATT.riepilogo(stato.attivita[a.id], now)])) : null,
+        attivita: stato.attivita && (chi.admin || P.documenti) ? Object.fromEntries(stato.alunni.map((a) => [a.id, Object.assign(ATT.riepilogo(stato.attivita[a.id], now), studioDi(stato, a, now))])) : null,
         dropbox: chi.admin ? stato.dropbox || null : null,
         titolare: chi.admin ? ((stato.config.docenti || []).filter((d) => d.attivita && d.attivita === stato.config._spazio).map((d) => ({ nome: d.nome, codice: d.codice }))[0] || null) : undefined,
         colleghi: chi.admin ? (stato.config.docenti || []).filter((d) => !d.attivita && !(d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin)).map((d) => ({ nome: d.nome, codice: d.codice, permessi: permessiDi(d, false) })) : undefined };
@@ -1047,4 +1052,4 @@ module.exports = { messaggioEsclusione,
   indiceTermine, arrotFinale,
   traduzioni, salvaTraduzioni, revisioneCartelloni, salvaRevisione, salvaGiudizio, colleghi, nuoviColleghi, verificaPermesso, permesso, PERMESSI,
   anteprimaRiammissione, prorogaAlunno, bloccoRiassegnazione, trasferisciTermini, pubblicoDa, edizioneDi, impClasse, scadenzaAlunno, termPerAlunno,
-  identifica, soloAdmin, soloGestore, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };
+  studioDi, identifica, soloAdmin, soloGestore, pacchetto, generaCodice, pad2, errore, isoValida, AZZERA, campo, elencoLeggero, PENALITA, adesso, nomePubblico, pubblico, testoDef, statoClasse, nomeClassi, etichettaAl, classeDi, riprovaMigrazione, migra, alunnoIniziale, alunniIniziali, partito, impostazioni, ratio, verificaAdmin, manutenzione, pianoRiassegnazione, login, scegli, revisiona, approvaCorrette, impostaChiusura, impostazioniAdmin, votoManuale, riammetti, setup, ErroreUtente, opzioni, terminiIniziali, valuta };
