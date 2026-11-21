@@ -43,6 +43,9 @@ async function risolvi(dbf, p) {
       if (p.att && p.att !== m[c] && p.azione !== 'login') err('Con questo codice puoi entrare solo nella tua attività.');
       const reg = await registro(base);
       if (!reg.some((x) => x.id === m[c]) && !(await registro(base, true)).some((x) => x.id === m[c])) err('La tua attività non è più disponibile: chiedi al prof. Cerrato.');
+      let voce = (await registro(base)).find((x) => x.id === m[c]);
+      if (voce && voce.demo) voce = (await registro(base, true)).find((x) => x.id === m[c]) || voce; // scadenza sempre aggiornata
+      if (voce && voce.demo && voce.scade && Date.parse(voce.scade) <= Date.now()) err('Questa demo è scaduta: chiedi al prof. Cerrato di prepararne una nuova.');
       return dbf(m[c]);
     }
   }
@@ -74,13 +77,15 @@ async function elencoDocente(d) {
   const base = apri('main'), reg = await registro(base, true);
   const cm = (await base.configPrincipale()) || {};
   const ed = L.edizioneDi(cm);
-  return [{ id: 'main', nome: ed.nome, as: ed.as, classi: L.impostazioni(cm).classi }].concat(reg.map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi, bozza: !!x.bozza })));
+  // le demo dei colleghi non compaiono nell'elenco (si vedono nella Promo App); il collega vede solo la sua
+  return [{ id: 'main', nome: ed.nome, as: ed.as, classi: L.impostazioni(cm).classi }].concat(reg.filter((x) => !x.demo || x.id === d.spazio).map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi, bozza: !!x.bozza })));
 }
 /* elenco per la pagina pubblica (solo nomi) */
 async function elencoPubblico(d) {
   const reg = await registro(apri('main'));
   if (!reg.length) return [];
-  return elencoDocente(d).then((e) => e.filter((x) => !x.bozza).map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi })));
+  const demo = new Set(reg.filter((x) => x.demo).map((x) => x.id));
+  return elencoDocente(d).then((e) => e.filter((x) => !x.bozza && !demo.has(x.id)).map((x) => ({ id: x.id, nome: x.nome, as: x.as, classi: x.classi })));
 }
 async function elenco(d, { codice }) {
   const stato = await d.leggiTutto(); L.soloAdmin(L.identifica(stato, codice));
@@ -205,11 +210,11 @@ async function codiciUsati(base) {
   for (const x of reg) out.push(...await apri(x.id).codiciAlunni());
   return out;
 }
-async function impostaTitolare(base, id, nome, usatiAlunni) {
+async function impostaTitolare(base, id, nome, usatiAlunni, opz) {
   const cm = await base.leggiConfig(), docenti = (cm && cm.docenti) || [];
   const usati = new Set(docenti.map((x) => x.codice).concat(usatiAlunni || []));
   const prima = docenti.find((x) => x.attivita === id && !x.admin);
-  const nuovo = { nome, codice: L.generaCodice(usati), lingua: 'it', admin: false, attivita: id, permessi: { revisione: true, voti: true, studenti: true, documenti: true, codici: true } };
+  const nuovo = { nome, codice: L.generaCodice(usati), lingua: 'it', admin: false, attivita: id, demo: !!(opz && opz.demo) || undefined, permessi: { revisione: true, voti: true, studenti: true, documenti: true, codici: true } };
   await base.scriviConfig({ docenti: docenti.filter((x) => x !== prima).concat([nuovo]) });
   titolari = { t: 0, mappa: null };
   return { nome: nuovo.nome, codice: nuovo.codice };
@@ -229,4 +234,4 @@ async function codiceTitolare(d, { codice, op }) {
   if (!conc || !conc.docente) err('Prima scrivi il nome del collega (attività per un collega).');
   return { titolare: await impostaTitolare(base, d.spazio, conc.docente, await codiciUsati(base)) };
 }
-module.exports = { codiceTitolare, salvaConcessione, numeriCartelloni, mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };
+module.exports = { impostaTitolare, togliTitolare, codiceTitolare, salvaConcessione, numeriCartelloni, mandaLive, salvaAree, risolvi, elencoDocente, elencoPubblico, elenco, nuovaAttivita, rimuovi, svuota, principale };

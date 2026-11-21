@@ -3420,7 +3420,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '21/11/2026 · 10';
+var VERSIONE = '21/11/2026 · 11';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -5889,7 +5889,7 @@ function vistaDocente() {
   S.pag = pag;
   var p = pagine.filter(function (x) { return x.id === pag; })[0];
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
-  var avvisi = RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '';
+  var avvisi = (S.d.config.demo ? bannerDemo() : '') + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
     '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
@@ -7146,6 +7146,7 @@ function disegnaPromo() {
       (kpi ? '<div class="prk">' + kpi.map(function (k) { return '<div><b>' + esc(String(k[0])) + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
         '<p class="muted" style="margin:0;font-size:14px">Dati reali di tutte le attività in corso, aggiornati al ' + esc(dataOra(N.aggiornato)) + '. Si aggiornano da soli al massimo una volta l\'ora, quando qualcuno apre la pagina.</p>'
         : '<p class="muted" style="margin:0">I numeri si calcolano alla prima apertura della pagina, oppure con «Aggiorna ora».</p>') + '</div>' +
+    bloccoDemo(P) +
     '<div class="stack" style="gap:8px"><h3 style="margin:0;font-size:18px">Chi ha aperto la pagina</h3>' +
       (V.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Collega</th><th>Prima visita</th><th>Ultima visita</th><th class="c">Volte</th></tr></thead><tbody>' +
         V.map(function (v) { return '<tr><td><b>' + esc(v.nome + ' ' + v.cognome) + '</b></td><td>' + esc(dataOra(v.prima)) + '</td><td>' + esc(dataOra(v.ultima)) + '</td><td class="c">' + (v.volte || 1) + '</td></tr>'; }).join('') +
@@ -7163,6 +7164,66 @@ function nuovoCodicePromo(btn) {
   btn.disabled = true;
   api('promocodice', {}).then(function (x) { S.pr = x; disegnaPromo(); toast('Nuovo codice creato'); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e)); });
+}
+
+/* ---------- demo per i colleghi ---------- */
+function dataDemo(iso) { return new Date(iso).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Rome' }); }
+/* in cima a ogni pagina della demo: cosa è, quando si cancella, codici di prova, pagina pubblica, ricomincia */
+function bannerDemo() {
+  var D = S.d.config.demo;
+  return '<section class="card stack" id="bannerDemo" style="border:2px dashed #B4511A;background:#FFF8F1;gap:10px">' +
+    '<div class="row" style="justify-content:space-between;align-items:center"><b style="font:900 18px Archivo,system-ui,sans-serif;color:#B4511A">DEMO · dati inventati</b>' +
+    '<span class="muted" style="font-size:14px">si cancella da sola ' + esc(dataDemo(D.scade)) + '</span></div>' +
+    '<p style="margin:0;font-size:15px">Benvenuto, ' + esc(D.nome) + '! Qui puoi provare tutto: approvare e rimandare risposte, fissare scadenze, programmare e fare interrogazioni, scaricare cartelloni, report e presentazione. <b>Niente di quello che fai tocca dati veri.</b> La classe 3A ha lo scritto concluso e il quiz in corso; la 3B ha lo scritto in corso.</p>' +
+    '<div class="row" style="gap:8px"><button class="btn sec tb" onclick="codiciProva()">Prova come studente</button>' +
+    '<a class="btn sec tb" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico());return false">Pagina pubblica di prova</a>' +
+    '<button class="btn sec tb" id="demoRic" onclick="ricominciaDemo(this)">Ricomincia la demo</button></div></section>';
+}
+function codiciProva() {
+  var P = (S.d.config.demo && S.d.config.demo.prova) || [];
+  finestra('Prova come studente', '<p style="margin:0">Apri l\'app in una <b>finestra in incognito</b> o su un altro dispositivo (' + esc(location.origin) + ') ed entra con uno di questi codici:</p>' +
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Codice</th><th>Studente</th><th>Cosa vedi</th></tr></thead><tbody>' +
+    P.map(function (x) { return '<tr><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.12em">' + esc(x.codice) + '</td><td>' + esc(x.nome) + '</td><td>' + esc(x.cosa) + '</td></tr>'; }).join('') +
+    '</tbody></table></div><p class="muted" style="margin:0;font-size:14px">Se entri come studente in questa stessa finestra, esci dalla demo: per rientrare usa di nuovo il tuo link.</p>', [], 'chiudi');
+}
+function ricominciaDemo(btn) {
+  if (!btn.dataset.ok) { btn.dataset.ok = '1'; btn.textContent = 'Sì, rimetti i dati di partenza'; btn.className = 'btn tb'; btn.style.background = '#B3261E'; return; }
+  btn.disabled = true;
+  api('demoricomincia', {}).then(function () { return ricarica('Demo ricominciata con i dati di partenza'); }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+/* Promo App: richieste di demo e demo attive */
+function bloccoDemo(P) {
+  var R = (P.richieste || []).filter(function (r) { return r.stato === 'nuova'; }), Dm = P.demo || [];
+  var dataOra = function (iso) { var d = new Date(iso); return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', timeZone: 'Europe/Rome' }) + ', ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }); };
+  var h = '<div class="stack" style="gap:8px" id="demoBox"><h3 style="margin:0;font-size:18px">Demo per i colleghi</h3>' +
+    '<p class="muted" style="margin:0;font-size:14px">Ogni collega riceve un\'attività di prova tutta sua, con dati inventati, la programmazione di tutte le fasi e una pagina pubblica di prova. Il suo codice entra solo lì; dopo 14 giorni la demo si cancella da sola.</p>';
+  if (R.length) h += '<div class="note" id="demoRichieste"><b>Richieste di demo (' + R.length + ')</b><ul style="margin:6px 0 0;padding-left:20px">' + R.map(function (r) {
+    var n = r.nome + ' ' + r.cognome;
+    return '<li>' + esc(n) + ' <span class="muted" style="font-size:13px">' + esc(dataOra(r.quando)) + '</span> <button class="btn tb" onclick="creaDemo(this, \'' + esc(n).replace(/'/g, '\\\'') + '\')">Crea la demo</button></li>'; }).join('') + '</ul></div>';
+  h += '<div class="row" style="gap:8px"><input id="demoNome" type="text" maxlength="60" placeholder="Nome e cognome del collega" style="flex:1;min-width:220px"><button class="btn" id="demoCrea" onclick="creaDemo(this, $(\'demoNome\').value)">Crea una demo</button></div>';
+  if (Dm.length) h += '<div style="overflow-x:auto"><table class="tbl" id="demoTab"><thead><tr><th>Collega</th><th>Creata</th><th>Si cancella</th><th class="c">Accessi</th><th>Ultimo accesso</th><th></th></tr></thead><tbody>' + Dm.map(function (x) {
+    return '<tr data-demo="' + esc(x.id) + '"><td><b>' + esc(x.nome) + '</b></td><td>' + esc(dataOra(x.creata)) + '</td><td>' + esc(dataDemo(x.scade)) + '</td><td class="c">' + (x.accessi || 0) + '</td><td>' + (x.ultimo ? esc(dataOra(x.ultimo)) : '<span class="muted">mai</span>') + '</td>' +
+      '<td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn tb" onclick="copiaTesto(messaggioDemo(\'' + esc(x.id) + '\'), this)">Copia link e codice</button><button class="btn sec tb" data-del="' + esc(x.id) + '" onclick="cancellaDemo(this, \'' + esc(x.id) + '\')">Cancella</button></div></td></tr>'; }).join('') + '</tbody></table></div>';
+  return h + '</div>';
+}
+function messaggioDemo(id) {
+  var x = (S.pr.demo || []).filter(function (y) { return y.id === id; })[0]; if (!x) return '';
+  return 'Ciao! Ecco la tua demo del Glossario: entra da qui ' + location.origin + '/?c=' + x.codice + '\n' +
+    'Il tuo codice: ' + x.codice + '. È un\'attività di prova tutta tua, con dati inventati: puoi provare tutto senza toccare nulla di vero.\n' +
+    'Si cancella da sola ' + dataDemo(x.scade) + '.\nProf. Danilo Cerrato';
+}
+function creaDemo(btn, nome) {
+  nome = String(nome || '').trim(); if (nome.length < 3) { toast('Scrivi nome e cognome del collega', true); return; }
+  btn.disabled = true; var t = btn.textContent; btn.textContent = 'Preparo la demo…';
+  api('promocreademo', { nome: nome }).then(function (x) {
+    return api('promostato', {}).then(function (P) { S.pr = P; disegnaPromo(); toast('Demo pronta per ' + x.nome + ': codice ' + x.codice); });
+  }).catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
+}
+function cancellaDemo(btn, id) {
+  if (!btn.dataset.ok) { btn.dataset.ok = '1'; btn.textContent = 'Sì, cancella'; btn.className = 'btn tb'; btn.style.background = '#B3261E'; return; }
+  btn.disabled = true;
+  api('promocancellademo', { id: id }).then(function () { return api('promostato', {}).then(function (P) { S.pr = P; disegnaPromo(); toast('Demo cancellata'); }); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 
 </script>

@@ -50,7 +50,8 @@ async function esegui(db, motivo) {
   try {
     const { db: apri } = require('./firestore');
     const principale = db.spazio && db.spazio !== 'main' ? apri('main') : db;
-    const reg = principale.leggiRegistro ? await principale.leggiRegistro() : [];
+    try { await require('./demo').pulisci(principale); } catch (e) { /* le demo scadute si tolgono alla prossima occasione */ }
+    const reg = (principale.leggiRegistro ? await principale.leggiRegistro() : []).filter((x) => !x.demo); // le demo non vanno su Dropbox
     const token = await dbx.tokenAccesso(segreto);
     const r0 = await inviaSpazio(principale, token, now);
     if (!r0) return { saltato: true, motivo: 'Glossario non ancora configurato' };

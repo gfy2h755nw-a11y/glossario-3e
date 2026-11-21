@@ -74,6 +74,7 @@ function db(spazio) {
     async leggiBanca() { const s = await f.collection(COL.config).doc('_banca').get(); return s.exists ? s.data() : null; },
     async scriviBanca(dati) { await f.collection(COL.config).doc('_banca').set(dati); },
     /* elenco delle attività parallele (senza la principale) */
+    async cancellaConfig() { await cfgRef.delete(); },
     async leggiRegistro() { const s = await f.collection(COL.config).doc(REGISTRO).get(); return s.exists ? ((s.data() || {}).elenco || []) : []; },
     async scriviRegistro(elenco) { await f.collection(COL.config).doc(REGISTRO).set({ elenco }); },
     /* codici di tutti gli alunni di uno spazio (per tenerli unici tra le attività) */
