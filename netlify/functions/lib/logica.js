@@ -402,6 +402,8 @@ async function login(db, { codice }) {
     const c = await require('./banca').conteggi(db);
     out.banca = c.banca; out.pacchetti.forEach((p) => { if (c.pk[p.id]) p.termini = c.pk[p.id]; });
   }
+  // pagina pubblica: ultima pubblicazione e novità da pubblicare (per chi può pubblicare)
+  if (chi.ruolo === 'docente' && (chi.admin || chi.gestore)) { try { out.pubblicazione = await require('./pubblicazione').stato(db, stato); } catch (e) { console.error('pubblicazione:', e.message); } }
   return out;
 }
 /* controllo leggero (solo config) per le azioni del prof. Cerrato */

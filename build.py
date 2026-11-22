@@ -8,8 +8,12 @@ FONTI = [('Archivo', 400, 'normal', 'archivo-latin-400-normal'), ('Archivo', 600
          ('Cormorant Garamond', 500, 'italic', 'cormorant-garamond-latin-500-italic'), ('Cormorant Garamond', 600, 'italic', 'cormorant-garamond-latin-600-italic'),
          ('Atkinson Hyperlegible', 400, 'normal', 'atkinson-hyperlegible-latin-400-normal'), ('Atkinson Hyperlegible', 700, 'normal', 'atkinson-hyperlegible-latin-700-normal'),
          ('Atkinson Hyperlegible', 400, 'italic', 'atkinson-hyperlegible-latin-400-italic'), ('Atkinson Hyperlegible', 700, 'italic', 'atkinson-hyperlegible-latin-700-italic')]
-for f in FONTI: assert os.path.exists(os.path.join(B, 'public/fonts', f[3] + '.woff2')), f
-FONT_CSS = ''.join("@font-face{font-family:'%s';font-style:%s;font-weight:%d;font-display:swap;src:url(/fonts/%s.woff2) format('woff2')}" % (f[0], f[2], f[1], f[3]) for f in FONTI)
+# carattere con grazie della pagina pubblica (termini e titoli): solo lì
+FONTI_PUB = FONTI + [('Source Serif 4', 500, 'normal', 'source-serif-4-latin-500-normal'), ('Source Serif 4', 600, 'normal', 'source-serif-4-latin-600-normal'), ('Source Serif 4', 700, 'normal', 'source-serif-4-latin-700-normal'),
+         ('Source Serif 4', 500, 'italic', 'source-serif-4-latin-500-italic'), ('Source Serif 4', 600, 'italic', 'source-serif-4-latin-600-italic')]
+for f in FONTI_PUB: assert os.path.exists(os.path.join(B, 'public/fonts', f[3] + '.woff2')), f
+FONTCSS = lambda L: ''.join("@font-face{font-family:'%s';font-style:%s;font-weight:%d;font-display:swap;src:url(/fonts/%s.woff2) format('woff2')}" % (f[0], f[2], f[1], f[3]) for f in L)
+FONT_CSS = FONTCSS(FONTI)
 html = '''<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -48,6 +52,7 @@ html = '''<!DOCTYPE html>
 ''' + r('src/wizard.js') + '''
 ''' + r('src/banca.js') + '''
 ''' + r('src/promo.js') + '''
+''' + r('src/pubblica.js') + '''
 </script>
 </body>
 </html>
@@ -56,7 +61,7 @@ open(os.path.join(B, 'public/index.html'), 'w', encoding='utf-8').write(html)
 print('public/index.html', len(html))
 
 # pagina pubblica di consultazione (/glossario): logo dal modello del cartellone
-con = r('src/consulta.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
+con = r('src/consulta.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONTCSS(FONTI_PUB))
 open(os.path.join(B, 'public/glossario.html'), 'w', encoding='utf-8').write(con)
 print('public/glossario.html', len(con))
 # pagina del quiz (/quiz): separata dalla pagina pubblica, si entra con il codice personale o con il QR della scheda

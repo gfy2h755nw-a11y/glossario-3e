@@ -459,7 +459,7 @@ function messaggioOrale(id) {
   var p = quizDi(id).piano; if (!p) return '';
   var nome = String(nomeAlunno(id)).split(' ').slice(-1)[0];
   return 'Ciao ' + nome + ', hai superato il quiz del glossario: la tua interrogazione è fissata per ' + giornoOrale(p) + '.\n' +
-    'Preparati ripassando termini e definizioni sulla pagina pubblica: ' + urlPubblico() + '\n' +
+    'Preparati ripassando termini e definizioni sulla pagina pubblica: ' + urlPubblico('msg') + '\n' +
     'Trovi la data anche nell\'app del glossario.';
 }
 function bloccoProgramma(righe) {

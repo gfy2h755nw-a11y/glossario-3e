@@ -757,7 +757,7 @@ function stampaCartelloni(quali, abbondanza, lingua) {
   // si impaginano qui (stessi caratteri) per calcolare la dimensione del testo, poi si passano alla finestra di stampa
   var scatole = aree.map(function (a) {
     var b = document.createElement('div'); b.style.cssText = 'position:absolute;left:-30000px;top:0;width:700mm';
-    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, qr: urlPubblico(), as: as, en: bil });
+    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, qr: urlCartellone(), as: as, en: bil });
     document.body.appendChild(b); return b;
   });
   caratteriPronti().then(function () {

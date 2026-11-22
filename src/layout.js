@@ -24,7 +24,7 @@ function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (IC
 /* sezioni della barra (riorganizzazione 2026-11): ogni sezione raccoglie una o più pagine di sempre,
    che restano tutte raggiungibili come schede in cima alla pagina. gr = gruppo nella barra. */
 var SEZIONI = [
-  { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
+  { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito', 'statpub'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
@@ -38,7 +38,7 @@ var SEZIONI = [
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
-var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
+var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
   cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', promo: 'Colleghi e numeri', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
@@ -54,6 +54,7 @@ function PAGINE() {
     { id: 'cruscotto', gr: 'Lavoro', t: 'Cruscotto', vis: true },
     { id: 'revisione', gr: 'Lavoro', t: 'Risposte da rivedere', vis: true, bd: contaDaRivedere() },
     { id: 'sollecito', gr: 'Lavoro', t: 'Da sollecitare', vis: !ro, bd: contaSollecito(), rosso: true },
+    { id: 'statpub', gr: 'Lavoro', t: 'Statistiche pagina pubblica', vis: adm && !ro },
     { id: 'situazione', gr: 'Studenti', t: 'Situazione e avanzamento', vis: true },
     { id: 'gestione', gr: 'Studenti', t: 'Proroghe e passaggi', vis: !!A && PUO('studenti') && !ro },
     { id: 'quiz', gr: 'Studenti', t: 'Quiz (seconda prova)', vis: !!S.d.quiz },
@@ -147,7 +148,7 @@ function barraAlta(p) {
   }
   return '<header class="tbar"><button class="smenu" onclick="document.body.classList.add(\'menu-on\')" aria-label="Apri il menu" aria-controls="side">☰</button>' +
     '<div class="ttit"><h1>' + esc(p.t) + '</h1><div class="tsub">' + esc(RO() ? 'Archivio · ' + ((S.d.edizioneArchivio || {}).nome || '') : (ed.nome || '') + (ed.as ? ' · a.s. ' + ed.as : '')) + (S.filtro.classe && S.filtro.classe !== 'tutte' ? ' · solo ' + esc(S.filtro.classe) : '') + '</div></div>' +
-    '<div class="tdx">' + chips + '<button class="btn sec tb" onclick="ricarica(\'Dati aggiornati\')">Aggiorna</button><a class="btn sec tb" href="/glossario" target="_blank" rel="noopener">Pagina pubblica</a></div></header>';
+    '<div class="tdx">' + chips + '<button class="btn sec tb" onclick="ricarica(\'Dati aggiornati\')">Aggiorna</button><a class="btn sec tb" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener">Pagina pubblica</a></div></header>';
 }
 
 function vistaDocente() {
@@ -158,7 +159,7 @@ function vistaDocente() {
   S.pag = pag;
   var p = pagine.filter(function (x) { return x.id === pag; })[0];
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
-  var avvisi = bannerCoda() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
+  var avvisi = bannerCoda() + bannerPubblica() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
     '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
@@ -167,6 +168,8 @@ function vistaDocente() {
   if (pag === 'revcart') avviaRevCart();
   if (pag === 'banca') avviaBanca();
   if (pag === 'promo') avviaPromo();
+  if (pag === 'statpub') avviaStatPub();
+  if (pag === 'cruscotto') avviaStatCruscotto();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
   if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
   if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
@@ -243,11 +246,12 @@ var PAGINA = {
       ['Approvate', app + '<small> / ' + ts.length + '</small>', Math.round(app / n * 100) + '% definitive', app / n, 'var(--ok)'],
       sol ? ['Da sollecitare', sol.length, escl ? escl + (escl === 1 ? ' escluso' : ' esclusi') : 'nessun escluso', null, 'var(--err)', 'sollecito'] : ['Alunni', al.length, escl ? escl + ' esclusi' : 'nessun escluso', null, 'var(--ink)']
     ];
-    var h = oggi + '<section class="kpis">' + kpi.map(function (k) {
+    var h = oggi + bloccoPubblica() + '<section class="kpis">' + kpi.map(function (k) {
       var tag = k[5] ? 'button' : 'div';
       return '<' + tag + ' class="card kcard"' + (k[5] ? ' onclick="vai(\'' + k[5] + '\')"' : '') + '><div class="kl">' + k[0] + '</div><div class="kv">' + k[1] + '</div><div class="muted ks">' + k[2] + '</div>' +
         (k[3] != null ? '<div class="bar" style="margin-top:8px"><span style="width:' + Math.round(k[3] * 100) + '%;background:' + k[4] + '"></span></div>' : '') + '</' + tag + '>';
     }).join('') + '</section>';
+    h += bloccoStatCruscotto();
     h += bloccoAnello();
     var cols = '';
     if (sol) {
@@ -311,6 +315,7 @@ var PAGINA = {
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
+  statpub: function () { return paginaStatPub(); },
   cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');

@@ -1,0 +1,17 @@
+{
+  "id": "/glossario",
+  "name": "Glossari · Prof. Cerrato",
+  "short_name": "Glossari",
+  "description": "I glossari delle classi dell'Istituto Barsanti - sede Salvetti · Risorsa didattica curata dal prof. Danilo Cerrato",
+  "lang": "it",
+  "start_url": "/glossario?app=1",
+  "scope": "/glossario",
+  "display": "standalone",
+  "background_color": "#F7F5F0",
+  "theme_color": "#F7F5F0",
+  "icons": [
+    { "src": "/icona-glossari-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icona-glossari-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icona-glossari-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

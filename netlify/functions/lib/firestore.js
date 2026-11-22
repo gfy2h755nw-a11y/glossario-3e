@@ -67,6 +67,15 @@ function db(spazio) {
     /* pagina per i colleghi: codice del link e visite */
     async leggiPromo() { const s = await f.collection(COL.config).doc('_promo').get(); return s.exists ? s.data() : null; },
     async scriviPromo(dati) { await f.collection(COL.config).doc('_promo').set(dati); },
+    /* versione pubblicata sulla pagina pubblica (termini, definizioni, autori): una per attività */
+    async leggiPubblicazione() { const s = await f.collection('pubblicazioni').doc(ns).get(); return s.exists ? s.data() : null; },
+    async scriviPubblicazione(dati) { await f.collection('pubblicazioni').doc(ns).set(dati); },
+    /* statistiche della pagina pubblica: un documento per giorno (raccolta comune a tutte le attività) */
+    async aggiornaStatistica(giorno, aggiorna) {
+      const ref = f.collection('statistiche').doc(String(giorno));
+      await f.runTransaction(async (tx) => { const s = await tx.get(ref); tx.set(ref, aggiorna(s.exists ? s.data() : null)); });
+    },
+    async leggiStatistiche(da) { return docs(await f.collection('statistiche').where('giorno', '>=', String(da)).get()); },
     /* bozza della procedura «Nuova attività» (una sola, del prof. Cerrato) */
     async leggiBozzaWz() { const s = await f.collection(COL.config).doc('_bozzawz').get(); return s.exists ? s.data() : null; },
     async scriviBozzaWz(dati) { const r = f.collection(COL.config).doc('_bozzawz'); if (dati) await r.set(dati); else await r.delete(); },

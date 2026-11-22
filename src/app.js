@@ -19,7 +19,9 @@ function api(azione, dati) {
     .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
 }
 /* indirizzo della pagina pubblica dell'attività aperta (con ?att= per le attività parallele) */
-function urlPubblico() { return location.origin + '/glossario' + (S.d && S.d.att && S.d.att !== 'main' ? '?att=' + encodeURIComponent(S.d.att) : ''); }
+function urlPubblico(da) { return location.origin + '/glossario?att=' + encodeURIComponent((S.d && S.d.att) || 'main') + (da ? '&da=' + da : ''); }
+/* QR dei cartelloni (tuoi e dei colleghi): portano alla home dei glossari */
+function urlCartellone() { return location.origin + '/glossario?da=qr'; }
 /* regole dell'attività aperta (scritto, quiz, interrogazione, voto finale): per la 3E e la 3F quelle di sempre */
 function RG() { var r = (S.d && S.d.regole) || {}; return { quiz: r.quiz || { secondi: 60, opzioni: 4, passo: 5 }, orale: r.orale || { domande: 10, base: 3, passo: 0.5, passoEsclusi: 0.25, max: 8, maxEsclusi: 5.5 }, finale: r.finale || { pesoScritto: 50 }, scritto: r.scritto || {} }; }
 function frz(x) { return x === 0.5 ? '½' : x === 0.25 ? '¼' : fv(x); }
@@ -50,7 +52,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 3';
+var VERSIONE = '22/11/2026 · 4';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -258,7 +260,7 @@ function notaQuizAlunno(q) {
   if (!q || q.stato === 'chiuso') return '';
   var link = '<a href="/quiz" target="_blank" rel="noopener">Apri il quiz</a>';
   if (q.stato === 'superato') return q.piano ? '<div class="note ok" id="notaQuiz"><b>La tua interrogazione è fissata per ' + esc(giornoOrale(q.piano)) + '.</b> Hai superato il quiz e sei ammesso all\'interrogazione orale, la verifica finale. ' +
-      'Preparati ripassando i termini e le definizioni del glossario sulla pagina pubblica: <a href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico());return false"><b>apri la pagina pubblica del glossario</b></a> (puoi anche usare «Mettiti alla prova»).</div>'
+      'Preparati ripassando i termini e le definizioni del glossario sulla pagina pubblica: <a href="' + esc(urlPubblico('msg')) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico(\'msg\'));return false"><b>apri la pagina pubblica del glossario</b></a> (puoi anche usare «Mettiti alla prova»).</div>'
     : '<div class="note ok" id="notaQuiz"><b>Quiz superato:</b> sei ammesso all\'interrogazione orale. Il docente fisserà la data: la troverai qui.</div>';
   if (q.stato === 'scaduto') return '<div class="note warn" id="notaQuiz"><b>Quiz non completato entro la scadenza</b> (' + q.indovinati + ' termini su ' + q.soglia + '): non sei ammesso all\'interrogazione.</div>';
   return '<div class="note" id="notaQuiz"><b>Seconda parte della prova: il quiz.</b> Devi indovinare ' + q.soglia + ' termini entro ' + esc(oraIt(q.scadenza)) + ' per essere ammesso all\'interrogazione. Sei a <b>' + q.indovinati + ' su ' + q.soglia + '</b>. ' + link + '</div>';
@@ -284,7 +286,7 @@ function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
-  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: S.d.utente.ruolo === 'alunno' ? null : urlPubblico(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: S.d.utente.ruolo === 'alunno' ? null : urlCartellone(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
   var scala = function () { var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth; sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px'; };
   Poster.adatta(sc); scala();
   // si riadatta quando i caratteri veri sono caricati: misurare con quelli di riserva fa uscire le voci dalle colonne
@@ -312,7 +314,7 @@ function schermataAmmesso(h, qv) {
       '<div>' + big(esc(gg.slice(0, sp)) + '<br>' + esc(gg.slice(sp + 1))) + (qv.piano.ora ? '<div style="font:700 20px/1.3 Archivo,system-ui,sans-serif;color:#B4511A;margin-top:6px">' + qv.piano.ora + 'ª ora</div>' : '') + '</div>' +
       par('Ciao <b>' + nome + '</b>, hai superato il quiz! Ora preparati all\'interrogazione, la verifica finale.') +
       par('Esercitati sulla <b>pagina pubblica del glossario</b>: ripassa termini e definizioni e mettiti alla prova con i quiz.') +
-      '<a class="btn" id="esercitati" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico());return false" style="justify-content:center;min-height:56px;font-size:19px;text-decoration:none">Esercitati ora →</a>' +
+      '<a class="btn" id="esercitati" href="' + esc(urlPubblico('msg')) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico(\'msg\'));return false" style="justify-content:center;min-height:56px;font-size:19px;text-decoration:none">Esercitati ora →</a>' +
       '<p class="muted" style="margin:0;font-size:14px">In bocca al lupo!</p></section>';
   } else {
     card = '<section class="card stack" id="schermataAmmesso" data-tappa="superato" style="border-top:8px solid #2E7D32;gap:14px">' + tit('#2E7D32', 'Quiz superato') + big('Complimenti,<br>' + nome + '!') +

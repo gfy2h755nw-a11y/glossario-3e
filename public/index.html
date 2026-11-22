@@ -466,6 +466,16 @@ html.visore-aperto,html.visore-aperto body{overflow:hidden}
 .or-sc .or-sc-us{color:#9A5B00}.or-sc .or-sc-suo{color:#B3261E}
 .or-sc.no{opacity:.5;cursor:not-allowed;background:#F4F5F5}
 .or-sc:has(input:checked){border-color:var(--acc,#0E7C7B);background:var(--acc-l,#E2F1F0)}
+/* pagina pubblica: pubblicazione e statistiche */
+.dapp .lampeggia{border:2px solid #E0A100;animation:lampeggia 1.1s ease-in-out infinite}
+@keyframes lampeggia{0%,100%{background:#FFF1C9;box-shadow:0 0 0 0 rgba(224,161,0,.55)}50%{background:#FFD978;box-shadow:0 0 0 6px rgba(224,161,0,0)}}
+@media (prefers-reduced-motion:reduce){.dapp .lampeggia{animation-duration:2.4s}}
+.dapp .stnum{display:flex;gap:22px;flex-wrap:wrap}.dapp .stnum div{min-width:90px}.dapp .stnum b{display:block;font:800 26px Archivo,Arial,sans-serif;color:var(--ink)}.dapp .stnum small{color:#5B6B77;font-size:13px}
+.dapp .stb{display:grid;gap:9px}.dapp .stbr{display:grid;grid-template-columns:minmax(110px,200px) 1fr 54px;gap:10px;align-items:center;font-size:14px}.dapp .stbr b{text-align:right}.dapp .stbr span{min-width:0;overflow-wrap:anywhere}
+.dapp .stleg{display:flex;gap:16px;font-size:13px;color:#5B6B77;flex-wrap:wrap}.dapp .stleg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.dapp .statt3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.dapp .statt3>div{background:#F5F7F9;border-radius:12px;padding:12px 14px}.dapp .statt3 b{display:block;font:800 24px Archivo,Arial,sans-serif}.dapp .statt3 small{color:#5B6B77}
+.dapp .stchip{display:flex;gap:6px;flex-wrap:wrap}.dapp .stchip button{border:1px solid #D5DDE3;background:#fff;border-radius:999px;padding:6px 13px;font:600 13.5px Archivo,Arial,sans-serif;cursor:pointer}.dapp .stchip button[aria-pressed="true"]{background:#15212B;color:#fff;border-color:#15212B}
+@media (max-width:700px){.dapp .statt3{grid-template-columns:1fr}.dapp .stbr{grid-template-columns:105px 1fr 44px}}
 </style>
 </head>
 <body>
@@ -3262,7 +3272,7 @@ var Poster = (function () {
         '<div style="position:absolute;left:0;right:0;top:4mm;text-align:center;' + S + 'font-weight:600;font-size:' + fsM + 'mm;line-height:1;color:#15212B;-webkit-text-stroke:2.4mm #FBFAF7;paint-order:stroke fill">' + esc(MT) + '</div></div>' +
       '<div style="position:absolute;left:34mm;right:34mm;bottom:14mm;height:46mm;box-sizing:border-box;border-top:0.6mm solid #15212B;padding-top:5mm;display:flex;align-items:center;gap:9mm;font-size:5mm;line-height:1.35;color:#2C3A47">' +
         (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
-          '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '')) + '</div>' : '') +
+          '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '').replace(/\?.*$/, '')) + '</div>' : '') +
         '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
         '<div style="text-align:right">' + (conc() ? '<i>' + CONCESSIONE + '</i><br>' : '') + 'Istituto Barsanti - sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
       '</div>';
@@ -3389,7 +3399,9 @@ function api(azione, dati) {
     .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
 }
 /* indirizzo della pagina pubblica dell'attività aperta (con ?att= per le attività parallele) */
-function urlPubblico() { return location.origin + '/glossario' + (S.d && S.d.att && S.d.att !== 'main' ? '?att=' + encodeURIComponent(S.d.att) : ''); }
+function urlPubblico(da) { return location.origin + '/glossario?att=' + encodeURIComponent((S.d && S.d.att) || 'main') + (da ? '&da=' + da : ''); }
+/* QR dei cartelloni (tuoi e dei colleghi): portano alla home dei glossari */
+function urlCartellone() { return location.origin + '/glossario?da=qr'; }
 /* regole dell'attività aperta (scritto, quiz, interrogazione, voto finale): per la 3E e la 3F quelle di sempre */
 function RG() { var r = (S.d && S.d.regole) || {}; return { quiz: r.quiz || { secondi: 60, opzioni: 4, passo: 5 }, orale: r.orale || { domande: 10, base: 3, passo: 0.5, passoEsclusi: 0.25, max: 8, maxEsclusi: 5.5 }, finale: r.finale || { pesoScritto: 50 }, scritto: r.scritto || {} }; }
 function frz(x) { return x === 0.5 ? '½' : x === 0.25 ? '¼' : fv(x); }
@@ -3420,7 +3432,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 3';
+var VERSIONE = '22/11/2026 · 4';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3628,7 +3640,7 @@ function notaQuizAlunno(q) {
   if (!q || q.stato === 'chiuso') return '';
   var link = '<a href="/quiz" target="_blank" rel="noopener">Apri il quiz</a>';
   if (q.stato === 'superato') return q.piano ? '<div class="note ok" id="notaQuiz"><b>La tua interrogazione è fissata per ' + esc(giornoOrale(q.piano)) + '.</b> Hai superato il quiz e sei ammesso all\'interrogazione orale, la verifica finale. ' +
-      'Preparati ripassando i termini e le definizioni del glossario sulla pagina pubblica: <a href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico());return false"><b>apri la pagina pubblica del glossario</b></a> (puoi anche usare «Mettiti alla prova»).</div>'
+      'Preparati ripassando i termini e le definizioni del glossario sulla pagina pubblica: <a href="' + esc(urlPubblico('msg')) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico(\'msg\'));return false"><b>apri la pagina pubblica del glossario</b></a> (puoi anche usare «Mettiti alla prova»).</div>'
     : '<div class="note ok" id="notaQuiz"><b>Quiz superato:</b> sei ammesso all\'interrogazione orale. Il docente fisserà la data: la troverai qui.</div>';
   if (q.stato === 'scaduto') return '<div class="note warn" id="notaQuiz"><b>Quiz non completato entro la scadenza</b> (' + q.indovinati + ' termini su ' + q.soglia + '): non sei ammesso all\'interrogazione.</div>';
   return '<div class="note" id="notaQuiz"><b>Seconda parte della prova: il quiz.</b> Devi indovinare ' + q.soglia + ' termini entro ' + esc(oraIt(q.scadenza)) + ' per essere ammesso all\'interrogazione. Sei a <b>' + q.indovinati + ' su ' + q.soglia + '</b>. ' + link + '</div>';
@@ -3654,7 +3666,7 @@ function disegnaPoster(n) {
   S.poster = n; var box = $('pbox'), sc = $('pscale'); if (!box) return;
   var ts = S.d.termini.filter(function (t) { return t.area == n; });
   // versione alfabetica (definitiva dal 12/11/2026)
-  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: S.d.utente.ruolo === 'alunno' ? null : urlPubblico(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
+  sc.innerHTML = Poster.alfa(area(n), ts, S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, evidenzia: S.d.utente.ruolo === 'alunno' ? S.d.utente.id : null, qr: S.d.utente.ruolo === 'alunno' ? null : urlCartellone(), as: (S.d.config.edizione || {}).as, en: S.d.utente.ruolo === 'docente' && S.posterLingua === 'iten' });
   var scala = function () { var f = sc.firstChild, k = (box.clientWidth - 24) / f.offsetWidth; sc.style.transform = 'scale(' + k + ')'; box.style.height = (f.offsetHeight * k + 24) + 'px'; };
   Poster.adatta(sc); scala();
   // si riadatta quando i caratteri veri sono caricati: misurare con quelli di riserva fa uscire le voci dalle colonne
@@ -3682,7 +3694,7 @@ function schermataAmmesso(h, qv) {
       '<div>' + big(esc(gg.slice(0, sp)) + '<br>' + esc(gg.slice(sp + 1))) + (qv.piano.ora ? '<div style="font:700 20px/1.3 Archivo,system-ui,sans-serif;color:#B4511A;margin-top:6px">' + qv.piano.ora + 'ª ora</div>' : '') + '</div>' +
       par('Ciao <b>' + nome + '</b>, hai superato il quiz! Ora preparati all\'interrogazione, la verifica finale.') +
       par('Esercitati sulla <b>pagina pubblica del glossario</b>: ripassa termini e definizioni e mettiti alla prova con i quiz.') +
-      '<a class="btn" id="esercitati" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico());return false" style="justify-content:center;min-height:56px;font-size:19px;text-decoration:none">Esercitati ora →</a>' +
+      '<a class="btn" id="esercitati" href="' + esc(urlPubblico('msg')) + '" target="_blank" rel="noopener" onclick="window.open(urlPubblico(\'msg\'));return false" style="justify-content:center;min-height:56px;font-size:19px;text-decoration:none">Esercitati ora →</a>' +
       '<p class="muted" style="margin:0;font-size:14px">In bocca al lupo!</p></section>';
   } else {
     card = '<section class="card stack" id="schermataAmmesso" data-tappa="superato" style="border-top:8px solid #2E7D32;gap:14px">' + tit('#2E7D32', 'Quiz superato') + big('Complimenti,<br>' + nome + '!') +
@@ -5412,7 +5424,7 @@ function stampaCartelloni(quali, abbondanza, lingua) {
   // si impaginano qui (stessi caratteri) per calcolare la dimensione del testo, poi si passano alla finestra di stampa
   var scatole = aree.map(function (a) {
     var b = document.createElement('div'); b.style.cssText = 'position:absolute;left:-30000px;top:0;width:700mm';
-    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, qr: urlPubblico(), as: as, en: bil });
+    b.innerHTML = Poster.alfa(a, S.d.termini.filter(function (t) { return t.area == a.n; }), S.d.alunni, { nAree: S.d.aree.length, areeMie: !!S.d.areeMie, soloApprovate: true, qr: urlCartellone(), as: as, en: bil });
     document.body.appendChild(b); return b;
   });
   caratteriPronti().then(function () {
@@ -5762,7 +5774,7 @@ function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (IC
 /* sezioni della barra (riorganizzazione 2026-11): ogni sezione raccoglie una o più pagine di sempre,
    che restano tutte raggiungibili come schede in cima alla pagina. gr = gruppo nella barra. */
 var SEZIONI = [
-  { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
+  { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito', 'statpub'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
@@ -5776,7 +5788,7 @@ var SEZIONI = [
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
-var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
+var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
   cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', promo: 'Colleghi e numeri', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
@@ -5792,6 +5804,7 @@ function PAGINE() {
     { id: 'cruscotto', gr: 'Lavoro', t: 'Cruscotto', vis: true },
     { id: 'revisione', gr: 'Lavoro', t: 'Risposte da rivedere', vis: true, bd: contaDaRivedere() },
     { id: 'sollecito', gr: 'Lavoro', t: 'Da sollecitare', vis: !ro, bd: contaSollecito(), rosso: true },
+    { id: 'statpub', gr: 'Lavoro', t: 'Statistiche pagina pubblica', vis: adm && !ro },
     { id: 'situazione', gr: 'Studenti', t: 'Situazione e avanzamento', vis: true },
     { id: 'gestione', gr: 'Studenti', t: 'Proroghe e passaggi', vis: !!A && PUO('studenti') && !ro },
     { id: 'quiz', gr: 'Studenti', t: 'Quiz (seconda prova)', vis: !!S.d.quiz },
@@ -5885,7 +5898,7 @@ function barraAlta(p) {
   }
   return '<header class="tbar"><button class="smenu" onclick="document.body.classList.add(\'menu-on\')" aria-label="Apri il menu" aria-controls="side">☰</button>' +
     '<div class="ttit"><h1>' + esc(p.t) + '</h1><div class="tsub">' + esc(RO() ? 'Archivio · ' + ((S.d.edizioneArchivio || {}).nome || '') : (ed.nome || '') + (ed.as ? ' · a.s. ' + ed.as : '')) + (S.filtro.classe && S.filtro.classe !== 'tutte' ? ' · solo ' + esc(S.filtro.classe) : '') + '</div></div>' +
-    '<div class="tdx">' + chips + '<button class="btn sec tb" onclick="ricarica(\'Dati aggiornati\')">Aggiorna</button><a class="btn sec tb" href="/glossario" target="_blank" rel="noopener">Pagina pubblica</a></div></header>';
+    '<div class="tdx">' + chips + '<button class="btn sec tb" onclick="ricarica(\'Dati aggiornati\')">Aggiorna</button><a class="btn sec tb" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener">Pagina pubblica</a></div></header>';
 }
 
 function vistaDocente() {
@@ -5896,7 +5909,7 @@ function vistaDocente() {
   S.pag = pag;
   var p = pagine.filter(function (x) { return x.id === pag; })[0];
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
-  var avvisi = bannerCoda() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
+  var avvisi = bannerCoda() + bannerPubblica() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
     '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
@@ -5905,6 +5918,8 @@ function vistaDocente() {
   if (pag === 'revcart') avviaRevCart();
   if (pag === 'banca') avviaBanca();
   if (pag === 'promo') avviaPromo();
+  if (pag === 'statpub') avviaStatPub();
+  if (pag === 'cruscotto') avviaStatCruscotto();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
   if (location.hash === '#nuova-edizione' && ADM() && !RO() && !S.wz) apriWizard('edizione');
   if (location.hash === '#inglese' && PUO('documenti') && !RO() && !S.tr) apriTraduzioni();
@@ -5981,11 +5996,12 @@ var PAGINA = {
       ['Approvate', app + '<small> / ' + ts.length + '</small>', Math.round(app / n * 100) + '% definitive', app / n, 'var(--ok)'],
       sol ? ['Da sollecitare', sol.length, escl ? escl + (escl === 1 ? ' escluso' : ' esclusi') : 'nessun escluso', null, 'var(--err)', 'sollecito'] : ['Alunni', al.length, escl ? escl + ' esclusi' : 'nessun escluso', null, 'var(--ink)']
     ];
-    var h = oggi + '<section class="kpis">' + kpi.map(function (k) {
+    var h = oggi + bloccoPubblica() + '<section class="kpis">' + kpi.map(function (k) {
       var tag = k[5] ? 'button' : 'div';
       return '<' + tag + ' class="card kcard"' + (k[5] ? ' onclick="vai(\'' + k[5] + '\')"' : '') + '><div class="kl">' + k[0] + '</div><div class="kv">' + k[1] + '</div><div class="muted ks">' + k[2] + '</div>' +
         (k[3] != null ? '<div class="bar" style="margin-top:8px"><span style="width:' + Math.round(k[3] * 100) + '%;background:' + k[4] + '"></span></div>' : '') + '</' + tag + '>';
     }).join('') + '</section>';
+    h += bloccoStatCruscotto();
     h += bloccoAnello();
     var cols = '';
     if (sol) {
@@ -6049,6 +6065,7 @@ var PAGINA = {
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
+  statpub: function () { return paginaStatPub(); },
   cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
@@ -6526,7 +6543,7 @@ function messaggioOrale(id) {
   var p = quizDi(id).piano; if (!p) return '';
   var nome = String(nomeAlunno(id)).split(' ').slice(-1)[0];
   return 'Ciao ' + nome + ', hai superato il quiz del glossario: la tua interrogazione è fissata per ' + giornoOrale(p) + '.\n' +
-    'Preparati ripassando termini e definizioni sulla pagina pubblica: ' + urlPubblico() + '\n' +
+    'Preparati ripassando termini e definizioni sulla pagina pubblica: ' + urlPubblico('msg') + '\n' +
     'Trovi la data anche nell\'app del glossario.';
 }
 function bloccoProgramma(righe) {
@@ -7211,6 +7228,130 @@ function nuovoCodicePromo(btn) {
   btn.disabled = true;
   api('promocodice', {}).then(function (x) { S.pr = x; disegnaPromo(); toast('Nuovo codice creato'); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e)); });
+}
+
+/* ---------- pagina pubblica: pubblicazione decisa dal docente e statistiche delle visite ---------- */
+
+/* quiz finito: tutte le classi hanno una scadenza del quiz ed è passata */
+function quizFinito() {
+  var q = (S.d.admin && S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || null; if (!q) return false;
+  var cl = CLASSI(), now = Date.now();
+  return cl.length > 0 && cl.every(function (c) { var d = (q.scadenze || {})[c]; return d && now > Date.parse(d); });
+}
+function daPubblicare() { var p = S.d.pubblicazione; return p ? (!p.pubblicato ? p.approvate : p.novita.totale) : 0; }
+function quandoIt(iso) { var d = new Date(iso); return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' }) + ', ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
+function testoNovita(p) {
+  if (!p.pubblicato) return p.approvate ? p.approvate + (p.approvate === 1 ? ' definizione approvata' : ' definizioni approvate') + ' da pubblicare' : 'nessuna definizione approvata per ora';
+  var n = p.novita, pz = [];
+  if (n.nuove) pz.push(n.nuove + (n.nuove === 1 ? ' nuova' : ' nuove'));
+  if (n.cambiate) pz.push(n.cambiate + (n.cambiate === 1 ? ' modificata' : ' modificate'));
+  if (n.tolte) pz.push(n.tolte + (n.tolte === 1 ? ' tolta' : ' tolte'));
+  return pz.length ? 'Da pubblicare: ' + pz.join(', ') : 'Nessuna novità: la pagina pubblica è aggiornata';
+}
+/* riquadro nel cruscotto */
+function bloccoPubblica() {
+  var p = S.d.pubblicazione; if (!p || !LOC() || RO()) return '';
+  var n = daPubblicare();
+  return '<section class="card stack" id="pubBox" style="gap:10px;border-left:5px solid ' + (n ? '#E0A100' : 'var(--ok)') + '"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">' +
+    '<div><h2 class="h2s" style="margin:0">Pagina pubblica</h2><p class="muted" style="margin:4px 0 0">' + (p.pubblicato ? 'Ultima pubblicazione: <b>' + esc(quandoIt(p.il)) + '</b> · ' + p.n + (p.n === 1 ? ' definizione' : ' definizioni') : '<b>Non ancora pubblicato</b>: la pagina pubblica mostra «online a breve»') + '</p>' +
+    '<p style="margin:4px 0 0;font-weight:700;color:' + (n ? '#9A4A00' : 'var(--ok)') + '" id="pubNov">' + esc(testoNovita(p)) + '</p></div>' +
+    '<div class="row" style="gap:8px"><a class="btn sec" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener">Apri la pagina</a>' +
+    '<button class="btn" id="pubVai" onclick="pubblicaOra(this)"' + (n ? '' : ' disabled') + '>Pubblica sulla pagina pubblica</button></div></div>' +
+    '<p class="muted" style="margin:0;font-size:13.5px">Termini, definizioni e autori vanno online solo quando premi il pulsante. Quello che approvi dopo resta invisibile fino alla pubblicazione successiva.</p></section>';
+}
+/* banner lampeggiante: quiz finito e qualcosa da pubblicare */
+function bannerPubblica() {
+  var p = S.d.pubblicazione; if (!p || !LOC() || RO() || !quizFinito() || !daPubblicare()) return '';
+  return '<div class="note warn lampeggia" id="bannerPubblica" role="status"><div class="row" style="justify-content:space-between;gap:10px;align-items:center"><span><b>Quiz concluso: ricordati di pubblicare il glossario.</b> ' + esc(testoNovita(p)) + '.</span>' +
+    '<button class="btn" onclick="pubblicaOra(this)">Pubblica ora</button></div></div>';
+}
+function pubblicaOra(btn) {
+  if (btn.getAttribute('data-ok') !== '1') { btn.setAttribute('data-ok', '1'); btn.setAttribute('data-t', btn.textContent); btn.textContent = 'Conferma: pubblica adesso'; setTimeout(function () { if (btn.isConnected && btn.getAttribute('data-ok') === '1') { btn.setAttribute('data-ok', ''); btn.textContent = btn.getAttribute('data-t'); } }, 6000); return; }
+  btn.disabled = true; btn.textContent = 'Pubblicazione…';
+  api('pubblicaglossario').then(function (r) { S.d.pubblicazione = r; vistaDocente(); toast('Glossario pubblicato: ' + r.n + (r.n === 1 ? ' definizione online' : ' definizioni online')); })
+    .catch(function (e) { toast(errMsg(e), true); btn.disabled = false; btn.setAttribute('data-ok', ''); btn.textContent = btn.getAttribute('data-t') || 'Pubblica sulla pagina pubblica'; });
+}
+
+/* ---------- statistiche della pagina pubblica ---------- */
+var STP = { periodo: 30, cache: {} };
+function caricaStat(periodo, forza) {
+  var c = STP.cache[periodo];
+  if (c && !forza && Date.now() - c.t < 5 * 60000) return Promise.resolve(c.d);
+  return api('statistiche', { periodo: periodo }).then(function (d) { STP.cache[periodo] = { t: Date.now(), d: d }; return d; });
+}
+var MESI3 = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+function etGiorno(g) { var p = g.split('-'); return Number(p[2]) + ' ' + MESI3[Number(p[1]) - 1]; }
+function festivo(g) { var d = new Date(g + 'T12:00:00Z').getUTCDay(); return d === 0 || d === 6; }
+function nIt(n) { return Number(n || 0).toLocaleString('it-IT'); }
+function durataSec(s) { if (!s) return '—'; if (s < 60) return s + ' s'; var m = Math.round(s / 60); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; }
+function pct(a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; }
+/* grafico a barre delle visite al giorno (con la linea dei dispositivi diversi) */
+function graficoGiorni(gg, w, h, compatto) {
+  if (!gg.length) return '';
+  var max = Math.max(1, Math.max.apply(null, gg.map(function (g) { return g.v; }))), sx = compatto ? 2 : 34, sy = 10, bw = (w - sx - 6) / gg.length, H = h - sy - (compatto ? 4 : 24);
+  var y = function (v) { return sy + H - v / max * H; };
+  var s = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" role="img" aria-label="Visite al giorno" style="display:block">';
+  if (!compatto) [0, 0.5, 1].forEach(function (f) { var v = Math.round(max * f); s += '<line x1="' + sx + '" x2="' + (w - 4) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#E3E8EC"/><text x="' + (sx - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="11" fill="#6B7A86">' + v + '</text>'; });
+  var passo = Math.max(1, Math.ceil(gg.length / 7));
+  gg.forEach(function (g, i) {
+    var x = sx + i * bw + Math.min(1.5, bw * 0.15), bwi = Math.max(1, bw - Math.min(3, bw * 0.3));
+    s += '<rect x="' + x.toFixed(1) + '" y="' + y(g.v).toFixed(1) + '" width="' + bwi.toFixed(1) + '" height="' + Math.max(0, sy + H - y(g.v)).toFixed(1) + '" rx="2" fill="' + (festivo(g.g) ? '#A9C3E3' : '#1F5FA8') + '"><title>' + etGiorno(g.g) + ': ' + g.v + ' visite · ' + g.u + ' dispositivi</title></rect>';
+    if (!compatto && (i % passo === 0 || i === gg.length - 1)) s += '<text x="' + (x + bwi / 2).toFixed(1) + '" y="' + (h - 6) + '" text-anchor="middle" font-size="11" fill="#6B7A86">' + etGiorno(g.g) + '</text>';
+  });
+  if (!compatto && gg.length > 1) s += '<polyline fill="none" stroke="#E0A100" stroke-width="2.2" points="' + gg.map(function (g, i) { return (sx + i * bw + bw / 2).toFixed(1) + ',' + y(g.u).toFixed(1); }).join(' ') + '"/>';
+  return s + '</svg>';
+}
+function barreSt(righe, col) {
+  var max = Math.max(1, Math.max.apply(null, righe.map(function (r) { return r[1]; })));
+  return '<div class="stb">' + righe.map(function (r) { return '<div class="stbr"><span>' + esc(r[0]) + '</span><div class="bar"><span style="width:' + Math.round(r[1] / max * 100) + '%;background:' + (r[3] || col) + '"></span></div><b>' + r[2] + '</b></div>'; }).join('') + '</div>';
+}
+function legendaSt(v) { return '<div class="stleg">' + v.map(function (x) { return '<span><i style="background:' + x[1] + (x[2] ? ';height:3px;vertical-align:3px' : '') + '"></i>' + esc(x[0]) + '</span>'; }).join('') + '</div>'; }
+/* riquadro nel cruscotto: si riempie quando arrivano i numeri */
+function bloccoStatCruscotto() {
+  if (!ADM() || RO()) return '';
+  return '<section class="card stack" id="statBox" style="gap:12px"><div class="row" style="justify-content:space-between"><h2 class="h2s">Pagina pubblica · ultimi 30 giorni</h2><button class="btn sec tb" onclick="vai(\'statpub\')">Statistiche pagina pubblica →</button></div><div id="statBoxIn"><p class="muted" style="margin:0">Caricamento…</p></div></section>';
+}
+function avviaStatCruscotto() {
+  if (!document.getElementById('statBoxIn')) return;
+  caricaStat(30).then(function (d) {
+    var el = document.getElementById('statBoxIn'); if (!el) return;
+    if (!d.visite) { el.innerHTML = '<p class="muted" style="margin:0">Nessuna visita registrata negli ultimi 30 giorni. Il conteggio parte da quando è attiva questa funzione.</p>'; return; }
+    el.innerHTML = '<div class="stnum"><div><b>' + nIt(d.oggiVisite) + '</b><small>visite oggi</small></div><div><b>' + nIt(d.visite) + '</b><small>visite in 30 giorni</small></div><div><b>' + nIt(d.unici) + '</b><small>dispositivi diversi</small></div><div><b>' + pct(d.da_.qr || 0, d.visite) + '</b><small>arrivati dal QR dei cartelloni</small></div></div>' +
+      graficoGiorni(d.giorni, 900, 70, true) + legendaSt([['giorni di scuola', '#1F5FA8'], ['sabato e domenica', '#A9C3E3']]);
+  }).catch(function (e) { var el = document.getElementById('statBoxIn'); if (el) el.innerHTML = '<p class="muted" style="margin:0">' + esc(errMsg(e)) + '</p>'; });
+}
+/* pagina «Statistiche pagina pubblica» */
+function paginaStatPub() {
+  return '<section class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px"><div><h2 style="margin:0;font-size:22px">Statistiche pagina pubblica</h2><p class="muted" style="margin:4px 0 0" id="stAgg">Home dei glossari e glossari pubblici</p></div>' +
+    '<div class="stchip" role="group" aria-label="Periodo">' + [[7, '7 giorni'], [30, '30 giorni'], ['anno', 'Anno scolastico']].map(function (x) { return '<button data-p="' + x[0] + '" aria-pressed="' + (String(STP.periodo) === String(x[0])) + '" onclick="STP.periodo=this.getAttribute(\'data-p\');STP.periodo=STP.periodo===\'anno\'?\'anno\':Number(STP.periodo);vistaDocente()">' + x[1] + '</button>'; }).join('') + '</div></div>' +
+    '<div id="stKpi"><p class="muted" style="margin:0">Caricamento…</p></div></section><div id="stCorpo" class="stack"></div>';
+}
+function avviaStatPub() {
+  caricaStat(STP.periodo, true).then(function (d) {
+    if (!document.getElementById('stKpi')) return;
+    var agg = new Date(d.aggiornato);
+    document.getElementById('stAgg').textContent = 'Home dei glossari e glossari pubblici · aggiornato alle ' + agg.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('stKpi').innerHTML = '<section class="kpis" style="margin:0">' + [['Visite', nIt(d.visite), 'oggi ' + nIt(d.oggiVisite)], ['Dispositivi diversi', nIt(d.unici), 'telefoni e PC distinti'], ['Tempo medio', durataSec(d.tempoMedio), 'per visita'], ['Dal QR dei cartelloni', pct(d.da_.qr || 0, d.visite), 'delle visite']].map(function (k) {
+      return '<div class="card kcard"><div class="kl">' + k[0] + '</div><div class="kv">' + k[1] + '</div><div class="muted ks">' + k[2] + '</div></div>'; }).join('') + '</section>';
+    var h = '';
+    h += '<section class="card stack" style="gap:8px"><h2 class="h2s">Visite al giorno</h2>' + graficoGiorni(d.giorni, 900, 230, false) + legendaSt([['visite, giorni di scuola', '#1F5FA8'], ['visite, sabato e domenica', '#A9C3E3'], ['dispositivi diversi', '#E0A100', 1]]) + '</section>';
+    var tel = (d.disp.tel || 0), pc = (d.disp.pc || 0), dd = d.da_;
+    h += '<div class="grid2 cols"><section class="card stack" style="gap:10px"><h2 class="h2s">Pagine aperte</h2>' + (d.pagine.length ? barreSt(d.pagine.map(function (p) { return [p.nome, p.n, nIt(p.n), p.id === 'home' ? '#8A97A2' : null]; }), '#1F5FA8') : '<p class="muted" style="margin:0">Nessuna visita.</p>') + '</section>' +
+      '<section class="card stack" style="gap:10px"><h2 class="h2s">Da dove arrivano</h2>' + barreSt([['QR dei cartelloni', dd.qr || 0, pct(dd.qr || 0, d.visite)], ['Messaggio dell\'interrogazione', dd.msg || 0, pct(dd.msg || 0, d.visite), '#6B4FA0'], ['Link o indirizzo scritto', dd.altro || 0, pct(dd.altro || 0, d.visite), '#8A97A2']], '#B4511A') +
+      '<h2 class="h2s" style="margin-top:6px">Con cosa</h2>' + barreSt([['Telefono', tel, pct(tel, tel + pc)], ['PC o tablet', pc, pct(pc, tel + pc), '#8A97A2']], '#0E7C7B') +
+      '<p class="muted" style="margin:0;font-size:13.5px">Dall\'app installata sul telefono: ' + nIt(d.app) + (d.app === 1 ? ' visita' : ' visite') + (d.installazioni ? ' · ' + nIt(d.installazioni) + ' installazioni' : '') + '</p></section></div>';
+    h += '<section class="card stack" style="gap:10px"><h2 class="h2s">Cosa fanno</h2><div class="statt3"><div><b>' + nIt(d.consulta) + '</b><small>aperture del glossario completo</small></div><div><b>' + nIt(d.prove) + '</b><small>prove «Mettiti alla prova»' + (d.mediaProva != null ? ' · media ' + String(d.mediaProva).replace('.', ',') + '/7,5' : '') + '</small></div><div><b>' + nIt(d.squadre) + '</b><small>partite «Gioca a squadre»</small></div></div></section>';
+    var tutti = d.conLuogo, luoghi = d.luoghi.map(function (l) { return [l[0], l[1], pct(l[1], tutti)]; });
+    if (d.altriLuoghi) luoghi.push(['Altre località', d.altriLuoghi, pct(d.altriLuoghi, tutti), '#8A97A2']);
+    h += '<section class="card stack" style="gap:10px"><div class="row" style="justify-content:space-between"><h2 class="h2s">Da dove si collegano</h2>' + (d.italia + d.estero ? '<span class="muted" style="font-size:13px">Italia ' + pct(d.italia, d.italia + d.estero) + ' · estero ' + pct(d.estero, d.italia + d.estero) + '</span>' : '') + '</div>' +
+      (luoghi.length ? barreSt(luoghi, '#0E7C7B') : '<p class="muted" style="margin:0">Nessuna località ancora.</p>') +
+      '<p class="muted" style="margin:0;font-size:13px">Località approssimativa, ricavata dalla connessione e non dal GPS: con i dati del telefono a volte compare la città dell\'operatore (spesso Firenze, Milano o Roma) invece di quella reale.</p></section>';
+    var mo = Math.max(1, Math.max.apply(null, d.ore)), ore = '<svg viewBox="0 0 520 120" width="100%" style="display:block">' + d.ore.map(function (v, i) { var bh = v / mo * 86, x = 8 + i * 21; return '<rect x="' + x + '" y="' + (96 - bh) + '" width="16" height="' + bh + '" rx="2" fill="' + (i >= 8 && i < 14 ? '#2E7D32' : '#6B4FA0') + '"><title>ore ' + i + ': ' + v + '</title></rect>' + (i % 3 === 0 ? '<text x="' + (x + 8) + '" y="114" text-anchor="middle" font-size="11" fill="#6B7A86">' + i + '</text>' : ''); }).join('') + '</svg>';
+    h += '<div class="grid2 cols"><section class="card stack" style="gap:8px"><h2 class="h2s">A che ora</h2>' + ore + legendaSt([['orario scolastico (8–14)', '#2E7D32'], ['pomeriggio, sera e notte', '#6B4FA0']]) + '</section>' +
+      '<section class="card stack" style="gap:6px"><h2 class="h2s">Parole più cercate</h2>' + (d.ricerche.length ? '<table class="tbl"><tbody>' + d.ricerche.map(function (r, i) { return '<tr><td>' + (i + 1) + '. ' + esc(r[0]) + '</td><td class="n">' + nIt(r[1]) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p class="muted" style="margin:0">Nessuna ricerca ancora.</p>') + '</section></div>';
+    h += '<p class="muted" style="margin:0;font-size:13px">Conteggi anonimi: nessun nome e nessun dato personale. Il tempo di ripasso degli studenti che si riconoscono con il codice resta, come prima, nei loro report.</p>';
+    document.getElementById('stCorpo').innerHTML = h;
+  }).catch(function (e) { var el = document.getElementById('stKpi'); if (el) el.innerHTML = '<p class="muted" style="margin:0">' + esc(errMsg(e)) + '</p>'; });
 }
 
 </script>

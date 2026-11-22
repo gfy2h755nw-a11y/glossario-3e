@@ -11,6 +11,8 @@ const auto = require('./lib/automatico');
 const DBX = require('./lib/dropbox');
 const ED = require('./lib/edizioni');
 const OR = require('./lib/orale');
+const STAT = require('./lib/statistiche');
+const PUBB = require('./lib/pubblicazione');
 
 const AZIONI = {
   login: (d, p) => logica.login(d, p),
@@ -66,6 +68,16 @@ const AZIONI = {
   presenzapubblica: async (d, p) => { const a = p.codice ? await d.alunnoDaCodice(p.codice) : null; return a ? { nome: logica.nomePubblico(a.nome) } : {}; },
   // pagina pubblica /glossario: nessun codice richiesto, solo definizioni approvate
   pubblico: (d, p) => pubblicoInCache(d, p),
+  // home dei glossari: i glossari pubblicati (LIVE), ognuno con docente, materia e numeri
+  glossari: () => glossariInCache(),
+  // il docente manda online sulla pagina pubblica termini e definizioni approvati
+  pubblicaglossario: (d, p) => PUBB.pubblica(d, p),
+  // statistiche della pagina pubblica, solo per il prof. Cerrato
+  statistiche: async (d, p) => {
+    await logica.verificaAdmin(db('main'), p.codice);
+    const nomi = {}; (await glossariInCache()).forEach((g) => { nomi[g.id] = g.titolo; });
+    return STAT.riepilogo(db('main'), p.periodo === 'anno' ? 'anno' : [7, 30].indexOf(Number(p.periodo)) >= 0 ? Number(p.periodo) : 30, nomi);
+  },
   // attività parallele: nuova attività con classi, aree, termini e regole propri; elenco; rimozione dall'elenco (i dati restano in archivio)
   nuovaattivita: (d, p) => SP.nuovaAttivita(d, p),
   attivitaelenco: (d, p) => SP.elenco(d, p),
@@ -152,7 +164,26 @@ async function traccia(d, p, event) {
 const TEST = !!process.env.SETUP_KEY && process.env.SETUP_KEY === 'chiave-prova' && /localhost/.test(process.env.URL || '');
 const MANUT_MS = 5 * 60 * 1000, PUBBLICO_MS = 2 * 60 * 1000;
 const manutUltima = {}, cachePubblico = {};
-const SOLO_LETTURA = { presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+let cacheGlossari = null;
+async function glossariInCache() {
+  const now = Date.now();
+  if (!TEST && cacheGlossari && now - cacheGlossari.t < PUBBLICO_MS) return cacheGlossari.dati;
+  const sp = await SP.elencoPubblico(db('main'));
+  const ids = sp.length ? sp.map((x) => x.id) : ['main'];
+  const out = [];
+  for (const id of ids) {
+    try {
+      const P = await pubblicoInCache(db(id), {});
+      let termini = 0, definizioni = 0; (P.aree || []).forEach((a) => { termini += a.termini.length; definizioni += a.termini.filter((t) => t.def).length; });
+      const conc = !!P.concessione;
+      out.push({ id, titolo: conc ? (P.materia ? 'Glossario di ' + P.materia : 'Glossario') : 'Glossario odontotecnico', materia: P.materia || '', docente: P.docente || '', concessione: P.concessione || '',
+        anno: P.anno || '', pubblicato: !!P.pubblicato || definizioni > 0, classi: Object.keys(P.classi || {}), termini, definizioni, aree: (P.aree || []).length, colori: (P.aree || []).map((a) => a.colore) });
+    } catch (e) { console.error('glossari:', id, e.message); }
+  }
+  cacheGlossari = { t: now, dati: out };
+  return out;
+}
+const SOLO_LETTURA = { glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;
@@ -179,6 +210,11 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return risposta(405, { errore: 'Metodo non consentito.' });
   let p;
   try { p = JSON.parse(event.body || '{}'); } catch (e) { return risposta(400, { errore: 'Richiesta non valida.' }); }
+  // statistiche anonime della pagina pubblica: una scrittura sola, senza leggere il glossario
+  if (p.azione === 'visita') {
+    try { await STAT.registra(db('main'), p, event.headers || {}); } catch (e) { console.error('statistiche:', e.message); }
+    return risposta(200, { ok: true });
+  }
   const fn = AZIONI[p.azione];
   if (!fn) return risposta(400, { errore: 'Azione sconosciuta.' });
   try {
@@ -190,7 +226,7 @@ exports.handler = async (event) => {
     // dopo una modifica del docente il prossimo accesso rifà subito il controllo degli esclusi
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
-    if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita') Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]);
+    if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita' || p.azione === 'concessione' || p.azione === 'pubblicaglossario') { Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]); cacheGlossari = null; }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.admin && d.spazio === 'main') { try { await SP.pulisciResidui(d); } catch (e) { console.error('pulizia:', e.message); } }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'alunno') dati.att = d.spazio; // link alla pagina pubblica della sua attività
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: dati.utente.gestore ? (await SP.elencoDocente(d)).filter((x) => x.id === d.spazio) : await SP.elencoDocente(d) });
