@@ -6,9 +6,12 @@
 function appInstallata() {
   try { return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches; } catch (e) { return false; }
 }
+/* telefoni e tablet: anche nel browser le finestre nuove si perdono tra le schede e non si stampano bene */
+function schermoTouch() { try { return window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches; } catch (e) { return false; } }
+function conVisore() { return appInstallata() || schermoTouch(); }
 var _apriFinestra = window.open;
 window.open = function (u) {
-  if (!appInstallata() || (u && u !== 'about:blank')) return _apriFinestra.apply(window, arguments);
+  if (!conVisore() || (u && u !== 'about:blank')) return _apriFinestra.apply(window, arguments);
   return apriVisore();
 };
 /* finestra finta: accetta document.write / document.close / location.href come una finestra vera */
@@ -24,8 +27,10 @@ function apriVisore(titolo) {
     clearTimeout(t);
     t = setTimeout(function () {
       // la stampa automatica del documento si ferma: si stampa con il pulsante in alto
-      var html = buf.replace(/<head([^>]*)>/i, '<head$1><script>window.__stampa=window.print;window.print=function(){};<\/script>');
-      if (html === buf) html = '<script>window.__stampa=window.print;window.print=function(){};<\/script>' + buf;
+      // sul telefono la pagina A4 si rimpicciolisce per stare nello schermo (solo a video: la stampa resta A4)
+      var z = Math.min(1, Math.max(0.3, (window.innerWidth - 12) / 820)), zoom = z < 1 ? '<style>@media screen{html{zoom:' + z.toFixed(3) + '}}</style>' : '';
+      var html = buf.replace(/<head([^>]*)>/i, '<head$1>' + zoom + '<script>window.__stampa=window.print;window.print=function(){};<\/script>');
+      if (html === buf) html = zoom + '<script>window.__stampa=window.print;window.print=function(){};<\/script>' + buf;
       ifr.removeAttribute('src'); ifr.srcdoc = html;
       var m = /<title>([^<]*)<\/title>/i.exec(buf); if (m) $('vTit').textContent = m[1].replace(/&amp;/g, '&');
     }, 30);
@@ -47,6 +52,20 @@ function apriVisore(titolo) {
 }
 function stampaVisore() {
   var f = $('vFrame'); if (!f) return;
+  var doc = null; try { doc = f.getAttribute('srcdoc') != null ? f.contentDocument : null; } catch (e) { doc = null; }
+  // documento dell'app (schede, report, cartelloni): si stampa dalla pagina principale, che telefoni e tablet stampano sempre
+  if (doc && doc.body) {
+    var vecchio = $('stampaVisore'); if (vecchio) vecchio.remove();
+    var css = [].map.call(doc.querySelectorAll('style'), function (x) { return x.textContent; }).join('\n');
+    var box = document.createElement('div'); box.id = 'stampaVisore';
+    box.innerHTML = '<style>@media screen{#stampaVisore{display:none!important}}@media print{html,body{background:#fff!important;overflow:visible!important;height:auto!important}body>*:not(#stampaVisore){display:none!important}' + css + '}</style>' + doc.body.innerHTML;
+    box.querySelectorAll('script').forEach(function (x) { x.remove(); });
+    document.body.appendChild(box);
+    var via = function () { window.removeEventListener('afterprint', via); setTimeout(function () { if (box.isConnected) box.remove(); }, 500); };
+    window.addEventListener('afterprint', via);
+    setTimeout(function () { try { window.print(); } catch (e) { toast('Da qui non riesco a stampare.', true); } }, 60);
+    return;
+  }
   try { var w = f.contentWindow; (w.__stampa || w.print).call(w); } catch (e) { toast('Da qui non riesco a stampare: usa «Condividi o salva».', true); }
 }
 function chiudiVisore() {
@@ -77,7 +96,7 @@ function visoreFile(nome, blob) {
 (function () {
   var clic = HTMLAnchorElement.prototype.click;
   HTMLAnchorElement.prototype.click = function () {
-    if (appInstallata() && this.hasAttribute('download') && /^blob:/.test(this.href)) {
+    if (conVisore() && this.hasAttribute('download') && /^blob:/.test(this.href)) {
       var nome = this.getAttribute('download') || 'file';
       fetch(this.href).then(function (r) { return r.blob(); }).then(function (b) { visoreFile(nome, b); }).catch(function () { clic.call(this); }.bind(this));
       return;

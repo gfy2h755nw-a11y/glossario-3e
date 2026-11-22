@@ -3432,7 +3432,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 4';
+var VERSIONE = '22/11/2026 · 5';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -4458,36 +4458,36 @@ function stampaSchede(classe) {
   };
   var blocco = function (n, col, chiaro, scuro, tit, qr, url, cod, nota, riga) {
     return '<div class="bl" style="border-color:' + col + '"><div class="bt" style="background:' + col + '">' + n + ' · ' + tit + '</div><div class="bc">' + qr +
-      '<div class="bi"><div class="lb">Indirizzo</div><div class="url">' + esc(url) + '</div><div class="lb" style="margin-top:3mm">Codice personale</div><div class="cod">' + esc(cod) + '</div>' +
+      '<div class="bi"><div class="lb">Indirizzo</div><div class="url">' + esc(url) + '</div>' + (cod ? '<div class="lb" style="margin-top:2mm">Codice personale</div><div class="cod">' + esc(cod) + '</div>' : '') +
       (nota ? '<div class="nt" style="background:' + chiaro + ';color:' + scuro + '">' + nota + '</div>' : '') + '<p>' + riga + '</p></div></div></div>';
   };
   var pagine = lista.map(function (a) {
     var cl = a.classe || '3E', dt = (A.date || {})[cl] || { partenza: (A.impostazioni || {}).partenza, scadenzaIt: (A.impostazioni || {}).scadenzaIt }, qa = quizDi(a.id);
     var qIni = qa.partenza || (impQ.partenze || {})[cl], qFin = qa.scadenza || (impQ.scadenze || {})[cl];
-    var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice);
+    var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice), linkP = location.origin + '/glossario?da=scheda';
     return '<section class="pg"><header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
       '<div class="tit">I tuoi accessi al glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
       '<div class="gr">Classe ' + esc(cl) + ' · scritto e quiz, da casa, dal telefono o dal PC</div>' +
       '<div class="cal">' + box('Inizio scritto', dt.partenza, '#1F5FA8') + box('Fine scritto', dt.scadenzaIt, '#1F5FA8') + box('Inizio quiz', qIni, '#6B4EA2') + box('Fine quiz', qFin, '#6B4EA2') + '</div>' +
-      blocco('1', '#1F5FA8', '', '', 'Lo scritto', qrSvg(linkS, 46), host, a.codice, '',
+      blocco('1', '#1F5FA8', '', '', 'Lo scritto', qrSvg(linkS, 33), host, a.codice, '',
         'Inquadra il QR: entri direttamente. Per ognuno dei tuoi termini scegli la definizione corretta' + (EN() ? ', prima in italiano e poi in inglese' : '') + '; il docente approva o ti chiede di correggere.') +
-      blocco('2', '#6B4EA2', '#EFEAF7', '#4B3480', 'Il quiz', qrSvg(linkQ, 46), host + '/quiz', a.codice, '<b>Stesso codice dello scritto</b>',
+      blocco('2', '#6B4EA2', '#EFEAF7', '#4B3480', 'Il quiz', qrSvg(linkQ, 33), host + '/quiz', a.codice, '<b>Stesso codice dello scritto</b>',
         'Si apre a fine scritto. Indovina i termini di tutto il glossario: superato il quiz sei ammesso all\'interrogazione, la verifica finale.') +
-      '<div class="rip"><b>In vista dell\'interrogazione</b>Dopo che i quiz saranno terminati per ognuno, potrai esercitarti alla pagina <b class="u">' + esc(host) + '/glossario</b> in vista dell\'interrogazione.</div>' +
+      blocco('3', '#2E7D32', '#E6F2E6', '#1E5E22', 'Il ripasso', qrSvg(linkP, 33), host + '/glossario', '', '<b>Senza codice</b>',
+        'Dopo che i quiz saranno terminati per ognuno, potrai esercitarti alla pagina <b>' + esc(host) + '/glossario</b> in vista dell\'interrogazione.') +
       '<div class="warn"><b>Codice e QR sono personali.</b> Non fotografarli e non darli a nessuno: quello che si fa con il tuo codice risulta tuo.</div>' +
       '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer></section>';
   }).join('');
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '.pg{width:210mm;height:297mm;padding:14mm 16mm 12mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
     'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3.5mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:14pt}.pr{font-size:10pt;color:#5B6976;margin-top:1mm}' +
-    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:11.5pt;letter-spacing:.14em;text-transform:uppercase;margin-top:6mm}' +
+    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:11.5pt;letter-spacing:.14em;text-transform:uppercase;margin-top:4mm}' +
     '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:27pt;line-height:1.1;margin-top:1mm}.gr{align-self:flex-start;border-left:3mm solid #15212B;padding:1mm 3mm;font-size:11.5pt;margin-top:2mm;background:#F2F5F7}' +
-    '.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:5mm}.cal>div{background:#F2F5F7;border-radius:0 0 2mm 2mm;padding:2.5mm 3mm;display:flex;flex-direction:column}.cal span{font-size:8.5pt;text-transform:uppercase;letter-spacing:.06em;color:#5B6976}.cal b{font-family:Archivo,Arial,sans-serif;font-size:13pt;margin-top:.5mm}.cal small{font-size:9.5pt;color:#5B6976}' +
-    '.bl{border:1.4pt solid;border-radius:3mm;margin-top:5mm;overflow:hidden}.bt{color:#fff;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.06em;text-transform:uppercase;padding:2mm 4mm}' +
-    '.bc{display:flex;gap:6mm;padding:4mm;align-items:center}.bc svg{flex:none;border:1pt solid #C3CED7;border-radius:2mm}.bi{min-width:0}.lb{font-size:8.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
-    '.url{font-weight:700;font-size:13pt;margin-top:.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:22pt;letter-spacing:.18em}.nt{display:inline-block;font-size:10pt;padding:1mm 2.5mm;border-radius:2mm;margin-top:1mm}.bi p{font-size:10.5pt;margin:2.5mm 0 0;line-height:1.35}' +
-    '.rip{margin-top:5mm;border:1.2pt solid #2E7D32;background:#EEF6EE;border-radius:3mm;padding:3mm 4mm;font-size:11pt;line-height:1.4}.rip b:first-child{display:block;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:10pt;letter-spacing:.06em;text-transform:uppercase;color:#1E5E22;margin-bottom:1mm}.rip .u{white-space:nowrap}' +
-    '.warn{margin-top:auto;border:1pt solid #E5B9B4;background:#FBEDEB;border-radius:2mm;padding:2.5mm 3.5mm;font-size:10pt}footer{margin-top:3mm;font-size:9pt;color:#5B6976;text-align:right}';
+    '.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:4mm}.cal>div{background:#F2F5F7;border-radius:0 0 2mm 2mm;padding:2.5mm 3mm;display:flex;flex-direction:column}.cal span{font-size:8.5pt;text-transform:uppercase;letter-spacing:.06em;color:#5B6976}.cal b{font-family:Archivo,Arial,sans-serif;font-size:13pt;margin-top:.5mm}.cal small{font-size:9.5pt;color:#5B6976}' +
+    '.bl{border:1.4pt solid;border-radius:3mm;margin-top:4mm;overflow:hidden}.bt{color:#fff;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.06em;text-transform:uppercase;padding:2mm 4mm}' +
+    '.bc{display:flex;gap:5mm;padding:3mm 4mm;align-items:center}.bl:last-of-type{margin-bottom:4mm}.bc svg{flex:none;border:1pt solid #C3CED7;border-radius:2mm}.bi{min-width:0}.lb{font-size:8.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
+    '.url{font-weight:700;font-size:13pt;margin-top:.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:19pt;letter-spacing:.18em}.nt{display:inline-block;font-size:10pt;padding:1mm 2.5mm;border-radius:2mm;margin-top:1mm}.bi p{font-size:10.5pt;margin:2mm 0 0;line-height:1.35}' +
+        '.warn{margin-top:auto;margin-bottom:0;border:1pt solid #E5B9B4;background:#FBEDEB;border-radius:2mm;padding:2.5mm 3.5mm;font-size:10pt}footer{margin-top:3mm;font-size:9pt;color:#5B6976;text-align:right}';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
   w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Accessi Glossario ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
@@ -4518,9 +4518,12 @@ document.addEventListener('visibilitychange', presenza);
 function appInstallata() {
   try { return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches; } catch (e) { return false; }
 }
+/* telefoni e tablet: anche nel browser le finestre nuove si perdono tra le schede e non si stampano bene */
+function schermoTouch() { try { return window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches; } catch (e) { return false; } }
+function conVisore() { return appInstallata() || schermoTouch(); }
 var _apriFinestra = window.open;
 window.open = function (u) {
-  if (!appInstallata() || (u && u !== 'about:blank')) return _apriFinestra.apply(window, arguments);
+  if (!conVisore() || (u && u !== 'about:blank')) return _apriFinestra.apply(window, arguments);
   return apriVisore();
 };
 /* finestra finta: accetta document.write / document.close / location.href come una finestra vera */
@@ -4536,8 +4539,10 @@ function apriVisore(titolo) {
     clearTimeout(t);
     t = setTimeout(function () {
       // la stampa automatica del documento si ferma: si stampa con il pulsante in alto
-      var html = buf.replace(/<head([^>]*)>/i, '<head$1><script>window.__stampa=window.print;window.print=function(){};<\/script>');
-      if (html === buf) html = '<script>window.__stampa=window.print;window.print=function(){};<\/script>' + buf;
+      // sul telefono la pagina A4 si rimpicciolisce per stare nello schermo (solo a video: la stampa resta A4)
+      var z = Math.min(1, Math.max(0.3, (window.innerWidth - 12) / 820)), zoom = z < 1 ? '<style>@media screen{html{zoom:' + z.toFixed(3) + '}}</style>' : '';
+      var html = buf.replace(/<head([^>]*)>/i, '<head$1>' + zoom + '<script>window.__stampa=window.print;window.print=function(){};<\/script>');
+      if (html === buf) html = zoom + '<script>window.__stampa=window.print;window.print=function(){};<\/script>' + buf;
       ifr.removeAttribute('src'); ifr.srcdoc = html;
       var m = /<title>([^<]*)<\/title>/i.exec(buf); if (m) $('vTit').textContent = m[1].replace(/&amp;/g, '&');
     }, 30);
@@ -4559,6 +4564,20 @@ function apriVisore(titolo) {
 }
 function stampaVisore() {
   var f = $('vFrame'); if (!f) return;
+  var doc = null; try { doc = f.getAttribute('srcdoc') != null ? f.contentDocument : null; } catch (e) { doc = null; }
+  // documento dell'app (schede, report, cartelloni): si stampa dalla pagina principale, che telefoni e tablet stampano sempre
+  if (doc && doc.body) {
+    var vecchio = $('stampaVisore'); if (vecchio) vecchio.remove();
+    var css = [].map.call(doc.querySelectorAll('style'), function (x) { return x.textContent; }).join('\n');
+    var box = document.createElement('div'); box.id = 'stampaVisore';
+    box.innerHTML = '<style>@media screen{#stampaVisore{display:none!important}}@media print{html,body{background:#fff!important;overflow:visible!important;height:auto!important}body>*:not(#stampaVisore){display:none!important}' + css + '}</style>' + doc.body.innerHTML;
+    box.querySelectorAll('script').forEach(function (x) { x.remove(); });
+    document.body.appendChild(box);
+    var via = function () { window.removeEventListener('afterprint', via); setTimeout(function () { if (box.isConnected) box.remove(); }, 500); };
+    window.addEventListener('afterprint', via);
+    setTimeout(function () { try { window.print(); } catch (e) { toast('Da qui non riesco a stampare.', true); } }, 60);
+    return;
+  }
   try { var w = f.contentWindow; (w.__stampa || w.print).call(w); } catch (e) { toast('Da qui non riesco a stampare: usa «Condividi o salva».', true); }
 }
 function chiudiVisore() {
@@ -4589,7 +4608,7 @@ function visoreFile(nome, blob) {
 (function () {
   var clic = HTMLAnchorElement.prototype.click;
   HTMLAnchorElement.prototype.click = function () {
-    if (appInstallata() && this.hasAttribute('download') && /^blob:/.test(this.href)) {
+    if (conVisore() && this.hasAttribute('download') && /^blob:/.test(this.href)) {
       var nome = this.getAttribute('download') || 'file';
       fetch(this.href).then(function (r) { return r.blob(); }).then(function (b) { visoreFile(nome, b); }).catch(function () { clic.call(this); }.bind(this));
       return;
@@ -7339,7 +7358,7 @@ function avviaStatPub() {
     h += '<section class="card stack" style="gap:8px"><h2 class="h2s">Visite al giorno</h2>' + graficoGiorni(d.giorni, 900, 230, false) + legendaSt([['visite, giorni di scuola', '#1F5FA8'], ['visite, sabato e domenica', '#A9C3E3'], ['dispositivi diversi', '#E0A100', 1]]) + '</section>';
     var tel = (d.disp.tel || 0), pc = (d.disp.pc || 0), dd = d.da_;
     h += '<div class="grid2 cols"><section class="card stack" style="gap:10px"><h2 class="h2s">Pagine aperte</h2>' + (d.pagine.length ? barreSt(d.pagine.map(function (p) { return [p.nome, p.n, nIt(p.n), p.id === 'home' ? '#8A97A2' : null]; }), '#1F5FA8') : '<p class="muted" style="margin:0">Nessuna visita.</p>') + '</section>' +
-      '<section class="card stack" style="gap:10px"><h2 class="h2s">Da dove arrivano</h2>' + barreSt([['QR dei cartelloni', dd.qr || 0, pct(dd.qr || 0, d.visite)], ['Messaggio dell\'interrogazione', dd.msg || 0, pct(dd.msg || 0, d.visite), '#6B4FA0'], ['Link o indirizzo scritto', dd.altro || 0, pct(dd.altro || 0, d.visite), '#8A97A2']], '#B4511A') +
+      '<section class="card stack" style="gap:10px"><h2 class="h2s">Da dove arrivano</h2>' + barreSt([['QR dei cartelloni', dd.qr || 0, pct(dd.qr || 0, d.visite)], ['Messaggio dell\'interrogazione', dd.msg || 0, pct(dd.msg || 0, d.visite), '#6B4FA0'], ['Foglio accessi degli studenti', dd.scheda || 0, pct(dd.scheda || 0, d.visite), '#2E7D32'], ['Link o indirizzo scritto', dd.altro || 0, pct(dd.altro || 0, d.visite), '#8A97A2']], '#B4511A') +
       '<h2 class="h2s" style="margin-top:6px">Con cosa</h2>' + barreSt([['Telefono', tel, pct(tel, tel + pc)], ['PC o tablet', pc, pct(pc, tel + pc), '#8A97A2']], '#0E7C7B') +
       '<p class="muted" style="margin:0;font-size:13.5px">Dall\'app installata sul telefono: ' + nIt(d.app) + (d.app === 1 ? ' visita' : ' visite') + (d.installazioni ? ' · ' + nIt(d.installazioni) + ' installazioni' : '') + '</p></section></div>';
     h += '<section class="card stack" style="gap:10px"><h2 class="h2s">Cosa fanno</h2><div class="statt3"><div><b>' + nIt(d.consulta) + '</b><small>aperture del glossario completo</small></div><div><b>' + nIt(d.prove) + '</b><small>prove «Mettiti alla prova»' + (d.mediaProva != null ? ' · media ' + String(d.mediaProva).replace('.', ',') + '/7,5' : '') + '</small></div><div><b>' + nIt(d.squadre) + '</b><small>partite «Gioca a squadre»</small></div></div></section>';

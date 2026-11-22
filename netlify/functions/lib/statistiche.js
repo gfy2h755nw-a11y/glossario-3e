@@ -40,7 +40,7 @@ async function registra(fdb, p, headers) {
       const vid = String(p.vid || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
       if (vid) piu(s.vid, vid, 1, LIMITE.vid);
       piu(s.pagine, pag, 1, LIMITE.pagine);
-      piu(s.da, ['qr', 'msg'].indexOf(p.da) >= 0 ? p.da : 'altro');
+      piu(s.da, ['qr', 'msg', 'scheda'].indexOf(p.da) >= 0 ? p.da : 'altro');
       piu(s.disp, p.disp === 'tel' ? 'tel' : 'pc');
       if (p.app) s.app++;
       s.ore[oraRoma(now)]++;

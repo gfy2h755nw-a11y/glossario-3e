@@ -954,7 +954,7 @@ function stat(ev, extra) {
 }
 (function () {
   var nuova = true; try { nuova = !sessionStorage.getItem('gl-sess'); sessionStorage.setItem('gl-sess', '1'); } catch (e) { /* niente */ }
-  if (nuova) stat('apertura', { da: DA === 'qr' || DA === 'msg' ? DA : '', disp: TEL && !/iPad|Tablet/i.test(UA) ? 'tel' : 'pc', app: APP ? 1 : 0, vid: VID });
+  if (nuova) stat('apertura', { da: ['qr', 'msg', 'scheda'].indexOf(DA) >= 0 ? DA : '', disp: TEL && !/iPad|Tablet/i.test(UA) ? 'tel' : 'pc', app: APP ? 1 : 0, vid: VID });
   else stat('pagina');
   // il tempo passato sulla pagina (solo quando è in primo piano)
   var dal = document.visibilityState === 'visible' ? Date.now() : 0;
