@@ -79,10 +79,6 @@ const AZIONI = {
   promonumeri: (d, p) => require('./lib/promo').numeriPubblici(d, p),
   promoaggiorna: (d, p) => require('./lib/promo').aggiornaNumeri(d, p),
   promostato: (d, p) => require('./lib/promo').stato(d, p),
-  promodemo: (d, p) => require('./lib/promo').chiediDemo(d, p),
-  promocreademo: (d, p) => require('./lib/promo').creaDemo(d, p),
-  promocancellademo: (d, p) => require('./lib/promo').cancellaDemo(d, p),
-  demoricomincia: (d, p) => require('./lib/demo').ricomincia(d, p),
   promocodice: (d, p) => require('./lib/promo').cambiaCodice(d, p),
   banca: (d, p) => require('./lib/banca').banca(d, p),
   bancasalva: (d, p) => require('./lib/banca').salva(d, p),
@@ -127,7 +123,7 @@ const AZIONI = {
     const buf = await creaWord(stato, now);
     let dropbox = 'non collegato';
     const segreto = await d.leggiSegreto('dropbox');
-    if (DBX.configurato() && segreto && segreto.refresh && !stato.config.demo) { // le demo non vanno su Dropbox
+    if (DBX.configurato() && segreto && segreto.refresh) {
       try { await DBX.carica(await DBX.tokenAccesso(segreto), auto.cartella(d) + NOME_DROPBOX, buf); dropbox = 'ok'; } catch (e) { dropbox = 'errore: ' + String(e.message || e).slice(0, 200); }
     }
     return { nome: 'Glossario_definizioni_approvate.docx', base64: buf.toString('base64'), dropbox, percorso: auto.cartella(d) + NOME_DROPBOX };
@@ -156,7 +152,7 @@ async function traccia(d, p, event) {
 const TEST = !!process.env.SETUP_KEY && process.env.SETUP_KEY === 'chiave-prova' && /localhost/.test(process.env.URL || '');
 const MANUT_MS = 5 * 60 * 1000, PUBBLICO_MS = 2 * 60 * 1000;
 const manutUltima = {}, cachePubblico = {};
-const SOLO_LETTURA = { promodemo: 1, promocreademo: 1, promocancellademo: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+const SOLO_LETTURA = { presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;
@@ -195,7 +191,7 @@ exports.handler = async (event) => {
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
     if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita') Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]);
-    if (p.azione === 'login' && dati && dati.utente && dati.utente.gestore && dati.config && dati.config.demo) await require('./lib/demo').segnaAccesso(d);
+    if (p.azione === 'login' && dati && dati.utente && dati.utente.admin && d.spazio === 'main') { try { await SP.pulisciResidui(d); } catch (e) { console.error('pulizia:', e.message); } }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'alunno') dati.att = d.spazio; // link alla pagina pubblica della sua attività
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: dati.utente.gestore ? (await SP.elencoDocente(d)).filter((x) => x.id === d.spazio) : await SP.elencoDocente(d) });
     if (TRACCIA[p.azione] && p.codice) await traccia(d, p, event);

@@ -76,7 +76,6 @@ section{padding-block:clamp(56px,9vw,104px)}
 .doc-rep{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(18px,3vw,36px);margin-top:44px;align-items:start}
 .doc-rep figure{margin:0}.doc-rep figcaption{margin-bottom:16px;color:var(--ink2)}.doc-rep figcaption b{display:block;font:800 19px/1.3 var(--H);color:var(--ink);margin-bottom:4px}
 @media (max-width:820px){.doc-pres,.doc-rep{grid-template-columns:minmax(0,1fr)}}
-.demo-cta{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:18px}.demo-cta .btn{min-height:56px;font-size:18px;padding:0 28px}#demoEsito{margin:0;font-weight:700;color:var(--acc-d)}
 .numeri{background:var(--ink);color:#fff;padding-block:34px}
 .numeri .w{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
 .numeri div b{display:block;font:800 clamp(34px,5vw,54px)/1 var(--H);letter-spacing:-.02em}
@@ -233,7 +232,7 @@ footer{padding:28px 0 calc(28px + env(safe-area-inset-bottom,0px));color:var(--m
     <span class="eyebrow">Per i colleghi</span>
     <h1>I termini del laboratorio diventano <em>un progetto di classe</em>.</h1>
     <p class="lead">Un'app web pensata per l'indirizzo odontotecnico: ogni alunno costruisce una parte del glossario, il docente guida, corregge e valuta, e alla fine la classe stampa i cartelloni e pubblica il suo glossario.</p>
-    <div class="cta"><a class="btn" href="#percorso">Guarda come funziona</a><a class="btn sec" href="#contatti">Chiedi una demo</a></div>
+    <div class="cta"><a class="btn" href="#percorso">Guarda come funziona</a><a class="btn sec" href="#contatti">Parliamone</a></div>
     <p class="firma">Ideata e curata dal <b>prof. Danilo Cerrato</b>, Laboratorio odontotecnico.</p>
   </div>
   <div class="ritratto"><div id="ritratto"></div><p class="motto" lang="la"><b>N</b>omina sunt consequentia rerum<small>Dante · Vita Nuova, XIII</small></p></div>
@@ -372,9 +371,7 @@ footer{padding:28px 0 calc(28px + env(safe-area-inset-bottom,0px));color:var(--m
 <section class="fine" id="contatti"><div class="w">
   <span class="eyebrow">Proviamola insieme</span>
   <h2 style="margin-top:10px">Vuoi provarla con una tua classe?</h2>
-  <p class="lead">Chiedi una demo: ricevi un link a un'attività di prova tutta tua, con classi, studenti e risposte inventati e tutte le fasi già avviate, compresa la pagina pubblica dove gli studenti si esercitano. Puoi provare tutto per 14 giorni, senza toccare nulla di vero.</p>
-  <div class="demo-cta"><button class="btn" id="chiediDemo" type="button">Chiedi una demo</button><p id="demoEsito" role="status"></p></div>
-  <p class="lead" style="margin-top:22px">Oppure parlane con il prof. Cerrato: ti mostra l'app dal vivo e ti prepara un'attività su misura.</p>
+  <p class="lead">Parlane con il prof. Cerrato: ti mostra l'app dal vivo e ti prepara un'attività su misura.</p>
   <div class="contatto"><svg class="lgs lgc" viewBox="0 0 100 100" role="img" aria-label="Logo dell'IIS Barsanti"><rect width="100" height="100" fill="#EA3628"/><text x="15" y="15.5" textLength="66" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">BARSANTI</text><text x="15" y="98" textLength="65" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">SALVETTI</text><text transform="translate(83.5 19) rotate(90)" textLength="64" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">FIORILLO</text><text transform="translate(16.5 84) rotate(-90)" textLength="63" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff;font-size:17px">EINAUDI</text><text x="19" y="81" textLength="61" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:900;fill:#fff;font-size:88px">B</text></svg><b>prof. Danilo Cerrato</b><span>Laboratorio odontotecnico · IIS «L. Barsanti», sede Salvetti</span><a href="mailto:danilo.cerrato@ebarsanti.edu.it">danilo.cerrato@ebarsanti.edu.it</a><a href="tel:+393358163818">335 8163818</a></div>
 </div></section>
 </main>
@@ -450,9 +447,6 @@ function introDaMostrare() {
 var PROMO = { entra: function (c, nome, cognome) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promo', c: c, nome: nome, cognome: cognome }) })
     .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.ok) throw new Error(j.errore || 'Accesso non riuscito.'); return j.dati || {}; }); });
-}, demo: function (c, nome, cognome) {
-  return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promodemo', c: c, nome: nome, cognome: cognome }) })
-    .then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) throw new Error(j.errore || 'Richiesta non inviata.'); return j.dati; });
 }, numeri: function (c) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promonumeri', c: c }) })
     .then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) throw new Error(j.errore); return j.dati.numeri; });
@@ -492,15 +486,6 @@ var PROMO = { entra: function (c, nome, cognome) {
     }).catch(function (e) { btn.disabled = false; btn.textContent = 'Entra'; $('aErr').textContent = e.message || 'Accesso non riuscito.'; });
   });
   setTimeout(function () { if (!$('accesso').hidden) $('aNome').focus(); }, 50);
-  // «Chiedi una demo»: con il nome scritto all'ingresso; arriva al prof. Cerrato nella sezione Promo App
-  $('chiediDemo').addEventListener('click', function () {
-    var g = null; try { g = JSON.parse(localStorage.getItem(chiave) || 'null'); } catch (e) {}
-    var nome = g && g.nome ? g.nome : ($('aNome').value || '').trim(), cogn = g && g.cognome ? g.cognome : ($('aCogn').value || '').trim();
-    if (!nome || !cogn) { $('accesso').hidden = false; $('aNome').focus(); return; }
-    var b = this; b.disabled = true; b.textContent = 'Invio…';
-    PROMO.demo(codice, nome, cogn).then(function () { b.textContent = 'Richiesta inviata'; $('demoEsito').textContent = 'Grazie! Il prof. Cerrato ti manderà il link alla tua demo.'; })
-      .catch(function (e) { b.disabled = false; b.textContent = 'Chiedi una demo'; $('demoEsito').textContent = e.message || 'Richiesta non inviata: riprova.'; });
-  });
 })();
 </script>
 </body>
