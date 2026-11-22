@@ -159,7 +159,7 @@ function apriOrale(id, btn) {
 function pescaOrale(id, btn) {
   if (btn) btn.disabled = true;
   api('oralepesca', { alunno: id }).then(function (d) {
-    S.or = { alunno: id, bozza: d.bozza, esiti: d.bozza.termini.map(function () { return null; }), nota: '' };
+    S.or = riprendiOrale({ alunno: id, bozza: d.bozza, esiti: d.bozza.termini.map(function () { return null; }), nota: '' });
     vistaDocente(); window.scrollTo(0, 0);
   }).catch(function (e) { toast(errMsg(e), true); if (btn) btn.disabled = false; });
 }
@@ -176,7 +176,8 @@ function schedaOrale() {
   var o = S.or, r = (S.d.panoramica || []).filter(function (x) { return x.id === o.alunno; })[0] || {}, q = quizDi(o.alunno), vs = votiDi(o.alunno);
   var fatti = o.esiti.filter(function (e) { return e !== null; }).length, punti = puntiOrale(), tutti = fatti === o.esiti.length;
   if (o.prova) r = { nome: 'Simulazione' };
-  var h = '<section class="card stack" id="oraleScheda"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">' + (o.prova ? 'Simulazione dell\'interrogazione' + (o.bes ? ' · ' + o.esiti.length + ' termini' : '') : 'Interrogazione di ' + esc(r.nome || nomeAlunno(o.alunno))) + ' <span class="muted" style="font-weight:400;font-size:16px">' + (o.prova ? '' : esc(etich(r))) + '</span></h2>' +
+  memoOrale();
+  var h = spiaOrale() + '<section class="card stack" id="oraleScheda"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">' + (o.prova ? 'Simulazione dell\'interrogazione' + (o.bes ? ' · ' + o.esiti.length + ' termini' : '') : 'Interrogazione di ' + esc(r.nome || nomeAlunno(o.alunno))) + ' <span class="muted" style="font-weight:400;font-size:16px">' + (o.prova ? '' : esc(etich(r))) + '</span></h2>' +
     '<div class="row" style="gap:6px"><button class="btn sec tb" id="orPieno" onclick="schermoPieno(' + (S.orPieno ? 'false' : 'true') + ')">' + (S.orPieno ? 'Esci dallo schermo pieno' : 'Schermo pieno') + '</button><button class="btn sec tb" onclick="S.or=null;if(S.orPieno)schermoPieno(false);vistaDocente()">Torna all\'elenco</button></div></div>' +
     (o.prova ? '<div class="note" id="orInfo">Simulazione: termini pescati a caso tra tutti quelli del glossario. Segna le risposte e cambia i termini come in un\'interrogazione vera: <b>niente viene salvato</b> e nessuno studente è coinvolto.</div>' : '' +
     '<div class="or-info" id="orInfo"><div><span class="kl">Voto dello scritto</span><b>' + (r.escluso ? 'Escluso' : fv(vs.voto)) + '</b><small>' + (r.escluso ? 'non entra nel finale' : (vs.errIt || 0) + (vs.errIt === 1 ? ' errore' : ' errori') + (vs.manuale != null ? ' · voto manuale' : '')) + '</small></div>' +
@@ -202,9 +203,9 @@ function schedaOrale() {
     '<div class="row" role="radiogroup" aria-label="Voto orale">' +
       '<label class="row" style="gap:8px;font-weight:700"><input type="radio" name="orTipo" id="orCalc" ' + (!mano ? 'checked' : '') + ' onchange="S.or.mano=null;vistaOralePos()" style="width:20px;height:20px"> Calcolato dalle risposte' + (tutti ? ': <span class="disp">' + fv(calc) + '</span>' : '') + '</label>' +
       '<label class="row" style="gap:8px;font-weight:700"><input type="radio" name="orTipo" id="orMano" ' + (mano ? 'checked' : '') + ' onchange="S.or.mano=S.or.mano||\'\';vistaOralePos();var e=$(\'orManoV\');if(e)e.focus()" style="width:20px;height:20px"> Lo assegno io</label>' +
-      (o.mano != null ? '<input id="orManoV" type="text" inputmode="decimal" placeholder="es. 6,5" value="' + esc(o.mano) + '" oninput="S.or.mano=this.value;aggiornaSalvaOrale()" style="max-width:120px" aria-label="Voto orale assegnato dal docente">' : '') +
+      (o.mano != null ? '<input id="orManoV" type="text" inputmode="decimal" placeholder="es. 6,5" value="' + esc(o.mano) + '" oninput="S.or.mano=this.value;aggiornaSalvaOrale();memoOrale()" style="max-width:120px" aria-label="Voto orale assegnato dal docente">' : '') +
     '</div>' + (o.mano != null ? '<p class="muted" style="margin:0;font-size:14px">Da 1 a 10, a quarti di voto. Il voto calcolato' + (tutti ? ' (' + fv(calc) + ')' : '') + ' resta salvato accanto, per confronto.</p>' : '') + '</section>';
-  h += '<section class="card stack"><label for="orNota">Nota (facoltativa, resta nel registro dell\'interrogazione)</label><input id="orNota" type="text" maxlength="300" value="' + esc(o.nota || '') + '" oninput="S.or.nota=this.value">' +
+  h += '<section class="card stack"><label for="orNota">Nota (facoltativa, resta nel registro dell\'interrogazione)</label><input id="orNota" type="text" maxlength="300" value="' + esc(o.nota || '') + '" oninput="S.or.nota=this.value;memoOrale()">' +
     '<div class="row"><button class="btn ok" id="orSalva" ' + (tutti ? '' : 'disabled') + ' onclick="salvaOrale(this)">' + testoSalvaOrale(calc, tutti) + '</button>' +
     '<button class="btn sec" onclick="scartaOrale(this)">Scarta questa interrogazione</button>' + (o.bozza.cambi ? '<span class="muted" style="font-size:14px">' + (o.bozza.cambi === 1 ? '1 termine cambiato' : o.bozza.cambi + ' termini cambiati') + '</span>' : '') + '</div>' +
     (tutti ? '' : '<p class="muted" style="margin:0;font-size:14px">Segna l\'esito di tutte le risposte per salvare.</p>') + '</section>';
@@ -222,6 +223,7 @@ function aggiornaSalvaOrale() {
 }
 function esitoOrale(i, v) {
   S.or.esiti[i] = S.or.esiti[i] === v ? null : v;
+  memoOrale();
   var y = window.scrollY; vistaDocente(); window.scrollTo(0, y);
 }
 function cambiaOrale(i, btn) {
@@ -239,9 +241,15 @@ function salvaOrale(btn) {
   }
   btn.disabled = true;
   var mano = S.or.mano != null && String(S.or.mano).trim() !== '' ? String(S.or.mano).trim() : null;
-  api('oralesalva', { alunno: S.or.alunno, esiti: S.or.esiti, nota: S.or.nota, votoDocente: mano }).then(function (d) {
-    S.or = null; return ricarica('Interrogazione salvata: voto orale ' + fv(d.orale.voto) + (d.orale.manuale ? ' (assegnato da te; calcolato ' + fv(d.orale.votoCalcolato) + ')' : ''));
-  }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
+  var dati = { alunno: S.or.alunno, esiti: S.or.esiti.slice(), nota: S.or.nota, votoDocente: mano };
+  api('oralesalva', dati).then(function (d) {
+    togliMemoOrale(dati.alunno); S.or = null; return ricarica('Interrogazione salvata: voto orale ' + fv(d.orale.voto) + (d.orale.manuale ? ' (assegnato da te; calcolato ' + fv(d.orale.votoCalcolato) + ')' : ''));
+  }).catch(function (e) {
+    if (!e.rete) { toast(errMsg(e), true); btn.disabled = false; return; }
+    // niente internet: l'interrogazione resta sul dispositivo e parte da sola appena torna la rete
+    mettiInCoda(dati); togliMemoOrale(dati.alunno); var nome = nomeAlunno(dati.alunno); S.or = null; if (S.orPieno) schermoPieno(false); vistaDocente();
+    finestra('Salvata sul dispositivo', '<p style="margin:0">Manca la connessione: l\'interrogazione di <b>' + esc(nome) + '</b> è salvata su questo dispositivo e verrà inviata <b>da sola appena torna internet</b>.</p><p class="muted" style="margin:0">Non chiudere il browser cancellandone i dati. Puoi continuare a lavorare: lo stato dell\'invio lo vedi in cima alla pagina.</p>', [], 'ok');
+  });
 }
 function scartaOrale(btn) {
   if (S.or.prova) { S.or = null; if (S.orPieno) schermoPieno(false); vistaDocente(); return; }
@@ -256,51 +264,11 @@ function annullaOrale(id) {
 /* --- stampa degli accessi al quiz: una pagina A4 per alunno con QR, indirizzo e codice personale, da consegnare a mano --- */
 function bottoniAccessiQuiz() {
   if (!S.d.codiciAlunni || RO()) return '';
-  return '<div class="row" id="accessiQuiz">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaAccessiQuiz(\'' + c + '\')">Accessi al quiz · ' + c + '</button>'; }).join('') +
-    (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaAccessiQuiz(\'tutte\')">Accessi al quiz di tutte le classi</button>' : '') + '</div>' +
-    '<p class="muted" style="margin:0;font-size:14px">Una pagina A4 per alunno con QR, indirizzo e codice personale per entrare nel quiz. Si apre la stampa: scegli «Salva come PDF» per avere il file.</p>';
+  return '<div class="row" id="accessiQuiz">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Fogli accessi · ' + c + '</button>'; }).join('') +
+    (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Fogli accessi di tutte le classi</button>' : '') + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Un unico PDF: per ogni alunno una pagina A4 con le date di scritto e quiz, QR, indirizzo e codice dello scritto e QR e indirizzo del quiz (stesso codice). Si apre la stampa: scegli «Salva come PDF».</p>';
 }
-function stampaAccessiQuiz(classe) {
-  var base = location.origin + '/quiz', logo = Poster.logo(22), ed = (S.d.config && S.d.config.edizione) || {};
-  var lista = S.d.codiciAlunni.filter(function (a) { return !classe || classe === 'tutte' || (a.classe || '3E') === classe; });
-  if (!lista.length) { toast('Nessun alunno in questa classe', true); return; }
-  var pagine = lista.map(function (a) {
-    var link = base + '?c=' + encodeURIComponent(a.codice), qa = quizDi(a.id), sq = qa.scadenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).scadenze || {})[a.classe || '3E'];
-    return '<section class="pg">' +
-      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + ' · Classe ' + esc(a.classe || '3E') + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
-      '<div class="tit">Quiz del glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
-      '<div class="gr">Classe ' + esc(a.classe || '3E') + ' · accesso personale al quiz · seconda parte della prova</div>' +
-      '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo quiz.</b></p></div>' +
-      '<div class="acc"><div><div class="lb">Indirizzo del quiz</div><div class="url">' + esc(base.replace(/^https?:\/\//, '')) + '</div><div class="pic">poi scrivi il tuo codice personale</div></div>' +
-      '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
-      '<ol><li>Compare un termine con <b>' + RG().quiz.opzioni + ' definizioni</b>: scegli quella giusta entro <b>' + RG().quiz.secondi + ' secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
-      '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di ' + RG().quiz.passo + ' termini</b>: per andare avanti devi studiare le definizioni.</li>' +
-      (qa.partenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).partenze || {})[a.classe || '3E'] ? '<li>Il quiz si apre il <b>' + esc(oraIt(qa.partenza || S.d.admin.impostazioni.quiz.partenze[a.classe || '3E'])) + '</b>: prima di allora non si può entrare.</li>' : '') +
-      '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi' + (sq ? ', <b>entro ' + esc(oraIt(sq)) + '</b>.' : ', entro la scadenza che ti dirà il docente.') + '</li>' +
-      '<li>Il quiz è superato quando hai indovinato <b>' + (qa.soglia || 260) + ' termini</b>.</li></ol>' +
-      '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca ' + RG().orale.domande + ' termini e tu dai la definizione. ' +
-      'Chi non completa il quiz entro la scadenza non viene interrogato e resta senza voto. Voto orale fino a ' + fv(RG().orale.max) + '; il voto finale è la ' + mediaTxt() + '.</div>' +
-      '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: le sessioni fatte con il tuo codice risultano tue.</div>' +
-      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + '</footer></section>';
-  }).join('');
-  var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-    '.pg{width:210mm;height:297mm;padding:16mm 18mm 14mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
-    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:4mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:15pt}.pr{font-size:10.5pt;color:#5B6976;margin-top:1mm}' +
-    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.14em;text-transform:uppercase;color:#1F5FA8;margin-top:8mm}' +
-    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:30pt;margin-top:1mm;line-height:1.1}.gr{display:inline-block;align-self:flex-start;border-left:3mm solid #1F5FA8;padding:1mm 3mm;font-size:13pt;margin-top:2mm;background:#F2F5F7}' +
-    '.qr{display:flex;flex-direction:column;align-items:center;margin-top:7mm}.qr svg{border:1pt solid #C3CED7;border-radius:3mm}.qr p{text-align:center;font-size:12pt;margin:3mm 0 0}' +
-    '.acc{display:grid;grid-template-columns:1.3fr 1fr;gap:5mm;margin-top:6mm}.acc>div{border:1pt solid #C3CED7;border-radius:3mm;padding:3mm 4mm}.lb{font-size:9.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
-    '.url{font-weight:700;font-size:13pt;margin-top:1.5mm;word-break:break-all}.pic{font-size:9.5pt;color:#5B6976;margin-top:1mm}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:24pt;letter-spacing:.18em;margin-top:1mm}' +
-    'ol{font-size:11pt;line-height:1.4;margin:4mm 0 0;padding-left:6mm}li{margin:.8mm 0}' +
-    '.ora{margin-top:4mm;background:#15212B;color:#fff;border-radius:3mm;padding:3mm 4mm;font-size:10.5pt;line-height:1.4}' +
-    '.warn{margin-top:auto;background:#FCEBD9;border-radius:3mm;padding:3mm 4mm;font-size:10.5pt;line-height:1.4}footer{margin-top:4mm;font-size:9.5pt;color:#5B6976;text-align:center}';
-  var w = window.open('', '_blank');
-  if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
-  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Accessi al quiz ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
-    '<style>' + cssFonti(location.origin) + css + '</style></head><body>' + pagine +
-    scriptStampa('document.body.setAttribute("data-pronto","1");setTimeout(function(){window.print()},400)') + '</body></html>');
-  w.document.close();
-}
+function stampaAccessiQuiz(classe) { stampaSchede(classe); }
 
 /* --- regole del quiz (pagina «Scadenze e valutazione»): termini da indovinare e scadenza per classe. Senza scadenza il quiz della classe resta chiuso. --- */
 function bloccoQuizImp() {
@@ -529,3 +497,79 @@ function fissaInterrogazioni(btn) {
       .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); });
   })();
 }
+
+/* ---------- interrogazione a prova di connessione ----------
+ * mentre interroghi, gli esiti restano anche sul dispositivo (un ricaricamento o una caduta della rete non li perde);
+ * se al salvataggio manca internet, l'interrogazione va in coda e parte da sola appena la rete torna. */
+var KEY_ORMEMO = 'glossario_orale_memo', KEY_ORCODA = 'glossario_orale_coda';
+function leggiLS(k, def) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? def : v; } catch (e) { return def; } }
+function scriviLS(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+function chiaveMemo(id) { return (S.att || 'main') + ':' + id; }
+function memoOrale() {
+  if (!S.or || S.or.prova) return;
+  var m = leggiLS(KEY_ORMEMO, {});
+  m[chiaveMemo(S.or.alunno)] = { data: S.or.bozza.data, termini: S.or.bozza.termini.map(function (t) { return t.area + '-' + t.k; }).join(','), esiti: S.or.esiti, nota: S.or.nota || '', mano: S.or.mano == null ? null : S.or.mano, ts: Date.now() };
+  S.or.salvatoQui = scriviLS(KEY_ORMEMO, m);
+}
+function togliMemoOrale(id) { var m = leggiLS(KEY_ORMEMO, {}); delete m[chiaveMemo(id)]; scriviLS(KEY_ORMEMO, m); }
+/* stessa interrogazione (stessa data e stessi termini): tornano gli esiti segnati */
+function riprendiOrale(o) {
+  var x = leggiLS(KEY_ORMEMO, {})[chiaveMemo(o.alunno)];
+  if (x && x.data === o.bozza.data && x.termini === o.bozza.termini.map(function (t) { return t.area + '-' + t.k; }).join(',') && x.esiti.length === o.esiti.length) {
+    o.esiti = x.esiti; o.nota = x.nota || ''; if (x.mano != null) o.mano = x.mano;
+    if (x.esiti.some(function (e) { return e !== null; })) setTimeout(function () { toast('Ripresi gli esiti segnati su questo dispositivo'); }, 300);
+  }
+  return o;
+}
+function codaOrale() { return leggiLS(KEY_ORCODA, []); }
+function mettiInCoda(dati) {
+  var c = codaOrale().filter(function (x) { return !(x.att === (S.att || 'main') && x.alunno === dati.alunno); });
+  c.push(Object.assign({ att: S.att || 'main', codice: S.codice, nome: nomeAlunno(dati.alunno), ts: Date.now() }, dati));
+  scriviLS(KEY_ORCODA, c); avviaInvioCoda();
+}
+var invioInCorso = false;
+function inviaCoda(manuale) {
+  // le rifiutate dal server restano in elenco col motivo e non si ritentano da sole (solo con «Invia ora»)
+  var c = codaOrale().filter(function (y) { return manuale || !y.errore; }); if (!c.length || invioInCorso) return Promise.resolve();
+  invioInCorso = true;
+  var x = c[0], corpo = Object.assign({ azione: 'oralesalva', codice: x.codice }, x.att && x.att !== 'main' ? { att: x.att } : {}, { alunno: x.alunno, esiti: x.esiti, nota: x.nota, votoDocente: x.votoDocente });
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      var resto = codaOrale().filter(function (y) { return !(y.att === x.att && y.alunno === x.alunno && y.ts === x.ts); });
+      if (j.ok) { scriviLS(KEY_ORCODA, resto); toast('Interrogazione di ' + x.nome + (j.dati.giaSalvata ? ' già salvata' : ' inviata') + ': voto orale ' + fv(j.dati.orale.voto)); invioInCorso = false; if (S.d && S.d.utente && S.d.utente.ruolo === 'docente' && !S.or && !S.orSc) ricarica(); else aggiornaSpie(); return inviaCoda(manuale); }
+      // il server l'ha rifiutata (per esempio interrogazione già chiusa): resta in elenco con il motivo
+      // segna il motivo solo se nel frattempo non è stata tolta dall'elenco
+      var ora = codaOrale(); ora.forEach(function (y) { if (y.att === x.att && y.alunno === x.alunno && y.ts === x.ts) y.errore = j.errore || 'rifiutata dal server'; }); scriviLS(KEY_ORCODA, ora); invioInCorso = false; aggiornaSpie();
+    })
+    .catch(function () { invioInCorso = false; aggiornaSpie(); if (manuale) toast('Ancora nessuna connessione: riprovo da solo appena torna.', true); });
+}
+var timerCoda = null;
+function avviaInvioCoda() {
+  aggiornaSpie();
+  if (!timerCoda) timerCoda = setInterval(function () { if (!codaOrale().some(function (x) { return !x.errore; })) { clearInterval(timerCoda); timerCoda = null; return; } inviaCoda(); }, 20000);
+  inviaCoda();
+}
+function scartaDaCoda(ts) { scriviLS(KEY_ORCODA, codaOrale().filter(function (x) { return String(x.ts) !== String(ts); })); aggiornaSpie(); }
+/* in cima alla pagina: interrogazioni in attesa di invio */
+function bannerCoda() {
+  var c = codaOrale(); if (!c.length) return '';
+  return '<div class="note warn" id="codaOrale"><b>' + (c.length === 1 ? '1 interrogazione salvata sul dispositivo' : c.length + ' interrogazioni salvate sul dispositivo') + '</b>, in attesa di invio' + (navigator.onLine === false ? ' (nessuna connessione)' : '') + ':' +
+    '<ul style="margin:6px 0">' + c.map(function (x, i) { return '<li>' + esc(x.nome) + (x.errore ? ' — <b>non inviata:</b> ' + esc(x.errore) + ' <button class="btn sec tb" onclick="scartaDaCoda(\'' + x.ts + '\')">Togli</button>' : ''); }).join('') + '</ul>' +
+    '<button class="btn tb" onclick="inviaCoda(true)">Invia ora</button> <span class="muted" style="font-size:14px">Partono da sole appena torna internet.</span></div>';
+}
+/* nella scheda: dove sono gli esiti segnati */
+function spiaOrale() {
+  if (!S.or || S.or.prova) return '';
+  var off = navigator.onLine === false;
+  return '<div class="row" id="spiaOrale" style="gap:8px;font-size:14px;font-weight:700;color:' + (off ? '#9A5B00' : '#2E7D32') + '"><span style="width:10px;height:10px;border-radius:50%;background:currentColor;display:inline-block"></span>' +
+    (off ? 'Connessione assente: continua pure a segnare, gli esiti restano su questo dispositivo e al salvataggio partono appena torna internet.' : S.or.salvatoQui === false ? 'Attenzione: questo browser non permette di salvare sul dispositivo.' : 'Esiti salvati anche su questo dispositivo') + '</div>';
+}
+function aggiornaSpie() {
+  var b = document.getElementById('codaOrale'), h = bannerCoda();
+  if (b) { if (h) b.outerHTML = h; else b.remove(); }
+  else if (h) { var m = document.querySelector('main.dcont'); if (m) m.insertAdjacentHTML('afterbegin', h); }
+  var s = document.getElementById('spiaOrale'); if (s) s.outerHTML = spiaOrale();
+}
+window.addEventListener('online', function () { aggiornaSpie(); inviaCoda(); });
+window.addEventListener('offline', aggiornaSpie);

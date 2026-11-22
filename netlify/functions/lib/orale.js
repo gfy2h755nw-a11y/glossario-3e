@@ -376,7 +376,11 @@ async function oraleScegliUno(db, { codice, alunno: id, pos, termine }) {
 async function oraleSalva(db, { codice, alunno: id, esiti, nota, votoDocente }) {
   const stato = await db.leggiTutto(), chi = docenteVoti(stato, codice);
   const a = alunno(stato, id), cat = catalogo(stato), b = a.orale_bozza;
-  if (!b || !b.termini) L.errore('Interrogazione non trovata: pesca di nuovo i termini.');
+  if (!b || !b.termini) {
+    // salvataggio ripetuto (la prima volta era arrivato, ma la risposta si era persa per la rete): già fatto, nessun errore
+    if (a.orale && Array.isArray(esiti) && Array.isArray(a.orale.termini) && JSON.stringify(a.orale.termini.map((t) => t.e)) === JSON.stringify(esiti.map(Number))) return { orale: a.orale, giaSalvata: true };
+    L.errore('Interrogazione non trovata: pesca di nuovo i termini.');
+  }
   if (!Array.isArray(esiti) || esiti.length !== b.termini.length || esiti.some((e) => [0, 0.5, 1].indexOf(e) < 0)) L.errore('Segna l\'esito di tutte le risposte prima di salvare.');
   const escluso = L.valuta(stato, a, Date.now()).escluso, punti = esiti.reduce((x, y) => x + y, 0);
   // voto: quello calcolato dalle risposte, oppure quello che assegna il docente (resta salvato anche il calcolato)

@@ -3384,7 +3384,7 @@ function api(azione, dati) {
   if (S.d && S.d.solaLettura && AZ_LETTURA.indexOf(azione) < 0) return Promise.reject(new Error('Stai consultando un\'edizione archiviata: è in sola lettura. Usa «Torna all\'edizione in corso» per lavorare.'));
   var corpo = Object.assign({ azione: azione, codice: S.codice }, S.att && S.att !== 'main' ? { att: S.att } : {}, dati || {});
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
-    .catch(function () { throw new Error('Connessione assente: controlla internet e riprova.'); })
+    .catch(function () { var e = new Error('Connessione assente: controlla internet e riprova.'); e.rete = true; throw e; })
     .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server (' + r.status + ').' }; }); })
     .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
 }
@@ -3420,7 +3420,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 1';
+var VERSIONE = '22/11/2026 · 3';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3470,6 +3470,7 @@ function entra(codice, riprova) {
   api('login').then(function (d) {
     if (d.utente.ruolo !== 'docente') { S.att = null; memo(chiaveAtt(), null); }
     if (d.utente.gestore) { S.att = d.att; memo(chiaveAtt(), d.att); } // collega titolare: sempre e solo la sua attività
+    if (d.utente.ruolo === 'docente' && codaOrale().length) setTimeout(avviaInvioCoda, 500); // interrogazioni salvate senza rete
     S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
     if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: EN() ? d.utente.lingua || 'it' : 'it', classe: (S.filtro && S.filtro.classe) || 'tutte' };
     render();
@@ -4432,46 +4433,52 @@ function qrSvg(testo, mm) {
   return '<svg xmlns="http://www.w3.org/2000/svg" width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m) + '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#15212B"/></svg>';
 }
 /* una pagina A4 per alunno: link, QR con accesso diretto, codice personale */
+/* fogli accessi: una pagina A4 per alunno con le date (scritto e quiz), QR + indirizzo + codice dello scritto
+   e QR + indirizzo del quiz (stesso codice). Un unico PDF per la classe (o per tutte). */
 function stampaSchede(classe) {
-  var base = location.origin + '/';
-  var imp = S.d.admin && S.d.admin.impostazioni;
-  var logo = Poster.logo(22);
+  var host = location.origin.replace(/^https?:\/\//, ''), logo = Poster.logo(22), ed = (S.d.config && S.d.config.edizione) || {};
+  var A = S.d.admin || {}, impQ = ((A.impostazioni || {}).quiz) || {};
   var lista = S.d.codiciAlunni.filter(function (a) { return !classe || classe === 'tutte' || (a.classe || '3E') === classe; });
+  if (!lista.length) { toast('Nessun alunno in questa classe', true); return; }
+  var box = function (tit, iso, col) {
+    var d = iso ? new Date(iso) : null;
+    return '<div style="border-top:2mm solid ' + col + '"><span>' + tit + '</span><b>' + (d ? GG[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()].slice(0, 3) : 'da definire') + '</b><small>' + (d ? 'ore ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2) : '&nbsp;') + '</small></div>';
+  };
+  var blocco = function (n, col, chiaro, scuro, tit, qr, url, cod, nota, riga) {
+    return '<div class="bl" style="border-color:' + col + '"><div class="bt" style="background:' + col + '">' + n + ' · ' + tit + '</div><div class="bc">' + qr +
+      '<div class="bi"><div class="lb">Indirizzo</div><div class="url">' + esc(url) + '</div><div class="lb" style="margin-top:3mm">Codice personale</div><div class="cod">' + esc(cod) + '</div>' +
+      (nota ? '<div class="nt" style="background:' + chiaro + ';color:' + scuro + '">' + nota + '</div>' : '') + '<p>' + riga + '</p></div></div></div>';
+  };
   var pagine = lista.map(function (a) {
-    var ar = area(a.gruppo) || {};
-    var link = base + '?c=' + encodeURIComponent(a.codice);
-    return '<section class="pg">' +
-      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(a.classe || '3E') + ' · a.s. 2026/27</div></div></header>' +
-      '<div class="nome">' + esc(a.nome) + '</div>' +
-      '<div class="gr" style="border-color:' + esc(ar.colore || '#15212B') + '">Classe ' + esc(a.classe || '3E') + (ar.it ? ' · Gruppo ' + esc(a.gruppo) + ' · ' + esc(ar.it) : ' · termini di tutte le aree') + '</div>' +
-      '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo glossario.</b></p></div>' +
-      '<div class="acc"><div><div class="lb">Indirizzo dell\'app</div><div class="url">' + esc(base.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</div></div>' +
-      '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
-      '<ol><li>Apri l\'app con il QR oppure scrivi l\'indirizzo e inserisci il codice.</li>' +
-      '<li>Per ognuno dei tuoi ' + TPA() + ' termini scegli la definizione giusta tra 8' + (EN() ? ': prima in italiano, poi in inglese.' : '.') + '</li>' +
-      '<li>Controlla spesso l\'app: trovi voto, scadenze ed eventuali termini ricevuti da un compagno.</li></ol>' +
-      
-      (imp ? '<div class="sca">' + (imp.partenza ? '<div><span>Partenza</span><b>' + esc(oraIt(imp.partenza)) + '</b></div>' : '') + '<div><span>' + (EN() ? 'Scadenza italiano' : 'Scadenza') + '</span><b>' + esc(oraIt(imp.scadenzaIt)) + '</b></div>' + (EN() ? '<div><span>Scadenza inglese</span><b>' + esc(oraIt(imp.scadenzaEn)) + '</b></div>' : '') + '</div>' : '') +
-      '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: chi li ha può rispondere al posto tuo. Chi a una scadenza ha anche un solo termine senza risposta viene escluso e prende 4 nello scritto per mancata consegna.</div>' +
-      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · Per gentile concessione del Prof. Danilo Cerrato' : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer>' +
-      '</section>';
+    var cl = a.classe || '3E', dt = (A.date || {})[cl] || { partenza: (A.impostazioni || {}).partenza, scadenzaIt: (A.impostazioni || {}).scadenzaIt }, qa = quizDi(a.id);
+    var qIni = qa.partenza || (impQ.partenze || {})[cl], qFin = qa.scadenza || (impQ.scadenze || {})[cl];
+    var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice);
+    return '<section class="pg"><header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
+      '<div class="tit">I tuoi accessi al glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
+      '<div class="gr">Classe ' + esc(cl) + ' · scritto e quiz, da casa, dal telefono o dal PC</div>' +
+      '<div class="cal">' + box('Inizio scritto', dt.partenza, '#1F5FA8') + box('Fine scritto', dt.scadenzaIt, '#1F5FA8') + box('Inizio quiz', qIni, '#6B4EA2') + box('Fine quiz', qFin, '#6B4EA2') + '</div>' +
+      blocco('1', '#1F5FA8', '', '', 'Lo scritto', qrSvg(linkS, 46), host, a.codice, '',
+        'Inquadra il QR: entri direttamente. Per ognuno dei tuoi termini scegli la definizione corretta' + (EN() ? ', prima in italiano e poi in inglese' : '') + '; il docente approva o ti chiede di correggere.') +
+      blocco('2', '#6B4EA2', '#EFEAF7', '#4B3480', 'Il quiz', qrSvg(linkQ, 46), host + '/quiz', a.codice, '<b>Stesso codice dello scritto</b>',
+        'Si apre a fine scritto. Indovina i termini di tutto il glossario: superato il quiz sei ammesso all\'interrogazione, la verifica finale.') +
+      '<div class="warn"><b>Codice e QR sono personali.</b> Non fotografarli e non darli a nessuno: quello che si fa con il tuo codice risulta tuo.</div>' +
+      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer></section>';
   }).join('');
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-    '.pg{width:210mm;height:297mm;padding:16mm 18mm 14mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
-    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:4mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:15pt}.pr{font-size:10.5pt;color:#5B6976;margin-top:1mm}' +
-    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:30pt;margin-top:9mm;line-height:1.1}.gr{display:inline-block;align-self:flex-start;border-left:3mm solid;padding:1mm 3mm;font-size:13pt;margin-top:2mm;background:#F2F5F7}' +
-    '.qr{display:flex;flex-direction:column;align-items:center;margin-top:8mm}.qr svg{border:1pt solid #C3CED7;border-radius:3mm}.qr p{text-align:center;font-size:12pt;margin:3mm 0 0}' +
-    '.acc{display:grid;grid-template-columns:1.3fr 1fr;gap:5mm;margin-top:7mm}.acc>div{border:1pt solid #C3CED7;border-radius:3mm;padding:3mm 4mm}.lb{font-size:9.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
-    '.url{font-weight:700;font-size:14pt;margin-top:1.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:24pt;letter-spacing:.18em;margin-top:1mm}' +
-    'ol{font-size:11pt;line-height:1.4;margin:4mm 0 0;padding-left:6mm}li{margin:.6mm 0}' +
-    '.ter{margin-top:4mm;border:1pt solid #C3CED7;border-radius:3mm;padding:2.5mm 4mm}.ter ol{columns:2;column-gap:8mm;margin:1.5mm 0 0;padding-left:6mm;font-size:11pt}.ter li{break-inside:avoid}.ter i{display:inline-block;width:2.6mm;height:2.6mm;border-radius:50%;margin-right:1.6mm;vertical-align:.2mm}' +
-    '.sca{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:5mm}.sca div{background:#15212B;color:#fff;border-radius:3mm;padding:2.5mm 4mm}.sca span{display:block;font-size:9.5pt;opacity:.8}.sca b{font-size:12.5pt}' +
-    '.warn{margin-top:auto;background:#FCEBD9;border-radius:3mm;padding:3mm 4mm;font-size:10.5pt;line-height:1.4}footer{margin-top:4mm;font-size:9.5pt;color:#5B6976;text-align:center}';
+    '.pg{width:210mm;height:297mm;padding:14mm 16mm 12mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
+    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3.5mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:14pt}.pr{font-size:10pt;color:#5B6976;margin-top:1mm}' +
+    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:11.5pt;letter-spacing:.14em;text-transform:uppercase;margin-top:6mm}' +
+    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:27pt;line-height:1.1;margin-top:1mm}.gr{align-self:flex-start;border-left:3mm solid #15212B;padding:1mm 3mm;font-size:11.5pt;margin-top:2mm;background:#F2F5F7}' +
+    '.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:5mm}.cal>div{background:#F2F5F7;border-radius:0 0 2mm 2mm;padding:2.5mm 3mm;display:flex;flex-direction:column}.cal span{font-size:8.5pt;text-transform:uppercase;letter-spacing:.06em;color:#5B6976}.cal b{font-family:Archivo,Arial,sans-serif;font-size:13pt;margin-top:.5mm}.cal small{font-size:9.5pt;color:#5B6976}' +
+    '.bl{border:1.4pt solid;border-radius:3mm;margin-top:5mm;overflow:hidden}.bt{color:#fff;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.06em;text-transform:uppercase;padding:2mm 4mm}' +
+    '.bc{display:flex;gap:6mm;padding:4mm;align-items:center}.bc svg{flex:none;border:1pt solid #C3CED7;border-radius:2mm}.bi{min-width:0}.lb{font-size:8.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
+    '.url{font-weight:700;font-size:13pt;margin-top:.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:22pt;letter-spacing:.18em}.nt{display:inline-block;font-size:10pt;padding:1mm 2.5mm;border-radius:2mm;margin-top:1mm}.bi p{font-size:10.5pt;margin:2.5mm 0 0;line-height:1.35}' +
+    '.warn{margin-top:auto;border:1pt solid #E5B9B4;background:#FBEDEB;border-radius:2mm;padding:2.5mm 3.5mm;font-size:10pt}footer{margin-top:3mm;font-size:9pt;color:#5B6976;text-align:right}';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
-  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Schede alunni Glossario ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
+  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Accessi Glossario ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
     '<style>' + cssFonti(location.origin) + css + '</style></head><body>' + pagine +
-    scriptStampa('setTimeout(function(){window.print()},400)') + '</body></html>');
+    scriptStampa('document.body.setAttribute("data-pronto","1");setTimeout(function(){window.print()},400)') + '</body></html>');
   w.document.close();
 }
 
@@ -5889,7 +5896,7 @@ function vistaDocente() {
   S.pag = pag;
   var p = pagine.filter(function (x) { return x.id === pag; })[0];
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
-  var avvisi = RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '';
+  var avvisi = bannerCoda() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
     '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
@@ -6034,10 +6041,7 @@ var PAGINA = {
   codici: function () {
     return '<section class="card" id="codici"><h2 style="margin:0 0 6px;font-size:22px">Codici personali degli alunni (riservato)</h2>' +
       '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
-      '<div class="row" style="margin-bottom:10px">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Schede con QR · ' + c + '</button>'; }).join('') +
-      (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Schede di tutte le classi</button>' : '') + '<button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div>' +
-      '<p class="muted" style="margin:0 0 10px;font-size:14px">Le schede si aprono nella stampa: scegli “Salva come PDF” per avere il file. Una pagina A4 per alunno con QR, link, codice, partenza e scadenza (senza i termini).</p>' +
-      '<h3 style="margin:14px 0 8px;font-size:18px">Accessi al quiz</h3><div class="stack" style="gap:8px;margin-bottom:12px">' + bottoniAccessiQuiz() + '</div>' +
+      '<div class="stack" style="gap:8px;margin-bottom:12px">' + bottoniAccessiQuiz() + '<div><button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div></div>' +
       '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Classe</th><th>Codice</th></tr></thead><tbody>' +
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
@@ -6222,7 +6226,7 @@ function apriOrale(id, btn) {
 function pescaOrale(id, btn) {
   if (btn) btn.disabled = true;
   api('oralepesca', { alunno: id }).then(function (d) {
-    S.or = { alunno: id, bozza: d.bozza, esiti: d.bozza.termini.map(function () { return null; }), nota: '' };
+    S.or = riprendiOrale({ alunno: id, bozza: d.bozza, esiti: d.bozza.termini.map(function () { return null; }), nota: '' });
     vistaDocente(); window.scrollTo(0, 0);
   }).catch(function (e) { toast(errMsg(e), true); if (btn) btn.disabled = false; });
 }
@@ -6239,7 +6243,8 @@ function schedaOrale() {
   var o = S.or, r = (S.d.panoramica || []).filter(function (x) { return x.id === o.alunno; })[0] || {}, q = quizDi(o.alunno), vs = votiDi(o.alunno);
   var fatti = o.esiti.filter(function (e) { return e !== null; }).length, punti = puntiOrale(), tutti = fatti === o.esiti.length;
   if (o.prova) r = { nome: 'Simulazione' };
-  var h = '<section class="card stack" id="oraleScheda"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">' + (o.prova ? 'Simulazione dell\'interrogazione' + (o.bes ? ' · ' + o.esiti.length + ' termini' : '') : 'Interrogazione di ' + esc(r.nome || nomeAlunno(o.alunno))) + ' <span class="muted" style="font-weight:400;font-size:16px">' + (o.prova ? '' : esc(etich(r))) + '</span></h2>' +
+  memoOrale();
+  var h = spiaOrale() + '<section class="card stack" id="oraleScheda"><div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">' + (o.prova ? 'Simulazione dell\'interrogazione' + (o.bes ? ' · ' + o.esiti.length + ' termini' : '') : 'Interrogazione di ' + esc(r.nome || nomeAlunno(o.alunno))) + ' <span class="muted" style="font-weight:400;font-size:16px">' + (o.prova ? '' : esc(etich(r))) + '</span></h2>' +
     '<div class="row" style="gap:6px"><button class="btn sec tb" id="orPieno" onclick="schermoPieno(' + (S.orPieno ? 'false' : 'true') + ')">' + (S.orPieno ? 'Esci dallo schermo pieno' : 'Schermo pieno') + '</button><button class="btn sec tb" onclick="S.or=null;if(S.orPieno)schermoPieno(false);vistaDocente()">Torna all\'elenco</button></div></div>' +
     (o.prova ? '<div class="note" id="orInfo">Simulazione: termini pescati a caso tra tutti quelli del glossario. Segna le risposte e cambia i termini come in un\'interrogazione vera: <b>niente viene salvato</b> e nessuno studente è coinvolto.</div>' : '' +
     '<div class="or-info" id="orInfo"><div><span class="kl">Voto dello scritto</span><b>' + (r.escluso ? 'Escluso' : fv(vs.voto)) + '</b><small>' + (r.escluso ? 'non entra nel finale' : (vs.errIt || 0) + (vs.errIt === 1 ? ' errore' : ' errori') + (vs.manuale != null ? ' · voto manuale' : '')) + '</small></div>' +
@@ -6265,9 +6270,9 @@ function schedaOrale() {
     '<div class="row" role="radiogroup" aria-label="Voto orale">' +
       '<label class="row" style="gap:8px;font-weight:700"><input type="radio" name="orTipo" id="orCalc" ' + (!mano ? 'checked' : '') + ' onchange="S.or.mano=null;vistaOralePos()" style="width:20px;height:20px"> Calcolato dalle risposte' + (tutti ? ': <span class="disp">' + fv(calc) + '</span>' : '') + '</label>' +
       '<label class="row" style="gap:8px;font-weight:700"><input type="radio" name="orTipo" id="orMano" ' + (mano ? 'checked' : '') + ' onchange="S.or.mano=S.or.mano||\'\';vistaOralePos();var e=$(\'orManoV\');if(e)e.focus()" style="width:20px;height:20px"> Lo assegno io</label>' +
-      (o.mano != null ? '<input id="orManoV" type="text" inputmode="decimal" placeholder="es. 6,5" value="' + esc(o.mano) + '" oninput="S.or.mano=this.value;aggiornaSalvaOrale()" style="max-width:120px" aria-label="Voto orale assegnato dal docente">' : '') +
+      (o.mano != null ? '<input id="orManoV" type="text" inputmode="decimal" placeholder="es. 6,5" value="' + esc(o.mano) + '" oninput="S.or.mano=this.value;aggiornaSalvaOrale();memoOrale()" style="max-width:120px" aria-label="Voto orale assegnato dal docente">' : '') +
     '</div>' + (o.mano != null ? '<p class="muted" style="margin:0;font-size:14px">Da 1 a 10, a quarti di voto. Il voto calcolato' + (tutti ? ' (' + fv(calc) + ')' : '') + ' resta salvato accanto, per confronto.</p>' : '') + '</section>';
-  h += '<section class="card stack"><label for="orNota">Nota (facoltativa, resta nel registro dell\'interrogazione)</label><input id="orNota" type="text" maxlength="300" value="' + esc(o.nota || '') + '" oninput="S.or.nota=this.value">' +
+  h += '<section class="card stack"><label for="orNota">Nota (facoltativa, resta nel registro dell\'interrogazione)</label><input id="orNota" type="text" maxlength="300" value="' + esc(o.nota || '') + '" oninput="S.or.nota=this.value;memoOrale()">' +
     '<div class="row"><button class="btn ok" id="orSalva" ' + (tutti ? '' : 'disabled') + ' onclick="salvaOrale(this)">' + testoSalvaOrale(calc, tutti) + '</button>' +
     '<button class="btn sec" onclick="scartaOrale(this)">Scarta questa interrogazione</button>' + (o.bozza.cambi ? '<span class="muted" style="font-size:14px">' + (o.bozza.cambi === 1 ? '1 termine cambiato' : o.bozza.cambi + ' termini cambiati') + '</span>' : '') + '</div>' +
     (tutti ? '' : '<p class="muted" style="margin:0;font-size:14px">Segna l\'esito di tutte le risposte per salvare.</p>') + '</section>';
@@ -6285,6 +6290,7 @@ function aggiornaSalvaOrale() {
 }
 function esitoOrale(i, v) {
   S.or.esiti[i] = S.or.esiti[i] === v ? null : v;
+  memoOrale();
   var y = window.scrollY; vistaDocente(); window.scrollTo(0, y);
 }
 function cambiaOrale(i, btn) {
@@ -6302,9 +6308,15 @@ function salvaOrale(btn) {
   }
   btn.disabled = true;
   var mano = S.or.mano != null && String(S.or.mano).trim() !== '' ? String(S.or.mano).trim() : null;
-  api('oralesalva', { alunno: S.or.alunno, esiti: S.or.esiti, nota: S.or.nota, votoDocente: mano }).then(function (d) {
-    S.or = null; return ricarica('Interrogazione salvata: voto orale ' + fv(d.orale.voto) + (d.orale.manuale ? ' (assegnato da te; calcolato ' + fv(d.orale.votoCalcolato) + ')' : ''));
-  }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
+  var dati = { alunno: S.or.alunno, esiti: S.or.esiti.slice(), nota: S.or.nota, votoDocente: mano };
+  api('oralesalva', dati).then(function (d) {
+    togliMemoOrale(dati.alunno); S.or = null; return ricarica('Interrogazione salvata: voto orale ' + fv(d.orale.voto) + (d.orale.manuale ? ' (assegnato da te; calcolato ' + fv(d.orale.votoCalcolato) + ')' : ''));
+  }).catch(function (e) {
+    if (!e.rete) { toast(errMsg(e), true); btn.disabled = false; return; }
+    // niente internet: l'interrogazione resta sul dispositivo e parte da sola appena torna la rete
+    mettiInCoda(dati); togliMemoOrale(dati.alunno); var nome = nomeAlunno(dati.alunno); S.or = null; if (S.orPieno) schermoPieno(false); vistaDocente();
+    finestra('Salvata sul dispositivo', '<p style="margin:0">Manca la connessione: l\'interrogazione di <b>' + esc(nome) + '</b> è salvata su questo dispositivo e verrà inviata <b>da sola appena torna internet</b>.</p><p class="muted" style="margin:0">Non chiudere il browser cancellandone i dati. Puoi continuare a lavorare: lo stato dell\'invio lo vedi in cima alla pagina.</p>', [], 'ok');
+  });
 }
 function scartaOrale(btn) {
   if (S.or.prova) { S.or = null; if (S.orPieno) schermoPieno(false); vistaDocente(); return; }
@@ -6319,51 +6331,11 @@ function annullaOrale(id) {
 /* --- stampa degli accessi al quiz: una pagina A4 per alunno con QR, indirizzo e codice personale, da consegnare a mano --- */
 function bottoniAccessiQuiz() {
   if (!S.d.codiciAlunni || RO()) return '';
-  return '<div class="row" id="accessiQuiz">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaAccessiQuiz(\'' + c + '\')">Accessi al quiz · ' + c + '</button>'; }).join('') +
-    (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaAccessiQuiz(\'tutte\')">Accessi al quiz di tutte le classi</button>' : '') + '</div>' +
-    '<p class="muted" style="margin:0;font-size:14px">Una pagina A4 per alunno con QR, indirizzo e codice personale per entrare nel quiz. Si apre la stampa: scegli «Salva come PDF» per avere il file.</p>';
+  return '<div class="row" id="accessiQuiz">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Fogli accessi · ' + c + '</button>'; }).join('') +
+    (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Fogli accessi di tutte le classi</button>' : '') + '</div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Un unico PDF: per ogni alunno una pagina A4 con le date di scritto e quiz, QR, indirizzo e codice dello scritto e QR e indirizzo del quiz (stesso codice). Si apre la stampa: scegli «Salva come PDF».</p>';
 }
-function stampaAccessiQuiz(classe) {
-  var base = location.origin + '/quiz', logo = Poster.logo(22), ed = (S.d.config && S.d.config.edizione) || {};
-  var lista = S.d.codiciAlunni.filter(function (a) { return !classe || classe === 'tutte' || (a.classe || '3E') === classe; });
-  if (!lista.length) { toast('Nessun alunno in questa classe', true); return; }
-  var pagine = lista.map(function (a) {
-    var link = base + '?c=' + encodeURIComponent(a.codice), qa = quizDi(a.id), sq = qa.scadenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).scadenze || {})[a.classe || '3E'];
-    return '<section class="pg">' +
-      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + ' · Classe ' + esc(a.classe || '3E') + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
-      '<div class="tit">Quiz del glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
-      '<div class="gr">Classe ' + esc(a.classe || '3E') + ' · accesso personale al quiz · seconda parte della prova</div>' +
-      '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo quiz.</b></p></div>' +
-      '<div class="acc"><div><div class="lb">Indirizzo del quiz</div><div class="url">' + esc(base.replace(/^https?:\/\//, '')) + '</div><div class="pic">poi scrivi il tuo codice personale</div></div>' +
-      '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
-      '<ol><li>Compare un termine con <b>' + RG().quiz.opzioni + ' definizioni</b>: scegli quella giusta entro <b>' + RG().quiz.secondi + ' secondi</b>. Ogni risposta giusta è un termine indovinato.</li>' +
-      '<li><b>Se sbagli</b>, la risposta giusta non viene mostrata e <b>torni indietro di ' + RG().quiz.passo + ' termini</b>: per andare avanti devi studiare le definizioni.</li>' +
-      (qa.partenza || ((((S.d.admin || {}).impostazioni || {}).quiz || {}).partenze || {})[a.classe || '3E'] ? '<li>Il quiz si apre il <b>' + esc(oraIt(qa.partenza || S.d.admin.impostazioni.quiz.partenze[a.classe || '3E'])) + '</b>: prima di allora non si può entrare.</li>' : '') +
-      '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi' + (sq ? ', <b>entro ' + esc(oraIt(sq)) + '</b>.' : ', entro la scadenza che ti dirà il docente.') + '</li>' +
-      '<li>Il quiz è superato quando hai indovinato <b>' + (qa.soglia || 260) + ' termini</b>.</li></ol>' +
-      '<div class="ora"><b>A cosa serve.</b> Solo chi supera il quiz è <b>ammesso all\'interrogazione orale</b>: il docente pesca ' + RG().orale.domande + ' termini e tu dai la definizione. ' +
-      'Chi non completa il quiz entro la scadenza non viene interrogato e resta senza voto. Voto orale fino a ' + fv(RG().orale.max) + '; il voto finale è la ' + mediaTxt() + '.</div>' +
-      '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: le sessioni fatte con il tuo codice risultano tue.</div>' +
-      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + '</footer></section>';
-  }).join('');
-  var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-    '.pg{width:210mm;height:297mm;padding:16mm 18mm 14mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
-    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:4mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:15pt}.pr{font-size:10.5pt;color:#5B6976;margin-top:1mm}' +
-    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.14em;text-transform:uppercase;color:#1F5FA8;margin-top:8mm}' +
-    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:30pt;margin-top:1mm;line-height:1.1}.gr{display:inline-block;align-self:flex-start;border-left:3mm solid #1F5FA8;padding:1mm 3mm;font-size:13pt;margin-top:2mm;background:#F2F5F7}' +
-    '.qr{display:flex;flex-direction:column;align-items:center;margin-top:7mm}.qr svg{border:1pt solid #C3CED7;border-radius:3mm}.qr p{text-align:center;font-size:12pt;margin:3mm 0 0}' +
-    '.acc{display:grid;grid-template-columns:1.3fr 1fr;gap:5mm;margin-top:6mm}.acc>div{border:1pt solid #C3CED7;border-radius:3mm;padding:3mm 4mm}.lb{font-size:9.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
-    '.url{font-weight:700;font-size:13pt;margin-top:1.5mm;word-break:break-all}.pic{font-size:9.5pt;color:#5B6976;margin-top:1mm}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:24pt;letter-spacing:.18em;margin-top:1mm}' +
-    'ol{font-size:11pt;line-height:1.4;margin:4mm 0 0;padding-left:6mm}li{margin:.8mm 0}' +
-    '.ora{margin-top:4mm;background:#15212B;color:#fff;border-radius:3mm;padding:3mm 4mm;font-size:10.5pt;line-height:1.4}' +
-    '.warn{margin-top:auto;background:#FCEBD9;border-radius:3mm;padding:3mm 4mm;font-size:10.5pt;line-height:1.4}footer{margin-top:4mm;font-size:9.5pt;color:#5B6976;text-align:center}';
-  var w = window.open('', '_blank');
-  if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
-  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Accessi al quiz ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
-    '<style>' + cssFonti(location.origin) + css + '</style></head><body>' + pagine +
-    scriptStampa('document.body.setAttribute("data-pronto","1");setTimeout(function(){window.print()},400)') + '</body></html>');
-  w.document.close();
-}
+function stampaAccessiQuiz(classe) { stampaSchede(classe); }
 
 /* --- regole del quiz (pagina «Scadenze e valutazione»): termini da indovinare e scadenza per classe. Senza scadenza il quiz della classe resta chiuso. --- */
 function bloccoQuizImp() {
@@ -6592,6 +6564,82 @@ function fissaInterrogazioni(btn) {
       .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); var y = window.scrollY; vistaDocente(); window.scrollTo(0, y); });
   })();
 }
+
+/* ---------- interrogazione a prova di connessione ----------
+ * mentre interroghi, gli esiti restano anche sul dispositivo (un ricaricamento o una caduta della rete non li perde);
+ * se al salvataggio manca internet, l'interrogazione va in coda e parte da sola appena la rete torna. */
+var KEY_ORMEMO = 'glossario_orale_memo', KEY_ORCODA = 'glossario_orale_coda';
+function leggiLS(k, def) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? def : v; } catch (e) { return def; } }
+function scriviLS(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+function chiaveMemo(id) { return (S.att || 'main') + ':' + id; }
+function memoOrale() {
+  if (!S.or || S.or.prova) return;
+  var m = leggiLS(KEY_ORMEMO, {});
+  m[chiaveMemo(S.or.alunno)] = { data: S.or.bozza.data, termini: S.or.bozza.termini.map(function (t) { return t.area + '-' + t.k; }).join(','), esiti: S.or.esiti, nota: S.or.nota || '', mano: S.or.mano == null ? null : S.or.mano, ts: Date.now() };
+  S.or.salvatoQui = scriviLS(KEY_ORMEMO, m);
+}
+function togliMemoOrale(id) { var m = leggiLS(KEY_ORMEMO, {}); delete m[chiaveMemo(id)]; scriviLS(KEY_ORMEMO, m); }
+/* stessa interrogazione (stessa data e stessi termini): tornano gli esiti segnati */
+function riprendiOrale(o) {
+  var x = leggiLS(KEY_ORMEMO, {})[chiaveMemo(o.alunno)];
+  if (x && x.data === o.bozza.data && x.termini === o.bozza.termini.map(function (t) { return t.area + '-' + t.k; }).join(',') && x.esiti.length === o.esiti.length) {
+    o.esiti = x.esiti; o.nota = x.nota || ''; if (x.mano != null) o.mano = x.mano;
+    if (x.esiti.some(function (e) { return e !== null; })) setTimeout(function () { toast('Ripresi gli esiti segnati su questo dispositivo'); }, 300);
+  }
+  return o;
+}
+function codaOrale() { return leggiLS(KEY_ORCODA, []); }
+function mettiInCoda(dati) {
+  var c = codaOrale().filter(function (x) { return !(x.att === (S.att || 'main') && x.alunno === dati.alunno); });
+  c.push(Object.assign({ att: S.att || 'main', codice: S.codice, nome: nomeAlunno(dati.alunno), ts: Date.now() }, dati));
+  scriviLS(KEY_ORCODA, c); avviaInvioCoda();
+}
+var invioInCorso = false;
+function inviaCoda(manuale) {
+  // le rifiutate dal server restano in elenco col motivo e non si ritentano da sole (solo con «Invia ora»)
+  var c = codaOrale().filter(function (y) { return manuale || !y.errore; }); if (!c.length || invioInCorso) return Promise.resolve();
+  invioInCorso = true;
+  var x = c[0], corpo = Object.assign({ azione: 'oralesalva', codice: x.codice }, x.att && x.att !== 'main' ? { att: x.att } : {}, { alunno: x.alunno, esiti: x.esiti, nota: x.nota, votoDocente: x.votoDocente });
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      var resto = codaOrale().filter(function (y) { return !(y.att === x.att && y.alunno === x.alunno && y.ts === x.ts); });
+      if (j.ok) { scriviLS(KEY_ORCODA, resto); toast('Interrogazione di ' + x.nome + (j.dati.giaSalvata ? ' già salvata' : ' inviata') + ': voto orale ' + fv(j.dati.orale.voto)); invioInCorso = false; if (S.d && S.d.utente && S.d.utente.ruolo === 'docente' && !S.or && !S.orSc) ricarica(); else aggiornaSpie(); return inviaCoda(manuale); }
+      // il server l'ha rifiutata (per esempio interrogazione già chiusa): resta in elenco con il motivo
+      // segna il motivo solo se nel frattempo non è stata tolta dall'elenco
+      var ora = codaOrale(); ora.forEach(function (y) { if (y.att === x.att && y.alunno === x.alunno && y.ts === x.ts) y.errore = j.errore || 'rifiutata dal server'; }); scriviLS(KEY_ORCODA, ora); invioInCorso = false; aggiornaSpie();
+    })
+    .catch(function () { invioInCorso = false; aggiornaSpie(); if (manuale) toast('Ancora nessuna connessione: riprovo da solo appena torna.', true); });
+}
+var timerCoda = null;
+function avviaInvioCoda() {
+  aggiornaSpie();
+  if (!timerCoda) timerCoda = setInterval(function () { if (!codaOrale().some(function (x) { return !x.errore; })) { clearInterval(timerCoda); timerCoda = null; return; } inviaCoda(); }, 20000);
+  inviaCoda();
+}
+function scartaDaCoda(ts) { scriviLS(KEY_ORCODA, codaOrale().filter(function (x) { return String(x.ts) !== String(ts); })); aggiornaSpie(); }
+/* in cima alla pagina: interrogazioni in attesa di invio */
+function bannerCoda() {
+  var c = codaOrale(); if (!c.length) return '';
+  return '<div class="note warn" id="codaOrale"><b>' + (c.length === 1 ? '1 interrogazione salvata sul dispositivo' : c.length + ' interrogazioni salvate sul dispositivo') + '</b>, in attesa di invio' + (navigator.onLine === false ? ' (nessuna connessione)' : '') + ':' +
+    '<ul style="margin:6px 0">' + c.map(function (x, i) { return '<li>' + esc(x.nome) + (x.errore ? ' — <b>non inviata:</b> ' + esc(x.errore) + ' <button class="btn sec tb" onclick="scartaDaCoda(\'' + x.ts + '\')">Togli</button>' : ''); }).join('') + '</ul>' +
+    '<button class="btn tb" onclick="inviaCoda(true)">Invia ora</button> <span class="muted" style="font-size:14px">Partono da sole appena torna internet.</span></div>';
+}
+/* nella scheda: dove sono gli esiti segnati */
+function spiaOrale() {
+  if (!S.or || S.or.prova) return '';
+  var off = navigator.onLine === false;
+  return '<div class="row" id="spiaOrale" style="gap:8px;font-size:14px;font-weight:700;color:' + (off ? '#9A5B00' : '#2E7D32') + '"><span style="width:10px;height:10px;border-radius:50%;background:currentColor;display:inline-block"></span>' +
+    (off ? 'Connessione assente: continua pure a segnare, gli esiti restano su questo dispositivo e al salvataggio partono appena torna internet.' : S.or.salvatoQui === false ? 'Attenzione: questo browser non permette di salvare sul dispositivo.' : 'Esiti salvati anche su questo dispositivo') + '</div>';
+}
+function aggiornaSpie() {
+  var b = document.getElementById('codaOrale'), h = bannerCoda();
+  if (b) { if (h) b.outerHTML = h; else b.remove(); }
+  else if (h) { var m = document.querySelector('main.dcont'); if (m) m.insertAdjacentHTML('afterbegin', h); }
+  var s = document.getElementById('spiaOrale'); if (s) s.outerHTML = spiaOrale();
+}
+window.addEventListener('online', function () { aggiornaSpie(); inviaCoda(); });
+window.addEventListener('offline', aggiornaSpie);
 
 /* ---------- procedura guidata «Nuova attività»: un passo per schermata ----------
  * 1 Attività · 2 Classe e alunni · 3 Aree · 4 Termini a testa · 5 Date · 6 Regole · 7 Termini · 8 Riepilogo

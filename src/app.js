@@ -14,7 +14,7 @@ function api(azione, dati) {
   if (S.d && S.d.solaLettura && AZ_LETTURA.indexOf(azione) < 0) return Promise.reject(new Error('Stai consultando un\'edizione archiviata: è in sola lettura. Usa «Torna all\'edizione in corso» per lavorare.'));
   var corpo = Object.assign({ azione: azione, codice: S.codice }, S.att && S.att !== 'main' ? { att: S.att } : {}, dati || {});
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
-    .catch(function () { throw new Error('Connessione assente: controlla internet e riprova.'); })
+    .catch(function () { var e = new Error('Connessione assente: controlla internet e riprova.'); e.rete = true; throw e; })
     .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server (' + r.status + ').' }; }); })
     .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
 }
@@ -50,7 +50,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 1';
+var VERSIONE = '22/11/2026 · 3';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -100,6 +100,7 @@ function entra(codice, riprova) {
   api('login').then(function (d) {
     if (d.utente.ruolo !== 'docente') { S.att = null; memo(chiaveAtt(), null); }
     if (d.utente.gestore) { S.att = d.att; memo(chiaveAtt(), d.att); } // collega titolare: sempre e solo la sua attività
+    if (d.utente.ruolo === 'docente' && codaOrale().length) setTimeout(avviaInvioCoda, 500); // interrogazioni salvate senza rete
     S.d = d; S.sel = {}; memo(KEY_COD, S.codice);
     if (d.utente.ruolo === 'docente') S.filtro = { area: 'tutte', stato: 'inviata', lingua: EN() ? d.utente.lingua || 'it' : 'it', classe: (S.filtro && S.filtro.classe) || 'tutte' };
     render();
@@ -1062,46 +1063,52 @@ function qrSvg(testo, mm) {
   return '<svg xmlns="http://www.w3.org/2000/svg" width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m) + '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#15212B"/></svg>';
 }
 /* una pagina A4 per alunno: link, QR con accesso diretto, codice personale */
+/* fogli accessi: una pagina A4 per alunno con le date (scritto e quiz), QR + indirizzo + codice dello scritto
+   e QR + indirizzo del quiz (stesso codice). Un unico PDF per la classe (o per tutte). */
 function stampaSchede(classe) {
-  var base = location.origin + '/';
-  var imp = S.d.admin && S.d.admin.impostazioni;
-  var logo = Poster.logo(22);
+  var host = location.origin.replace(/^https?:\/\//, ''), logo = Poster.logo(22), ed = (S.d.config && S.d.config.edizione) || {};
+  var A = S.d.admin || {}, impQ = ((A.impostazioni || {}).quiz) || {};
   var lista = S.d.codiciAlunni.filter(function (a) { return !classe || classe === 'tutte' || (a.classe || '3E') === classe; });
+  if (!lista.length) { toast('Nessun alunno in questa classe', true); return; }
+  var box = function (tit, iso, col) {
+    var d = iso ? new Date(iso) : null;
+    return '<div style="border-top:2mm solid ' + col + '"><span>' + tit + '</span><b>' + (d ? GG[d.getDay()] + ' ' + d.getDate() + ' ' + MESI[d.getMonth()].slice(0, 3) : 'da definire') + '</b><small>' + (d ? 'ore ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2) : '&nbsp;') + '</small></div>';
+  };
+  var blocco = function (n, col, chiaro, scuro, tit, qr, url, cod, nota, riga) {
+    return '<div class="bl" style="border-color:' + col + '"><div class="bt" style="background:' + col + '">' + n + ' · ' + tit + '</div><div class="bc">' + qr +
+      '<div class="bi"><div class="lb">Indirizzo</div><div class="url">' + esc(url) + '</div><div class="lb" style="margin-top:3mm">Codice personale</div><div class="cod">' + esc(cod) + '</div>' +
+      (nota ? '<div class="nt" style="background:' + chiaro + ';color:' + scuro + '">' + nota + '</div>' : '') + '<p>' + riga + '</p></div></div></div>';
+  };
   var pagine = lista.map(function (a) {
-    var ar = area(a.gruppo) || {};
-    var link = base + '?c=' + encodeURIComponent(a.codice);
-    return '<section class="pg">' +
-      '<header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(a.classe || '3E') + ' · a.s. 2026/27</div></div></header>' +
-      '<div class="nome">' + esc(a.nome) + '</div>' +
-      '<div class="gr" style="border-color:' + esc(ar.colore || '#15212B') + '">Classe ' + esc(a.classe || '3E') + (ar.it ? ' · Gruppo ' + esc(a.gruppo) + ' · ' + esc(ar.it) : ' · termini di tutte le aree') + '</div>' +
-      '<div class="qr">' + qrSvg(link, 78) + '<p>Inquadra il QR con la fotocamera del telefono:<br><b>entri direttamente nel tuo glossario.</b></p></div>' +
-      '<div class="acc"><div><div class="lb">Indirizzo dell\'app</div><div class="url">' + esc(base.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</div></div>' +
-      '<div><div class="lb">Il tuo codice personale</div><div class="cod">' + esc(a.codice) + '</div></div></div>' +
-      '<ol><li>Apri l\'app con il QR oppure scrivi l\'indirizzo e inserisci il codice.</li>' +
-      '<li>Per ognuno dei tuoi ' + TPA() + ' termini scegli la definizione giusta tra 8' + (EN() ? ': prima in italiano, poi in inglese.' : '.') + '</li>' +
-      '<li>Controlla spesso l\'app: trovi voto, scadenze ed eventuali termini ricevuti da un compagno.</li></ol>' +
-      
-      (imp ? '<div class="sca">' + (imp.partenza ? '<div><span>Partenza</span><b>' + esc(oraIt(imp.partenza)) + '</b></div>' : '') + '<div><span>' + (EN() ? 'Scadenza italiano' : 'Scadenza') + '</span><b>' + esc(oraIt(imp.scadenzaIt)) + '</b></div>' + (EN() ? '<div><span>Scadenza inglese</span><b>' + esc(oraIt(imp.scadenzaEn)) + '</b></div>' : '') + '</div>' : '') +
-      '<div class="warn"><b>Il codice e il QR sono personali.</b> Non fotografarli e non darli a nessuno: chi li ha può rispondere al posto tuo. Chi a una scadenza ha anche un solo termine senza risposta viene escluso e prende 4 nello scritto per mancata consegna.</div>' +
-      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · Per gentile concessione del Prof. Danilo Cerrato' : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer>' +
-      '</section>';
+    var cl = a.classe || '3E', dt = (A.date || {})[cl] || { partenza: (A.impostazioni || {}).partenza, scadenzaIt: (A.impostazioni || {}).scadenzaIt }, qa = quizDi(a.id);
+    var qIni = qa.partenza || (impQ.partenze || {})[cl], qFin = qa.scadenza || (impQ.scadenze || {})[cl];
+    var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice);
+    return '<section class="pg"><header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
+      '<div class="tit">I tuoi accessi al glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
+      '<div class="gr">Classe ' + esc(cl) + ' · scritto e quiz, da casa, dal telefono o dal PC</div>' +
+      '<div class="cal">' + box('Inizio scritto', dt.partenza, '#1F5FA8') + box('Fine scritto', dt.scadenzaIt, '#1F5FA8') + box('Inizio quiz', qIni, '#6B4EA2') + box('Fine quiz', qFin, '#6B4EA2') + '</div>' +
+      blocco('1', '#1F5FA8', '', '', 'Lo scritto', qrSvg(linkS, 46), host, a.codice, '',
+        'Inquadra il QR: entri direttamente. Per ognuno dei tuoi termini scegli la definizione corretta' + (EN() ? ', prima in italiano e poi in inglese' : '') + '; il docente approva o ti chiede di correggere.') +
+      blocco('2', '#6B4EA2', '#EFEAF7', '#4B3480', 'Il quiz', qrSvg(linkQ, 46), host + '/quiz', a.codice, '<b>Stesso codice dello scritto</b>',
+        'Si apre a fine scritto. Indovina i termini di tutto il glossario: superato il quiz sei ammesso all\'interrogazione, la verifica finale.') +
+      '<div class="warn"><b>Codice e QR sono personali.</b> Non fotografarli e non darli a nessuno: quello che si fa con il tuo codice risulta tuo.</div>' +
+      '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer></section>';
   }).join('');
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-    '.pg{width:210mm;height:297mm;padding:16mm 18mm 14mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
-    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:4mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:15pt}.pr{font-size:10.5pt;color:#5B6976;margin-top:1mm}' +
-    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:30pt;margin-top:9mm;line-height:1.1}.gr{display:inline-block;align-self:flex-start;border-left:3mm solid;padding:1mm 3mm;font-size:13pt;margin-top:2mm;background:#F2F5F7}' +
-    '.qr{display:flex;flex-direction:column;align-items:center;margin-top:8mm}.qr svg{border:1pt solid #C3CED7;border-radius:3mm}.qr p{text-align:center;font-size:12pt;margin:3mm 0 0}' +
-    '.acc{display:grid;grid-template-columns:1.3fr 1fr;gap:5mm;margin-top:7mm}.acc>div{border:1pt solid #C3CED7;border-radius:3mm;padding:3mm 4mm}.lb{font-size:9.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
-    '.url{font-weight:700;font-size:14pt;margin-top:1.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:24pt;letter-spacing:.18em;margin-top:1mm}' +
-    'ol{font-size:11pt;line-height:1.4;margin:4mm 0 0;padding-left:6mm}li{margin:.6mm 0}' +
-    '.ter{margin-top:4mm;border:1pt solid #C3CED7;border-radius:3mm;padding:2.5mm 4mm}.ter ol{columns:2;column-gap:8mm;margin:1.5mm 0 0;padding-left:6mm;font-size:11pt}.ter li{break-inside:avoid}.ter i{display:inline-block;width:2.6mm;height:2.6mm;border-radius:50%;margin-right:1.6mm;vertical-align:.2mm}' +
-    '.sca{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:5mm}.sca div{background:#15212B;color:#fff;border-radius:3mm;padding:2.5mm 4mm}.sca span{display:block;font-size:9.5pt;opacity:.8}.sca b{font-size:12.5pt}' +
-    '.warn{margin-top:auto;background:#FCEBD9;border-radius:3mm;padding:3mm 4mm;font-size:10.5pt;line-height:1.4}footer{margin-top:4mm;font-size:9.5pt;color:#5B6976;text-align:center}';
+    '.pg{width:210mm;height:297mm;padding:14mm 16mm 12mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
+    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3.5mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:14pt}.pr{font-size:10pt;color:#5B6976;margin-top:1mm}' +
+    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:11.5pt;letter-spacing:.14em;text-transform:uppercase;margin-top:6mm}' +
+    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:27pt;line-height:1.1;margin-top:1mm}.gr{align-self:flex-start;border-left:3mm solid #15212B;padding:1mm 3mm;font-size:11.5pt;margin-top:2mm;background:#F2F5F7}' +
+    '.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:5mm}.cal>div{background:#F2F5F7;border-radius:0 0 2mm 2mm;padding:2.5mm 3mm;display:flex;flex-direction:column}.cal span{font-size:8.5pt;text-transform:uppercase;letter-spacing:.06em;color:#5B6976}.cal b{font-family:Archivo,Arial,sans-serif;font-size:13pt;margin-top:.5mm}.cal small{font-size:9.5pt;color:#5B6976}' +
+    '.bl{border:1.4pt solid;border-radius:3mm;margin-top:5mm;overflow:hidden}.bt{color:#fff;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.06em;text-transform:uppercase;padding:2mm 4mm}' +
+    '.bc{display:flex;gap:6mm;padding:4mm;align-items:center}.bc svg{flex:none;border:1pt solid #C3CED7;border-radius:2mm}.bi{min-width:0}.lb{font-size:8.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
+    '.url{font-weight:700;font-size:13pt;margin-top:.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:22pt;letter-spacing:.18em}.nt{display:inline-block;font-size:10pt;padding:1mm 2.5mm;border-radius:2mm;margin-top:1mm}.bi p{font-size:10.5pt;margin:2.5mm 0 0;line-height:1.35}' +
+    '.warn{margin-top:auto;border:1pt solid #E5B9B4;background:#FBEDEB;border-radius:2mm;padding:2.5mm 3.5mm;font-size:10pt}footer{margin-top:3mm;font-size:9pt;color:#5B6976;text-align:right}';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
-  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Schede alunni Glossario ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
+  w.document.write('<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Accessi Glossario ' + esc(classe && classe !== 'tutte' ? classe : CLASSI().join('-')) + '</title>' +
     '<style>' + cssFonti(location.origin) + css + '</style></head><body>' + pagine +
-    scriptStampa('setTimeout(function(){window.print()},400)') + '</body></html>');
+    scriptStampa('document.body.setAttribute("data-pronto","1");setTimeout(function(){window.print()},400)') + '</body></html>');
   w.document.close();
 }
 

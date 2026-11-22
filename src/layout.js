@@ -158,7 +158,7 @@ function vistaDocente() {
   S.pag = pag;
   var p = pagine.filter(function (x) { return x.id === pag; })[0];
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
-  var avvisi = RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '';
+  var avvisi = bannerCoda() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
     '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
@@ -303,10 +303,7 @@ var PAGINA = {
   codici: function () {
     return '<section class="card" id="codici"><h2 style="margin:0 0 6px;font-size:22px">Codici personali degli alunni (riservato)</h2>' +
       '<p class="muted" style="margin:10px 0">Stampa e ritaglia le strisce da consegnare a mano. Link dell\'app: <b>' + esc(location.origin) + '</b></p>' +
-      '<div class="row" style="margin-bottom:10px">' + CLASSI().map(function (c) { return '<button class="btn" onclick="stampaSchede(\'' + c + '\')">Schede con QR · ' + c + '</button>'; }).join('') +
-      (CLASSI().length > 1 ? '<button class="btn sec" onclick="stampaSchede(\'tutte\')">Schede di tutte le classi</button>' : '') + '<button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div>' +
-      '<p class="muted" style="margin:0 0 10px;font-size:14px">Le schede si aprono nella stampa: scegli “Salva come PDF” per avere il file. Una pagina A4 per alunno con QR, link, codice, partenza e scadenza (senza i termini).</p>' +
-      '<h3 style="margin:14px 0 8px;font-size:18px">Accessi al quiz</h3><div class="stack" style="gap:8px;margin-bottom:12px">' + bottoniAccessiQuiz() + '</div>' +
+      '<div class="stack" style="gap:8px;margin-bottom:12px">' + bottoniAccessiQuiz() + '<div><button class="btn sec" onclick="stampaCodici()">Codici in strisce</button></div></div>' +
       '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th>Classe</th><th>Codice</th></tr></thead><tbody>' +
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
