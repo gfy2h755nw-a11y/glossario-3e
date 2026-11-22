@@ -126,7 +126,8 @@ async function pubblico(db, { ed } = {}) {
   const vivo = L.pubblicoDa(corrente);
   let snap = db.leggiPubblicazione ? await db.leggiPubblicazione() : null;
   // mai pubblicata ma già archiviata (lavoro concluso): vale la copia dell'archivio
-  if (!snap && edCorr) { const m = archivi.find((x) => x.id === edCorr.id); if (m && m.pubblico) snap = { il: m.archiviata || m.data || null, dati: { aree: m.pubblico.aree, classi: m.pubblico.classi } }; }
+  if (snap && snap.ritirato) snap = null;
+  else if (!snap && edCorr) { const m = archivi.find((x) => x.id === edCorr.id); if (m && m.pubblico) snap = { il: m.archiviata || m.data || null, dati: { aree: m.pubblico.aree, classi: m.pubblico.classi } }; }
   const cur = Object.assign({}, vivo, { classiElenco: Object.keys(vivo.classi || {}) }, snap && snap.dati ? { aree: snap.dati.aree || [], classi: snap.dati.classi || {}, pubblicato: snap.il } : { aree: [], classi: {}, nonPubblicato: true });
   // edizione in corso da sola (scelta nel menu) oppure, di norma, il glossario completo: ogni edizione archiviata lo arricchisce
   if (ed || !archivi.length || (db.spazio && db.spazio !== 'main')) return Object.assign(cur, { edizioni: elenco, archiviata: false, completo: false });

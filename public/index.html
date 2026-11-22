@@ -3432,7 +3432,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 6';
+var VERSIONE = '22/11/2026 · 7';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -7274,9 +7274,10 @@ function bloccoPubblica() {
   var p = S.d.pubblicazione; if (!p || !LOC() || RO()) return '';
   var n = daPubblicare();
   return '<section class="card stack" id="pubBox" style="gap:10px;border-left:5px solid ' + (n ? '#E0A100' : 'var(--ok)') + '"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px">' +
-    '<div><h2 class="h2s" style="margin:0">Pagina pubblica</h2><p class="muted" style="margin:4px 0 0">' + (p.pubblicato ? 'Ultima pubblicazione: <b>' + esc(quandoIt(p.il)) + '</b> · ' + p.n + (p.n === 1 ? ' definizione' : ' definizioni') : '<b>Non ancora pubblicato</b>: la pagina pubblica mostra «online a breve»') + '</p>' +
+    '<div><h2 class="h2s" style="margin:0">Pagina pubblica</h2><p class="muted" style="margin:4px 0 0">' + (p.pubblicato ? 'Ultima pubblicazione: <b>' + esc(quandoIt(p.il)) + '</b> · ' + p.n + (p.n === 1 ? ' definizione' : ' definizioni') : p.ritirato ? '<b>Definizioni ritirate</b> il ' + esc(quandoIt(p.il)) + ': la pagina pubblica mostra «online a breve»' : '<b>Non ancora pubblicato</b>: la pagina pubblica mostra «online a breve»') + '</p>' +
     '<p style="margin:4px 0 0;font-weight:700;color:' + (n ? '#9A4A00' : 'var(--ok)') + '" id="pubNov">' + esc(testoNovita(p)) + '</p></div>' +
     '<div class="row" style="gap:8px"><a class="btn sec" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener">Apri la pagina</a>' +
+    (p.pubblicato ? '<button class="btn warn" id="pubRitira" onclick="ritiraOra(this)">Ritira definizioni dalla pagina pubblica</button>' : '') +
     '<button class="btn" id="pubVai" onclick="pubblicaOra(this)"' + (n ? '' : ' disabled') + '>Pubblica sulla pagina pubblica</button></div></div>' +
     '<p class="muted" style="margin:0;font-size:13.5px">Termini, definizioni e autori vanno online solo quando premi il pulsante. Quello che approvi dopo resta invisibile fino alla pubblicazione successiva.</p></section>';
 }
@@ -7291,6 +7292,13 @@ function pubblicaOra(btn) {
   btn.disabled = true; btn.textContent = 'Pubblicazione…';
   api('pubblicaglossario').then(function (r) { S.d.pubblicazione = r; vistaDocente(); toast('Glossario pubblicato: ' + r.n + (r.n === 1 ? ' definizione online' : ' definizioni online')); })
     .catch(function (e) { toast(errMsg(e), true); btn.disabled = false; btn.setAttribute('data-ok', ''); btn.textContent = btn.getAttribute('data-t') || 'Pubblica sulla pagina pubblica'; });
+}
+
+function ritiraOra(btn) {
+  if (btn.getAttribute('data-ok') !== '1') { btn.setAttribute('data-ok', '1'); btn.setAttribute('data-t', btn.textContent); btn.textContent = 'Conferma: ritira adesso'; setTimeout(function () { if (btn.isConnected && btn.getAttribute('data-ok') === '1') { btn.setAttribute('data-ok', ''); btn.textContent = btn.getAttribute('data-t'); } }, 6000); return; }
+  btn.disabled = true; btn.textContent = 'Ritiro…';
+  api('ritiraglossario').then(function (r) { S.d.pubblicazione = r; vistaDocente(); toast('Definizioni ritirate: la pagina pubblica mostra «online a breve»'); })
+    .catch(function (e) { toast(errMsg(e), true); btn.disabled = false; btn.setAttribute('data-ok', ''); btn.textContent = btn.getAttribute('data-t') || 'Ritira definizioni dalla pagina pubblica'; });
 }
 
 /* ---------- statistiche della pagina pubblica ---------- */

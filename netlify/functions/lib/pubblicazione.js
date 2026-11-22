@@ -21,6 +21,8 @@ function differenze(snap, cur) {
 }
 
 function riepilogo(meta, cur) {
+  // ritirata dal docente: la pagina pubblica torna a «online a breve»
+  if (meta && meta.ritirato) return { pubblicato: false, ritirato: true, il: meta.il, da: meta.da || '', n: 0, approvate: contaDef(cur), novita: differenze(null, cur) };
   const d = differenze(meta && meta.dati, cur);
   return { pubblicato: !!meta, il: meta ? meta.il : null, da: meta ? meta.da : '', n: meta ? meta.n : 0, approvate: contaDef(cur), novita: d };
 }
@@ -40,4 +42,13 @@ async function pubblica(db, { codice }) {
   return riepilogo(meta, cur);
 }
 
-module.exports = { pubblica, stato, differenze, contaDef };
+/* ritira termini e definizioni dalla pagina pubblica (si ripubblicano con il pulsante, quando si vuole) */
+async function ritira(db, { codice }) {
+  const st = await db.leggiTutto();
+  const chi = L.identifica(st, codice); L.soloGestore(chi);
+  const meta = { ritirato: true, il: new Date().toISOString(), da: chi.nome };
+  await db.scriviPubblicazione(meta);
+  return riepilogo(meta, L.pubblicoDa(st));
+}
+
+module.exports = { pubblica, ritira, stato, differenze, contaDef };

@@ -72,6 +72,7 @@ const AZIONI = {
   glossari: () => glossariInCache(),
   // il docente manda online sulla pagina pubblica termini e definizioni approvati
   pubblicaglossario: (d, p) => PUBB.pubblica(d, p),
+  ritiraglossario: (d, p) => PUBB.ritira(d, p),
   // statistiche della pagina pubblica, solo per il prof. Cerrato
   statistiche: async (d, p) => {
     await logica.verificaAdmin(db('main'), p.codice);
@@ -226,7 +227,7 @@ exports.handler = async (event) => {
     // dopo una modifica del docente il prossimo accesso rifà subito il controllo degli esclusi
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
-    if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita' || p.azione === 'concessione' || p.azione === 'pubblicaglossario') { Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]); cacheGlossari = null; }
+    if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita' || p.azione === 'concessione' || p.azione === 'pubblicaglossario' || p.azione === 'ritiraglossario') { Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]); cacheGlossari = null; }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.admin && d.spazio === 'main') { try { await SP.pulisciResidui(d); } catch (e) { console.error('pulizia:', e.message); } }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'alunno') dati.att = d.spazio; // link alla pagina pubblica della sua attività
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: dati.utente.gestore ? (await SP.elencoDocente(d)).filter((x) => x.id === d.spazio) : await SP.elencoDocente(d) });
