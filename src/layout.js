@@ -149,8 +149,8 @@ function barraAlta(p) {
     chips = cl.map(function (c) { var d = datePerClasse(c); return d && d.scadenzaIt ? '<span class="tchip" title="Scadenza ' + esc(c) + '">' + esc(c) + ' · scade ' + esc(oraIt(d.scadenzaIt)) + '</span>' : ''; }).join('');
   }
   return '<header class="tbar"><button class="smenu" onclick="document.body.classList.add(\'menu-on\')" aria-label="Apri il menu" aria-controls="side">☰</button>' +
-    '<div class="ttit"><h1>' + esc(p.t) + '</h1><div class="tsub">' + esc(RO() ? 'Archivio · ' + ((S.d.edizioneArchivio || {}).nome || '') : (ed.nome || '') + (ed.as ? ' · a.s. ' + ed.as : '')) + (S.filtro.classe && S.filtro.classe !== 'tutte' ? ' · solo ' + esc(S.filtro.classe) : '') + '</div></div>' +
-    '<div class="tdx">' + chips + '<button class="btn sec tb" onclick="ricarica(\'Dati aggiornati\')">Aggiorna</button><a class="btn sec tb" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener">Pagina pubblica</a></div></header>';
+    '<div class="ttit"><h1>' + esc(p.id === 'cruscotto' && !RO() ? saluto() : p.t) + '</h1><div class="tsub">' + esc(RO() ? 'Archivio · ' + ((S.d.edizioneArchivio || {}).nome || '') : (ed.nome || '') + (ed.as ? ' · a.s. ' + ed.as : '')) + (S.filtro.classe && S.filtro.classe !== 'tutte' ? ' · solo ' + esc(S.filtro.classe) : '') + '</div></div>' +
+    '<div class="tdx">' + (RO() ? '' : '<div class="tcerca" id="tcerca"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="tq" type="search" placeholder="Cerca uno studente o un termine…" autocomplete="off" oninput="cercaRapida(this.value)" onkeydown="tastoCerca(event)" aria-label="Cerca uno studente o un termine"><kbd>Ctrl K</kbd><div class="tris" id="tris" hidden></div></div>') + chips + '<button class="btn sec tb" onclick="ricarica(\'Dati aggiornati\')">Aggiorna</button><a class="btn sec tb" href="' + esc(urlPubblico()) + '" target="_blank" rel="noopener">Pagina pubblica</a></div></header>';
 }
 
 function vistaDocente() {
@@ -161,9 +161,9 @@ function vistaDocente() {
   S.pag = pag;
   var p = pagine.filter(function (x) { return x.id === pag; })[0];
   var corpo = (PAGINA[pag] || PAGINA.cruscotto)();
-  var avvisi = bannerCoda() + bannerPubblica() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
+  var avvisi = bannerCoda() + bannerSalute() + bannerPubblica() + (RO() ? bannerArchivio() : S.d.config.bozza ? bannerPreparazione() : S.d.config.chiusa ? '<div class="note warn"><b>App chiusa agli alunni.</b> I docenti possono ancora rivedere.</div>' : '');
   $('app').innerHTML = '<div class="dapp">' + barraLaterale(pag, pagine) + '<div class="sveil" onclick="document.body.classList.remove(\'menu-on\')"></div><section class="dmain">' + barraAlta(p) +
-    '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section></div>';
+    '<main class="dcont stack" id="pag-' + pag + '">' + schedeSezione(pag, pagine) + avvisi + corpo + '</main></section>' + barraBasso(pag, pagine) + '</div>';
   if (pag === 'cartelloni') disegnaPoster(S.poster || (f.area !== 'tutte' ? f.area : 1));
   if (pag === 'situazione') { selSituazione(); disegnaSituazione(); }
   if (pag === 'gestione') { selGestione(); disegnaGestione(); }
@@ -219,7 +219,22 @@ function bloccoOggi() {
   var lista = cose.length ? cose.map(function (k) {
     return '<div class="ocosa"><span class="on-' + k[5] + '">' + k[0] + '</span><div><b>' + esc(k[1]) + '</b><small>' + esc(k[2]) + '</small></div><button class="btn" onclick="' + k[4] + '">' + k[3] + '</button></div>';
   }).join('') : '<div class="ocosa vuota"><span class="on-o">✓</span><div><b>Niente da fare adesso</b><small>nessuna risposta in attesa e nessuno da sollecitare</small></div></div>';
-  return '<section class="ogrid">' + fasi + '</section><section class="stack" style="gap:8px" id="dafare"><h2 style="margin:0;font-size:20px">Da fare</h2>' + lista + '</section>';
+  return { fasi: '<h2 class="dsez">Il percorso delle classi</h2><section class="ogrid">' + fasi + '</section>', dafare: '<section id="dafare" aria-label="Da fare"><div class="olista">' + lista + '</div></section>',
+    passo: prossimoPasso({ riv: riv, sol: sol, rig: rig, senzaQuiz: senzaQuiz }) };
+}
+/* «Il prossimo passo»: in cima al cruscotto, la cosa più importante da fare adesso */
+function prossimoPasso(x) {
+  var p = null, pub = S.d.pubblicazione;
+  if (x.senzaQuiz.length) p = ['quiz', 'Fissa le date del quiz per ' + x.senzaQuiz.join(' e '), 'Senza apertura e scadenza gli studenti non potranno iniziare il quiz.', 'Imposta le date', "vai('impostazioni')"];
+  else if (pub && LOC() && typeof quizFinito === 'function' && quizFinito() && daPubblicare()) p = ['pub', 'Pubblica il glossario sulla pagina pubblica', testoNovita(pub) + '. Gli studenti lo usano per prepararsi all\'interrogazione.', 'Pubblica ora', 'pubblicaOra(this)'];
+  else if (x.riv) p = ['riv', 'Rivedi ' + x.riv + (x.riv === 1 ? ' risposta' : ' risposte'), 'Aspettano la tua approvazione: più presto le rivedi, prima gli studenti possono correggersi.', 'Rivedi', "S.filtro.stato='inviata';vai('revisione')"];
+  else if (x.sol) p = ['sol', 'Sollecita ' + x.sol + (x.sol === 1 ? ' studente' : ' studenti'), 'Hanno termini ancora senza risposta: il messaggio da mandare è pronto da copiare.', 'Apri', "vai('sollecito')"];
+  else if (x.rig) p = ['rig', x.rig + (x.rig === 1 ? ' risposta rimandata' : ' risposte rimandate'), 'Gli studenti le possono correggere fino alla chiusura dell\'app.', 'Vedi', "S.filtro.stato='correggere';vai('revisione')"];
+  var dopo = null; try { dopo = sessionStorage.getItem('glo_passo'); } catch (e) { dopo = null; }
+  if (!p) return '<section class="dpasso calmo" id="passo"><div><div class="ey">Il prossimo passo</div><h2>Tutto in ordine</h2><p>Nessuna risposta in attesa e nessuno da sollecitare.</p></div></section>';
+  if (dopo === p[0] + '|' + p[1]) return '';
+  return '<section class="dpasso" id="passo" data-passo="' + p[0] + '"><div><div class="ey">Il prossimo passo</div><h2>' + esc(p[1]) + '</h2><p>' + esc(p[2]) + '</p></div><div class="dpbt"><button class="dbp" onclick="' + p[4] + '">' + p[3] + '</button>' +
+    '<button class="dbs" onclick="try{sessionStorage.setItem(\'glo_passo\',\'' + p[0] + '|' + esc(p[1]).replace(/'/g, '') + '\')}catch(e){};document.getElementById(\'passo\').remove()">Più tardi</button></div></section>';
 }
 
 function cardAree() {
@@ -228,7 +243,7 @@ function cardAree() {
     var c = function (l, st) { return ts.filter(function (t) { return T(t, l, 'stato') === st; }).length; };
     var riv = c('it', 'inviata') + (EN() ? c('en', 'inviata') : 0);
     var pronte = EN() ? ts.filter(function (t) { return t.statoIt === 'approvata' && t.statoEn === ''; }).length : 0;
-    return '<div class="card" style="border-top:8px solid ' + a.colore + '"><div class="disp" style="font-weight:800;font-size:17px;line-height:1.2">' + a.n + '. ' + esc(a.it) + '</div>' +
+    return '<div class="card darea" style="--c:' + a.colore + '"><div class="dan">' + (a.n < 10 ? '0' : '') + a.n + '</div><div class="disp" style="font-weight:800;font-size:16px;line-height:1.25">' + esc(a.it) + '</div>' +
       LINGUE().map(function (l) { var v = c(l, 'approvata'); return '<div style="margin-top:10px;font-size:15px">' + (l === 'it' ? (EN() ? 'Italiano' : 'Approvate') : 'Inglese') + ' <b>' + v + '/' + ts.length + '</b></div><div class="bar"><span style="width:' + (ts.length ? v / ts.length * 100 : 0) + '%;background:' + a.colore + '"></span></div>'; }).join('') +
       (pronte ? '<div style="margin-top:8px;font-size:14px" class="muted">' + pronte + ' pronte per l\'inglese, non ancora scelte</div>' : '') +
       '<div style="margin-top:10px">' + (riv ? '<button class="chip s-inviata chipbtn" onclick="S.filtro.area=\'' + a.n + '\';S.filtro.stato=\'inviata\';vai(\'revisione\')">' + riv + ' da rivedere</button>' : '<span class="chip s-vuota">Niente da rivedere</span>') + '</div></div>';
@@ -237,7 +252,7 @@ function cardAree() {
 
 var PAGINA = {
   cruscotto: function () {
-    var oggi = bloccoOggi();
+    var og = RO() ? { fasi: '', dafare: '', passo: '' } : bloccoOggi();
     var ts = S.d.termini.filter(function (t) { return inClasse(t.alunno); }), n = ts.length || 1;
     var app = ts.filter(function (t) { return t.statoIt === 'approvata'; }).length, att = ts.filter(function (t) { return t.statoIt === 'inviata'; }).length;
     var sol = RO() ? null : righeDaSollecitare(), riv = contaDaRivedere();
@@ -248,12 +263,14 @@ var PAGINA = {
       ['Approvate', app + '<small> / ' + ts.length + '</small>', Math.round(app / n * 100) + '% definitive', app / n, 'var(--ok)'],
       sol ? ['Da sollecitare', sol.length, escl ? escl + (escl === 1 ? ' escluso' : ' esclusi') : 'nessun escluso', null, 'var(--err)', 'sollecito'] : ['Alunni', al.length, escl ? escl + ' esclusi' : 'nessun escluso', null, 'var(--ink)']
     ];
-    var h = oggi + bloccoPubblica() + '<section class="kpis">' + kpi.map(function (k) {
+    var h = og.passo + og.fasi + '<h2 class="dsez">A colpo d\'occhio</h2><section class="kpis">' + kpi.map(function (k) {
       var tag = k[5] ? 'button' : 'div';
       return '<' + tag + ' class="card kcard"' + (k[5] ? ' onclick="vai(\'' + k[5] + '\')"' : '') + '><div class="kl">' + k[0] + '</div><div class="kv">' + k[1] + '</div><div class="muted ks">' + k[2] + '</div>' +
         (k[3] != null ? '<div class="bar" style="margin-top:8px"><span style="width:' + Math.round(k[3] * 100) + '%;background:' + k[4] + '"></span></div>' : '') + '</' + tag + '>';
     }).join('') + '</section>';
+    if (og.dafare) h += '<h2 class="dsez">Da fare</h2><div class="dgrid2' + (S.d.pubblicazione && LOC() ? '' : ' uno') + '">' + og.dafare + bloccoPubblica() + '</div>';
     h += bloccoStatCruscotto();
+    h += bloccoSalute();
     h += bloccoAnello();
     var cols = '';
     if (sol) {
@@ -274,7 +291,7 @@ var PAGINA = {
           (PUO('revisione') && !RO() ? (ok ? '<button class="btn ok tb" onclick="decidi(\'' + t.id + '\',\'it\',\'approvata\',this)">Approva</button>' : '<button class="btn sec tb" onclick="S.filtro.stato=\'inviata\';vai(\'revisione\')">Rivedi</button>') : '') + '</div>';
       }).join('') : '<p class="muted" style="margin:0">Niente da rivedere.</p>') + '</section>';
     h += '<div class="grid2 cols">' + cols + '</div>';
-    h += cardAree();
+    h += '<h2 class="dsez">Gli argomenti</h2>' + cardAree();
     if (S.d.admin && PUO('documenti')) h += '<section class="card stack" style="gap:10px"><h2 class="h2s">Documenti rapidi</h2><div class="row">' +
       '<button class="btn sec" onclick="reportPdf()">Report completo (PDF)</button>' +
       (RO() ? '' : '<button class="btn sec" onclick="esportaWord(this)">Definizioni approvate (Word)</button>') +

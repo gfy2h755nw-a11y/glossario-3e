@@ -300,6 +300,12 @@ footer .motto{font:500 italic 1.6rem var(--serif);color:var(--ink);margin-bottom
 <div id="instFoglio" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script>
+/* salute dell'app: un errore di questa pagina arriva al prof. Cerrato (pochi per visita, senza dati personali) */
+(function () { var n = 0, visti = {}; function invia(m, d) { m = String(m || '').slice(0, 300); if (!m || n >= 5 || visti[m]) return; visti[m] = 1; n++; try { fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ azione: 'erroreclient', origine: 'pubblica', messaggio: m, dettaglio: String(d || '').slice(0, 900), disp: /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) ? 'telefono' : 'PC' }) }).catch(function () {}); } catch (e) {} }
+  window.addEventListener('error', function (e) { invia(e.message, (e.filename || '') + ':' + (e.lineno || '') + '\n' + ((e.error && e.error.stack) || '')); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e.reason; invia((r && r.message) || String(r), r && r.stack); }); })();
+</script>
+<script>
 /*POSTER*/
 </script>
 <script>

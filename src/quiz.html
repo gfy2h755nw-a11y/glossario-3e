@@ -68,6 +68,12 @@ h2.qz-h{font:800 18px Archivo,Arial,sans-serif;margin:18px 0 4px}
 <body>
 <header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Quiz del glossario</b><span class="sott" id="qzSott">Istituto Barsanti · Laboratorio odontotecnico</span></div><div id="hdr"></div></div></header>
 <main class="qz" id="qz" aria-live="off"></main>
+<script>
+/* salute dell'app: un errore di questa pagina arriva al prof. Cerrato (pochi per visita, senza dati personali) */
+(function () { var n = 0, visti = {}; function invia(m, d) { m = String(m || '').slice(0, 300); if (!m || n >= 5 || visti[m]) return; visti[m] = 1; n++; try { fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ azione: 'erroreclient', origine: 'quiz', messaggio: m, dettaglio: String(d || '').slice(0, 900), disp: /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent) ? 'telefono' : 'PC' }) }).catch(function () {}); } catch (e) {} }
+  window.addEventListener('error', function (e) { invia(e.message, (e.filename || '') + ':' + (e.lineno || '') + '\n' + ((e.error && e.error.stack) || '')); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e.reason; invia((r && r.message) || String(r), r && r.stack); }); })();
+</script>
 <script>/*POSTER*/</script>
 <script>
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }

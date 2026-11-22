@@ -16,7 +16,7 @@ function api(azione, dati) {
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
     .catch(function () { var e = new Error('Connessione assente: controlla internet e riprova.'); e.rete = true; throw e; })
     .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server (' + r.status + ').' }; }); })
-    .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore sconosciuto.'); return j.dati; });
+    .then(function (j) { if (!j.ok) { var e = new Error(j.errore || 'Errore sconosciuto.'); e.api = true; throw e; } return j.dati; });
 }
 /* indirizzo della pagina pubblica dell'attività aperta (con ?att= per le attività parallele) */
 function urlPubblico(da) { return location.origin + '/glossario?att=' + encodeURIComponent((S.d && S.d.att) || 'main') + (da ? '&da=' + da : ''); }
@@ -52,7 +52,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 8';
+var VERSIONE = '22/11/2026 · 9';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -390,7 +390,7 @@ function conferma(id, l, btn) {
 /* ---------- docente ---------- */
 function cardDocente(t, l) {
   var a = area(t.area), st = T(t, l, 'stato'), scelta = T(t, l, 'scelta'), ok = T(t, l, 'ok'), comm = T(t, l, 'comm');
-  var h = '<article class="card" style="border-top:6px solid ' + a.colore + '"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="term-it">' + esc(t.it) + '</div>' + (EN() && t.en ? '<div class="term-en" lang="en" style="color:' + a.colore + '">' + esc(t.en) + '</div>' : '') + '</div>' +
+  var h = '<article class="card" data-tid="' + esc(t.id) + '" style="border-top:6px solid ' + a.colore + '"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="term-it">' + esc(t.it) + '</div>' + (EN() && t.en ? '<div class="term-en" lang="en" style="color:' + a.colore + '">' + esc(t.en) + '</div>' : '') + '</div>' +
     '<div class="muted" style="text-align:right;font-size:15px"><b style="color:var(--ink)">' + esc(nomeAlunno(t.alunno)) + '</b>' + (t.ereditato ? '<br>ricevuto da ' + esc(nomeAlunno(t.alunnoOrig)) : '') + '<br>Area ' + t.area + (T(t, l, 'tent') ? ' · tentativi: ' + T(t, l, 'tent') : '') + (t.agg ? '<br>' + esc(t.agg) : '') + '</div></div>';
   if (l === 'en') {
     h += '<div class="lang"><h3>Italiano' + chip(t.statoIt) + '</h3>' + (t.statoIt === 'approvata'

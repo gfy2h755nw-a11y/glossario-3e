@@ -28,7 +28,7 @@ html = '''<!DOCTYPE html>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Glossario">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<style>''' + FONT_CSS + '''</style>
+<style>''' + FONTCSS(FONTI_PUB) + '''</style>
 <style>''' + r('src/stile.css') + r('src/docente.css') + '''</style>
 </head>
 <body>
@@ -53,6 +53,8 @@ html = '''<!DOCTYPE html>
 ''' + r('src/banca.js') + '''
 ''' + r('src/promo.js') + '''
 ''' + r('src/pubblica.js') + '''
+''' + r('src/salute.js') + '''
+''' + r('src/restyle.js') + '''
 </script>
 </body>
 </html>

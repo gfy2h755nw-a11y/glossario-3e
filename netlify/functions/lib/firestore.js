@@ -13,6 +13,8 @@ function firestore() {
   if (cred.private_key) cred.private_key = cred.private_key.replace(/\\n/g, '\n');
   if (!admin.apps.length) admin.initializeApp({ credential: admin.credential.cert(cred) });
   fs = admin.firestore();
+  // un campo «undefined» (es. un dato facoltativo non impostato) non deve far fallire il salvataggio: si tralascia
+  try { fs.settings({ ignoreUndefinedProperties: true }); } catch (e) { /* impostazioni già applicate */ }
   return fs;
 }
 
@@ -70,6 +72,14 @@ function db(spazio) {
     /* versione pubblicata sulla pagina pubblica (termini, definizioni, autori): una per attività */
     async leggiPubblicazione() { const s = await f.collection('pubblicazioni').doc(ns).get(); return s.exists ? s.data() : null; },
     async scriviPubblicazione(dati) { await f.collection('pubblicazioni').doc(ns).set(dati); },
+    /* salute dell'app: errori registrati per giorno e tipo, e quando il prof. Cerrato li ha visti */
+    async aggiornaErrore(id, aggiorna) {
+      const ref = f.collection('errori').doc(String(id));
+      await f.runTransaction(async (tx) => { const s = await tx.get(ref); tx.set(ref, aggiorna(s.exists ? s.data() : null)); });
+    },
+    async leggiErrori(da) { return docs(await f.collection('errori').where('giorno', '>=', String(da)).get()); },
+    async leggiSalute() { const s = await f.collection(COL.config).doc('_salute').get(); return s.exists ? s.data() : null; },
+    async scriviSalute(dati) { await f.collection(COL.config).doc('_salute').set(dati, { merge: true }); },
     /* statistiche della pagina pubblica: un documento per giorno (raccolta comune a tutte le attività) */
     async aggiornaStatistica(giorno, aggiorna) {
       const ref = f.collection('statistiche').doc(String(giorno));

@@ -160,3 +160,80 @@
 .dapp .statt3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.dapp .statt3>div{background:#F5F7F9;border-radius:12px;padding:12px 14px}.dapp .statt3 b{display:block;font:800 24px Archivo,Arial,sans-serif}.dapp .statt3 small{color:#5B6B77}
 .dapp .stchip{display:flex;gap:6px;flex-wrap:wrap}.dapp .stchip button{border:1px solid #D5DDE3;background:#fff;border-radius:999px;padding:6px 13px;font:600 13.5px Archivo,Arial,sans-serif;cursor:pointer}.dapp .stchip button[aria-pressed="true"]{background:#15212B;color:#fff;border-color:#15212B}
 @media (max-width:700px){.dapp .statt3{grid-template-columns:1fr}.dapp .stbr{grid-template-columns:105px 1fr 44px}}
+.dapp .salr{border:1px solid var(--line,#E3E8EC);border-radius:12px;padding:10px 12px;background:#fff}.dapp .salr b{overflow-wrap:anywhere}
+.dapp .salr.nuovo{border-color:#E8B4AE;background:#FFF8F7}
+.dapp .salnu{display:inline-block;background:var(--err);color:#fff;font:800 10.5px Archivo,Arial,sans-serif;letter-spacing:.06em;border-radius:5px;padding:1px 6px;vertical-align:1px}
+
+/* ==========================================================================
+   Restyling 22/11/2026 — più intuitivo ed elegante: fondo «carta», titoli con grazie (come la pagina pubblica),
+   «Il prossimo passo» in cima, sezioni con etichette, ricerca rapida, barra in basso sul telefono.
+   ========================================================================== */
+.dapp{--bg:#F6F4EF;--line:#E6E2DA;--ink:#17212B;--serif:'Source Serif 4',Georgia,serif;--om:0 1px 2px rgba(23,33,43,.04)}
+.dapp .side{border-right-color:var(--line)}
+.dapp .slogo{background:var(--ink);box-shadow:none;font-family:var(--serif);font-weight:600}
+.dapp .sed{background:#F8F7F3;border-color:var(--line)}
+.dapp .sit.on{background:var(--ink);color:#fff;box-shadow:none}
+.dapp .sit.on svg{background:rgba(255,255,255,.14);color:#fff}
+.dapp .sit.on .sbd{background:#fff;color:var(--ink)}
+.dapp .ssub.on{background:#EFECE5;color:var(--ink)}
+.dapp .tbar{background:rgba(246,244,239,.92);border-bottom-color:var(--line)}
+.dapp .ttit h1{font-family:var(--serif);font-weight:600;font-size:29px;letter-spacing:-.012em}
+.dapp .card{border-color:var(--line);border-radius:18px}
+.dapp .btn.sec{border-color:#D9D4CA}
+.dapp .kv{font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
+.dapp .kv small{font-family:'Archivo',system-ui,sans-serif}
+.dapp .kcard::before{height:3px}
+.dapp .kl{letter-spacing:.11em}
+.dapp .dsez{font:700 12px 'Archivo',system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:14px 0 -2px}
+/* il prossimo passo */
+.dapp .dpasso{background:var(--ink);color:#F3EFE6;border-radius:20px;padding:22px 24px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center}
+.dapp .dpasso .ey{font:700 11.5px 'Archivo',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#9FB0BE}
+.dapp .dpasso h2{font:600 26px/1.15 var(--serif);margin:6px 0 4px;color:#fff;text-wrap:balance}
+.dapp .dpasso p{margin:0;color:#C9D2DA}
+.dapp .dpasso.calmo{background:#E9F2EE;color:var(--ink)}.dapp .dpasso.calmo h2{color:#14532D}.dapp .dpasso.calmo p{color:#3F5A4B}.dapp .dpasso.calmo .ey{color:#4E7A63}
+.dapp .dpbt{display:flex;gap:8px;flex-wrap:wrap}
+.dapp .dbp{border:0;border-radius:12px;background:#F6F4EF;color:var(--ink);font:800 15px 'Archivo',system-ui,sans-serif;padding:13px 20px;cursor:pointer;white-space:nowrap}
+.dapp .dbp:hover{background:#fff}
+.dapp .dbs{border:1px solid rgba(255,255,255,.28);border-radius:12px;background:transparent;color:#fff;font:700 14px 'Archivo',system-ui,sans-serif;padding:12px 16px;cursor:pointer;white-space:nowrap}
+/* percorso delle classi */
+.dapp .ocl b.disp{font-family:var(--serif);font-weight:600;font-size:22px!important}
+/* da fare: un elenco unico */
+.dapp .dgrid2{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;align-items:start}
+.dapp .dgrid2.uno{grid-template-columns:1fr}
+.dapp .olista{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.dapp .olista .ocosa{border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;margin:0}
+.dapp .olista .ocosa:first-child{border-top:0}
+.dapp .olista .ocosa .btn{min-height:38px;padding:0 14px}
+.dapp .olista .ocosa .btn:not(:first-of-type){}
+/* argomenti */
+.dapp .darea{position:relative;overflow:hidden;border-top:0!important}
+.dapp .darea::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--c)}
+.dapp .dan{font:600 30px/1 var(--serif);color:var(--c);margin-bottom:6px}
+/* ricerca rapida */
+.dapp .tcerca{position:relative;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 10px;height:40px;width:300px;color:#8E969E}
+.dapp .tcerca:focus-within{border-color:var(--ink)}
+.dapp .tcerca svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;flex:none}
+.dapp .tcerca input{border:0!important;box-shadow:none!important;background:none!important;flex:1;min-width:0;padding:0!important;font:inherit;font-size:14.5px;color:var(--ink);height:38px}
+.dapp .tcerca kbd{font:600 11px 'Archivo',system-ui,sans-serif;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
+.dapp .tris{position:absolute;top:46px;right:0;width:min(420px,92vw);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 40px -16px rgba(23,33,43,.35);padding:6px;z-index:40;max-height:70vh;overflow:auto}
+.dapp .tri{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;border-radius:10px;padding:8px 10px;cursor:pointer;color:var(--ink)}
+.dapp .tri.on,.dapp .tri:hover{background:#F2EFE8}
+.dapp .tri b{display:block;font-size:14.5px}.dapp .tri small{display:block;color:var(--muted);font-size:12.5px}
+.dapp .trk{width:26px;height:26px;border-radius:8px;background:#EFECE5;display:grid;place-items:center;flex:none;font-size:13px}
+.dapp .trv{padding:12px;color:var(--muted);font-size:14px}
+.dapp .trovato{outline:3px solid #E0A100;outline-offset:3px}
+/* barra in basso sul telefono */
+.dapp .dbasso{display:none}
+@media (max-width:980px){
+  .dapp .dbasso{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px))}
+  .dapp .dbasso button{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;font:700 11px 'Archivo',system-ui,sans-serif;color:#8E969E;padding:4px 0;cursor:pointer}
+  .dapp .dbasso svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .dapp .dbasso button.on{color:var(--ink)}.dapp .dbasso button.on svg{stroke:var(--acc)}
+  .dapp .dbasso .bbd{position:absolute;top:0;left:56%;background:#B3261E;color:#fff;font:800 10px 'Archivo',system-ui,sans-serif;border-radius:999px;padding:0 5px;border:2px solid #fff;min-width:18px;text-align:center}
+  .dapp .dmain{padding-bottom:78px}
+  .dapp .dgrid2{grid-template-columns:1fr}
+  .dapp .dpasso{grid-template-columns:1fr;padding:18px}
+  .dapp .dpasso h2{font-size:22px}
+  .dapp .tcerca{width:100%;order:-1}
+  .dapp .tcerca kbd{display:none}
+}

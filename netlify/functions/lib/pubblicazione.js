@@ -37,7 +37,7 @@ async function pubblica(db, { codice }) {
   const st = await db.leggiTutto();
   const chi = L.identifica(st, codice); L.soloGestore(chi);
   const cur = L.pubblicoDa(st);
-  const meta = { il: new Date().toISOString(), da: chi.nome, n: contaDef(cur), dati: JSON.parse(JSON.stringify({ aree: cur.aree, classi: cur.classi })) }; // Firestore non accetta campi «undefined» (es. numero dell'area non impostato)
+  const meta = { il: new Date().toISOString(), da: chi.nome, n: contaDef(cur), dati: JSON.parse(JSON.stringify({ aree: cur.aree, classi: cur.classi })) };
   await db.scriviPubblicazione(meta);
   return riepilogo(meta, cur);
 }

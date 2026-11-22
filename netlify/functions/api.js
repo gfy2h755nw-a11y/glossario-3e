@@ -13,6 +13,7 @@ const ED = require('./lib/edizioni');
 const OR = require('./lib/orale');
 const STAT = require('./lib/statistiche');
 const PUBB = require('./lib/pubblicazione');
+const SALUTE = require('./lib/salute');
 
 const AZIONI = {
   login: (d, p) => logica.login(d, p),
@@ -73,6 +74,9 @@ const AZIONI = {
   // il docente manda online sulla pagina pubblica termini e definizioni approvati
   pubblicaglossario: (d, p) => PUBB.pubblica(d, p),
   ritiraglossario: (d, p) => PUBB.ritira(d, p),
+  // salute dell'app (solo il prof. Cerrato): errori degli ultimi 30 giorni e «segna come visti»
+  salute: async (d, p) => { await logica.verificaAdmin(db('main'), p.codice); const m = (await db('main').leggiSalute()) || {}; return { errori: await SALUTE.elenco(db('main'), 30), letti: m.letti || '' }; },
+  saluteletti: async (d, p) => { await logica.verificaAdmin(db('main'), p.codice); const letti = new Date().toISOString(); await db('main').scriviSalute({ letti }); return SALUTE.riepilogo(db('main')); },
   // statistiche della pagina pubblica, solo per il prof. Cerrato
   statistiche: async (d, p) => {
     await logica.verificaAdmin(db('main'), p.codice);
@@ -155,7 +159,7 @@ async function traccia(d, p, event) {
     if (!a) return;
     const now = Date.now(), disp = ATT.dispositivo((event.headers || {})['user-agent']);
     await d.registraAttivita(a.id, (cur) => ATT.aggiorna(cur, now, disp, TRACCIA[p.azione]));
-  } catch (e) { console.error('registro attività:', e.message); }
+  } catch (e) { console.error('registro attività:', e.message); await segnala(e, 'registro attività', { livello: 'avviso' }); }
 }
 
 /* ---------- meno letture sul database ----------
@@ -165,7 +169,9 @@ async function traccia(d, p, event) {
 const TEST = !!process.env.SETUP_KEY && process.env.SETUP_KEY === 'chiave-prova' && /localhost/.test(process.env.URL || '');
 const MANUT_MS = 5 * 60 * 1000, PUBBLICO_MS = 2 * 60 * 1000;
 const manutUltima = {}, cachePubblico = {};
-let cacheGlossari = null;
+let cacheGlossari = null, limiteClient = [];
+/* errore imprevisto lato server: nel registro della salute dell'app (senza mai bloccare la risposta) */
+async function segnala(e, azione, extra) { try { await SALUTE.registra(db('main'), Object.assign({ origine: 'server', messaggio: (e && e.message) || String(e), dettaglio: e && e.stack ? String(e.stack).split('\n').slice(0, 5).join('\n') : '', azione }, extra || {})); } catch (x) { console.error('salute:', x.message); } }
 async function glossariInCache() {
   const now = Date.now();
   if (!TEST && cacheGlossari && now - cacheGlossari.t < PUBBLICO_MS) return cacheGlossari.dati;
@@ -179,12 +185,12 @@ async function glossariInCache() {
       const conc = !!P.concessione;
       out.push({ id, titolo: conc ? (P.materia ? 'Glossario di ' + P.materia : 'Glossario') : 'Glossario odontotecnico', materia: P.materia || '', docente: P.docente || '', concessione: P.concessione || '',
         anno: P.anno || '', pubblicato: !!P.pubblicato || definizioni > 0, classi: Object.keys(P.classi || {}), termini, definizioni, aree: (P.aree || []).length, colori: (P.aree || []).map((a) => a.colore) });
-    } catch (e) { console.error('glossari:', id, e.message); }
+    } catch (e) { console.error('glossari:', id, e.message); await segnala(e, 'glossari', { livello: 'avviso', att: id }); }
   }
   cacheGlossari = { t: now, dati: out };
   return out;
 }
-const SOLO_LETTURA = { glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+const SOLO_LETTURA = { salute: 1, saluteletti: 1, glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;
@@ -213,7 +219,12 @@ exports.handler = async (event) => {
   try { p = JSON.parse(event.body || '{}'); } catch (e) { return risposta(400, { errore: 'Richiesta non valida.' }); }
   // statistiche anonime della pagina pubblica: una scrittura sola, senza leggere il glossario
   if (p.azione === 'visita') {
-    try { await STAT.registra(db('main'), p, event.headers || {}); } catch (e) { console.error('statistiche:', e.message); }
+    try { await STAT.registra(db('main'), p, event.headers || {}); } catch (e) { console.error('statistiche:', e.message); await segnala(e, 'visita', { livello: 'avviso' }); }
+    return risposta(200, { ok: true });
+  }
+  if (p.azione === 'erroreclient') {
+    const now = Date.now(); limiteClient = limiteClient.filter((t) => now - t < 60000);
+    if (limiteClient.length < 30) { limiteClient.push(now); try { await SALUTE.registra(db('main'), { origine: p.origine, messaggio: p.messaggio, dettaglio: p.dettaglio, azione: p.azione2, ruolo: p.ruolo, pagina: p.pagina, disp: p.disp }); } catch (e) { console.error('salute:', e.message); } }
     return risposta(200, { ok: true });
   }
   const fn = AZIONI[p.azione];
@@ -228,7 +239,8 @@ exports.handler = async (event) => {
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
     if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita' || p.azione === 'concessione' || p.azione === 'pubblicaglossario' || p.azione === 'ritiraglossario') { Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]); cacheGlossari = null; }
-    if (p.azione === 'login' && dati && dati.utente && dati.utente.admin && d.spazio === 'main') { try { await SP.pulisciResidui(d); } catch (e) { console.error('pulizia:', e.message); } }
+    if (p.azione === 'login' && dati && dati.utente && dati.utente.admin && d.spazio === 'main') { try { await SP.pulisciResidui(d); } catch (e) { console.error('pulizia:', e.message); await segnala(e, 'pulizia', { livello: 'avviso' }); } }
+    if (p.azione === 'login' && dati && dati.utente && dati.utente.admin) { try { dati.salute = await SALUTE.riepilogo(db('main')); } catch (e) { console.error('salute:', e.message); } }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'alunno') dati.att = d.spazio; // link alla pagina pubblica della sua attività
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'docente') Object.assign(dati, { att: d.spazio, spazi: dati.utente.gestore ? (await SP.elencoDocente(d)).filter((x) => x.id === d.spazio) : await SP.elencoDocente(d) });
     if (TRACCIA[p.azione] && p.codice) await traccia(d, p, event);
@@ -239,7 +251,8 @@ exports.handler = async (event) => {
       return risposta(400, { errore: e.message });
     }
     console.error(e);
+    await segnala(e, p.azione, { att: p.att, livello: QUOTA.test(e.message || '') ? 'avviso' : 'errore' });
     if (QUOTA.test(e.message || '')) return risposta(503, { errore: 'In questo momento il glossario non è raggiungibile per troppi accessi. Riprova più tardi: i tuoi dati sono al sicuro.' });
-    return risposta(500, { errore: 'Errore del server: ' + (e.message || 'riprova tra poco.') });
+    return risposta(500, { errore: 'Errore del server: ' + (e.message || 'riprova tra poco.') + ' (l\'errore è stato registrato)' });
   }
 };
