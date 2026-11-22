@@ -3432,7 +3432,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 7';
+var VERSIONE = '22/11/2026 · 8';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -5772,6 +5772,7 @@ function scaricaArgo() {
 /* ---------- area docenti: barra dei comandi a sinistra, una pagina alla volta al centro ---------- */
 var ICO = {
   // icone dell'area docenti (restyling 21/11/2026): tratto 2, angoli arrotondati, griglia 24
+  statistiche: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   cruscotto: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>',
   revisione: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14.5 2 2 4-4.5"/>',
   sollecito: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/>',
@@ -5795,7 +5796,8 @@ function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (IC
 /* sezioni della barra (riorganizzazione 2026-11): ogni sezione raccoglie una o più pagine di sempre,
    che restano tutte raggiungibili come schede in cima alla pagina. gr = gruppo nella barra. */
 var SEZIONI = [
-  { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito', 'statpub'] },
+  { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
+  { id: 'stats', t: 'Statistiche pagina pubblica', gr: '', ico: 'statistiche', pag: ['statpub'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
