@@ -1093,6 +1093,7 @@ function stampaSchede(classe) {
         'Inquadra il QR: entri direttamente. Per ognuno dei tuoi termini scegli la definizione corretta' + (EN() ? ', prima in italiano e poi in inglese' : '') + '; il docente approva o ti chiede di correggere.') +
       blocco('2', '#6B4EA2', '#EFEAF7', '#4B3480', 'Il quiz', qrSvg(linkQ, 46), host + '/quiz', a.codice, '<b>Stesso codice dello scritto</b>',
         'Si apre a fine scritto. Indovina i termini di tutto il glossario: superato il quiz sei ammesso all\'interrogazione, la verifica finale.') +
+      '<div class="rip"><b>In vista dell\'interrogazione</b>Dopo che i quiz saranno terminati per ognuno, potrai esercitarti alla pagina <b class="u">' + esc(host) + '/glossario</b> in vista dell\'interrogazione.</div>' +
       '<div class="warn"><b>Codice e QR sono personali.</b> Non fotografarli e non darli a nessuno: quello che si fa con il tuo codice risulta tuo.</div>' +
       '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer></section>';
   }).join('');
@@ -1105,6 +1106,7 @@ function stampaSchede(classe) {
     '.bl{border:1.4pt solid;border-radius:3mm;margin-top:5mm;overflow:hidden}.bt{color:#fff;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.06em;text-transform:uppercase;padding:2mm 4mm}' +
     '.bc{display:flex;gap:6mm;padding:4mm;align-items:center}.bc svg{flex:none;border:1pt solid #C3CED7;border-radius:2mm}.bi{min-width:0}.lb{font-size:8.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
     '.url{font-weight:700;font-size:13pt;margin-top:.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:22pt;letter-spacing:.18em}.nt{display:inline-block;font-size:10pt;padding:1mm 2.5mm;border-radius:2mm;margin-top:1mm}.bi p{font-size:10.5pt;margin:2.5mm 0 0;line-height:1.35}' +
+    '.rip{margin-top:5mm;border:1.2pt solid #2E7D32;background:#EEF6EE;border-radius:3mm;padding:3mm 4mm;font-size:11pt;line-height:1.4}.rip b:first-child{display:block;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:10pt;letter-spacing:.06em;text-transform:uppercase;color:#1E5E22;margin-bottom:1mm}.rip .u{white-space:nowrap}' +
     '.warn{margin-top:auto;border:1pt solid #E5B9B4;background:#FBEDEB;border-radius:2mm;padding:2.5mm 3.5mm;font-size:10pt}footer{margin-top:3mm;font-size:9pt;color:#5B6976;text-align:right}';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
