@@ -18,7 +18,7 @@ window.open = function (u) {
 /* nell'app installata la pagina pubblica (stesso sito) si apre nel visore: «Torna all'app» riporta indietro.
    Prima si apriva al posto dell'app, senza modo di tornare. */
 function paginaInterna(u) {
-  if (!appInstallata()) return false;
+  if (!conVisore()) return false; // app installata, ma anche telefono/tablet nel browser
   try { var x = new URL(u, location.href); return x.origin === location.origin && /^\/glossario/.test(x.pathname); } catch (e) { return false; }
 }
 function apriPaginaVisore(u) {

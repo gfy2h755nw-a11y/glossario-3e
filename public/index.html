@@ -3526,7 +3526,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '23/11/2026 · 7';
+var VERSIONE = '23/11/2026 · 8';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -4624,7 +4624,7 @@ window.open = function (u) {
 /* nell'app installata la pagina pubblica (stesso sito) si apre nel visore: «Torna all'app» riporta indietro.
    Prima si apriva al posto dell'app, senza modo di tornare. */
 function paginaInterna(u) {
-  if (!appInstallata()) return false;
+  if (!conVisore()) return false; // app installata, ma anche telefono/tablet nel browser
   try { var x = new URL(u, location.href); return x.origin === location.origin && /^\/glossario/.test(x.pathname); } catch (e) { return false; }
 }
 function apriPaginaVisore(u) {
