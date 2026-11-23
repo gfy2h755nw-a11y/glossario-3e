@@ -295,7 +295,10 @@ body.or-pieno .dmain{grid-column:1/-1}
 #visore .vtorna{min-height:44px;padding:0 16px;border-radius:11px;border:0;background:#fff;color:#13222D;font:800 16px 'Archivo',system-ui,sans-serif;cursor:pointer}
 #visore .vazioni{display:flex;gap:8px;flex-wrap:wrap}
 #visore .vbtn{min-height:44px;padding:0 14px;border-radius:11px;border:1.5px solid #5C7380;background:transparent;color:#fff;font:700 15px 'Archivo',system-ui,sans-serif;cursor:pointer}
+#visore .vscala{flex:1;position:relative;overflow:hidden;min-height:0;display:flex}
 #visore iframe{flex:1;width:100%;border:0;background:#fff}
+#visore .vscala.scala iframe{position:absolute;left:0;top:0;flex:none;transform-origin:0 0}
+@media (max-width:600px){#visore .vbar b{display:none}#visore .vbar{flex-wrap:nowrap}#visore .vtorna,#visore .vbtn{min-height:40px;padding:0 12px;font-size:14.5px}}
 html.visore-aperto,html.visore-aperto body{overflow:hidden}
 .conc{margin:8px 0 0;text-align:center;font:italic 15px/1.4 Georgia,serif;color:var(--muted,#5B6976)}
 .sconc{font:italic 12.5px/1.35 Georgia,serif;color:#5F6E7A;padding:2px 4px}

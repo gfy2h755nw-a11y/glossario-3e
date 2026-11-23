@@ -310,7 +310,10 @@ body.or-pieno .dmain{grid-column:1/-1}
 #visore .vtorna{min-height:44px;padding:0 16px;border-radius:11px;border:0;background:#fff;color:#13222D;font:800 16px 'Archivo',system-ui,sans-serif;cursor:pointer}
 #visore .vazioni{display:flex;gap:8px;flex-wrap:wrap}
 #visore .vbtn{min-height:44px;padding:0 14px;border-radius:11px;border:1.5px solid #5C7380;background:transparent;color:#fff;font:700 15px 'Archivo',system-ui,sans-serif;cursor:pointer}
+#visore .vscala{flex:1;position:relative;overflow:hidden;min-height:0;display:flex}
 #visore iframe{flex:1;width:100%;border:0;background:#fff}
+#visore .vscala.scala iframe{position:absolute;left:0;top:0;flex:none;transform-origin:0 0}
+@media (max-width:600px){#visore .vbar b{display:none}#visore .vbar{flex-wrap:nowrap}#visore .vtorna,#visore .vbtn{min-height:40px;padding:0 12px;font-size:14.5px}}
 html.visore-aperto,html.visore-aperto body{overflow:hidden}
 .conc{margin:8px 0 0;text-align:center;font:italic 15px/1.4 Georgia,serif;color:var(--muted,#5B6976)}
 .sconc{font:italic 12.5px/1.35 Georgia,serif;color:#5F6E7A;padding:2px 4px}
@@ -3520,7 +3523,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '23/11/2026 · 4';
+var VERSIONE = '23/11/2026 · 5';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -4614,21 +4617,33 @@ window.open = function (u) {
   if (!conVisore() || (u && u !== 'about:blank')) return _apriFinestra.apply(window, arguments);
   return apriVisore();
 };
+/* documento largo come sul PC, rimpicciolito per stare nello schermo del telefono */
+var LARGO_VISORE = 840;
+function scalaVisore(on) {
+  var box = $('vScala'), f = $('vFrame'); if (!box || !f) return;
+  var z = Math.min(1, (box.clientWidth || window.innerWidth) / LARGO_VISORE);
+  if (!on || z >= 1) { box.classList.remove('scala'); f.style.width = ''; f.style.height = ''; f.style.transform = ''; return; }
+  box.classList.add('scala');
+  f.style.width = LARGO_VISORE + 'px'; f.style.height = Math.ceil(box.clientHeight / z) + 'px'; f.style.transform = 'scale(' + z.toFixed(4) + ')';
+}
+window.addEventListener('resize', function () { var b = $('vScala'); if (b && b.classList.contains('scala')) scalaVisore(true); });
 /* finestra finta: accetta document.write / document.close / location.href come una finestra vera */
 function apriVisore(titolo) {
   chiudiVisore();
   var o = document.createElement('div'); o.id = 'visore'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
   o.innerHTML = '<div class="vbar"><button type="button" class="vtorna" id="vTorna">← Torna all\'app</button><b id="vTit">' + (titolo ? esc(titolo) : 'Documento') + '</b>' +
     '<span class="vazioni"><button type="button" class="vbtn" id="vStampa">Stampa o salva PDF</button><button type="button" class="vbtn" id="vCondividi" hidden>Condividi o salva</button></span></div>' +
-    '<iframe id="vFrame" title="Documento"></iframe>';
+    '<div class="vscala" id="vScala"><iframe id="vFrame" title="Documento"></iframe></div>';
   document.body.appendChild(o); document.documentElement.classList.add('visore-aperto');
   var ifr = o.querySelector('iframe'), buf = '', t = null;
   var mostra = function () {
     clearTimeout(t);
     t = setTimeout(function () {
       // la stampa automatica del documento si ferma: si stampa con il pulsante in alto
-      // sul telefono la pagina A4 si rimpicciolisce per stare nello schermo (solo a video: la stampa resta A4)
-      var z = Math.min(1, Math.max(0.3, (window.innerWidth - 12) / 820)), zoom = z < 1 ? '<style>@media screen{html{zoom:' + z.toFixed(3) + '}}</style>' : '';
+      // sul telefono il documento si impagina come sul PC (larghezza fissa) e poi si rimpicciolisce tutto insieme:
+      // niente colonne schiacciate né testi ingranditi dal telefono (solo a video: la stampa resta A4)
+      var zoom = '<style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%}</style>';
+      scalaVisore(true);
       var html = buf.replace(/<head([^>]*)>/i, '<head$1>' + zoom + '<script>window.__stampa=window.print;window.print=function(){};<\/script>');
       if (html === buf) html = zoom + '<script>window.__stampa=window.print;window.print=function(){};<\/script>' + buf;
       ifr.removeAttribute('src'); ifr.srcdoc = html;
@@ -4640,19 +4655,58 @@ function apriVisore(titolo) {
     document: { write: function (s) { buf += String(s); mostra(); }, writeln: function (s) { buf += String(s) + '\n'; mostra(); }, close: function () { mostra(); }, open: function () { buf = ''; } },
     location: {},
     focus: function () {}, blur: function () {},
-    print: function () { stampaVisore(); },
+    print: function () { if (!suIos()) stampaVisore(); }, // su iPhone il PDF si prepara solo quando lo si chiede
     close: function () { chiudiVisore(); }
   };
-  Object.defineProperty(finta.location, 'href', { set: function (u) { clearTimeout(t); ifr.removeAttribute('srcdoc'); ifr.src = u; }, get: function () { return ifr.src || 'about:blank'; } });
+  Object.defineProperty(finta.location, 'href', { set: function (u) { clearTimeout(t); scalaVisore(false); ifr.removeAttribute('srcdoc'); ifr.src = u; }, get: function () { return ifr.src || 'about:blank'; } });
   $('vTorna').onclick = chiudiVisore;
   $('vStampa').onclick = stampaVisore;
   o._finta = finta;
   setTimeout(function () { try { $('vTorna').focus(); } catch (e) {} }, 0);
   return finta;
 }
+/* iPhone e iPad: la stampa dal browser non è affidabile (nell'app installata non parte proprio).
+   Si prepara un vero PDF sul telefono e lo si apre con «Condividi o salva»: da lì Stampa, Salva su File, Mail, WhatsApp. */
+function suIos() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function caricaScript(src) { return new Promise(function (ok, ko) { if (document.querySelector('script[src="' + src + '"]')) return ok(); var s = document.createElement('script'); s.src = src; s.onload = function () { ok(); }; s.onerror = function () { ko(new Error('Non riesco a caricare ' + src)); }; document.head.appendChild(s); }); }
+function pdfDaVisore(doc, nome) {
+  var b = $('vStampa'), t0 = b ? b.textContent : '';
+  var stato = function (t) { if (b) { b.textContent = t; b.disabled = true; } };
+  stato('Preparo il PDF…');
+  return caricaScript('/vendor/html2canvas-1.4.1.min.js').then(function () { return caricaScript('/vendor/jspdf-2.5.1.umd.min.js'); }).then(function () {
+    var pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true }), W = 210, H = 297, primo = true;
+    var pagine = [].slice.call(doc.querySelectorAll('section.pg, .pagina'));
+    if (!pagine.length) pagine = [doc.body];
+    var aggiungi = function (canvas, margine) {
+      // la pagina (o il documento intero) va su uno o più fogli A4, in larghezza
+      var mm = margine || 0, larg = W - 2 * mm, pxPerMm = canvas.width / larg, altPag = Math.floor((H - 2 * mm) * pxPerMm);
+      for (var y = 0; y < canvas.height; y += altPag) {
+        var h = Math.min(altPag, canvas.height - y); if (h < 8 && y > 0) break;
+        var c = document.createElement('canvas'); c.width = canvas.width; c.height = h; var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, h); g.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+        if (!primo) pdf.addPage(); primo = false;
+        pdf.addImage(c.toDataURL('image/jpeg', 0.86), 'JPEG', mm, mm, larg, h / pxPerMm);
+      }
+    };
+    var i = 0;
+    var prossima = function () {
+      if (i >= pagine.length) return Promise.resolve();
+      stato('PDF: pagina ' + (i + 1) + ' di ' + pagine.length + '…');
+      var el = pagine[i++];
+      return window.html2canvas(el, { scale: 1.6, backgroundColor: '#ffffff', useCORS: true, logging: false, windowWidth: doc.documentElement.scrollWidth })
+        .then(function (cv) { aggiungi(cv, el === doc.body ? 10 : 0); cv.width = cv.height = 0; return prossima(); });
+    };
+    return prossima().then(function () {
+      var blob = pdf.output('blob');
+      if (b) { b.disabled = false; b.textContent = t0; }
+      visoreFile((nome || 'documento').replace(/[\\/:*?"<>|]+/g, ' ').trim() + '.pdf', blob);
+      toast('PDF pronto: tocca «Condividi o salva» per stamparlo, salvarlo o inviarlo');
+    });
+  }).catch(function (e) { if (b) { b.disabled = false; b.textContent = t0; } toast('Non sono riuscito a preparare il PDF: ' + errMsg(e), true); });
+}
 function stampaVisore() {
   var f = $('vFrame'); if (!f) return;
   var doc = null; try { doc = f.getAttribute('srcdoc') != null ? f.contentDocument : null; } catch (e) { doc = null; }
+  if (doc && doc.body && suIos()) return pdfDaVisore(doc, ($('vTit') && $('vTit').textContent) || doc.title);
   // documento dell'app (schede, report, cartelloni): si stampa dalla pagina principale, che telefoni e tablet stampano sempre
   if (doc && doc.body) {
     var vecchio = $('stampaVisore'); if (vecchio) vecchio.remove();
@@ -4682,7 +4736,7 @@ function visoreFile(nome, blob) {
   try { file = new File([blob], nome, { type: blob.type }); } catch (e) {}
   var puo = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
   var pdf = /pdf/i.test(blob.type) || /\.pdf$/i.test(nome);
-  $('vStampa').hidden = !pdf;
+  $('vStampa').hidden = !pdf || suIos();
   $('vCondividi').hidden = !puo;
   $('vCondividi').onclick = function () { navigator.share({ files: [file], title: nome }).catch(function () {}); };
   if (pdf) ifr.src = url;

@@ -3,7 +3,8 @@
    Nessun codice personale e nessun dato degli studenti: solo il messaggio tecnico, dove è successo e quante volte. */
 const giornoRoma = (ms) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
 const ORIGINI = { server: 'Server', app: 'App', pubblica: 'Pagina pubblica', quiz: 'Pagina del quiz' };
-const pulisci = (s, n) => String(s == null ? '' : s).replace(/[A-Z2-9]{6,8}(?=\b)/g, (m) => (/[0-9]/.test(m) && /[A-Z]/.test(m) ? '••••••' : m)).replace(/[\u0000-\u0008\u000b-\u001f]/g, '').slice(0, n);
+// i codici d'accesso (6 caratteri) e promo (8) non finiscono mai nel registro, anche se di sole lettere
+const pulisci = (s, n) => String(s == null ? '' : s).replace(/\b(?:[A-HJ-NP-Z2-9]{6}|[A-HJ-NP-Z2-9]{8})\b/g, (m) => (/[A-Z]/.test(m) ? '••••••' : m)).replace(/[\u0000-\u0008\u000b-\u001f]/g, '').slice(0, n);
 function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 // rumore dei browser che non dipende dall'app
 const RUMORE = /ResizeObserver loop|^Script error\.?$|chrome-extension:|moz-extension:|safari-extension:|Non-Error promise rejection|AbortError|Load failed|Failed to fetch|NetworkError|cancelled|annullat/i;
