@@ -50,6 +50,7 @@ function genera(stato) {
     imp.riassegnazione === 'manuale'
       ? 'I termini dello studente escluso passano ai compagni <b>scelti dal docente</b>, della stessa classe; chi li riceve ha i giorni indicati dal docente (di norma <b>' + imp.giorniIt + '</b>) per rispondere.'
       : 'I termini dello studente escluso passano <b>a sorte</b> a un compagno della stessa classe, che ha <b>' + imp.giorniIt + ' giorni</b> per rispondere.',
+    'In ogni momento il docente può anche <b>assegnare lui i termini non pervenuti</b> a un compagno a sua scelta, decidendo quali termini e fino a quando rispondere, e può <b>bloccare il passaggio automatico</b> per uno studente.',
     'Chi riceve termini da un compagno escluso può arrivare a <b>' + n(imp.votoMaxErede) + '</b> invece di ' + n(imp.votoMax) + ', con le stesse penalità.',
     'Se non risponde in tempo ai termini ricevuti non viene escluso, ma il suo voto dello scritto scende a <b>' + n(imp.tetto) + '</b> (se era più alto).',
     'Il docente può concedere una <b>proroga individuale</b> della scadenza e può <b>riammettere</b> uno studente escluso.',
