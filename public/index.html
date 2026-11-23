@@ -3520,7 +3520,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '23/11/2026 · 2';
+var VERSIONE = '23/11/2026 · 3';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -6618,7 +6618,7 @@ function schedaScelta() {
   var inUso = {}; if (uno && S.or && S.or.bozza) S.or.bozza.termini.forEach(function (t, i) { if (i !== c.pos) inUso[t.area + '-' + t.k] = 1; });
   var h = '<section class="card stack" id="orScelta"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2 style="margin:0;font-size:22px">' +
     (uno ? 'Scegli il termine ' + (c.pos + 1) + ' per ' + esc(nome) : 'Scegli i termini per ' + esc(nome)) + '</h2>' +
-    '<p class="muted" style="margin:4px 0 0;font-size:15px">I termini del suo scritto non si possono scegliere. Accanto a ogni termine vedi chi l\'ha già avuto all\'interrogazione.' + (uno ? '' : ' Consigliati: <b>' + d.domande + '</b>.') + '</p></div>' +
+    '<p class="muted" style="margin:4px 0 0;font-size:15px">' + (d.bacino != null ? 'Il suo quiz aveva meno termini del glossario: si possono scegliere <b>solo i ' + d.bacino + ' termini del suo quiz</b>. ' : '') + 'I termini del suo scritto non si possono scegliere. Accanto a ogni termine vedi chi l\'ha già avuto all\'interrogazione.' + (uno ? '' : ' Consigliati: <b>' + d.domande + '</b>.') + '</p></div>' +
     '<button class="btn sec tb" onclick="S.orSc=null;vistaDocente()">Annulla</button></div>' +
     '<div class="row" style="gap:10px"><input id="orScQ" type="search" placeholder="Cerca un termine" oninput="filtraScelta()" style="flex:1;min-width:200px">' +
     '<label class="row" style="gap:6px;font-weight:700"><input type="checkbox" id="orScN" onchange="S.orSc.nasc=this.checked;filtraScelta()" style="width:20px;height:20px"> Nascondi i già usati</label></div>' +
@@ -6627,10 +6627,10 @@ function schedaScelta() {
     var a = area(g.area) || {};
     h += '<section class="card stack or-sc-area" style="border-left:8px solid ' + esc(a.colore || '#15212B') + '"><h3 style="margin:0;font-size:18px">' + esc(a.it || ('Area ' + g.area)) + '</h3><div class="or-sc-lista">' +
       g.termini.map(function (t) {
-        var k = g.area + '-' + t.k, blocc = t.suo || inUso[k], us = (t.usati || []).length;
+        var k = g.area + '-' + t.k, blocc = t.suo || t.fuori || inUso[k], us = (t.usati || []).length;
         return '<label class="or-sc' + (blocc ? ' no' : '') + '" data-k="' + k + '" data-it="' + esc(String(t.it).toLowerCase()) + '" data-us="' + (us ? 1 : 0) + '">' +
           '<input type="' + (uno ? 'radio' : 'checkbox') + '" name="orSc" value="' + k + '"' + (blocc ? ' disabled' : '') + ' onchange="sceltaCambia(this)">' +
-          '<span><b>' + esc(t.it) + '</b>' + (t.suo ? '<small class="or-sc-suo">termine del suo scritto</small>' : inUso[k] ? '<small>già in questa interrogazione</small>' : us ? '<small class="or-sc-us">già usato con ' + esc(t.usati.join(', ')) + '</small>' : '<small>mai usato</small>') + '</span></label>';
+          '<span><b>' + esc(t.it) + '</b>' + (t.suo ? '<small class="or-sc-suo">termine del suo scritto</small>' : t.fuori ? '<small class="or-sc-suo">non era nel suo quiz</small>' : inUso[k] ? '<small>già in questa interrogazione</small>' : us ? '<small class="or-sc-us">già usato con ' + esc(t.usati.join(', ')) + '</small>' : '<small>mai usato</small>') + '</span></label>';
       }).join('') + '</div></section>';
   });
   if (uno) h += '<section class="card row"><button class="btn ok" id="orScVia" disabled onclick="usaScelta(this)">Usa questo termine</button><button class="btn sec" onclick="S.orSc=null;vistaDocente()">Annulla</button></section>';

@@ -264,6 +264,16 @@ function scegliIn(cat, area, quanti, vietati, freq) {
   cand.sort((x, y) => x.f - y.f || x.z - y.z);
   return cand.slice(0, quanti).map((x) => ({ a: x.a, k: x.k }));
 }
+/* termini su cui si può interrogare: chi ha una soglia del quiz più bassa del totale (es. studenti BES) solo sui termini
+   del suo quiz (quelli indovinati); chi ha fatto il quiz su tutti i termini, su tutto il glossario. null = tutto il glossario */
+function bacino(stato, a) {
+  const cfg = cfgQuiz(stato.config, L.classeDi(a), null, a);
+  if (!(cfg.soglia < cfg.totale)) return null;
+  const ok = (a.quiz && a.quiz.ok) || {}, b = {};
+  Object.keys(ok).forEach((k) => { b[k] = 1; });
+  return b;
+}
+function fuoriBacino(cat, bac) { const v = {}; if (!bac) return v; Object.keys(cat).forEach((ar) => cat[ar].forEach((x, k) => { if (!bac[chiave(ar, k)]) v[chiave(ar, k)] = 1; })); return v; }
 function vistaBozza(cat, b, chi) {
   return { data: b.data, cambi: b.cambi || 0, scelti: !!b.scelti, termini: b.termini.map((t) => ({ area: t.a, k: t.k, it: cat[t.a][t.k][0], def: cat[t.a][t.k][1], usati: chi ? (chi[chiave(t.a, t.k)] || []) : [] })) };
 }
@@ -282,11 +292,12 @@ async function oralePesca(db, { codice, alunno: id, nuova }) {
   const ND = domandeDi(a, stato.config);
   const quota = aree.map(() => Math.floor(ND / aree.length));
   for (let i = 0, r = ND - quota.reduce((x, y) => x + y, 0); i < r; i++) quota[(fatte + i) % aree.length]++;
-  let termini = []; const vietati = Object.assign({}, miei);
+  const bac = bacino(stato, a);
+  let termini = []; const vietati = Object.assign({}, miei, fuoriBacino(cat, bac));
   aree.forEach((ar, i) => { const s = scegliIn(cat, ar, quota[i], vietati, freq); s.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; }); termini = termini.concat(s); });
   // se un'area non ha abbastanza termini non suoi, si completa con le altre
-  for (let i = 0; termini.length < ND && i < aree.length * 3; i++) { const s = scegliIn(cat, aree[i % aree.length], 1, vietati, freq); s.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; termini.push(t); }); }
-  if (termini.length < ND) L.errore('Non ci sono abbastanza termini per l\'interrogazione.');
+  for (let giro = true; termini.length < ND && giro;) { giro = false; for (let i = 0; i < aree.length && termini.length < ND; i++) { const s = scegliIn(cat, aree[i], 1, vietati, freq); s.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; termini.push(t); giro = true; }); } }
+  if (termini.length < ND) L.errore(bac ? 'Tra i termini del suo quiz non ce ne sono abbastanza per l\'interrogazione: scegli tu i termini.' : 'Non ci sono abbastanza termini per l\'interrogazione.');
   for (let x = termini.length - 1; x > 0; x--) { const y = caso(x + 1); [termini[x], termini[y]] = [termini[y], termini[x]]; }
   const bozza = { data: new Date().toISOString(), termini, cambi: 0 };
   await db.scriviAlunno(a.id, { orale_bozza: bozza });
@@ -315,9 +326,9 @@ async function oraleCambia(db, { codice, alunno: id, pos }) {
   const stato = await db.leggiTutto(); docenteVoti(stato, codice);
   const a = alunno(stato, id), cat = catalogo(stato), b = a.orale_bozza;
   if (!b || !b.termini || !b.termini[pos]) L.errore('Interrogazione non trovata: pesca di nuovo i termini.');
-  const vietati = propri(stato, a); b.termini.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; });
+  const vietati = Object.assign(propri(stato, a), fuoriBacino(cat, bacino(stato, a))); b.termini.forEach((t) => { vietati[chiave(t.a, t.k)] = 1; });
   const s = scegliIn(cat, b.termini[pos].a, 1, vietati, usciti(stato, a));
-  if (!s.length) L.errore('Non ci sono altri termini disponibili in quest\'area.');
+  if (!s.length) L.errore('Non ci sono altri termini disponibili in quest\'area' + (bacino(stato, a) ? ' tra quelli del suo quiz' : '') + '.');
   const bozza = { data: b.data, termini: b.termini.map((t, i) => (i === Number(pos) ? s[0] : t)), cambi: (b.cambi || 0) + 1, scelti: !!b.scelti };
   await db.scriviAlunno(a.id, { orale_bozza: bozza });
   return { alunno: a.id, bozza: vistaBozza(cat, bozza, chiUsati(stato, a)) };
@@ -336,17 +347,19 @@ async function oraleCatalogo(db, { codice, alunno: id }) {
   const a = alunno(stato, id), cat = catalogo(stato), miei = propri(stato, a), chi = chiUsati(stato, a);
   ammesso(stato, a);
   const aree = Object.keys(cat).map(Number).sort((x, y) => x - y);
-  return { domande: domandeDi(a, stato.config), aree: aree.map((ar) => ({ area: ar, termini: cat[ar].map((x, k) => ({ k, it: x[0], suo: !!miei[chiave(ar, k)], usati: chi[chiave(ar, k)] || [] })) })) };
+  const bac = bacino(stato, a);
+  return { domande: domandeDi(a, stato.config), bacino: bac ? Object.keys(bac).length : null, aree: aree.map((ar) => ({ area: ar, termini: cat[ar].map((x, k) => ({ k, it: x[0], suo: !!miei[chiave(ar, k)], fuori: !!(bac && !bac[chiave(ar, k)]), usati: chi[chiave(ar, k)] || [] })) })) };
 }
 function terminiValidi(stato, a, cat, termini, max) {
   if (!Array.isArray(termini) || !termini.length) L.errore('Scegli almeno un termine.');
   if (termini.length > max) L.errore('Al massimo ' + max + ' termini.');
-  const miei = propri(stato, a), visti = {};
+  const miei = propri(stato, a), visti = {}, bac = bacino(stato, a);
   return termini.map((t) => {
     const ar = Number(t && t.a), k = Number(t && t.k);
     if (!cat[ar] || !Number.isInteger(k) || !cat[ar][k]) L.errore('Termine non trovato.');
     const c = chiave(ar, k);
     if (miei[c]) L.errore('«' + cat[ar][k][0] + '» è un termine del suo scritto: scegline un altro.');
+    if (bac && !bac[c]) L.errore('«' + cat[ar][k][0] + '» non era tra i termini del suo quiz: scegline un altro.');
     if (visti[c]) L.errore('«' + cat[ar][k][0] + '» è stato scelto due volte.');
     visti[c] = 1;
     return { a: ar, k };

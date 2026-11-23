@@ -75,15 +75,17 @@ function genera(stato) {
     '• <b>tempo personale</b> per ogni domanda del quiz, oppure <b>nessun limite di tempo</b>;',
     '• il pulsante <b>«Dimezza opzioni»</b>: della domanda in corso restano la definizione giusta e una sbagliata;',
     '• una <b>soglia personale</b> di termini da indovinare e/o <b>meno termini persi</b> a ogni errore;',
+    '• all\'interrogazione, i termini si pescano <b>solo tra quelli del suo quiz</b> (quelli indovinati), se il suo quiz aveva meno termini del glossario;',
     '• all\'interrogazione, <b>metà dei termini</b> (' + Math.max(1, Math.round(R.orale.domande / 2)) + ' invece di ' + R.orale.domande + '): ogni punto vale il doppio, così il voto massimo resta lo stesso (' + n(R.orale.max) + ').',
     'Le misure sono riservate: <b>lo studente non vede mai l\'etichetta BES</b> né le regole personali, solo i numeri che gli servono (per esempio quanti termini mancano).',
     'In questa attività: ' + (besN ? besN + (besN === 1 ? ' studente con misure BES' : ' studenti con misure BES') : 'nessuno studente con misure BES') + (pers ? ', ' + pers + ' con regole personali del quiz' : '') + '.'
   ]);
 
   S('L\'interrogazione', '#B4511A', [
-    'È la verifica finale, in classe, <b>su tutto il glossario</b>: ' + R.orale.domande + ' termini per studente, che lo studente deve spiegare a voce.',
+    'È la verifica finale, in classe, <b>su tutto il glossario</b> (sui soli termini del suo quiz per chi aveva una soglia personale, vedi sotto): ' + R.orale.domande + ' termini per studente, che lo studente deve spiegare a voce.',
     'I termini li <b>sceglie il docente</b>, oppure il docente chiede all\'app di proporli: equilibrati tra le aree e preferendo quelli meno usciti nella classe.',
     'Mai i termini che lo studente ha avuto nello scritto; il docente vede quali termini sono già usciti e con chi.',
+    'Chi ha fatto il quiz su <b>tutti i termini</b> viene interrogato su tutto il glossario; chi aveva una <b>soglia personale più bassa</b> (es. studenti BES) solo sui <b>termini del suo quiz</b>, sia quando l\'app pesca sia quando sceglie il docente.',
     'Il docente <b>fissa la data</b> dell\'interrogazione; lo studente la vede nell\'app con l\'invito a ripassare sulla pagina pubblica.',
     'Ogni risposta vale: <b>corretta 1 punto</b>, <b>parziale ½</b>, <b>sbagliata 0</b>.',
     'Voto dell\'interrogazione = <b>' + n(R.orale.base) + ' + ' + n(R.orale.passo) + ' per ogni punto</b>, fino a <b>' + n(R.orale.max) + '</b>. Per chi è stato escluso dallo scritto: ' + n(R.orale.base) + ' + ' + n(R.orale.passoEsclusi) + ' per punto, fino a <b>' + n(R.orale.maxEsclusi) + '</b>.',
