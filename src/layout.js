@@ -1,6 +1,7 @@
 /* ---------- area docenti: barra dei comandi a sinistra, una pagina alla volta al centro ---------- */
 var ICO = {
   // icone dell'area docenti (restyling 21/11/2026): tratto 2, angoli arrotondati, griglia 24
+  regole: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7M9 8h3"/>',
   statistiche: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   cruscotto: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>',
   revisione: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14.5 2 2 4-4.5"/>',
@@ -27,6 +28,7 @@ function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (IC
 var SEZIONI = [
   { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
   { id: 'stats', t: 'Statistiche pagina pubblica', gr: '', ico: 'statistiche', pag: ['statpub'] },
+  { id: 'regs', t: 'Regole dell\'attività', gr: '', ico: 'regole', pag: ['regole'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
@@ -57,6 +59,7 @@ function PAGINE() {
     { id: 'revisione', gr: 'Lavoro', t: 'Risposte da rivedere', vis: true, bd: contaDaRivedere() },
     { id: 'sollecito', gr: 'Lavoro', t: 'Da sollecitare', vis: !ro, bd: contaSollecito(), rosso: true },
     { id: 'statpub', gr: 'Lavoro', t: 'Statistiche pagina pubblica', vis: adm && !ro },
+    { id: 'regole', gr: 'Lavoro', t: 'Regole dell\'attività', vis: !!S.d.regolamento },
     { id: 'situazione', gr: 'Studenti', t: 'Situazione e avanzamento', vis: true },
     { id: 'gestione', gr: 'Studenti', t: 'Proroghe e passaggi', vis: !!A && PUO('studenti') && !ro },
     { id: 'quiz', gr: 'Studenti', t: 'Quiz (seconda prova)', vis: !!S.d.quiz },
@@ -335,6 +338,7 @@ var PAGINA = {
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
   statpub: function () { return paginaStatPub(); },
+  regole: function () { return paginaRegole(); },
   cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');

@@ -237,3 +237,14 @@
   .dapp .tcerca{width:100%;order:-1}
   .dapp .tcerca kbd{display:none}
 }
+/* regole dell'attività */
+.dapp .regidx{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.dapp .regidx a{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 6px;font:600 13.5px 'Archivo',system-ui,sans-serif;color:var(--ink);text-decoration:none;background:#fff}
+.dapp .regidx a b{width:22px;height:22px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font-size:12px}
+.dapp .regsez{border-left:6px solid var(--c);scroll-margin-top:90px}
+.dapp .regsez h2{display:flex;align-items:center;gap:10px;margin:0 0 6px;font:600 22px/1.2 var(--serif)}
+.dapp .regsez h2 span{width:30px;height:30px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font:800 14px 'Archivo',system-ui,sans-serif;flex:none}
+.dapp .regsez ul{margin:0;padding-left:20px;display:grid;gap:7px;font-size:15.5px;line-height:1.5;max-width:78ch}
+.dapp .regsez li::marker{color:var(--c)}
+.dapp .regsez li.sub{list-style:circle;margin-left:18px}
+.dapp .regsez b{color:var(--ink)}

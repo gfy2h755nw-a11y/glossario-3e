@@ -553,6 +553,17 @@ html.visore-aperto,html.visore-aperto body{overflow:hidden}
   .dapp .tcerca{width:100%;order:-1}
   .dapp .tcerca kbd{display:none}
 }
+/* regole dell'attività */
+.dapp .regidx{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.dapp .regidx a{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 6px;font:600 13.5px 'Archivo',system-ui,sans-serif;color:var(--ink);text-decoration:none;background:#fff}
+.dapp .regidx a b{width:22px;height:22px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font-size:12px}
+.dapp .regsez{border-left:6px solid var(--c);scroll-margin-top:90px}
+.dapp .regsez h2{display:flex;align-items:center;gap:10px;margin:0 0 6px;font:600 22px/1.2 var(--serif)}
+.dapp .regsez h2 span{width:30px;height:30px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font:800 14px 'Archivo',system-ui,sans-serif;flex:none}
+.dapp .regsez ul{margin:0;padding-left:20px;display:grid;gap:7px;font-size:15.5px;line-height:1.5;max-width:78ch}
+.dapp .regsez li::marker{color:var(--c)}
+.dapp .regsez li.sub{list-style:circle;margin-left:18px}
+.dapp .regsez b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -3509,7 +3520,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '22/11/2026 · 9';
+var VERSIONE = '23/11/2026 · 1';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -5849,6 +5860,7 @@ function scaricaArgo() {
 /* ---------- area docenti: barra dei comandi a sinistra, una pagina alla volta al centro ---------- */
 var ICO = {
   // icone dell'area docenti (restyling 21/11/2026): tratto 2, angoli arrotondati, griglia 24
+  regole: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7M9 8h3"/>',
   statistiche: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   cruscotto: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>',
   revisione: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14.5 2 2 4-4.5"/>',
@@ -5875,6 +5887,7 @@ function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (IC
 var SEZIONI = [
   { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
   { id: 'stats', t: 'Statistiche pagina pubblica', gr: '', ico: 'statistiche', pag: ['statpub'] },
+  { id: 'regs', t: 'Regole dell\'attività', gr: '', ico: 'regole', pag: ['regole'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
@@ -5905,6 +5918,7 @@ function PAGINE() {
     { id: 'revisione', gr: 'Lavoro', t: 'Risposte da rivedere', vis: true, bd: contaDaRivedere() },
     { id: 'sollecito', gr: 'Lavoro', t: 'Da sollecitare', vis: !ro, bd: contaSollecito(), rosso: true },
     { id: 'statpub', gr: 'Lavoro', t: 'Statistiche pagina pubblica', vis: adm && !ro },
+    { id: 'regole', gr: 'Lavoro', t: 'Regole dell\'attività', vis: !!S.d.regolamento },
     { id: 'situazione', gr: 'Studenti', t: 'Situazione e avanzamento', vis: true },
     { id: 'gestione', gr: 'Studenti', t: 'Proroghe e passaggi', vis: !!A && PUO('studenti') && !ro },
     { id: 'quiz', gr: 'Studenti', t: 'Quiz (seconda prova)', vis: !!S.d.quiz },
@@ -6183,6 +6197,7 @@ var PAGINA = {
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
   statpub: function () { return paginaStatPub(); },
+  regole: function () { return paginaRegole(); },
   cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
   documenti: function () {
     var h = bloccoAdmin('doc');
@@ -7604,6 +7619,32 @@ document.addEventListener('keydown', function (e) {
   if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { var q = $('tq'); if (q) { e.preventDefault(); q.focus(); q.select(); } }
 });
 document.addEventListener('click', function (e) { var b = $('tris'); if (b && !b.hidden && !e.target.closest('#tcerca')) b.hidden = true; });
+
+/* ---------- Regole dell'attività: sempre aggiornate dalle impostazioni, da leggere o stampare ---------- */
+function paginaRegole() {
+  var R = S.d.regolamento; if (!R) return '<section class="card"><p class="muted" style="margin:0">Regole non disponibili.</p></section>';
+  var agg = new Date(R.aggiornato).toLocaleString('it-IT', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  return '<section class="card stack" style="gap:8px"><div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start"><div><h2 style="margin:0;font:600 26px/1.15 var(--serif)">' + esc(R.attivita) + '</h2>' +
+    '<p class="muted" style="margin:4px 0 0">a.s. ' + esc(R.as) + ' · regole aggiornate alle impostazioni attuali (' + esc(agg) + ')</p></div>' +
+    '<button class="btn sec" onclick="stampaRegole()">Stampa o salva PDF</button></div>' +
+    '<nav class="regidx" aria-label="Indice">' + R.sezioni.map(function (s, i) { return '<a href="#reg' + i + '" onclick="event.preventDefault();document.getElementById(\'reg' + i + '\').scrollIntoView({block:\'start\'})" style="--c:' + s.colore + '"><b>' + (i + 1) + '</b>' + esc(s.titolo) + '</a>'; }).join('') + '</nav></section>' +
+    R.sezioni.map(function (s, i) {
+      return '<section class="card regsez" id="reg' + i + '" style="--c:' + s.colore + '"><h2><span>' + (i + 1) + '</span>' + esc(s.titolo) + '</h2><ul>' + s.punti.map(function (p) { return '<li' + (/^• /.test(p) ? ' class="sub"' : '') + '>' + p.replace(/^• /, '') + '</li>'; }).join('') + '</ul></section>';
+    }).join('');
+}
+function stampaRegole() {
+  var R = S.d.regolamento; if (!R) return;
+  var w = window.open('', '_blank'); if (!w) { toast('Consenti le finestre per stampare.', true); return; }
+  var h = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Regole · ' + esc(R.attivita) + '</title><style>' + cssFonti(location.origin) + "@font-face{font-family:'Source Serif 4';font-weight:600;src:url(" + location.origin + "/fonts/source-serif-4-latin-600-normal.woff2) format('woff2')}" +
+    '@page{size:A4;margin:16mm 16mm 18mm}body{font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#17212B;font-size:10.5pt;line-height:1.45;margin:0}' +
+    'h1{font:600 22pt/1.1 "Source Serif 4",Georgia,serif;margin:0}.sub{color:#5D6874;margin:3mm 0 6mm}' +
+    'section{break-inside:avoid;border-left:2.2mm solid var(--c);padding:1mm 0 1mm 5mm;margin:0 0 6mm}h2{font:600 14pt "Source Serif 4",Georgia,serif;margin:0 0 2mm}' +
+    'ul{margin:0;padding-left:5mm}li{margin:1.2mm 0}li.sub{list-style:circle;margin-left:5mm}footer{color:#8E969E;font-size:8.5pt;margin-top:8mm;border-top:.3mm solid #ddd;padding-top:2mm}</style></head><body>' +
+    '<h1>Regole dell\'attività</h1><div class="sub">' + esc(R.attivita) + ' · a.s. ' + esc(R.as) + ' · aggiornate al ' + esc(new Date(R.aggiornato).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) + '</div>' +
+    R.sezioni.map(function (s, i) { return '<section style="--c:' + s.colore + '"><h2>' + (i + 1) + '. ' + esc(s.titolo) + '</h2><ul>' + s.punti.map(function (p) { return '<li' + (/^• /.test(p) ? ' class="sub"' : '') + '>' + p.replace(/^• /, '') + '</li>'; }).join('') + '</ul></section>'; }).join('') +
+    '<footer>IIS «L. Barsanti» · sede Salvetti · Massa · documento generato dall\'app del glossario, con le impostazioni in vigore</footer></body></html>';
+  w.document.write(h); w.document.close(); setTimeout(function () { try { w.focus(); w.print(); } catch (e) { /* niente */ } }, 400);
+}
 
 </script>
 </body>

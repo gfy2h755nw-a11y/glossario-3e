@@ -58,3 +58,29 @@ document.addEventListener('keydown', function (e) {
   if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { var q = $('tq'); if (q) { e.preventDefault(); q.focus(); q.select(); } }
 });
 document.addEventListener('click', function (e) { var b = $('tris'); if (b && !b.hidden && !e.target.closest('#tcerca')) b.hidden = true; });
+
+/* ---------- Regole dell'attività: sempre aggiornate dalle impostazioni, da leggere o stampare ---------- */
+function paginaRegole() {
+  var R = S.d.regolamento; if (!R) return '<section class="card"><p class="muted" style="margin:0">Regole non disponibili.</p></section>';
+  var agg = new Date(R.aggiornato).toLocaleString('it-IT', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  return '<section class="card stack" style="gap:8px"><div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start"><div><h2 style="margin:0;font:600 26px/1.15 var(--serif)">' + esc(R.attivita) + '</h2>' +
+    '<p class="muted" style="margin:4px 0 0">a.s. ' + esc(R.as) + ' · regole aggiornate alle impostazioni attuali (' + esc(agg) + ')</p></div>' +
+    '<button class="btn sec" onclick="stampaRegole()">Stampa o salva PDF</button></div>' +
+    '<nav class="regidx" aria-label="Indice">' + R.sezioni.map(function (s, i) { return '<a href="#reg' + i + '" onclick="event.preventDefault();document.getElementById(\'reg' + i + '\').scrollIntoView({block:\'start\'})" style="--c:' + s.colore + '"><b>' + (i + 1) + '</b>' + esc(s.titolo) + '</a>'; }).join('') + '</nav></section>' +
+    R.sezioni.map(function (s, i) {
+      return '<section class="card regsez" id="reg' + i + '" style="--c:' + s.colore + '"><h2><span>' + (i + 1) + '</span>' + esc(s.titolo) + '</h2><ul>' + s.punti.map(function (p) { return '<li' + (/^• /.test(p) ? ' class="sub"' : '') + '>' + p.replace(/^• /, '') + '</li>'; }).join('') + '</ul></section>';
+    }).join('');
+}
+function stampaRegole() {
+  var R = S.d.regolamento; if (!R) return;
+  var w = window.open('', '_blank'); if (!w) { toast('Consenti le finestre per stampare.', true); return; }
+  var h = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Regole · ' + esc(R.attivita) + '</title><style>' + cssFonti(location.origin) + "@font-face{font-family:'Source Serif 4';font-weight:600;src:url(" + location.origin + "/fonts/source-serif-4-latin-600-normal.woff2) format('woff2')}" +
+    '@page{size:A4;margin:16mm 16mm 18mm}body{font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#17212B;font-size:10.5pt;line-height:1.45;margin:0}' +
+    'h1{font:600 22pt/1.1 "Source Serif 4",Georgia,serif;margin:0}.sub{color:#5D6874;margin:3mm 0 6mm}' +
+    'section{break-inside:avoid;border-left:2.2mm solid var(--c);padding:1mm 0 1mm 5mm;margin:0 0 6mm}h2{font:600 14pt "Source Serif 4",Georgia,serif;margin:0 0 2mm}' +
+    'ul{margin:0;padding-left:5mm}li{margin:1.2mm 0}li.sub{list-style:circle;margin-left:5mm}footer{color:#8E969E;font-size:8.5pt;margin-top:8mm;border-top:.3mm solid #ddd;padding-top:2mm}</style></head><body>' +
+    '<h1>Regole dell\'attività</h1><div class="sub">' + esc(R.attivita) + ' · a.s. ' + esc(R.as) + ' · aggiornate al ' + esc(new Date(R.aggiornato).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) + '</div>' +
+    R.sezioni.map(function (s, i) { return '<section style="--c:' + s.colore + '"><h2>' + (i + 1) + '. ' + esc(s.titolo) + '</h2><ul>' + s.punti.map(function (p) { return '<li' + (/^• /.test(p) ? ' class="sub"' : '') + '>' + p.replace(/^• /, '') + '</li>'; }).join('') + '</ul></section>'; }).join('') +
+    '<footer>IIS «L. Barsanti» · sede Salvetti · Massa · documento generato dall\'app del glossario, con le impostazioni in vigore</footer></body></html>';
+  w.document.write(h); w.document.close(); setTimeout(function () { try { w.focus(); w.print(); } catch (e) { /* niente */ } }, 400);
+}

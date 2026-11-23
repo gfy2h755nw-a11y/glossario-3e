@@ -403,6 +403,7 @@ async function login(db, { codice }) {
     out.banca = c.banca; out.pacchetti.forEach((p) => { if (c.pk[p.id]) p.termini = c.pk[p.id]; });
   }
   // pagina pubblica: ultima pubblicazione e novità da pubblicare (per chi può pubblicare)
+  if (chi.ruolo === 'docente') { try { out.regolamento = require('./regolamento').genera(stato); } catch (e) { console.error('regolamento:', e.message); } }
   if (chi.ruolo === 'docente' && (chi.admin || chi.gestore)) { try { out.pubblicazione = await require('./pubblicazione').stato(db, stato); } catch (e) { console.error('pubblicazione:', e.message); } }
   return out;
 }
