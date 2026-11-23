@@ -11,9 +11,24 @@ function schermoTouch() { try { return window.matchMedia('(pointer: coarse)').ma
 function conVisore() { return appInstallata() || schermoTouch(); }
 var _apriFinestra = window.open;
 window.open = function (u) {
+  if (u && u !== 'about:blank' && paginaInterna(u)) return apriPaginaVisore(u);
   if (!conVisore() || (u && u !== 'about:blank')) return _apriFinestra.apply(window, arguments);
   return apriVisore();
 };
+/* nell'app installata la pagina pubblica (stesso sito) si apre nel visore: «Torna all'app» riporta indietro.
+   Prima si apriva al posto dell'app, senza modo di tornare. */
+function paginaInterna(u) {
+  if (!appInstallata()) return false;
+  try { var x = new URL(u, location.href); return x.origin === location.origin && /^\/glossario/.test(x.pathname); } catch (e) { return false; }
+}
+function apriPaginaVisore(u) {
+  var f = apriVisore('Pagina pubblica del glossario'); $('vStampa').hidden = true; f.location.href = u; return f;
+}
+document.addEventListener('click', function (e) {
+  var a = e.target && e.target.closest && e.target.closest('a[href]');
+  if (!a || a.hasAttribute('download') || !paginaInterna(a.href)) return;
+  e.preventDefault(); e.stopPropagation(); apriPaginaVisore(a.href);
+}, true);
 /* documento largo come sul PC, rimpicciolito per stare nello schermo del telefono */
 var LARGO_VISORE = 840;
 function scalaVisore(on) {
