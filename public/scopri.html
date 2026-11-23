@@ -447,6 +447,10 @@ function introDaMostrare() {
 var PROMO = { entra: function (c, nome, cognome) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promo', c: c, nome: nome, cognome: cognome }) })
     .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.ok) throw new Error(j.errore || 'Accesso non riuscito.'); return j.dati || {}; }); });
+}, tempo: function (c, g, sec, nuova) {
+  var b = JSON.stringify({ azione: 'promotempo', c: c, nome: g.nome, cognome: g.cognome, sec: sec, nuova: nuova ? 1 : 0 });
+  try { if (navigator.sendBeacon && !nuova) { navigator.sendBeacon('/api', new Blob([b], { type: 'text/plain' })); return; } } catch (e) {}
+  fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: b, keepalive: true }).catch(function () {});
 }, numeri: function (c) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promonumeri', c: c }) })
     .then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) throw new Error(j.errore); return j.dati.numeri; });
@@ -474,7 +478,14 @@ var PROMO = { entra: function (c, nome, cognome) {
     $('nAgg').textContent = 'Dati reali dell\'app, aggiornati al ' + d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) + ', ore ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) + '.';
   };
   if (codice) PROMO.numeri(codice).then(mostraNumeri).catch(function () { $('nAgg').textContent = ''; });
-  try { var g = JSON.parse(localStorage.getItem(chiave) || 'null'); if (g && g.nome) $('accesso').hidden = true; } catch (e) {}
+  // tempo sulla pagina: solo in primo piano, inviato ogni minuto e quando si lascia la pagina
+  var chi = null, dal = 0, spedisci = function () { if (chi && dal) { var s = Math.round((Date.now() - dal) / 1000); dal = document.visibilityState === 'visible' ? Date.now() : 0; if (s > 0) PROMO.tempo(codice, chi, s); } };
+  var avviaTempo = function (g) { chi = g; dal = document.visibilityState === 'visible' ? Date.now() : 0; };
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') spedisci(); else if (chi) dal = Date.now(); });
+  window.addEventListener('pagehide', spedisci);
+  setInterval(function () { if (document.visibilityState === 'visible') spedisci(); }, 60000);
+  var sessNuova = function () { try { if (sessionStorage.getItem(chiave)) return false; sessionStorage.setItem(chiave, '1'); } catch (e) {} return true; };
+  try { var g = JSON.parse(localStorage.getItem(chiave) || 'null'); if (g && g.nome) { $('accesso').hidden = true; avviaTempo(g); if (sessNuova()) PROMO.tempo(codice, g, 0, true); } } catch (e) {}
   $('fAcc').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var nome = $('aNome').value.trim(), cogn = $('aCogn').value.trim();
@@ -482,6 +493,7 @@ var PROMO = { entra: function (c, nome, cognome) {
     var btn = ev.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Un attimo…';
     PROMO.entra(codice, nome, cogn).then(function (x) {
       try { localStorage.setItem(chiave, JSON.stringify({ nome: nome, cognome: cogn })); } catch (e) {}
+      sessNuova(); avviaTempo({ nome: nome, cognome: cogn });
       $('accesso').hidden = true; window.scrollTo(0, 0); mostraNumeri(x && x.numeri);
     }).catch(function (e) { btn.disabled = false; btn.textContent = 'Entra'; $('aErr').textContent = e.message || 'Accesso non riuscito.'; });
   });

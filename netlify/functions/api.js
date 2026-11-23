@@ -94,6 +94,8 @@ const AZIONI = {
   codicetitolare: (d, p) => SP.codiceTitolare(d, p),
   promo: (d, p) => require('./lib/promo').entra(d, p),
   promonumeri: (d, p) => require('./lib/promo').numeriPubblici(d, p),
+  promotempo: (d, p) => require('./lib/promo').tempo(d, p),
+  promotogli: (d, p) => require('./lib/promo').togli(d, p),
   promoaggiorna: (d, p) => require('./lib/promo').aggiornaNumeri(d, p),
   promostato: (d, p) => require('./lib/promo').stato(d, p),
   promocodice: (d, p) => require('./lib/promo').cambiaCodice(d, p),
@@ -190,7 +192,7 @@ async function glossariInCache() {
   cacheGlossari = { t: now, dati: out };
   return out;
 }
-const SOLO_LETTURA = { salute: 1, saluteletti: 1, glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+const SOLO_LETTURA = { salute: 1, saluteletti: 1, glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promotempo: 1, promotogli: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;

@@ -74,6 +74,10 @@ print('public/quiz.html', len(qz))
 PROMO_JS = '''var PROMO = { entra: function (c, nome, cognome) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promo', c: c, nome: nome, cognome: cognome }) })
     .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.ok) throw new Error(j.errore || 'Accesso non riuscito.'); return j.dati || {}; }); });
+}, tempo: function (c, g, sec, nuova) {
+  var b = JSON.stringify({ azione: 'promotempo', c: c, nome: g.nome, cognome: g.cognome, sec: sec, nuova: nuova ? 1 : 0 });
+  try { if (navigator.sendBeacon && !nuova) { navigator.sendBeacon('/api', new Blob([b], { type: 'text/plain' })); return; } } catch (e) {}
+  fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: b, keepalive: true }).catch(function () {});
 }, numeri: function (c) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promonumeri', c: c }) })
     .then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) throw new Error(j.errore); return j.dati.numeri; });

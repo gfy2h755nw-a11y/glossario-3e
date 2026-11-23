@@ -3520,7 +3520,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '23/11/2026 · 3';
+var VERSIONE = '23/11/2026 · 4';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -7344,8 +7344,8 @@ function disegnaPromo() {
         '<p class="muted" style="margin:0;font-size:14px">Dati reali di tutte le attività in corso, aggiornati al ' + esc(dataOra(N.aggiornato)) + '. Si aggiornano da soli al massimo una volta l\'ora, quando qualcuno apre la pagina.</p>'
         : '<p class="muted" style="margin:0">I numeri si calcolano alla prima apertura della pagina, oppure con «Aggiorna ora».</p>') + '</div>' +
     '<div class="stack" style="gap:8px"><h3 style="margin:0;font-size:18px">Chi ha aperto la pagina</h3>' +
-      (V.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Collega</th><th>Prima visita</th><th>Ultima visita</th><th class="c">Volte</th></tr></thead><tbody>' +
-        V.map(function (v) { return '<tr><td><b>' + esc(v.nome + ' ' + v.cognome) + '</b></td><td>' + esc(dataOra(v.prima)) + '</td><td>' + esc(dataOra(v.ultima)) + '</td><td class="c">' + (v.volte || 1) + '</td></tr>'; }).join('') +
+      (V.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Collega</th><th>Prima visita</th><th>Ultima visita</th><th class="c">Volte</th><th class="c">Tempo sulla pagina</th><th class="c">In media</th><th></th></tr></thead><tbody>' +
+        V.map(function (v) { return '<tr><td><b>' + esc(v.nome + ' ' + v.cognome) + '</b></td><td>' + esc(dataOra(v.prima)) + '</td><td>' + esc(dataOra(v.ultima)) + '</td><td class="c">' + (v.volte || 1) + '</td><td class="c"><b>' + tempoPromo(v.secondi) + '</b></td><td class="c">' + (v.secondi ? tempoPromo(Math.round(v.secondi / (v.volte || 1))) : '—') + '</td><td class="c"><button class="btn sec tb prTogli" data-n="' + esc(v.nome) + '" data-c="' + esc(v.cognome) + '" onclick="togliPromo(this)">Togli</button></td></tr>'; }).join('') +
         '</tbody></table></div>' : '<p class="muted" style="margin:0">Nessun collega ha ancora aperto la pagina.</p>') + '</div>';
 }
 function aggiornaNumeriPromo(btn) {
@@ -7359,6 +7359,16 @@ function nuovoCodicePromo(btn) {
     $('prAvviso').innerHTML = '<b>Sicuro?</b> Il link che hai già mandato non funzionerà più. Clicca di nuovo per confermare.'; return; }
   btn.disabled = true;
   api('promocodice', {}).then(function (x) { S.pr = x; disegnaPromo(); toast('Nuovo codice creato'); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e)); });
+}
+
+/* durata leggibile: 45 s · 12 min · 1 h 05 min */
+function tempoPromo(s) { s = Math.round(s || 0); if (!s) return '—'; if (s < 60) return s + ' s'; var m = Math.round(s / 60); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + ('0' + (m % 60)).slice(-2) + ' min'; }
+/* togli un collega dall'elenco: primo tocco chiede conferma */
+function togliPromo(btn) {
+  if (btn.getAttribute('data-ok') !== '1') { btn.setAttribute('data-ok', '1'); btn.textContent = 'Conferma'; btn.classList.add('warn'); setTimeout(function () { if (btn.isConnected && btn.getAttribute('data-ok') === '1') { btn.setAttribute('data-ok', ''); btn.textContent = 'Togli'; btn.classList.remove('warn'); } }, 5000); return; }
+  btn.disabled = true;
+  api('promotogli', { nome: btn.getAttribute('data-n'), cognome: btn.getAttribute('data-c') }).then(function (x) { S.pr.visite = x.visite; disegnaPromo(); toast('Collega tolto dall\'elenco'); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e)); });
 }
 

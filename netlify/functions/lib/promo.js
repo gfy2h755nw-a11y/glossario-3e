@@ -49,6 +49,35 @@ async function entra(db, { c, nome, cognome }) {
   await db.scriviPromo(Object.assign({}, P, { visite: V.slice(0, MAX_VISITE) }));
   return { ok: true, numeri: await numeri(db) };
 }
+/* tempo passato sulla pagina dal collega (pagina in primo piano), e ritorno dallo stesso dispositivo */
+async function tempo(db, { c, nome, cognome, sec, nuova }) {
+  const P = await leggi(db);
+  codiceGiusto(P, c);
+  const k = (titolo(nome) + ' ' + titolo(cognome)).toLowerCase(), V = P.visite || [], x = V.find((v) => (v.nome + ' ' + v.cognome).toLowerCase() === k);
+  // tolto dall'elenco ma torna sulla pagina dallo stesso dispositivo: ricompare come nuova visita
+  if (!x) {
+    if (!nuova) return { ok: false };
+    const n = titolo(nome), co = titolo(cognome); if (n.length < 2 || co.length < 2) return { ok: false };
+    const ora = new Date().toISOString(); V.unshift({ nome: n, cognome: co, prima: ora, ultima: ora, volte: 1 });
+    await db.scriviPromo(Object.assign({}, P, { visite: V.slice(0, MAX_VISITE) }));
+    return { ok: true };
+  }
+  const s = Math.round(Number(sec) || 0);
+  if (s > 0 && s <= 3600) x.secondi = (x.secondi || 0) + s;
+  if (nuova) { x.volte = (x.volte || 1) + 1; x.ultima = new Date().toISOString(); V.sort((a, b) => (a.ultima < b.ultima ? 1 : -1)); }
+  if (!(s > 0) && !nuova) return { ok: true };
+  await db.scriviPromo(Object.assign({}, P, { visite: V }));
+  return { ok: true };
+}
+/* togli un collega dall'elenco delle visite (solo il prof. Cerrato) */
+async function togli(db, { codice, nome, cognome }) {
+  await soloCerrato(db, codice);
+  const P = await leggi(db), k = (titolo(nome) + ' ' + titolo(cognome)).toLowerCase();
+  const V = (P.visite || []).filter((v) => (v.nome + ' ' + v.cognome).toLowerCase() !== k);
+  if (V.length === (P.visite || []).length) L.errore('Collega non trovato nell\'elenco.');
+  await db.scriviPromo(Object.assign({}, P, { visite: V }));
+  return { visite: V };
+}
 /* sezione «Promo App»: codice (creato la prima volta) e visite */
 async function stato(db, { codice }) {
   await soloCerrato(db, codice);
@@ -66,4 +95,4 @@ async function cambiaCodice(db, { codice }) {
   await db.scriviPromo(nuovo);
   return { codice: nuovo.codice, creato: nuovo.creato, visite: nuovo.visite };
 }
-module.exports = { entra, stato, cambiaCodice, numeriPubblici, aggiornaNumeri, calcolaNumeri };
+module.exports = { entra, tempo, togli, stato, cambiaCodice, numeriPubblici, aggiornaNumeri, calcolaNumeri };
