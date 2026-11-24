@@ -1,7 +1,10 @@
 # Costruisce public/index.html da src/ (stile, modello del cartellone, app).
 import os
 B = os.path.dirname(os.path.abspath(__file__))
-r = lambda p: open(os.path.join(B, p), encoding='utf-8').read()
+import base64
+# logo ufficiale della scuola, incorporato nelle pagine (PNG 360×360 dal file di lib/logo-scuola.js)
+LOGO_URI = 'data:image/png;base64,' + __import__('re').search(r"module\.exports = '([A-Za-z0-9+/=]+)'", open(os.path.join(B, 'netlify/functions/lib/logo-scuola.js'), encoding='utf-8').read()).group(1)
+r = lambda p: open(os.path.join(B, p), encoding='utf-8').read().replace('__LOGO_SCUOLA__', LOGO_URI)
 # caratteri ospitati dall'app (public/fonts): niente dipendenza da Google Fonts, misure dei cartelloni sempre uguali
 FONTI = [('Archivo', 400, 'normal', 'archivo-latin-400-normal'), ('Archivo', 600, 'normal', 'archivo-latin-600-normal'), ('Archivo', 600, 'italic', 'archivo-latin-600-italic'),
          ('Archivo', 700, 'normal', 'archivo-latin-700-normal'), ('Archivo', 800, 'normal', 'archivo-latin-800-normal'), ('Archivo', 900, 'normal', 'archivo-latin-900-normal'),

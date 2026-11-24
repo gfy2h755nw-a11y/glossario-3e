@@ -11,17 +11,10 @@ var Poster = (function () {
     var m = function (c) { return Math.round(255 - (255 - c) * a); };
     return 'rgb(' + m(r) + ',' + m(g) + ',' + m(b) + ')';
   }
-  /* logo della scuola ridisegnato in vettoriale (nitido a qualsiasi formato di stampa) */
+  /* logo ufficiale della scuola (IIS «E. Barsanti»): immagine incorporata, così vale anche nelle finestre di stampa e nei PDF */
+  var LOGO_SRC = '__LOGO_SCUOLA__';
   function logo(mm) {
-    var T = 'font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff';
-    return '<svg width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 100 100" role="img" aria-label="Logo IIS E. Barsanti">' +
-      '<rect width="100" height="100" fill="#EA3628"/>' +
-      '<text x="15" y="15.5" textLength="66" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">BARSANTI</text>' +
-      '<text x="15" y="98" textLength="65" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">SALVETTI</text>' +
-      '<text transform="translate(83.5 19) rotate(90)" x="0" y="0" textLength="64" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">FIORILLO</text>' +
-      '<text transform="translate(16.5 84) rotate(-90)" x="0" y="0" textLength="63" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">EINAUDI</text>' +
-      '<text x="19" y="81" textLength="61" lengthAdjust="spacingAndGlyphs" style="font-family:Archivo,Arial,sans-serif;font-weight:900;fill:#fff;font-size:88px">B</text>' +
-      '</svg>';
+    return '<img src="' + LOGO_SRC + '" width="' + Math.round(mm * 3.78) + '" height="' + Math.round(mm * 3.78) + '" style="width:' + mm + 'mm;height:' + mm + 'mm;display:block;flex:none" alt="Logo IIS E. Barsanti">';
   }
   /* attività di un collega: {docente, materia} (Poster.conc la fornisce la pagina che disegna) */
   function conc() { try { return typeof Poster.conc === 'function' ? Poster.conc() : null; } catch (e) { return null; } }

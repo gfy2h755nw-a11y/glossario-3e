@@ -136,10 +136,8 @@ async function creaPresentazione(stato, attivita, now) {
   pres.author = INT.docente(CFG);
   pres.company = 'IIS «E. Barsanti» · sede Salvetti';
 
-  const logo = (x, y, s) => [
-    { rect: { x, y, w: s, h: s, fill: { color: K.red } } },
-    { text: { text: 'B', options: { x, y, w: s, h: s, fontFace: 'Arial', bold: true, fontSize: Math.round(s * 46), color: 'FFFFFF', align: 'center', valign: 'middle', margin: 0 } } }
-  ];
+  // logo ufficiale della scuola
+  const logo = (x, y, s) => [{ image: { x, y, w: s, h: s, data: 'image/png;base64,' + require('./logo-scuola') } }];
   pres.defineSlideMaster({
     title: 'Copertina', background: { color: K.navy },
     objects: logo(0.6, 0.6, 0.75).concat([

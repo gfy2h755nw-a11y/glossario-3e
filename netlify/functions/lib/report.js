@@ -101,27 +101,9 @@ function tabella(doc, x, y, colonne, righe, opz) {
   return y;
 }
 
-/* logo della scuola: lo stesso disegno vettoriale dell'app (Poster.logo), viewBox 100×100 */
-const LOGO_TESTI = [
-  ['BARSANTI', 15, 15.5, 66, 17, 0], ['SALVETTI', 15, 98, 65, 17, 0],
-  ['FIORILLO', 83.5, 19, 64, 17, 90], ['EINAUDI', 16.5, 84, 63, 17, -90], ['B', 19, 81, 61, 88, 0]
-];
-function logoScuola(doc, x, y, lato) {
-  doc.save();
-  doc.translate(x, y).scale(lato / 100);
-  doc.rect(0, 0, 100, 100).fill('#EA3628');
-  doc.font('Helvetica-Bold').fillColor('#fff');
-  LOGO_TESTI.forEach(([t, tx, ty, L, fs, rot]) => {
-    doc.save();
-    doc.translate(tx, ty);
-    if (rot) doc.rotate(rot, { origin: [0, 0] });
-    doc.fontSize(fs);
-    doc.scale(L / doc.widthOfString(t), 1, { origin: [0, 0] });
-    doc.text(t, 0, 0, { baseline: 'alphabetic', lineBreak: false });
-    doc.restore();
-  });
-  doc.restore();
-}
+/* logo ufficiale della scuola (PNG incorporato) */
+const LOGO_PNG = Buffer.from(require('./logo-scuola'), 'base64');
+function logoScuola(doc, x, y, lato) { doc.image(LOGO_PNG, x, y, { width: lato, height: lato }); }
 /* riquadri con le statistiche di classe del quiz (pagina «Quiz, interrogazione orale e voto finale») */
 function quizClasse(doc, y, el, RR, cqz, tq) {
   const W = doc.page.width - 72, H = 220;
