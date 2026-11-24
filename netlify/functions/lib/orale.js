@@ -102,7 +102,7 @@ function controllaAccesso(q, cfg) {
 function riepilogoQuiz(q, cfg) {
   const s = (q && q.sessioni) || [], c = cfg || { soglia: QUIZ.soglia, scadenza: null, aperto: false, scaduto: false };
   const ind = Object.keys((q && q.ok) || {}).length, sup = (q && q.superata) || null;
-  const r = { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, dispositivi: ((q && q.disp) || []).length, subentri: (q && q.subentri) || 0, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null, partenza: c.partenza || null, bes: c.bes ? { secondi: c.bes.secondi != null ? c.bes.secondi : null, dimezza: c.bes.dimezza !== false } : null, sogliaPersonale: c.sogliaPersonale != null ? c.sogliaPersonale : null, sogliaClasse: c.sogliaClasse != null ? c.sogliaClasse : null, passoPersonale: c.passoPersonale != null ? c.passoPersonale : null, passo: c.passo != null ? c.passo : null,
+  const r = { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, dispositivi: ((q && q.disp) || []).length, subentri: (q && q.subentri) || 0, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null, partenza: c.partenza || null, bes: c.bes ? { secondi: c.bes.secondi != null ? c.bes.secondi : null, dimezza: c.bes.dimezza !== false, etichetta: c.bes.etichetta !== false } : null, sogliaPersonale: c.sogliaPersonale != null ? c.sogliaPersonale : null, sogliaClasse: c.sogliaClasse != null ? c.sogliaClasse : null, passoPersonale: c.passoPersonale != null ? c.passoPersonale : null, passo: c.passo != null ? c.passo : null,
     // stato rispetto all'ammissione all'orale
     stato: sup ? 'superato' : !c.aperto ? 'chiuso' : c.scaduto ? 'scaduto' : s.length ? 'in corso' : 'non iniziato',
     prima: s.length ? s[0].i : null, ultima: s.length ? (s[s.length - 1].f || s[s.length - 1].i) : null,
@@ -237,7 +237,7 @@ function tabelloneQuiz(stato) {
 /* ---------------- interrogazione orale ---------------- */
 // con meno domande (studenti BES: la metà) ogni punto vale in proporzione, così il massimo resta lo stesso
 function votoOrale(punti, escluso, config, n) { const O = REG.di(config).orale, k = n && n !== O.domande ? O.domande / n : 1; return Math.round((O.base + (escluso ? O.passoEsclusi : O.passo) * punti * k) * 1000) / 1000; }
-function domandeDi(a, config) { const ND = REG.di(config).orale.domande; return a && a.bes ? Math.max(1, Math.round(ND / 2)) : ND; }
+function domandeDi(a, config) { const ND = REG.di(config).orale.domande; return a && (a.bes && a.bes.etichetta !== false) ? Math.max(1, Math.round(ND / 2)) : ND; }
 function docenteVoti(stato, codice) { const chi = L.identifica(stato, codice); L.permesso(chi, 'voti'); return chi; }
 function alunno(stato, id) { const a = stato.alunni.find((x) => x.id === id); if (!a) L.errore('Alunno non trovato.'); return a; }
 function propri(stato, a) { const s = {}; stato.termini.filter((t) => t.alunno_id === a.id).forEach((t) => { s[chiave(t.area, L.indiceTermine(t))] = 1; }); return s; }
@@ -404,7 +404,7 @@ async function oraleSalva(db, { codice, alunno: id, esiti, nota, votoDocente }) 
     if (!isFinite(mano) || mano < 1 || mano > 10 || Math.abs(Math.round(mano * 4) - mano * 4) > 1e-9) L.errore('Voto orale: da 1 a 10, a quarti di voto (es. 6,25 · 6,5 · 6,75).');
   }
   const orale = { data: new Date().toISOString(), docente: chi.nome, escluso, punti, voto: mano != null ? mano : calc, votoCalcolato: calc, manuale: mano != null, cambi: b.cambi || 0, nota: String(nota || '').replace(/\s+/g, ' ').trim().slice(0, 300),
-    domande: b.termini.length, bes: !!a.bes, scelti: !!b.scelti,
+    domande: b.termini.length, bes: !!(a.bes && a.bes.etichetta !== false), scelti: !!b.scelti,
     termini: b.termini.map((t, i) => ({ a: t.a, k: t.k, it: cat[t.a][t.k][0], e: esiti[i] })) };
   const storico = (a.orale_storico || []).concat(a.orale ? [a.orale] : []).slice(-5);
   await db.scriviAlunno(a.id, { orale, orale_bozza: null, orale_storico: storico });
@@ -466,31 +466,31 @@ async function quizDimezza(db, { codice, tok, prova, bes }) {
   return { domanda: vistaDomanda(cat, cur, (q.sessioni[q.sessioni.length - 1].r || 0) + 1, cfg) };
 }
 
-/* regole personali del quiz per un alunno: termini da indovinare e termini persi a ogni errore (vuoto = come la classe).
-   bes: { attivo, secondi ('' = come la classe, 0 = senza tempo, 10-600), dimezza } */
-async function quizPersonale(db, { codice, alunno: id, soglia, passo, bes }) {
+/* regole personali del quiz per un alunno (per chiunque, BES o no). Ogni salvataggio sostituisce tutte le regole precedenti.
+   soglia, passo: vuoto = come la classe · secondi: '' = come la classe, 0 = senza tempo, 10-600 · dimezza: pulsante «Dimezza opzioni»
+   bes: etichetta di studente BES (vale per l'interrogazione: metà dei termini). Compatibile con il vecchio formato bes: { attivo, secondi, dimezza }. */
+const isBES = (b) => !!b && b.etichetta !== false;
+async function quizPersonale(db, { codice, alunno: id, soglia, passo, bes, secondi, dimezza }) {
   const stato = await db.leggiTutto(); L.permesso(L.identifica(stato, codice), 'studenti');
   const a = alunno(stato, id), tot = tutte(catalogo(stato)).length, base = cfgQuiz(stato.config, L.classeDi(a), tot, null);
   const vuoto = (v) => v === undefined || v === null || String(v).trim() === '';
-  let s = null, p = null;
+  // vecchio formato: le misure erano dentro «bes»
+  let etichetta = bes;
+  if (bes && typeof bes === 'object') { etichetta = !!bes.attivo; if (secondi === undefined) secondi = bes.attivo ? bes.secondi : ''; if (dimezza === undefined) dimezza = bes.attivo ? bes.dimezza !== false : false; }
+  let s = null, p = null, sec = null;
   if (!vuoto(soglia)) { s = Number(soglia); if (!Number.isInteger(s) || s < 1 || s > tot) L.errore('Termini da indovinare per ' + a.nome + ': da 1 a ' + tot + '.'); if (s === base.soglia) s = null; }
   if (!vuoto(passo)) { p = Number(passo); if (!Number.isInteger(p) || p < 0 || p > 50) L.errore('Termini persi a ogni errore per ' + a.nome + ': da 0 a 50.'); if (p === base.passo) p = null; }
-  const mod = { quiz_soglia: s, quiz_passo: p };
-  if (bes !== undefined) {
-    if (!bes || !bes.attivo) mod.bes = null;
-    else {
-      let sec = null;
-      if (!vuoto(bes.secondi)) { sec = Number(bes.secondi); if (!Number.isInteger(sec) || (sec !== 0 && (sec < 10 || sec > 600))) L.errore('Secondi per rispondere per ' + a.nome + ': 0 (senza tempo) oppure da 10 a 600.'); }
-      mod.bes = { secondi: sec, dimezza: bes.dimezza !== false, da: new Date().toISOString() };
-    }
-  }
+  if (!vuoto(secondi)) { sec = Number(secondi); if (!Number.isInteger(sec) || (sec !== 0 && (sec < 10 || sec > 600))) L.errore('Secondi per rispondere per ' + a.nome + ': 0 (senza tempo) oppure da 10 a 600.'); if (sec === REG.di(stato.config).quiz.secondi) sec = null; }
+  const dim = !!dimezza, eti = !!etichetta;
+  // tutto insieme: l'ultima modifica sostituisce le precedenti
+  const mod = { quiz_soglia: s, quiz_passo: p, bes: (eti || sec != null || dim) ? { secondi: sec, dimezza: dim, etichetta: eti, da: new Date().toISOString() } : null };
   // se con la nuova soglia ha già indovinato abbastanza termini, è ammesso subito
   const q = a.quiz;
   if (q && !q.superata && s != null && Object.keys(q.ok || {}).length >= s) {
     mod.quiz = Object.assign({}, q, { superata: new Date().toISOString(), msSup: (q.sessioni || []).reduce((x, y) => x + (y.ms || 0), 0) });
   }
   await db.scriviAlunno(a.id, mod);
-  return { alunno: a.id, soglia: s, passo: p, bes: mod.bes !== undefined ? mod.bes : a.bes || null, superata: !!(mod.quiz && mod.quiz.superata) };
+  return { alunno: a.id, soglia: s, passo: p, bes: mod.bes, etichetta: eti, superata: !!(mod.quiz && mod.quiz.superata) };
 }
 
 module.exports = { oraleCatalogo, oraleImposta, oraleScegliUno, quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, oraleProva, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };

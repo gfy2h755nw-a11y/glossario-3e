@@ -52,7 +52,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '24/11/2026 · 7';
+var VERSIONE = '24/11/2026 · 9';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -859,12 +859,12 @@ function reportPdfScrivi(w, IMG) {
   var ggmm = function (v) { if (v == null) return '—'; var d = new Date(v), p2 = function (n) { return ('0' + n).slice(-2); }; return p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); };
   /* agevolazioni e misure personalizzate (BES e regole personali): solo qui, lo studente non vede etichette */
   function agevolazioniAlunno(r, v) {
-    var q = quizDi(r.id), o = v.orale, B = q.bes, R = RG(), voci = [];
+    var q = quizDi(r.id), o = v.orale, B = q.bes, BES = !!B && B.etichetta !== false, R = RG(), voci = [];
     if (B) {
-      voci.push('Studente con bisogni educativi speciali (BES).');
-      voci.push(B.secondi === 0 ? 'Quiz senza limite di tempo per rispondere (classe: ' + R.quiz.secondi + ' secondi).' : B.secondi ? 'Quiz con ' + B.secondi + ' secondi per rispondere (classe: ' + R.quiz.secondi + ').' : 'Quiz con lo stesso tempo della classe (' + R.quiz.secondi + ' secondi).');
+      if (BES) voci.push('Studente con bisogni educativi speciali (BES).');
+      if (BES || B.secondi != null) voci.push(B.secondi === 0 ? 'Quiz senza limite di tempo per rispondere (classe: ' + R.quiz.secondi + ' secondi).' : B.secondi ? 'Quiz con ' + B.secondi + ' secondi per rispondere (classe: ' + R.quiz.secondi + ').' : 'Quiz con lo stesso tempo della classe (' + R.quiz.secondi + ' secondi).');
       if (B.dimezza) { var usi = (q.ultime || []).reduce(function (a, s) { return a + (s.d || 0); }, 0); voci.push('Pulsante «Dimezza opzioni» nel quiz (da ' + R.quiz.opzioni + ' a 2 definizioni)' + (usi ? ': usato ' + usi + (usi === 1 ? ' volta.' : ' volte.') : ': mai usato.')); }
-      voci.push('Interrogazione su ' + Math.max(1, Math.round(R.orale.domande / 2)) + ' termini invece di ' + R.orale.domande + ', con punteggio in proporzione (voto massimo invariato).');
+      if (BES) voci.push('Interrogazione su ' + Math.max(1, Math.round(R.orale.domande / 2)) + ' termini invece di ' + R.orale.domande + ', con punteggio in proporzione (voto massimo invariato).');
     }
     if (q.sogliaPersonale != null) voci.push('Quiz: ' + q.sogliaPersonale + ' termini da indovinare invece di ' + (q.sogliaClasse || 'quelli della classe') + '.');
     if (q.passoPersonale != null) voci.push('Quiz: a ogni errore si perdono ' + q.passoPersonale + (q.passoPersonale === 1 ? ' termine' : ' termini') + ' invece di ' + R.quiz.passo + '.');
@@ -872,7 +872,7 @@ function reportPdfScrivi(w, IMG) {
     if (r.proroga) voci.push('Proroga individuale dello scritto fino a ' + oraIt(r.proroga) + '.');
     if (o && o.manuale) voci.push('Voto orale assegnato dal docente: ' + fv(o.voto) + ' (calcolato dalle risposte: ' + fv(o.votoCalcolato) + ').');
     if (!voci.length) return '';
-    return '<div class="gr"><h3>Agevolazioni e misure personalizzate</h3>' + (B ? '<div class="box"><b>Prova sostenuta con l\'ausilio di strumenti compensativi e dispensativi.</b></div>' : '') +
+    return '<div class="gr"><h3>Agevolazioni e misure personalizzate</h3>' + (BES ? '<div class="box"><b>Prova sostenuta con l\'ausilio di strumenti compensativi e dispensativi.</b></div>' : '') +
       '<ul style="margin:2mm 0 0;padding-left:5mm">' + voci.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>';
   }
   function riepilogoAlunno(r, v, x, ts) {

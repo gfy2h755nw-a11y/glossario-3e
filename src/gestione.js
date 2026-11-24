@@ -998,7 +998,7 @@ function schedaStudente(id) {
   var v = votiDi(id), q = quizDi(id), o = v.orale, cod = ((S.d.codiciAlunni || []).filter(function (a) { return a.id === id; })[0] || {}).codice;
   var adm = !RO(), riga = function (k, val, nota) { return '<div class="sk-r"><span>' + k + '</span><b>' + val + '</b>' + (nota ? '<small>' + nota + '</small>' : '') + '</div>'; };
   var chip = [];
-  if (q.bes) chip.push('<span class="chip s-bozza">BES</span>');
+  if (eBES(q)) chip.push('<span class="chip s-bozza">BES</span>');
   if (r.escluso) chip.push('<span class="chip s-correggere">Escluso dallo scritto</span>');
   if (r.proroga) chip.push('<span class="chip s-inviata">Proroga scritto al ' + esc(oraIt(r.proroga)) + '</span>');
   if (q.proroga) chip.push('<span class="chip s-inviata">Proroga quiz al ' + esc(oraIt(q.proroga)) + '</span>');
@@ -1023,7 +1023,7 @@ function schedaStudente(id) {
     (cod ? '<div class="row" style="gap:8px;align-items:center"><span class="muted">Codice personale</span><code class="disp" style="font-size:18px;letter-spacing:.08em">' + esc(cod) + '</code><button class="btn sec tb" onclick="copiaTesto(\'' + esc(cod) + '\',this)">Copia</button></div>' : '');
   var az = [];
   if (adm && PUO('studenti')) az.push({ t: 'Proroga dello scritto o passaggio dei termini', f: function () { S.gs = { classe: r.classe || CLASSI()[0], id: id }; vai('gestione'); } });
-  if (adm && PUO('studenti')) az.push({ t: (q.bes ? 'BES e regole personali del quiz' : 'Segna BES o regole personali del quiz'), f: function () { regolePersonaliQuiz(id); } });
+  if (adm && PUO('studenti')) az.push({ t: (haRegole(q) ? 'Modifica le regole personali del quiz' : 'Regole personali del quiz (anche BES)'), f: function () { regolePersonaliQuiz(id); } });
   if (adm && PUO('studenti') && !q.superata && q.scadenzaClasse) az.push({ t: 'Proroga del quiz', f: function () { prorogaQuiz(id); } });
   if (adm && PUO('voti') && q.superata) az.push({ t: o ? 'Ripeti l\'interrogazione' : 'Interroga adesso', f: function () { vai('orale'); apriOrale(id); } });
   if (adm && PUO('voti')) az.push({ t: 'Modifica il giudizio', f: function () { modificaGiudizio(id); } });

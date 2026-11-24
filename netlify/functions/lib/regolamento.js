@@ -69,7 +69,7 @@ function genera(stato) {
     'Il docente può concedere una <b>proroga individuale</b> del quiz. Dopo averlo superato, lo studente vede solo i complimenti e poi la data dell\'interrogazione: non può più rifare il quiz.'
   ]);
 
-  const besN = stato.alunni.filter((a) => a.bes).length, pers = stato.alunni.filter((a) => a.quiz_soglia != null || (a.quiz_passo != null && a.quiz_passo !== '')).length;
+  const besN = stato.alunni.filter((a) => a.bes && a.bes.etichetta !== false).length, pers = stato.alunni.filter((a) => a.quiz_soglia != null || (a.quiz_passo != null && a.quiz_passo !== '')).length;
   S('Misure personali (BES, DSA, PDP)', '#0E7C7B', [
     'Per gli studenti con un piano personale il docente può impostare, uno per uno:',
     '• <b>tempo personale</b> per ogni domanda del quiz, oppure <b>nessun limite di tempo</b>;',

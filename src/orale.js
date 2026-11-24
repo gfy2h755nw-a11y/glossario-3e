@@ -47,9 +47,8 @@ function paginaQuiz() {
       '<td class="n">' + (q.errori || 0) + '</td><td class="n" style="font-weight:400">' + (q.persi || 0) + '</td>' +
       '<td style="min-width:150px"><b>' + q.indovinati + '</b> / ' + q.soglia + (q.massimo > q.indovinati ? ' <span class="muted" style="font-size:13px">(massimo ' + q.massimo + ')</span>' : '') + '<div class="bar" style="margin-top:4px"><span style="width:' + pc + '%;background:' + (q.superata ? 'var(--ok)' : 'var(--a1)') + '"></span></div></td>' +
       '<td>' + chipQuiz(q) + (q.proroga ? '<br><span class="chip s-inviata" style="margin-top:4px">Proroga al ' + esc(oraIt(q.proroga)) + '</span>' : '') +
-        (q.sogliaPersonale != null || q.passoPersonale != null ? '<br><span class="chip s-bozza" style="margin-top:4px" title="Regole personali del quiz">Personale: ' + q.soglia + ' termini · −' + q.passo + ' per errore</span>' : '') +
-        (q.bes ? '<br><span class="chip s-bozza" style="margin-top:4px" title="Studente BES">BES · ' + (q.bes.secondi === 0 ? 'senza tempo' : (q.bes.secondi || RG().quiz.secondi) + ' s') + (q.bes.dimezza ? ' · dimezza opzioni' : '') + '</span>' : '') + '</td>' +
-      '<td><div class="row" style="gap:6px;flex-wrap:nowrap">' + (PUO('studenti') && !RO() ? '<button class="btn sec tb" data-pers="' + r.id + '" onclick="regolePersonaliQuiz(\'' + r.id + '\')">' + (q.bes ? 'BES e regole' : 'BES / regole personali') + '</button>' : '') + (PUO('studenti') && !RO() && !q.superata && q.scadenzaClasse ? '<button class="btn sec tb" onclick="prorogaQuiz(\'' + r.id + '\')">' + (q.proroga ? 'Modifica proroga' : 'Proroga') + '</button>' : '') +
+        regolePersonaliChip(q) + '</td>' +
+      '<td><div class="row" style="gap:6px;flex-wrap:nowrap">' + (PUO('studenti') && !RO() ? '<button class="btn sec tb" data-pers="' + r.id + '" onclick="regolePersonaliQuiz(\'' + r.id + '\')">' + (haRegole(q) ? 'Modifica regole' : 'Regole personali') + '</button>' : '') + (PUO('studenti') && !RO() && !q.superata && q.scadenzaClasse ? '<button class="btn sec tb" onclick="prorogaQuiz(\'' + r.id + '\')">' + (q.proroga ? 'Modifica proroga' : 'Proroga') + '</button>' : '') +
         (q.sessioni ? '<button class="btn sec tb" aria-expanded="' + aperto + '" onclick="S.qzAperto=' + (aperto ? 'null' : '\'' + r.id + '\'') + ';vistaDocente()">' + (aperto ? 'Chiudi' : 'Sessioni') + '</button>' : '') + '</div></td></tr>';
     if (aperto) h += '<tr class="qz-det"><td colspan="12" style="background:#F6F8FA"><table class="tbl" style="margin:0"><thead><tr><th>Sessione</th><th>Inizio</th><th style="text-align:right">Tempo</th><th style="text-align:right">Risposte</th><th style="text-align:right">Corrette</th><th style="text-align:right">Errori</th><th style="text-align:right">di cui scadute</th><th style="text-align:right">Termini nuovi</th><th style="text-align:right">Termini persi</th></tr></thead><tbody>' +
       q.ultime.map(function (s, i) { return '<tr><td>' + (q.sessioni - q.ultime.length + i + 1) + '</td><td>' + esc(dataBreve(s.i)) + '</td><td class="n" style="font-weight:400">' + tempoMs(s.ms) + '</td><td class="n" style="font-weight:400">' + s.r + '</td><td class="n">' + s.c + '</td><td class="n">' + (s.e || 0) + '</td><td class="n" style="font-weight:400">' + s.s + '</td><td class="n">' + s.n + '</td><td class="n" style="font-weight:400">' + (s.p || 0) + '</td></tr>'; }).reverse().join('') +
@@ -74,7 +73,7 @@ function paginaOrale() {
     '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Alunno</th><th style="text-align:right">Classe</th><th>Ammissione (quiz)</th><th style="text-align:right">Scritto</th><th style="text-align:right">Orale</th><th style="text-align:right">Finale</th><th>Quando</th><th></th></tr></thead><tbody>';
   righe.forEach(function (r) {
     var v = votiDi(r.id), q = quizDi(r.id), o = v.orale;
-    h += '<tr data-orale="' + r.id + '"><td>' + linkScheda(r) + (q.bes ? ' <span class="chip s-bozza" title="Studente BES: interrogazione su ' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini">BES</span>' : '') + (r.escluso ? ' <span class="chip s-correggere">Escluso · max ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
+    h += '<tr data-orale="' + r.id + '"><td>' + linkScheda(r) + (eBES(q) ? ' <span class="chip s-bozza" title="Studente BES: interrogazione su ' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini">BES</span>' : '') + (r.escluso ? ' <span class="chip s-correggere">Escluso · max ' + fv(RG().orale.maxEsclusi) + '</span>' : '') + '</td><td class="n">' + esc(etich(r)) + '</td>' +
       '<td>' + chipQuiz(q) + '</td>' +
       '<td class="n">' + (r.escluso ? '<span class="muted" style="font-weight:400">—</span>' : fv(v.voto)) + '</td>' +
       '<td class="n">' + (o ? fv(o.voto) + (o.manuale ? ' <span class="chip s-bozza" title="Voto assegnato da te; quello calcolato dalle risposte era ' + fv(o.votoCalcolato) + '">tuo</span>' : '') + '<br><span class="muted" style="font-weight:400;font-size:13px">' + fv(o.punti) + ' / ' + ((o.termini && o.termini.length) || RG().orale.domande) + ' · ' + esc(dataBreve(o.data)) + (o.manuale ? ' · calcolato ' + fv(o.votoCalcolato) : '') + '</span>' : '—') + '</td>' +
@@ -117,7 +116,7 @@ function elencoDelGiorno(righe, puo) {
     '<div class="row" style="gap:8px"><input type="date" id="orGData" aria-label="Giorno" value="' + g + '" onchange="S.orG=this.value;vistaDocente()" style="min-height:42px"><button class="btn sec" id="orGStampa" onclick="stampaGiorno()"' + (lista.length ? '' : ' disabled') + '>Stampa l\'elenco</button></div></div>' +
     (lista.length ? '<ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px">' + lista.map(function (r) {
       var q = quizDi(r.id), o = votiDi(r.id).orale;
-      return '<li><b>' + esc(r.nome) + '</b> <span class="muted">' + esc(etich(r)) + (q.piano.ora ? ' · ' + q.piano.ora + 'ª ora' : '') + '</span>' + (q.bes ? ' <span class="chip s-bozza">BES</span>' : '') +
+      return '<li><b>' + esc(r.nome) + '</b> <span class="muted">' + esc(etich(r)) + (q.piano.ora ? ' · ' + q.piano.ora + 'ª ora' : '') + '</span>' + (eBES(q) ? ' <span class="chip s-bozza">BES</span>' : '') +
         (o ? ' <span class="chip s-approvata">interrogato · ' + fv(o.voto) + '</span>' : puo ? ' <button class="btn tb" onclick="apriOrale(\'' + r.id + '\',this)">Interroga</button>' : '') + '</li>';
     }).join('') + '</ol>' : '<p class="muted" style="margin:0">Nessuna interrogazione programmata per ' + esc(giornoIt(g)) + '.</p>') + '</section>';
 }
@@ -294,36 +293,48 @@ function salvaQuizImp(btn) {
   api('impostazioni', { quiz: { soglia: $('qzSoglia').value, secondi: $('qzSec').value, scadenze: sc, partenze: pa } }).then(function () { return ricarica('Regole del quiz salvate'); }).catch(function (e) { toast(errMsg(e), true); btn.disabled = false; });
 }
 
-/* regole personali del quiz (PDP, DSA…): meno termini da indovinare e/o meno termini persi a ogni errore */
+/* regole personali del quiz (per chiunque: PDP, DSA, BES o altro). Un'unica scheda: ogni salvataggio sostituisce tutte le regole precedenti.
+   «Studente BES» è un'etichetta a parte (all'interrogazione: metà dei termini). */
+function eBES(q) { return !!q.bes && q.bes.etichetta !== false; }
+function haRegole(q) { return q.sogliaPersonale != null || q.passoPersonale != null || !!q.bes; }
+function regolePersonaliChip(q) {
+  if (!haRegole(q)) return '';
+  var B = q.bes || {}, R = RG().quiz, v = [];
+  if (q.sogliaPersonale != null) v.push(q.soglia + ' termini');
+  if (q.passoPersonale != null) v.push('−' + q.passo + ' per errore');
+  if (B.secondi === 0) v.push('senza tempo'); else if (B.secondi) v.push(B.secondi + ' s');
+  if (B.dimezza) v.push('dimezza opzioni');
+  return '<div class="regpers" title="Regole personali del quiz">' + (eBES(q) ? '<b class="rpbes">BES</b>' : '') + (v.length ? v.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') : '<span>regole della classe</span>') + '</div>';
+}
 function regolePersonaliQuiz(id) {
-  var q = quizDi(id), imp = (S.d.admin && S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || {}, sc = imp.soglia || S.d.termini.length, pc = RG().quiz.passo;
+  var q = quizDi(id), imp = (S.d.admin && S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || {}, sc = imp.soglia || S.d.termini.length, pc = RG().quiz.passo, sCl = RG().quiz.secondi;
   var B = q.bes || null;
-  S.qpB = { attivo: !!B, secondi: B && B.secondi != null ? String(B.secondi) : '', dimezza: B ? B.dimezza !== false : true };
-  S.qpB.tempo = B && B.secondi === 0 ? 'no' : B && B.secondi ? 'mio' : 'classe';
-  var salva = function (soglia, passo) {
-    var b = S.qpB.attivo ? { attivo: true, secondi: S.qpB.tempo === 'no' ? 0 : S.qpB.tempo === 'classe' ? '' : String(S.qpB.secondi).trim(), dimezza: S.qpB.dimezza } : { attivo: false };
-    api('quizpersonale', { alunno: id, soglia: soglia, passo: passo, bes: b }).then(function (x) {
-      return ricarica(soglia === '' && passo === '' && !x.bes ? 'Regole della classe per ' + nomeAlunno(id) : 'Regole personali salvate per ' + nomeAlunno(id) + (x.bes ? ' (BES)' : '') + (x.superata ? ': ha già indovinato abbastanza termini, è ammesso all\'orale' : ''));
+  S.qp = { soglia: q.sogliaPersonale != null ? String(q.sogliaPersonale) : '', passo: q.passoPersonale != null ? String(q.passoPersonale) : '',
+    tempo: B && B.secondi === 0 ? 'no' : B && B.secondi ? 'mio' : 'classe', secondi: B && B.secondi ? String(B.secondi) : '', dimezza: !!(B && B.dimezza), bes: eBES(q) };
+  var salva = function (classe) {
+    var P = classe ? { soglia: '', passo: '', secondi: '', dimezza: false, bes: false } :
+      { soglia: String(S.qp.soglia).trim(), passo: String(S.qp.passo).trim(), secondi: S.qp.tempo === 'no' ? 0 : S.qp.tempo === 'classe' ? '' : String(S.qp.secondi).trim(), dimezza: S.qp.dimezza, bes: S.qp.bes };
+    if (!classe && S.qp.tempo === 'mio' && !P.secondi) { toast('Scrivi i secondi personali, oppure scegli «Come la classe».', true); return; }
+    api('quizpersonale', Object.assign({ alunno: id }, P)).then(function (x) {
+      return ricarica(classe ? 'Regole della classe per ' + nomeAlunno(id) : 'Regole personali salvate per ' + nomeAlunno(id) + (x.etichetta ? ' (BES)' : '') + (x.superata ? ': ha già indovinato abbastanza termini, è ammesso all\'orale' : ''));
     }).catch(function (e) { toast(errMsg(e), true); });
   };
-  S.qpS = q.sogliaPersonale != null ? String(q.sogliaPersonale) : ''; S.qpP = q.passoPersonale != null ? String(q.passoPersonale) : '';
-  var scelte = [{ t: 'Salva le regole personali', f: function () { salva(String(S.qpS).trim(), String(S.qpP).trim()); } }];
-  if (q.sogliaPersonale != null || q.passoPersonale != null || B) scelte.push({ t: 'Torna alle regole della classe', warn: true, f: function () { S.qpB.attivo = false; salva('', ''); } });
-  finestra('BES e regole personali · ' + nomeAlunno(id),
-    '<p style="margin:0">Per un alunno con PDP o DSA puoi chiedere <b>meno termini</b> e togliere <b>meno termini a ogni errore</b>. Lascia vuoto un campo per usare la regola della classe. ' +
-    nomeAlunno(id) + ' ha indovinato finora <b>' + q.indovinati + '</b> termini.</p>' +
-    '<div class="grid2"><div><label for="qpSoglia">Termini da indovinare</label><input id="qpSoglia" type="text" inputmode="numeric" placeholder="classe: ' + sc + '" value="' + (q.sogliaPersonale != null ? q.sogliaPersonale : '') + '" oninput="S.qpS=this.value"></div>' +
-    '<div><label for="qpPasso">Termini persi a ogni errore</label><input id="qpPasso" type="text" inputmode="numeric" placeholder="classe: ' + pc + '" value="' + (q.passoPersonale != null ? q.passoPersonale : '') + '" oninput="S.qpP=this.value"></div></div>' +
-    '<p class="muted" style="margin:0;font-size:14px">Se con la nuova soglia ha già indovinato abbastanza termini, risulta subito ammesso all\'interrogazione.</p>' +
-    '<fieldset class="stack" style="gap:10px;border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin:0"><legend style="font-weight:700;padding:0 6px">Studente BES</legend>' +
-      '<label class="row" style="gap:10px;font-weight:700"><input type="checkbox" id="qpBes" ' + (B ? 'checked' : '') + ' onchange="S.qpB.attivo=this.checked;$(\'qpBesOpz\').hidden=!this.checked" style="width:22px;height:22px"> Segna come studente BES</label>' +
-      '<div id="qpBesOpz" class="stack" style="gap:10px"' + (B ? '' : ' hidden') + '>' +
-        '<div><label for="qpTempo">Tempo per rispondere nel quiz</label><select id="qpTempo" onchange="S.qpB.tempo=this.value;$(\'qpSecBox\').hidden=this.value!==\'mio\'">' +
-          [['classe', 'Come la classe (' + RG().quiz.secondi + ' secondi)'], ['mio', 'Secondi personali'], ['no', 'Senza limite di tempo']].map(function (o) { return '<option value="' + o[0] + '"' + (S.qpB.tempo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
-        '<div id="qpSecBox"' + (S.qpB.tempo === 'mio' ? '' : ' hidden') + '><label for="qpSec">Secondi per rispondere (10-600)</label><input id="qpSec" type="text" inputmode="numeric" value="' + esc(S.qpB.tempo === 'mio' ? S.qpB.secondi : '') + '" oninput="S.qpB.secondi=this.value"></div>' +
-        '<label class="row" style="gap:10px"><input type="checkbox" id="qpDim" ' + (S.qpB.dimezza ? 'checked' : '') + ' onchange="S.qpB.dimezza=this.checked" style="width:22px;height:22px"> Pulsante «Dimezza opzioni» nel quiz (da 4 a 2 definizioni)</label>' +
-        '<p class="muted" style="margin:0;font-size:14px">All\'interrogazione lo studente BES risponde su <b>' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini</b> invece di ' + RG().orale.domande + ': ogni punto vale doppio, il voto massimo resta ' + fv(RG().orale.max) + '.</p>' +
-      '</div></fieldset>', scelte);
+  var scelte = [{ t: 'Salva le regole', f: function () { salva(false); } }];
+  if (haRegole(q)) scelte.push({ t: 'Togli tutto: regole della classe', warn: true, f: function () { salva(true); } });
+  finestra('Regole personali del quiz · ' + nomeAlunno(id),
+    '<p style="margin:0">Valgono per qualunque studente (PDP, DSA, BES o altro). Lascia vuoto un campo per usare la regola della classe. <b>Il salvataggio sostituisce tutte le regole precedenti.</b> ' +
+    esc(nomeAlunno(id)) + ' ha indovinato finora <b>' + q.indovinati + '</b> termini.</p>' +
+    '<div class="grid2"><div><label for="qpSoglia">Termini da indovinare</label><input id="qpSoglia" type="text" inputmode="numeric" placeholder="classe: ' + sc + '" value="' + esc(S.qp.soglia) + '" oninput="S.qp.soglia=this.value"></div>' +
+    '<div><label for="qpPasso">Termini persi a ogni errore</label><input id="qpPasso" type="text" inputmode="numeric" placeholder="classe: ' + pc + '" value="' + esc(S.qp.passo) + '" oninput="S.qp.passo=this.value"></div></div>' +
+    '<div class="grid2"><div><label for="qpTempo">Tempo per rispondere</label><select id="qpTempo" onchange="S.qp.tempo=this.value;$(\'qpSecBox\').hidden=this.value!==\'mio\'">' +
+      [['classe', 'Come la classe (' + sCl + ' secondi)'], ['mio', 'Secondi personali'], ['no', 'Senza limite di tempo']].map(function (o) { return '<option value="' + o[0] + '"' + (S.qp.tempo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+      '<div id="qpSecBox"' + (S.qp.tempo === 'mio' ? '' : ' hidden') + '><label for="qpSec">Secondi (10-600)</label><input id="qpSec" type="text" inputmode="numeric" value="' + esc(S.qp.secondi) + '" oninput="S.qp.secondi=this.value"></div></div>' +
+    '<label class="row" style="gap:10px"><input type="checkbox" id="qpDim" ' + (S.qp.dimezza ? 'checked' : '') + ' onchange="S.qp.dimezza=this.checked;S.qp.dimTocco=1" style="width:22px;height:22px"> Pulsante «Dimezza opzioni» nel quiz (da ' + RG().quiz.opzioni + ' a 2 definizioni)</label>' +
+    '<p class="muted" style="margin:0;font-size:14px">Se con la nuova soglia ha già indovinato abbastanza termini, risulta subito ammesso all\'interrogazione. Con una soglia più bassa di quella della classe, all\'interrogazione si pesca solo tra i termini del suo quiz.</p>' +
+    '<fieldset class="stack" style="gap:8px;border:2px solid var(--line);border-radius:12px;padding:10px 14px;margin:0"><legend style="font-weight:700;padding:0 6px">Studente BES</legend>' +
+      '<label class="row" style="gap:10px;font-weight:700"><input type="checkbox" id="qpBes" ' + (S.qp.bes ? 'checked' : '') + ' onchange="S.qp.bes=this.checked;if(this.checked&&!S.qp.dimTocco){S.qp.dimezza=true;$(\'qpDim\').checked=true;}" style="width:22px;height:22px"> Segna come studente BES</label>' +
+      '<p class="muted" style="margin:0;font-size:14px">Solo un\'etichetta per te e per il report: all\'interrogazione lo studente BES risponde su <b>' + Math.max(1, Math.round(RG().orale.domande / 2)) + ' termini</b> invece di ' + RG().orale.domande + ' (ogni punto vale doppio, il voto massimo resta lo stesso). Lo studente non vede nessuna etichetta.</p>' +
+    '</fieldset>', scelte);
 }
 
 /* proroga individuale del quiz: una data dopo la scadenza della classe; si può togliere */

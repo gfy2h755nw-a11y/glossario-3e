@@ -11,6 +11,12 @@ var Poster = (function () {
     var m = function (c) { return Math.round(255 - (255 - c) * a); };
     return 'rgb(' + m(r) + ',' + m(g) + ',' + m(b) + ')';
   }
+  /* classi del cartellone: quelle degli autori dei termini (tutti, anche senza nome visibile); se mancano, quelle degli studenti */
+  function classiDi(termini, alunni, clDi) {
+    var c = {}; termini.forEach(function (t) { if (t.alunno && clDi[t.alunno]) c[clDi[t.alunno]] = 1; });
+    if (!Object.keys(c).length) (alunni || []).forEach(function (a) { c[a.classe || '3E'] = 1; });
+    var k = Object.keys(c).sort(); return k.length ? k : ['3E'];
+  }
   /* logo ufficiale della scuola (IIS «E. Barsanti»): immagine incorporata, così vale anche nelle finestre di stampa e nei PDF */
   var LOGO_SRC = '__LOGO_SCUOLA__';
   function logo(mm) {
@@ -271,7 +277,8 @@ var Poster = (function () {
     var nomi = {};
     var clDi = {};
     // chi è escluso dallo scritto (fuori) o non ha (ancora) il consenso privacy firmato (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
-    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: senza consenso privacy firmato
+    // la classe vale per tutti (anche per chi non mostra il nome): le classi del cartellone non dipendono dai consensi
+    (alunni || []).forEach(function (a) { clDi[a.id] = a.classe || '3E'; if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); }); // nascosto: senza consenso privacy firmato
     // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
     var visti = {}, perCl = {}, ordineCl = [];
     termini.forEach(function (t) {
@@ -279,9 +286,10 @@ var Poster = (function () {
       var c = clDi[t.alunno] || '3E'; if (!perCl[c]) { perCl[c] = []; ordineCl.push(c); }
       perCl[c].push(esc(nomi[t.alunno] || t.alunno));
     });
-    var classi = (opz.classi || ordineCl.slice().sort()).filter(function (c) { return perCl[c]; });
-    if (!classi.length) classi = ['3E'];
-    var gruppo = classi.length > 1 ? classi.map(function (c) { return '<b style="font-weight:800">' + c + ':</b> ' + perCl[c].join(' · '); }) : (perCl[classi[0]] || []);
+    var tutteCl = classiDi(termini, alunni, clDi);
+    var classi = (opz.classi || tutteCl).filter(function (c) { return tutteCl.indexOf(c) >= 0; });
+    if (!classi.length) classi = tutteCl;
+    var gruppo = classi.length > 1 && Object.keys(perCl).length ? classi.map(function (c) { return '<b style="font-weight:800">' + c + (perCl[c] ? ':</b> ' + perCl[c].join(' · ') : '</b>'); }) : (perCl[classi[0]] || []);
     var sepAut = classi.length > 1 ? ' &nbsp;&nbsp;|&nbsp;&nbsp; ' : ' · ';
     var F = "font-family:'Archivo',Arial,sans-serif;";
 
@@ -343,7 +351,7 @@ var Poster = (function () {
           (opz.icone === 2 ? icona2(Number(area.n), col) : '<svg width="58mm" height="58mm" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONE[area.n] + '</svg>') +
         '</div>' +
         '<div style="border-top:0.6mm solid rgba(255,255,255,0.55);padding-top:5mm;display:flex;flex-direction:column;gap:2.5mm;font-size:6mm;line-height:1.3">' +
-          '<div><b>' + (IT ? 'A cura di:' : 'A cura di · Edited by:') + '</b> ' + (gruppo.join(sepAut) || '—') + '</div>' +
+          '<div><b>' + (IT ? 'A cura di:' : 'A cura di · Edited by:') + '</b> ' + (gruppo.join(sepAut) || (classi.length > 1 ? 'classi ' : 'classe ') + classi.join(' e ')) + '</div>' +
           (conc() ? '<div><b>Docente:</b> ' + esc(conc().docente) + (MAT() ? ' <span style="opacity:.85">(' + esc(MAT()) + ')</span>' : '') + ' · <i>' + CONCESSIONE + '</i></div></div>' : IT ? '<div><b>Docente:</b> Prof. Danilo Cerrato <span style="opacity:.85">(Laboratorio odontotecnico)</span></div></div>'
             : '<div><b>Docenti · Teachers:</b> Prof. Danilo Cerrato <span style="opacity:.85">(Laboratorio odontotecnico)</span> · Prof.ssa Federica Aliboni <span style="opacity:.85">(Inglese tecnico)</span></div></div>') +
       '</div>' +
@@ -420,10 +428,11 @@ var Poster = (function () {
     var col = area.colore, n = Number(area.n), nomi = {}, clDi = {}, NA = opz.nAree || 4;
     icona2.generica = !!opz.areeMie;
     // chi è escluso dallo scritto (fuori) o non ha (ancora) il consenso privacy firmato (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
-    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: senza consenso privacy firmato
+    // la classe vale per tutti (anche per chi non mostra il nome): le classi del cartellone non dipendono dai consensi
+    (alunni || []).forEach(function (a) { clDi[a.id] = a.classe || '3E'; if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); }); // nascosto: senza consenso privacy firmato
     var perCl = {}, visti = {};
     termini.forEach(function (t) { if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
-    var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];
+    var classi = classiDi(termini, alunni, clDi);
     var A = "font-family:Archivo,Arial,sans-serif;", S = "font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;";
     var voci = ordinaAlfa(termini), lettere = {}, corpo = '', ult = '';
     voci.forEach(function (t) {
@@ -471,7 +480,7 @@ var Poster = (function () {
           '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area 0' + n + ' di 0' + NA) + ' · ' + termini.length + ' termini dalla A alla Z</div>' +
           '<div style="' + A + 'font-weight:900;font-size:' + (opz.en ? (area.it.length > 30 ? 26 : 33) : (area.it.length > 30 ? 32 : 40)) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div>' + (opz.en && area.en ? '<div lang="en" style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-style:italic;font-weight:700;font-size:9mm;opacity:.9;margin-top:1.5mm">' + esc(area.en) + '</div>' : '') + '</div></div>' +
         '<div class="pa-aut" style="position:relative;margin-top:' + (opz.en ? 6 : 10) + 'mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
-          '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + ':</b> ' + (perCl[c] || []).join(' · '); }).join(' &nbsp;|&nbsp; ') +
+          '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + (perCl[c] ? ':</b> ' + perCl[c].join(' · ') : '</b>'); }).join(' &nbsp;|&nbsp; ') +
           '<br><b style="' + lab + '">Docente</b> &nbsp;' + (conc() ? esc(conc().docente) + (conc().materia ? ' (' + esc(conc().materia) + ')' : '') + ' &nbsp;·&nbsp; <i>' + CONCESSIONE + '</i>' : 'Prof. Danilo Cerrato (Laboratorio odontotecnico)') + '</div></div>' +
       '<div style="position:absolute;left:34mm;right:34mm;top:179mm;display:flex;gap:1mm;padding:2.5mm 0;border-bottom:0.5mm solid #15212B">' + AZ + '</div>' +
       '<div class="pa-corpo" style="position:absolute;left:34mm;right:34mm;top:200mm;height:642mm"><div class="pa-col">' + corpo + '</div><div class="pa-col"></div><div class="pa-col"></div></div>' +

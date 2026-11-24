@@ -182,22 +182,22 @@ function fineQuiz(q, tq) {
 }
 /* elenco delle agevolazioni concesse a un alunno (report personale) */
 function agevolazioni(a, q, o, R, quando) {
-  const voci = [], B = a.bes || null;
+  const voci = [], B = a.bes || null, BES = !!B && B.etichetta !== false;
   if (B) {
-    voci.push('Studente con bisogni educativi speciali (BES).');
-    voci.push(B.secondi === 0 ? 'Quiz senza limite di tempo per rispondere (classe: ' + R.quiz.secondi + ' secondi).' : B.secondi ? 'Quiz con ' + B.secondi + ' secondi per rispondere (classe: ' + R.quiz.secondi + ').' : 'Quiz con lo stesso tempo della classe (' + R.quiz.secondi + ' secondi).');
+    if (BES) voci.push('Studente con bisogni educativi speciali (BES).');
+    if (BES || B.secondi != null) voci.push(B.secondi === 0 ? 'Quiz senza limite di tempo per rispondere (classe: ' + R.quiz.secondi + ' secondi).' : B.secondi ? 'Quiz con ' + B.secondi + ' secondi per rispondere (classe: ' + R.quiz.secondi + ').' : 'Quiz con lo stesso tempo della classe (' + R.quiz.secondi + ' secondi).');
     if (B.dimezza !== false) {
       const usi = ((a.quiz && a.quiz.sessioni) || []).reduce((s, x) => s + (x.d || 0), 0);
       voci.push('Pulsante «Dimezza opzioni» nel quiz (da ' + R.quiz.opzioni + ' a 2 definizioni)' + (usi ? ': usato ' + usi + (usi === 1 ? ' volta.' : ' volte.') : ': mai usato.'));
     }
-    voci.push('Interrogazione su ' + Math.max(1, Math.round(R.orale.domande / 2)) + ' termini invece di ' + R.orale.domande + ', con punteggio in proporzione (voto massimo invariato).');
+    if (BES) voci.push('Interrogazione su ' + Math.max(1, Math.round(R.orale.domande / 2)) + ' termini invece di ' + R.orale.domande + ', con punteggio in proporzione (voto massimo invariato).');
   }
   if (q.sogliaPersonale != null) voci.push('Quiz: ' + q.sogliaPersonale + ' termini da indovinare invece di ' + (q.sogliaClasse || 'quelli della classe') + '.');
   if (q.passoPersonale != null) voci.push('Quiz: a ogni errore si perdono ' + q.passoPersonale + (q.passoPersonale === 1 ? ' termine' : ' termini') + ' invece di ' + R.quiz.passo + '.');
   if (q.proroga) voci.push('Proroga individuale del quiz fino a ' + quando(q.proroga) + '.');
   if (a.proroga) voci.push('Proroga individuale dello scritto fino a ' + quando(a.proroga) + '.');
   if (o && o.manuale) voci.push('Voto orale assegnato dal docente: ' + String(o.voto).replace('.', ',') + ' (calcolato dalle risposte: ' + String(o.votoCalcolato).replace('.', ',') + ').');
-  return { bes: !!B, voci };
+  return { bes: BES, voci };
 }
 function testata(doc, titolo, sotto) {
   const w = doc.page.width - 72;
