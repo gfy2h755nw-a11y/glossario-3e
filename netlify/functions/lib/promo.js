@@ -7,19 +7,23 @@ const { soloCerrato } = require('./banca');
 const MAX_VISITE = 500;
 const VALIDI_MS = 60 * 1000; // numeri ricalcolati al massimo una volta al minuto (ogni calcolo legge tutti i dati)
 
-/* numeri reali di tutte le attività in corso (esclusa quella in preparazione): solo totali, nessun nome */
+/* numeri reali di tutte le attività del prof. Cerrato in corso (escluse quelle in preparazione e quelle date ai colleghi):
+   solo totali, nessun nome. Contano come nell'app: tutti i termini assegnati (anche quelli passati a un compagno), approvate sull'italiano */
 async function calcolaNumeri() {
   const { db: apri } = require('./firestore'), ATT = require('./attivita');
   const base = apri('main'), reg = (await base.leggiRegistro()).filter((x) => !x.bozza);
   const spazi = ['main'].concat(reg.map((x) => x.id)), now = Date.now();
-  const classi = new Set(); let alunni = 0, termini = 0, approvate = 0, minuti = 0;
+  const classi = new Set(), per = []; let alunni = 0, termini = 0, approvate = 0, minuti = 0;
   for (const id of spazi) {
-    const d = apri(id), st = await d.leggiTutto(), att = (d.leggiAttivita ? await d.leggiAttivita() : null) || {};
-    if (st.config && st.config.bozza) continue;
-    (st.alunni || []).forEach((a) => { alunni++; classi.add(a.classe || '3E'); minuti += ATT.riepilogo(att[a.id], now).minuti; });
-    (st.termini || []).filter((t) => !t.ereditato).forEach((t) => { termini++; if (t.stato_it === 'approvata') approvate++; });
+    const d = apri(id), st = await d.leggiTutto(), att = (d.leggiAttivita ? await d.leggiAttivita() : null) || st.attivita || {};
+    if (!st.config || st.config.bozza || st.config.concessione) continue;
+    const x = { nome: (L.edizioneDi(st.config) || {}).nome || 'Glossario', classi: [], alunni: 0, termini: 0, approvate: 0, minuti: 0 };
+    (st.alunni || []).forEach((a) => { x.alunni++; const c = L.classeDi(a); classi.add(c); if (x.classi.indexOf(c) < 0) x.classi.push(c); x.minuti += ATT.riepilogo(att[a.id], now).minuti; });
+    (st.termini || []).forEach((t) => { x.termini++; if (t.stato_it === 'approvata') x.approvate++; });
+    x.classi.sort(); x.minuti = Math.round(x.minuti); per.push(x);
+    alunni += x.alunni; termini += x.termini; approvate += x.approvate; minuti += x.minuti;
   }
-  return { classi: classi.size, alunni, termini, approvate, perc: termini ? Math.round(approvate / termini * 100) : 0, minuti, aggiornato: new Date(now).toISOString() };
+  return { classi: classi.size, alunni, termini, approvate, perc: termini ? Math.round(approvate / termini * 100) : 0, minuti, aggiornato: new Date(now).toISOString(), per };
 }
 async function numeri(db, P, forza) {
   P = P || await leggi(db);
@@ -30,7 +34,8 @@ async function numeri(db, P, forza) {
 }
 function codiceGiusto(P, c) { if (!P.codice || String(c || '').trim().toUpperCase() !== P.codice) L.errore('Il link non è più valido: chiedi al prof. Cerrato quello aggiornato.'); }
 /* la pagina chiede i numeri (anche a chi è già entrato da quel dispositivo) */
-async function numeriPubblici(db, { c }) { const P = await leggi(db); codiceGiusto(P, c); return { numeri: await numeri(db, P) }; }
+const pubblici = (n) => { if (!n) return n; const o = Object.assign({}, n); delete o.per; return o; }; // sulla pagina solo i totali
+async function numeriPubblici(db, { c }) { const P = await leggi(db); codiceGiusto(P, c); return { numeri: pubblici(await numeri(db, P)) }; }
 const nuovoCodice = () => { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; const b = crypto.randomBytes(8); for (let i = 0; i < 8; i++) s += A[b[i] % A.length]; return s; };
 const pulisci = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 const titolo = (s) => pulisci(s).toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
@@ -47,7 +52,7 @@ async function entra(db, { c, nome, cognome }) {
   if (x) { x.ultima = ora; x.volte = (x.volte || 1) + 1; } else V.push({ nome: n, cognome: co, prima: ora, ultima: ora, volte: 1 });
   V.sort((a, b) => (a.ultima < b.ultima ? 1 : -1));
   await db.scriviPromo(Object.assign({}, P, { visite: V.slice(0, MAX_VISITE) }));
-  return { ok: true, numeri: await numeri(db) };
+  return { ok: true, numeri: pubblici(await numeri(db)) };
 }
 /* tempo passato sulla pagina dal collega (pagina in primo piano), e ritorno dallo stesso dispositivo */
 async function tempo(db, { c, nome, cognome, sec, nuova }) {

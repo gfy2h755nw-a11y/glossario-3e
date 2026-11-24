@@ -7529,7 +7529,7 @@ function messaggioPromo() {
     'Codice di accesso: ' + S.pr.codice + ' (è già nel link: basta aprirlo e scrivere nome e cognome).\n' +
     'Prof. Danilo Cerrato';
 }
-function durataPromo(min) { min = Math.round(min || 0); return min < 60 ? min + ' min' : Math.round(min / 60).toLocaleString('it-IT') + ' h'; }
+function durataPromo(min) { min = Math.round(min || 0); var h = Math.floor(min / 60), m = min % 60; return h ? h.toLocaleString('it-IT') + ' h' + (m ? ' ' + m + ' min' : '') : m + ' min'; } // come nel report
 function disegnaPromo() {
   var b = $('promoBox'); if (!b || !S.pr) return;
   var P = S.pr, V = P.visite || [], N = P.numeri, link = linkPromo();
@@ -7549,10 +7549,13 @@ function disegnaPromo() {
     '<div class="stack" style="gap:8px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0;font-size:18px">Numeri sulla pagina</h3>' +
       '<button class="btn sec" onclick="aggiornaNumeriPromo(this)">Aggiorna ora</button></div>' +
       (kpi ? '<div class="prk">' + kpi.map(function (k) { return '<div><b>' + esc(String(k[0])) + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
-        '<p class="muted" style="margin:0;font-size:14px">Dati reali di tutte le attività in corso, aggiornati al ' + esc(dataOra(N.aggiornato)) + '. Si aggiornano da soli ogni minuto, come nell\'app.</p>'
+        (N.per && N.per.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Attività</th><th>Classi</th><th class="c">Alunni</th><th class="c">Termini</th><th class="c">Approvate</th><th class="c">Tempo in app</th></tr></thead><tbody>' +
+          N.per.map(function (x) { return '<tr><td><b>' + esc(x.nome) + '</b></td><td>' + esc(x.classi.join(', ')) + '</td><td class="c">' + x.alunni + '</td><td class="c">' + x.termini + '</td><td class="c">' + x.approvate + '/' + x.termini + '</td><td class="c">' + durataPromo(x.minuti) + '</td></tr>'; }).join('') +
+          '</tbody></table></div>' : '') +
+        '<p class="muted" style="margin:0;font-size:14px">Somma di tutte le tue attività in corso (escluse quelle in preparazione e quelle preparate per i colleghi), aggiornata al ' + esc(dataOra(N.aggiornato)) + '. Ogni riga corrisponde ai numeri del cruscotto e del report di quell\'attività. Si aggiornano da soli ogni minuto.</p>'
         : '<p class="muted" style="margin:0">I numeri si calcolano alla prima apertura della pagina, oppure con «Aggiorna ora».</p>') + '</div>' +
     '<div class="stack" style="gap:8px"><h3 style="margin:0;font-size:18px">Chi ha aperto la pagina</h3>' +
-      (V.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Collega</th><th>Prima visita</th><th>Ultima visita</th><th class="c">Volte</th><th class="c">Tempo sulla pagina</th><th class="c">In media</th><th></th></tr></thead><tbody>' +
+      (V.length ? '<div style="overflow-x:auto"><table class="tbl" id="prVisite"><thead><tr><th>Collega</th><th>Prima visita</th><th>Ultima visita</th><th class="c">Volte</th><th class="c">Tempo sulla pagina</th><th class="c">In media</th><th></th></tr></thead><tbody>' +
         V.map(function (v) { return '<tr><td><b>' + esc(v.nome + ' ' + v.cognome) + '</b></td><td>' + esc(dataOra(v.prima)) + '</td><td>' + esc(dataOra(v.ultima)) + '</td><td class="c">' + (v.volte || 1) + '</td><td class="c"><b>' + tempoPromo(v.secondi) + '</b></td><td class="c">' + (v.secondi ? tempoPromo(Math.round(v.secondi / (v.volte || 1))) : '—') + '</td><td class="c"><button class="btn sec tb prTogli" data-n="' + esc(v.nome) + '" data-c="' + esc(v.cognome) + '" onclick="togliPromo(this)">Togli</button></td></tr>'; }).join('') +
         '</tbody></table></div>' : '<p class="muted" style="margin:0">Nessun collega ha ancora aperto la pagina.</p>') + '</div>';
 }
