@@ -377,6 +377,8 @@ async function nuovaEdizione(db, p) {
     archiviata = (await archivia(db, { codice: p.codice, sovrascrivi: true })).id;
   }
   const copia = await auto.copiaPrima(db, 'nuova_edizione');
+  // i consensi privacy già firmati valgono anche per i nomi delle edizioni passate sulla pagina pubblica
+  if (Array.isArray(config.privacy_ok)) nuovaConfig.privacy_ok = config.privacy_ok;
   await db.sostituisciTutto({ config: nuovaConfig, alunni, termini: docs, attivita: [] });
   return { id, nome, as, alunni: alunni.length, termini: docs.length, copiaDropbox: copia, archiviata };
 }

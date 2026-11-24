@@ -203,12 +203,12 @@ async function manutenzioneSeServe(d) {
   await logica.manutenzione(d);
   manutUltima[k] = now;
 }
-/* consenso privacy negato: il nome non compare né accanto alle definizioni né tra gli autori */
+/* privacy: sulla pagina pubblica il nome compare solo per chi ha firmato il consenso (né accanto alle definizioni né tra gli autori) */
 function senzaNegati(P, cfg) {
-  const neg = new Set(((cfg && cfg.privacy_negati) || []).map((x) => x.nome));
-  if (!neg.size || !P) return P;
-  const classi = {}; Object.keys(P.classi || {}).forEach((c) => { classi[c] = (P.classi[c] || []).filter((n) => !neg.has(n)); });
-  return Object.assign({}, P, { classi, aree: (P.aree || []).map((a) => Object.assign({}, a, { termini: (a.termini || []).map((t) => (neg.has(String(t.autore || '').split(' · ')[0]) ? Object.assign({}, t, { autore: '' }) : t)) })) });
+  if (!P) return P;
+  const ok = new Set(((cfg && cfg.privacy_ok) || []).map((x) => x.nome));
+  const classi = {}; Object.keys(P.classi || {}).forEach((c) => { classi[c] = (P.classi[c] || []).filter((n) => ok.has(n)); });
+  return Object.assign({}, P, { classi, aree: (P.aree || []).map((a) => Object.assign({}, a, { termini: (a.termini || []).map((t) => (t.autore && !ok.has(String(t.autore).split(' · ')[0]) ? Object.assign({}, t, { autore: '' }) : t)) })) });
 }
 async function pubblicoInCache(d, p) {
   const k = (d.spazio || 'main') + '|' + (p.ed || ''), c = cachePubblico[k], now = Date.now();

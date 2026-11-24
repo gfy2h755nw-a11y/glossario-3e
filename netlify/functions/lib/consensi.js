@@ -57,10 +57,10 @@ async function invia(db, p) {
   const riep = { si: p.si, il: now.toISOString(), studente: nomeS, chi: magg ? 'studente' : 'genitori', firm: n1 + (n2 ? ', ' + n2 : ''), unico: !magg && !n2, luogo, data, ver, doc };
   await db.scriviConsenso(doc, Object.assign({ alunno: a.id, nascita: String(p.nascita), img }, riep));
   await db.scriviAlunno(a.id, { consenso: riep, consensi_storico: (a.consenso ? storico.concat([a.consenso]) : storico).slice(-20) });
-  // consenso negato: il nome sparisce subito anche dalla pagina pubblica (anche dalla versione già pubblicata)
-  const cfg = await db.leggiConfig(), prima = Array.isArray(cfg && cfg.privacy_negati) ? cfg.privacy_negati : [];
-  const dopo = prima.filter((x) => x.id !== a.id).concat(p.si ? [] : [{ id: a.id, nome: L.nomePubblico(a.nome) }]);
-  if (JSON.stringify(dopo) !== JSON.stringify(prima)) await db.scriviConfig({ privacy_negati: dopo });
+  // il nome compare (cartelloni e pagina web) solo con il consenso firmato: elenco dei nomi ammessi, aggiornato a ogni modulo
+  const cfg = await db.leggiConfig(), prima = Array.isArray(cfg && cfg.privacy_ok) ? cfg.privacy_ok : [];
+  const dopo = prima.filter((x) => x.id !== a.id).concat(p.si ? [{ id: a.id, nome: L.nomePubblico(a.nome) }] : []);
+  if (JSON.stringify(dopo) !== JSON.stringify(prima)) await db.scriviConfig({ privacy_ok: dopo });
   return { studente: L.nomePubblico(a.nome), si: p.si, ver, il: riep.il };
 }
 /* docente: l'immagine A4 di un modulo (l'ultimo dello studente, o uno dello storico) */

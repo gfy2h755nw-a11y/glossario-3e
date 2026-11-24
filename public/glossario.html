@@ -585,8 +585,8 @@ var Poster = (function () {
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
     var nomi = {};
     var clDi = {};
-    // chi è escluso dallo scritto (fuori) o ha negato il consenso privacy (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
-    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: consenso privacy negato
+    // chi è escluso dallo scritto (fuori) o non ha (ancora) il consenso privacy firmato (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: senza consenso privacy firmato
     // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
     var visti = {}, perCl = {}, ordineCl = [];
     termini.forEach(function (t) {
@@ -734,8 +734,8 @@ var Poster = (function () {
     opz = opz || {};
     var col = area.colore, n = Number(area.n), nomi = {}, clDi = {}, NA = opz.nAree || 4;
     icona2.generica = !!opz.areeMie;
-    // chi è escluso dallo scritto (fuori) o ha negato il consenso privacy (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
-    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: consenso privacy negato
+    // chi è escluso dallo scritto (fuori) o non ha (ancora) il consenso privacy firmato (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: senza consenso privacy firmato
     var perCl = {}, visti = {};
     termini.forEach(function (t) { if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
     var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];

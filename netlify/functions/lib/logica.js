@@ -333,7 +333,7 @@ function pacchetto(stato, chi) {
     pacchetti: chi.ruolo === 'docente' ? (function () { const P = require('./pacchetti'); return Object.keys(P).map((id) => ({ id, nome: P[id].nome, aree: P[id].aree, termini: Object.fromEntries(Object.keys(P[id].termini).map((n) => [n, P[id].termini[n].length])) })); })() : undefined,
     areeMie: !!(Array.isArray(stato.config.aree) && stato.config.aree.length),
     // esclusi dallo scritto: marcati «fuori», spariscono dai cartelloni (testata e termini)
-    alunni: stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), fuori: valuta(stato, a, now).escluso || undefined, nascosto: (a.consenso && a.consenso.si === false) || undefined })),
+    alunni: stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), fuori: valuta(stato, a, now).escluso || undefined, nascosto: !(a.consenso && a.consenso.si) || undefined })),
     termini: termini.map((t) => vistaTermine(t, chi, imp.lingue))
   };
   delete out.utente._a;

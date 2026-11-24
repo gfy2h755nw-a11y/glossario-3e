@@ -1107,7 +1107,7 @@ function paginaConsensi() {
         '<td class="muted" style="font-size:14px;white-space:nowrap">' + (c ? esc(quandoConsenso(c.il)) + (c.storico ? '<br><span style="font-size:12px">' + c.storico + (c.storico === 1 ? ' modulo precedente' : ' moduli precedenti') + '</span>' : '') : 'in attesa') + '</td>' +
         '<td>' + (c ? '<button class="btn sec" style="padding:6px 12px;min-height:0" onclick="apriPdfConsenso(\'' + r.id + '\',this)">Apri PDF</button>' : '<span class="muted" style="font-size:14px">nessun file</span>') + '</td></tr>';
     }).join('') + '</tbody></table></div>' +
-    '<p class="muted" style="margin:0;font-size:13px"><b>Consenso negato:</b> il nome viene tolto in automatico dai cartelloni e dalla pagina web, anche da quella già pubblicata; le sue definizioni restano. Il PDF di ogni studente va anche nel report, subito dopo la sua pagina, con un riepilogo finale. Gli studenti non vedono questa sezione.</p></section>';
+    '<p class="muted" style="margin:0;font-size:13px"><b>Il nome compare solo con il consenso firmato:</b> finché il modulo non arriva, o se il consenso è negato, il nome non c\'è sui cartelloni né sulla pagina web (anche quella già pubblicata); le definizioni restano. Il PDF di ogni studente va anche nel report, subito dopo la sua pagina, con un riepilogo finale. Gli studenti non vedono questa sezione.</p></section>';
 }
 function immagineConsenso(id) {
   var c = consensoDi(id); if (!c) return Promise.resolve(null);
