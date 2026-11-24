@@ -58,8 +58,11 @@ async function invia(db, p) {
   await db.scriviConsenso(doc, Object.assign({ alunno: a.id, nascita: String(p.nascita), img }, riep));
   await db.scriviAlunno(a.id, { consenso: riep, consensi_storico: (a.consenso ? storico.concat([a.consenso]) : storico).slice(-20) });
   // il nome compare (cartelloni e pagina web) solo con il consenso firmato: elenco dei nomi ammessi, aggiornato a ogni modulo
-  const cfg = await db.leggiConfig(), prima = Array.isArray(cfg && cfg.privacy_ok) ? cfg.privacy_ok : [];
-  const dopo = prima.filter((x) => x.id !== a.id).concat(p.si ? [{ id: a.id, nome: L.nomePubblico(a.nome) }] : []);
+  // l'elenco si ricostruisce da tutti gli studenti attuali (così due moduli inviati nello stesso istante non si cancellano a vicenda);
+  // restano le voci delle edizioni passate (studenti non più in elenco)
+  const stato = await db.leggiTutto(), cfg = stato.config, prima = Array.isArray(cfg && cfg.privacy_ok) ? cfg.privacy_ok : [];
+  const attuali = new Set(stato.alunni.map((x) => x.id));
+  const dopo = prima.filter((x) => !attuali.has(x.id)).concat(stato.alunni.filter((x) => x.id === a.id ? p.si : x.consenso && x.consenso.si).map((x) => ({ id: x.id, nome: L.nomePubblico(x.nome) })));
   if (JSON.stringify(dopo) !== JSON.stringify(prima)) await db.scriviConfig({ privacy_ok: dopo });
   return { studente: L.nomePubblico(a.nome), si: p.si, ver, il: riep.il };
 }
