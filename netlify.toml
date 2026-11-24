@@ -23,6 +23,12 @@
   force = true
 
 [[redirects]]
+  from = "/r/*"
+  to = "/riservata.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/consenso"
   to = "/consenso.html"
   status = 200

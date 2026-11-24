@@ -103,6 +103,13 @@ const AZIONI = {
   promoaggiorna: (d, p) => require('./lib/promo').aggiornaNumeri(d, p),
   promostato: (d, p) => require('./lib/promo').stato(d, p),
   promocodice: (d, p) => require('./lib/promo').cambiaCodice(d, p),
+  // glossario riservato per i docenti di sostegno (pagina /r/CODICE)
+  riservataentra: (d, p) => require('./lib/riservata').entra(d, p),
+  riservatatempo: (d, p) => require('./lib/riservata').tempo(d, p),
+  riservatastato: (d, p) => require('./lib/riservata').stato(d, p),
+  riservataimposta: (d, p) => require('./lib/riservata').imposta(d, p),
+  riservatacodice: (d, p) => require('./lib/riservata').cambiaCodice(d, p),
+  riservatatogli: (d, p) => require('./lib/riservata').togli(d, p),
   banca: (d, p) => require('./lib/banca').banca(d, p),
   bancasalva: (d, p) => require('./lib/banca').salva(d, p),
   bozzawz: (d, p) => require('./lib/bozza').leggi(d, p),
@@ -196,7 +203,7 @@ async function glossariInCache() {
   cacheGlossari = { t: now, dati: out };
   return out;
 }
-const SOLO_LETTURA = { consensocerca: 1, consensoimmagine: 1, salute: 1, saluteletti: 1, glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promotempo: 1, promotogli: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+const SOLO_LETTURA = { riservataentra: 1, riservatatempo: 1, riservatastato: 1, riservataimposta: 1, riservatacodice: 1, riservatatogli: 1, consensocerca: 1, consensoimmagine: 1, salute: 1, saluteletti: 1, glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promotempo: 1, promotogli: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;

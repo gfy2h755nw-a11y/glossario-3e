@@ -576,6 +576,10 @@ html.visore-aperto,html.visore-aperto body{overflow:hidden}
 .ccnt .si{background:#E3F1E4;color:#1E5E22}.ccnt .no{background:#F8E1E6;color:#8A1F35}.ccnt .manca{background:#EEF1F3;color:#5F6E7A}
 .cmk{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;font-style:normal;font-weight:700}.cmk.pic{width:20px;height:20px;border-radius:6px;font-size:12px}
 .cmk.si{background:#2E7D32;color:#fff}.cmk.no{background:#B0304A;color:#fff}.cmk.manca{border:2px solid #D3DCE3;color:#8A95A0}
+
+/* glossario riservato */
+.ris-st{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-radius:12px;padding:12px 14px}.ris-st.on{background:#E3F1E4}.ris-st.off{background:#EEF1F3}
+.risacc{margin:6px 0 0;padding-left:18px;font-size:13.5px;max-height:220px;overflow:auto}.risacc li{margin:2px 0;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -3525,7 +3529,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '24/11/2026 · 5';
+var VERSIONE = '24/11/2026 · 6';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -6045,6 +6049,7 @@ var ICO = {
   revcart: '<rect x="3" y="2" width="12" height="17" rx="1.5"/><path d="M6 7h6M6 11h4"/><path d="M14.5 20.5l1-3.5 5.5-5.5 2.5 2.5-5.5 5.5z"/>',
   documenti: '<path d="M8 3h8l4 4v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M16 3v4h4"/><path d="M3 7v12a3 3 0 0 0 3 3h9"/><path d="M10 12h6M10 15.5h4"/>',
   impostazioni: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  riservata: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/>',
   promo: '<path d="M3 10.5v3a1 1 0 0 0 1 1h2l5 4V5.5l-5 4H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
   banca: '<path d="M4 19.5V5a2 2 0 0 1 2-2h4v18H6a2 2 0 0 1-2-1.5z"/><path d="M10 3h4v18h-4"/><path d="m15.2 4.2 3.8-1 3 17-3.8 1z"/>',
   edizioni: '<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/>',
@@ -6060,6 +6065,7 @@ var SEZIONI = [
   { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
   { id: 'stats', t: 'Statistiche pagina pubblica', gr: '', ico: 'statistiche', pag: ['statpub'] },
   { id: 'regs', t: 'Regole dell\'attività', gr: '', ico: 'regole', pag: ['regole'] },
+  { id: 'ris', t: 'Glossario riservato', gr: '', ico: 'riservata', pag: ['riservata'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
@@ -6073,7 +6079,7 @@ var SEZIONI = [
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
-var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR', consensi: 'Consensi privacy',
+var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR', riservata: 'Glossario riservato', consensi: 'Consensi privacy',
   cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', promo: 'Colleghi e numeri', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
@@ -6104,6 +6110,7 @@ function PAGINE() {
     { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: LOC() && !ro },
     { id: 'banca', gr: 'Gestione', t: 'Banca termini', vis: adm && !ro },
     { id: 'promo', gr: 'Gestione', t: 'Promo App', vis: adm && !ro },
+    { id: 'riservata', gr: 'Lavoro', t: 'Glossario riservato', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
     { id: 'registro', gr: 'Gestione', t: adm && !ro ? 'Registro e backup' : 'Registro delle attività', vis: (adm && !ro) || !!(A && A.attivita) }
   ].filter(function (p) { return p.vis; });
@@ -6205,6 +6212,7 @@ function vistaDocente() {
   if (pag === 'revcart') avviaRevCart();
   if (pag === 'banca') avviaBanca();
   if (pag === 'promo') avviaPromo();
+  if (pag === 'riservata') avviaRiservata();
   if (pag === 'statpub') avviaStatPub();
   if (pag === 'cruscotto') avviaStatCruscotto();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
@@ -6370,6 +6378,7 @@ var PAGINA = {
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
+  riservata: function () { return paginaRiservata(); },
   statpub: function () { return paginaStatPub(); },
   regole: function () { return paginaRegole(); },
   cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },
@@ -7544,6 +7553,69 @@ function togliPromo(btn) {
   btn.disabled = true;
   api('promotogli', { nome: btn.getAttribute('data-n'), cognome: btn.getAttribute('data-c') }).then(function (x) { S.pr.visite = x.visite; disegnaPromo(); toast('Collega tolto dall\'elenco'); })
     .catch(function (e) { btn.disabled = false; toast(errMsg(e)); });
+}
+
+/* ---------- Glossario riservato (24/11/2026): pagina segreta /r/CODICE per i docenti di sostegno ----------
+ * Pubblica / annulla, link con il codice dentro, chi è entrato (nome, data, ora, tempo di ogni ingresso). */
+function paginaRiservata() {
+  return '<section class="card stack" id="risBox"><h2 style="margin:0;font-size:22px">Glossario riservato</h2><p class="muted" style="margin:0">Carico…</p></section>';
+}
+function avviaRiservata() {
+  if (S.ris) disegnaRiservata();
+  api('riservatastato', {}).then(function (x) { S.ris = x; disegnaRiservata(); })
+    .catch(function (e) { var b = $('risBox'); if (b) b.innerHTML = '<p class="note warn" style="margin:0">' + esc(errMsg(e)) + '</p>'; });
+}
+function linkRiservata() { return location.origin + '/r/' + S.ris.codice; }
+function messaggioRiservata() {
+  return 'Ciao! Ecco il glossario odontotecnico con tutti i termini e le definizioni approvate, sempre aggiornato e con la ricerca.\n' +
+    linkRiservata() + '\nIl codice è già nel link: aprilo e scrivi nome e cognome. Il link è riservato: per favore non inoltrarlo.\nProf. Danilo Cerrato';
+}
+function dataOraRis(iso) { var d = new Date(iso); return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Rome' }) + ' · ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }); }
+function disegnaRiservata() {
+  var b = $('risBox'); if (!b || !S.ris) return;
+  var R = S.ris, V = R.visite || [], on = R.attiva, link = linkRiservata(), tot = (R.glossari || []).reduce(function (n, g) { return n + g.termini; }, 0);
+  b.innerHTML = '<div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0;font-size:22px">Glossario riservato</h2>' +
+      '<span class="chip ' + (on ? 's-approvata' : 's-vuota') + '">' + (on ? '● Pubblicato' : 'Non pubblicato') + '</span></div>' +
+    '<p class="muted" style="margin:0;max-width:75ch">Per i docenti di sostegno: tutti i termini con le definizioni che approvi, di tutte le tue attività, con la ricerca. Niente nomi degli studenti e nessun\'altra funzione. Si aggiorna da solo (entro un minuto da ogni approvazione). Non è collegato alla pagina pubblica e non compare nei motori di ricerca. Chi apre il link scrive nome e cognome e compare qui sotto.</p>' +
+    '<div class="ris-st ' + (on ? 'on' : 'off') + '"><span>' + (on ? '<b>Pubblicato</b> · chi ha il link lo vede' : '<b>Non pubblicato</b> · chi apre il link vede «pagina non disponibile»') + '</span>' +
+      (on ? '<button class="btn sec" style="border-color:#B0304A;color:#B0304A" onclick="impostaRiservata(false, this)">Annulla la pubblicazione</button>' : '<button class="btn" onclick="impostaRiservata(true, this)">Pubblica</button>') + '</div>' +
+    '<div class="stack" style="gap:8px"><label style="font-weight:700">Link da condividere · il codice <span style="font-family:monospace;letter-spacing:.12em">' + esc(R.codice) + '</span> è già dentro</label>' +
+      '<div style="font-family:monospace;font-size:15px;padding:12px 14px;border:2px solid var(--line);border-radius:10px;word-break:break-all;user-select:all" id="risLink">' + esc(link) + '</div>' +
+      '<div class="row" style="flex-wrap:wrap"><button class="btn" onclick="copiaTesto(messaggioRiservata(), this)">Copia il messaggio con il link</button>' +
+      '<a class="btn sec" href="https://wa.me/?text=' + encodeURIComponent(messaggioRiservata()) + '" target="_blank" rel="noopener">Invia su WhatsApp</a>' +
+      '<button class="btn sec" onclick="copiaTesto(linkRiservata(), this)">Copia solo il link</button>' +
+      (on ? '<a class="btn sec" href="' + esc(link) + '" target="_blank" rel="noopener">Apri la pagina</a>' : '') +
+      '<button class="btn sec" onclick="nuovoCodiceRiservata(this)">Cambia codice</button></div>' +
+      '<p class="muted" id="risAvviso" style="margin:0;font-size:14px">Cambiando codice il link attuale smette subito di funzionare; i colleghi già entrati restano nell\'elenco.</p></div>' +
+    '<p class="muted" style="margin:0;font-size:14px">Contenuto: <b>' + tot + '</b> termini approvati · ' + (R.glossari || []).map(function (g) { return esc((g.classi || []).join(' e ') || g.nome) + ' ' + g.termini; }).join(' · ') + '</p>' +
+    '<div class="stack" style="gap:8px"><h3 style="margin:0;font-size:18px">Chi è entrato</h3>' +
+      (V.length ? '<div style="overflow-x:auto"><table class="tbl" id="risTab"><thead><tr><th>Collega</th><th>Ultimo ingresso</th><th class="c">Ingressi</th><th class="c">Tempo totale</th><th>Ingressi (data, ora e tempo)</th><th></th></tr></thead><tbody>' +
+        V.map(function (v, i) {
+          var A = (v.accessi || []).slice().reverse();
+          return '<tr><td><b>' + esc(v.nome + ' ' + v.cognome) + '</b><div class="muted" style="font-size:12px">dal ' + esc(dataOraRis(v.prima).split(' · ')[0]) + '</div></td><td>' + esc(dataOraRis(v.ultima)) + '</td><td class="c">' + (v.volte || 1) + '</td><td class="c"><b>' + tempoPromo(v.secondi) + '</b></td>' +
+            '<td><details><summary style="cursor:pointer;color:var(--acc-d,#0E7C7B);font-weight:700">Vedi ' + A.length + '</summary><ul class="risacc">' + A.map(function (a) { return '<li>' + esc(dataOraRis(a.il)) + ' · <b>' + tempoPromo(a.sec) + '</b></li>'; }).join('') + '</ul></details></td>' +
+            '<td><button class="btn sec" style="padding:6px 10px;min-height:0" data-i="' + i + '" onclick="togliRiservata(this)">Togli</button></td></tr>';
+        }).join('') + '</tbody></table></div><p class="muted" style="margin:0;font-size:13px">Il tempo conta solo con la pagina aperta in primo piano. «Togli» cancella il collega dall\'elenco (non gli toglie l\'accesso: per quello cambia codice).</p>'
+        : '<p class="muted" style="margin:0">Nessun collega è ancora entrato.</p>') + '</div>';
+}
+function impostaRiservata(on, btn) {
+  btn.disabled = true;
+  api('riservataimposta', { attiva: on }).then(function (x) { S.ris = x; disegnaRiservata(); toast(on ? 'Glossario riservato pubblicato' : 'Pubblicazione annullata: il link ora mostra «non disponibile»'); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function nuovoCodiceRiservata(btn) {
+  if (!btn.dataset.ok) { btn.dataset.ok = '1'; btn.textContent = 'Sì, cambia il codice'; btn.className = 'btn'; btn.style.background = '#B3261E';
+    $('risAvviso').innerHTML = '<b>Sicuro?</b> Il link che hai già mandato non funzionerà più. Clicca di nuovo per confermare.'; return; }
+  btn.disabled = true;
+  api('riservatacodice', {}).then(function (x) { S.ris = x; disegnaRiservata(); toast('Nuovo codice: manda il nuovo link ai colleghi'); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
+}
+function togliRiservata(btn) {
+  var v = S.ris.visite[Number(btn.getAttribute('data-i'))]; if (!v) return;
+  if (btn.getAttribute('data-ok') !== '1') { btn.setAttribute('data-ok', '1'); btn.textContent = 'Conferma'; return; }
+  btn.disabled = true;
+  api('riservatatogli', { nome: v.nome, cognome: v.cognome }).then(function (x) { S.ris = x; disegnaRiservata(); toast('Tolto dall\'elenco'); })
+    .catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 
 /* ---------- pagina pubblica: pubblicazione decisa dal docente e statistiche delle visite ---------- */

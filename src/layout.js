@@ -14,6 +14,7 @@ var ICO = {
   revcart: '<rect x="3" y="2" width="12" height="17" rx="1.5"/><path d="M6 7h6M6 11h4"/><path d="M14.5 20.5l1-3.5 5.5-5.5 2.5 2.5-5.5 5.5z"/>',
   documenti: '<path d="M8 3h8l4 4v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M16 3v4h4"/><path d="M3 7v12a3 3 0 0 0 3 3h9"/><path d="M10 12h6M10 15.5h4"/>',
   impostazioni: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  riservata: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/>',
   promo: '<path d="M3 10.5v3a1 1 0 0 0 1 1h2l5 4V5.5l-5 4H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
   banca: '<path d="M4 19.5V5a2 2 0 0 1 2-2h4v18H6a2 2 0 0 1-2-1.5z"/><path d="M10 3h4v18h-4"/><path d="m15.2 4.2 3.8-1 3 17-3.8 1z"/>',
   edizioni: '<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/>',
@@ -29,6 +30,7 @@ var SEZIONI = [
   { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
   { id: 'stats', t: 'Statistiche pagina pubblica', gr: '', ico: 'statistiche', pag: ['statpub'] },
   { id: 'regs', t: 'Regole dell\'attività', gr: '', ico: 'regole', pag: ['regole'] },
+  { id: 'ris', t: 'Glossario riservato', gr: '', ico: 'riservata', pag: ['riservata'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
@@ -42,7 +44,7 @@ var SEZIONI = [
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
-var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR', consensi: 'Consensi privacy',
+var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR', riservata: 'Glossario riservato', consensi: 'Consensi privacy',
   cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', promo: 'Colleghi e numeri', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
@@ -73,6 +75,7 @@ function PAGINE() {
     { id: 'impostazioni', gr: 'Gestione', t: 'Scadenze e valutazione', vis: LOC() && !ro },
     { id: 'banca', gr: 'Gestione', t: 'Banca termini', vis: adm && !ro },
     { id: 'promo', gr: 'Gestione', t: 'Promo App', vis: adm && !ro },
+    { id: 'riservata', gr: 'Lavoro', t: 'Glossario riservato', vis: adm && !ro },
     { id: 'edizioni', gr: 'Gestione', t: 'Edizioni e archivio', vis: adm && !ro },
     { id: 'registro', gr: 'Gestione', t: adm && !ro ? 'Registro e backup' : 'Registro delle attività', vis: (adm && !ro) || !!(A && A.attivita) }
   ].filter(function (p) { return p.vis; });
@@ -174,6 +177,7 @@ function vistaDocente() {
   if (pag === 'revcart') avviaRevCart();
   if (pag === 'banca') avviaBanca();
   if (pag === 'promo') avviaPromo();
+  if (pag === 'riservata') avviaRiservata();
   if (pag === 'statpub') avviaStatPub();
   if (pag === 'cruscotto') avviaStatCruscotto();
   // pagine a parte aperte dall'indirizzo, anche dopo un ricaricamento
@@ -339,6 +343,7 @@ var PAGINA = {
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
+  riservata: function () { return paginaRiservata(); },
   statpub: function () { return paginaStatPub(); },
   regole: function () { return paginaRegole(); },
   cartelloni: function () { return (LOC() && !RO() ? (S.d.areeMie ? bloccoAreeMie() : bloccoNumeri()) : '') + bloccoPoster(S.poster || (S.filtro.area !== 'tutte' ? S.filtro.area : 1)); },

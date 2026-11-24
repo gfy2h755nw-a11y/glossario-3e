@@ -255,3 +255,7 @@
 .ccnt .si{background:#E3F1E4;color:#1E5E22}.ccnt .no{background:#F8E1E6;color:#8A1F35}.ccnt .manca{background:#EEF1F3;color:#5F6E7A}
 .cmk{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;font-style:normal;font-weight:700}.cmk.pic{width:20px;height:20px;border-radius:6px;font-size:12px}
 .cmk.si{background:#2E7D32;color:#fff}.cmk.no{background:#B0304A;color:#fff}.cmk.manca{border:2px solid #D3DCE3;color:#8A95A0}
+
+/* glossario riservato */
+.ris-st{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-radius:12px;padding:12px 14px}.ris-st.on{background:#E3F1E4}.ris-st.off{background:#EEF1F3}
+.risacc{margin:6px 0 0;padding-left:18px;font-size:13.5px;max-height:220px;overflow:auto}.risacc li{margin:2px 0;white-space:nowrap}

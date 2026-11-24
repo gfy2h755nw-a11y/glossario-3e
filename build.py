@@ -77,6 +77,10 @@ print('public/quiz.html', len(qz))
 cs = r('src/consenso.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
 open(os.path.join(B, 'public/consenso.html'), 'w', encoding='utf-8').write(cs)
 print('public/consenso.html', len(cs))
+# glossario riservato per i docenti di sostegno (/r/CODICE)
+rs = r('src/riservata.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
+open(os.path.join(B, 'public/riservata.html'), 'w', encoding='utf-8').write(rs)
+print('public/riservata.html', len(rs))
 # pagina di presentazione per i colleghi (/scopri?c=CODICE): si entra con nome e cognome, la visita va nella sezione «Promo App»
 PROMO_JS = '''var PROMO = { entra: function (c, nome, cognome) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promo', c: c, nome: nome, cognome: cognome }) })

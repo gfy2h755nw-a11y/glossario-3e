@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Glossario · pagina riservata</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<meta name="theme-color" content="#13222D">
+<style>/*FONTI*/</style>
+<style>
+/* glossario riservato per i docenti di sostegno (24/11/2026): nome e cognome, poi termini approvati con la ricerca */
+:root{--ink:#13222D;--ink2:#3D4D59;--muto:#5F6E7A;--linea:#D5DDE1;--fondo:#F2F5F4;--carta:#fff;--acc:#0E7C7B;--acc-d:#095F5E;--acc-l:#E2F1F0;--err:#B0304A}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--fondo);color:var(--ink);font:17px/1.45 'Atkinson Hyperlegible',Arial,sans-serif}
+.top{background:var(--ink);color:#fff;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:3}
+.top .in{max-width:760px;margin:0 auto;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px}
+.top b{display:block;font:700 17px/1.15 Archivo,Arial,sans-serif}
+.top span{display:block;font-size:13px;opacity:.85}
+main{max-width:760px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.card{background:var(--carta);border-radius:16px;padding:18px;box-shadow:0 1px 0 var(--linea);display:flex;flex-direction:column;gap:12px}
+h1{font:800 23px/1.2 Archivo,Arial,sans-serif;margin:0}
+.testo{font-size:15px;color:var(--ink2);margin:0}
+label.t{font-weight:700;display:block;margin-bottom:5px}
+input[type=text],input[type=search]{width:100%;font:17px 'Atkinson Hyperlegible',Arial,sans-serif;padding:11px 12px;border:2px solid var(--linea);border-radius:10px;background:#fff;color:var(--ink);min-height:48px}
+input:focus{border-color:var(--acc);outline:none}
+.btn{min-height:50px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:800 17px Archivo,Arial,sans-serif;padding:12px 20px;cursor:pointer;width:100%}
+.btn[disabled]{opacity:.55}
+.err{color:var(--err);font-weight:700;margin:0}
+.riga2{display:flex;gap:10px}.riga2>div{flex:1;min-width:0}
+.cerca{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:2;background:var(--fondo);padding:8px 0 6px;display:flex;flex-direction:column;gap:6px}
+.cerca input{padding-left:40px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235F6E7A' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 12px center/19px no-repeat}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tabs button{flex:none;border:2px solid var(--linea);background:#fff;color:var(--ink2);border-radius:999px;padding:6px 12px;font:700 14px 'Atkinson Hyperlegible',Arial,sans-serif;cursor:pointer;min-height:38px}
+.tabs button.on{border-color:var(--acc);background:var(--acc-l);color:var(--acc-d)}
+.cnt{font-size:13px;color:var(--muto)}
+.lett{font:800 18px Archivo,Arial,sans-serif;color:var(--acc);margin:10px 0 0;border-bottom:1px solid var(--linea);padding-bottom:2px}
+.voce{background:#fff;border-radius:12px;padding:11px 14px;border-left:5px solid var(--c)}
+.voce b{display:block;font-size:17px}
+.voce span{display:block;font-size:15.5px;color:var(--ink2);line-height:1.45;margin-top:3px}
+.voce small{display:block;font-size:12px;color:var(--c);font-weight:700;margin-top:4px}
+mark{background:#FFE58A;color:inherit;border-radius:2px}
+.vuoto{color:var(--muto);text-align:center;padding:30px 10px}
+.chiuso{text-align:center;align-items:center}
+.chiuso .ic{width:58px;height:58px;border-radius:50%;background:#EEF1F3;display:grid;place-items:center;font-size:26px}
+.esci{background:none;border:0;color:#fff;opacity:.8;font:700 13px 'Atkinson Hyperlegible',Arial,sans-serif;margin-left:auto;cursor:pointer;padding:8px 4px}
+:focus-visible{outline:3px solid #2A6CC4;outline-offset:2px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><span id="logo"></span><div><b>Glossario odontotecnico</b><span>Pagina riservata · IIS «E. Barsanti» · Massa</span></div><button class="esci" id="esci" hidden>Non sei tu?</button></div></header>
+<main id="m"><p class="testo">Caricamento…</p></main>
+<script>/*POSTER*/</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  try { $('logo').innerHTML = Poster.logo(9); } catch (e) { /* niente */ }
+  // il codice è nel link: /r/CODICE (oppure ?k=CODICE)
+  var K = (location.pathname.split('/r/')[1] || new URLSearchParams(location.search).get('k') || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+  var MEM = 'riservata_chi', G = null, IO = null, SEL = 0, Q = '';
+  var leggi = function () { try { return JSON.parse(localStorage.getItem(MEM) || 'null'); } catch (e) { return null; } };
+  var salva = function (x) { try { if (x) localStorage.setItem(MEM, JSON.stringify(x)); else localStorage.removeItem(MEM); } catch (e) { /* niente */ } };
+  function api(azione, dati) {
+    return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ azione: azione, k: K }, dati)) })
+      .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server.' }; }); }, function () { return { errore: 'Connessione assente: controlla la rete e riprova.' }; })
+      .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore'); return j.dati; });
+  }
+  function chiuso(msg) {
+    $('esci').hidden = true;
+    $('m').innerHTML = '<div class="card chiuso"><div class="ic" aria-hidden="true">🔒</div><h1>Pagina non disponibile</h1><p class="testo">' + esc(msg || 'Il link non è attivo. Chiedi al docente referente.') + '</p></div>';
+  }
+  /* home: nome e cognome */
+  function home(err) {
+    $('esci').hidden = true;
+    $('m').innerHTML = '<form class="card" id="f"><h1>Benvenuta, benvenuto</h1><p class="testo">Qui trovi tutti i termini del glossario con le definizioni approvate dal docente, sempre aggiornati, e una ricerca. Per entrare scrivi il tuo nome e cognome.</p>' +
+      '<div class="riga2"><div><label class="t" for="nome">Nome</label><input type="text" id="nome" autocomplete="given-name" required></div><div><label class="t" for="cognome">Cognome</label><input type="text" id="cognome" autocomplete="family-name" required></div></div>' +
+      (err ? '<p class="err">' + esc(err) + '</p>' : '') + '<button class="btn" id="vai">Entra</button></form>';
+    $('f').addEventListener('submit', function (e) {
+      e.preventDefault(); var n = $('nome').value.trim(), c = $('cognome').value.trim();
+      if (n.length < 2 || c.length < 2) { home('Scrivi nome e cognome.'); return; }
+      entra(n, c);
+    });
+  }
+  function entra(n, c) {
+    var b = $('vai'); if (b) { b.disabled = true; b.textContent = 'Entro…'; }
+    api('riservataentra', { nome: n, cognome: c }).then(function (d) {
+      salva({ nome: d.nome, cognome: d.cognome }); IO = { nome: d.nome, cognome: d.cognome, accesso: d.accesso }; G = d.glossari; SEL = 0; Q = '';
+      tempoInizia(); glossario();
+    }).catch(function (e) { if (/non disponibile/i.test(e.message)) chiuso(e.message); else home(e.message); });
+  }
+  /* il glossario: attività, ricerca, termini */
+  function norm(s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function evid(t, q) { if (!q) return esc(t); var n = norm(t), out = '', i = 0, j; while ((j = n.indexOf(q, i)) >= 0) { out += esc(t.slice(i, j)) + '<mark>' + esc(t.slice(j, j + q.length)) + '</mark>'; i = j + q.length; } return out + esc(t.slice(i)); }
+  function glossario() {
+    $('esci').hidden = false;
+    if (!G || !G.length) { $('m').innerHTML = '<div class="card"><p class="testo">Non ci sono ancora termini approvati.</p></div>'; return; }
+    $('m').innerHTML = '<div class="cerca"><label for="q" style="position:absolute;left:-9999px">Cerca un termine o una parola</label><input type="search" id="q" placeholder="Cerca un termine o una parola" autocomplete="off" value="' + esc(Q) + '">' +
+      (G.length > 1 ? '<div class="tabs" role="tablist">' + G.map(function (g, i) { return '<button role="tab" data-i="' + i + '" class="' + (i === SEL ? 'on' : '') + '" aria-selected="' + (i === SEL) + '">' + esc(g.classi.join(' e ') || g.nome) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="cnt" id="cnt"></div></div><div id="lista" style="display:flex;flex-direction:column;gap:8px"></div>';
+    $('q').addEventListener('input', function () { Q = this.value; lista(); });
+    document.querySelectorAll('.tabs button').forEach(function (b) { b.onclick = function () { SEL = Number(b.getAttribute('data-i')); glossario(); }; });
+    lista();
+  }
+  function lista() {
+    var g = G[SEL], q = norm(Q.trim()), area = {}; g.aree.forEach(function (a) { area[a.n] = a; });
+    var R = g.termini.filter(function (t) { return !q || norm(t.t + ' ' + t.d).indexOf(q) >= 0; });
+    $('cnt').textContent = (q ? R.length + (R.length === 1 ? ' termine trovato' : ' termini trovati') : g.termini.length + ' termini approvati') + ' · ' + g.nome + (g.as ? ' · a.s. ' + g.as : '');
+    var h = '', l = '';
+    R.forEach(function (t) {
+      var L = t.t.charAt(0).toUpperCase(), a = area[t.a] || { it: '', colore: '#0E7C7B' };
+      if (!q && L !== l) { h += '<div class="lett">' + esc(L) + '</div>'; l = L; }
+      h += '<div class="voce" style="--c:' + esc(a.colore) + '"><b>' + evid(t.t, q) + '</b><span>' + evid(t.d, q) + '</span>' + (a.it ? '<small>' + esc(a.it) + '</small>' : '') + '</div>';
+    });
+    $('lista').innerHTML = h || '<div class="vuoto">Nessun termine per «' + esc(Q) + '»</div>';
+  }
+  /* tempo sulla pagina: solo in primo piano, inviato quando si esce o si cambia scheda */
+  var T0 = null, ACC = 0;
+  function tempoInizia() { T0 = document.visibilityState === 'visible' ? Date.now() : null; ACC = 0; }
+  function invia() {
+    if (T0) { ACC += (Date.now() - T0) / 1000; T0 = null; }
+    var s = Math.round(ACC); if (!IO || s < 2) return; ACC = 0;
+    var corpo = JSON.stringify({ azione: 'riservatatempo', k: K, nome: IO.nome, cognome: IO.cognome, accesso: IO.accesso, sec: s });
+    try { if (navigator.sendBeacon && navigator.sendBeacon('/api', new Blob([corpo], { type: 'application/json' }))) return; } catch (e) { /* niente */ }
+    try { fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: corpo, keepalive: true }); } catch (e) { /* niente */ }
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') invia(); else if (IO) T0 = Date.now(); });
+  window.addEventListener('pagehide', invia);
+  setInterval(function () { if (IO && T0 && Date.now() - T0 > 120000) { invia(); T0 = Date.now(); } }, 30000);
+  $('esci').onclick = function () { invia(); salva(null); IO = null; G = null; home(); };
+  /* avvio: se il link manca chiuso; se il nome è già noto su questo dispositivo, si entra subito (è comunque un nuovo accesso) */
+  if (!K) chiuso(); else { var io = leggi(); if (io && io.nome && io.cognome) { $('m').innerHTML = '<p class="testo">Entro come ' + esc(io.nome + ' ' + io.cognome) + '…</p>'; entra(io.nome, io.cognome); } else home(); }
+})();
+</script>
+</body>
+</html>

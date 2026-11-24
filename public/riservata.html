@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Glossario · pagina riservata</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<meta name="theme-color" content="#13222D">
+<style>@font-face{font-family:'Archivo';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/archivo-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/archivo-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:800;font-display:swap;src:url(/fonts/archivo-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:900;font-display:swap;src:url(/fonts/archivo-latin-900-normal.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(/fonts/cormorant-garamond-latin-500-italic.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/cormorant-garamond-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-italic.woff2) format('woff2')}</style>
+<style>
+/* glossario riservato per i docenti di sostegno (24/11/2026): nome e cognome, poi termini approvati con la ricerca */
+:root{--ink:#13222D;--ink2:#3D4D59;--muto:#5F6E7A;--linea:#D5DDE1;--fondo:#F2F5F4;--carta:#fff;--acc:#0E7C7B;--acc-d:#095F5E;--acc-l:#E2F1F0;--err:#B0304A}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--fondo);color:var(--ink);font:17px/1.45 'Atkinson Hyperlegible',Arial,sans-serif}
+.top{background:var(--ink);color:#fff;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:3}
+.top .in{max-width:760px;margin:0 auto;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px}
+.top b{display:block;font:700 17px/1.15 Archivo,Arial,sans-serif}
+.top span{display:block;font-size:13px;opacity:.85}
+main{max-width:760px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.card{background:var(--carta);border-radius:16px;padding:18px;box-shadow:0 1px 0 var(--linea);display:flex;flex-direction:column;gap:12px}
+h1{font:800 23px/1.2 Archivo,Arial,sans-serif;margin:0}
+.testo{font-size:15px;color:var(--ink2);margin:0}
+label.t{font-weight:700;display:block;margin-bottom:5px}
+input[type=text],input[type=search]{width:100%;font:17px 'Atkinson Hyperlegible',Arial,sans-serif;padding:11px 12px;border:2px solid var(--linea);border-radius:10px;background:#fff;color:var(--ink);min-height:48px}
+input:focus{border-color:var(--acc);outline:none}
+.btn{min-height:50px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:800 17px Archivo,Arial,sans-serif;padding:12px 20px;cursor:pointer;width:100%}
+.btn[disabled]{opacity:.55}
+.err{color:var(--err);font-weight:700;margin:0}
+.riga2{display:flex;gap:10px}.riga2>div{flex:1;min-width:0}
+.cerca{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:2;background:var(--fondo);padding:8px 0 6px;display:flex;flex-direction:column;gap:6px}
+.cerca input{padding-left:40px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235F6E7A' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 12px center/19px no-repeat}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tabs button{flex:none;border:2px solid var(--linea);background:#fff;color:var(--ink2);border-radius:999px;padding:6px 12px;font:700 14px 'Atkinson Hyperlegible',Arial,sans-serif;cursor:pointer;min-height:38px}
+.tabs button.on{border-color:var(--acc);background:var(--acc-l);color:var(--acc-d)}
+.cnt{font-size:13px;color:var(--muto)}
+.lett{font:800 18px Archivo,Arial,sans-serif;color:var(--acc);margin:10px 0 0;border-bottom:1px solid var(--linea);padding-bottom:2px}
+.voce{background:#fff;border-radius:12px;padding:11px 14px;border-left:5px solid var(--c)}
+.voce b{display:block;font-size:17px}
+.voce span{display:block;font-size:15.5px;color:var(--ink2);line-height:1.45;margin-top:3px}
+.voce small{display:block;font-size:12px;color:var(--c);font-weight:700;margin-top:4px}
+mark{background:#FFE58A;color:inherit;border-radius:2px}
+.vuoto{color:var(--muto);text-align:center;padding:30px 10px}
+.chiuso{text-align:center;align-items:center}
+.chiuso .ic{width:58px;height:58px;border-radius:50%;background:#EEF1F3;display:grid;place-items:center;font-size:26px}
+.esci{background:none;border:0;color:#fff;opacity:.8;font:700 13px 'Atkinson Hyperlegible',Arial,sans-serif;margin-left:auto;cursor:pointer;padding:8px 4px}
+:focus-visible{outline:3px solid #2A6CC4;outline-offset:2px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><span id="logo"></span><div><b>Glossario odontotecnico</b><span>Pagina riservata · IIS «E. Barsanti» · Massa</span></div><button class="esci" id="esci" hidden>Non sei tu?</button></div></header>
+<main id="m"><p class="testo">Caricamento…</p></main>
+<script>/* ===== POSTER-START: modello del cartellone 70×100 cm ===== */
+var Poster = (function () {
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function tinta(hex, a) {
+    var h = hex.replace('#', '');
+    var r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
+    var m = function (c) { return Math.round(255 - (255 - c) * a); };
+    return 'rgb(' + m(r) + ',' + m(g) + ',' + m(b) + ')';
+  }
+  /* logo ufficiale della scuola (IIS «E. Barsanti»): immagine incorporata, così vale anche nelle finestre di stampa e nei PDF */
+  var LOGO_SRC = 'data:image/png;base64,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';
+  function logo(mm) {
+    return '<img src="' + LOGO_SRC + '" width="' + Math.round(mm * 3.78) + '" height="' + Math.round(mm * 3.78) + '" style="width:' + mm + 'mm;height:' + mm + 'mm;display:block;flex:none" alt="Logo IIS E. Barsanti">';
+  }
+  /* attività di un collega: {docente, materia} (Poster.conc la fornisce la pagina che disegna) */
+  function conc() { try { return typeof Poster.conc === 'function' ? Poster.conc() : null; } catch (e) { return null; } }
+  var CONCESSIONE = 'Per gentile concessione del Prof. Danilo Cerrato';
+  /* materia e titolo: quelli del collega nelle sue attività, il laboratorio odontotecnico nelle altre */
+  function MAT() { var c = conc(); return c ? (c.materia || '') : 'Laboratorio odontotecnico'; }
+  function TIT() { var c = conc(); return c ? (c.materia ? 'Glossario di ' + c.materia : 'Glossario') : 'Glossario odontotecnico'; }
+  var ICONE = {
+    1: '<path d="M14 6c-5 0-8 4-8 10 0 5 2 8 3 13 1 6 2 13 6 13 3 0 3-7 5-11 1-2 3-2 4 0 2 4 2 11 5 11 4 0 5-7 6-13 1-5 3-8 3-13 0-6-3-10-8-10-4 0-6 2-10 2s-6-2-10-2z"/>',
+    2: '<path d="M6 18c6-8 30-8 36 0M6 30c6 8 30 8 36 0M12 18v4M18 16v6M24 15v7M30 16v6M36 18v4M12 30v-4M18 32v-6M24 33v-7M30 32v-6M36 30v-4"/>',
+    3: '<path d="M18 4h12M20 4v14L8 40c-1 2 0 4 2 4h28c2 0 3-2 2-4L28 18V4M13 30h22"/>',
+    4: '<path d="M24 44c-8 0-13-5-13-12 0-8 7-11 8-20 5 3 7 8 7 12 2-2 3-4 3-7 5 4 8 9 8 15 0 7-5 12-13 12z"/>'
+  };
+
+  /* icone ridisegnate (in prova): badge bianco con disegno bicolore nel colore dell'area */
+  function icona2(n, c) {
+    var t = 'fill="' + c + '" fill-opacity="0.2"', st = 'stroke="' + c + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"';
+    var I = {
+      // molare in sezione: smalto, dentina, camera pulpare e canali
+      1: '<path d="M14 22C14 12 18 9 23 10C26 10.5 28 13 32 13C36 13 38 10.5 41 10C46 9 50 12 50 22C50 28 47 31 46 36L44 52C43.6 55 40 55 39.5 52L37 40C36.5 37 27.5 37 27 40L24.5 52C24 55 20.4 55 20 52L18 36C17 31 14 28 14 22Z" fill="#fff" ' + st + '/>' +
+        '<path d="M14 22C14 12 18 9 23 10C26 10.5 28 13 32 13C36 13 38 10.5 41 10C46 9 50 12 50 22C50 25.5 49.2 28 48.2 30.5Q32 34.5 15.8 30.5C14.8 28 14 25.5 14 22Z" ' + t + '/>' +
+        '<path d="M15.8 30.5Q32 34.5 48.2 30.5" fill="none" ' + st + ' stroke-width="1.1"/>' +
+        '<path d="M26 24C26 20 38 20 38 24L38 29C38 31 39.5 33 40.5 37L42 50L40.6 50L38.6 39C37.5 36 34.5 34 32 34C29.5 34 26.5 36 25.4 39L23.4 50L22 50L23.5 37C24.5 33 26 31 26 29Z" fill="' + c + '"/>',
+      // due molari antagonisti che ingranano (superiore capovolto, sfalsato di mezza cuspide) + piano occlusale
+      2: '<g transform="translate(36.6 31.2) scale(0.6 -0.6) translate(-32 -10)"><path d="M14 22C14 12 18 9 23 10C26 10.5 28 13 32 13C36 13 38 10.5 41 10C46 9 50 12 50 22C50 28 47 31 46 36L44 52C43.6 55 40 55 39.5 52L37 40C36.5 37 27.5 37 27 40L24.5 52C24 55 20.4 55 20 52L18 36C17 31 14 28 14 22Z" fill="#fff" ' + st + ' stroke-width="2.6"/><path d="M14 22C14 12 18 9 23 10C26 10.5 28 13 32 13C36 13 38 10.5 41 10C46 9 50 12 50 22C50 25.5 49.2 28 48.2 30.5Q32 34.5 15.8 30.5C14.8 28 14 25.5 14 22Z" ' + t + '/></g>' +
+        '<g transform="translate(32 32.8) scale(0.6) translate(-32 -10)"><path d="M14 22C14 12 18 9 23 10C26 10.5 28 13 32 13C36 13 38 10.5 41 10C46 9 50 12 50 22C50 28 47 31 46 36L44 52C43.6 55 40 55 39.5 52L37 40C36.5 37 27.5 37 27 40L24.5 52C24 55 20.4 55 20 52L18 36C17 31 14 28 14 22Z" fill="#fff" ' + st + ' stroke-width="2.6"/><path d="M14 22C14 12 18 9 23 10C26 10.5 28 13 32 13C36 13 38 10.5 41 10C46 9 50 12 50 22C50 25.5 49.2 28 48.2 30.5Q32 34.5 15.8 30.5C14.8 28 14 25.5 14 22Z" ' + t + '/></g>' +
+        '<path d="M5 32H59" fill="none" stroke="' + c + '" stroke-width="1.1" stroke-dasharray="2 2.2" stroke-linecap="round" stroke-opacity="0.8"/>',
+      // polvere e liquido: vasetto di polimero e flacone di monomero
+      3: '<path d="M8 36h22v14a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4z" fill="#fff" ' + st + '/><path d="M8 36h22v14a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4z" ' + t + '/>' +
+        '<path d="M10 36c2-5 6-7 9-7s7 2 9 7" fill="' + c + '" fill-opacity="0.45" ' + st + ' stroke-width="1.2"/><rect x="6" y="33" width="26" height="4" rx="1.5" fill="#fff" ' + st + '/>' +
+        '<path d="M38 26h14v24a4 4 0 0 1-4 4h-6a4 4 0 0 1-4-4z" fill="#fff" ' + st + '/><path d="M38 38h14v12a4 4 0 0 1-4 4h-6a4 4 0 0 1-4-4z" fill="' + c + '" fill-opacity="0.3"/>' +
+        '<path d="M41 26v-5h8v5M43 21v-6h4v6" fill="#fff" ' + st + '/><path d="M45 15v-4" ' + st + ' fill="none"/><path d="M45 6.5c-1.4 2-2 3-2 4a2 2 0 0 0 4 0c0-1-.6-2-2-4z" fill="' + c + '"/>',
+      // micromotore da laboratorio con fresa
+      4: '<g transform="rotate(-38 32 32)"><path d="M4 32C2 32 1 35 3 37C6 40 10 37 12 36" fill="none" ' + st + '/>' +
+        '<rect x="11" y="26" width="30" height="12" rx="6" fill="#fff" ' + st + '/><rect x="11" y="26" width="30" height="12" rx="6" ' + t + '/>' +
+        '<path d="M17 26V38M21 26V38M25 26V38" fill="none" stroke="' + c + '" stroke-width="1.1" stroke-linecap="round"/>' +
+        '<path d="M41 27.5L50 30.2V33.8L41 36.5Z" fill="#fff" ' + st + '/>' +
+        '<path d="M50 32H58.5" fill="none" stroke="' + c + '" stroke-width="1.6" stroke-linecap="round"/><circle cx="59.2" cy="32" r="2.1" fill="' + c + '"/></g>' +
+        '<path d="M46 50l1.4 3 3 1.4-3 1.4-1.4 3-1.4-3-3-1.4 3-1.4z" fill="' + c + '" fill-opacity="0.7"/>'
+    };
+    // aree scelte dal docente (attività nuove): icona generica, un libro aperto
+    if (!I[n] || icona2.generica) I[n] = '<path d="M10 18c8-3 15-3 22 2v30c-7-5-14-5-22-2z" fill="#fff" ' + st + '/><path d="M10 18c8-3 15-3 22 2v30c-7-5-14-5-22-2z" ' + t + '/>' +
+      '<path d="M54 18c-8-3-15-3-22 2v30c7-5 14-5 22-2z" fill="#fff" ' + st + '/><path d="M54 18c-8-3-15-3-22 2v30c7-5 14-5 22-2z" ' + t + '/>' +
+      '<path d="M16 26c4-1 8-1 11 1M16 32c4-1 8-1 11 1M37 27c3-2 7-2 11-1M37 33c3-2 7-2 11-1" fill="none" ' + st + ' stroke-width="1.2"/>';
+    return '<svg width="64mm" height="64mm" viewBox="0 0 80 80" aria-hidden="true" style="flex:none">' +
+      '<circle cx="40" cy="41.2" r="37" fill="#000" fill-opacity="0.16"/><circle cx="40" cy="40" r="37" fill="#fff"/>' +
+      '<circle cx="40" cy="40" r="33" fill="none" stroke="' + c + '" stroke-opacity="0.25" stroke-width="0.8"/>' +
+      '<g transform="translate(8 8)">' + I[n] + '</g></svg>';
+  }
+
+  /* area: {n,it,en,colore} · termini: [{it,en,defIt,defEn,alunno}] · alunni: [{id,nome,gruppo}] */
+
+  /* arcata dentale che attraversa i 4 cartelloni (notazione FDI): 1 e 2 arcata superiore, 3 e 4 inferiore */
+  var QUAD = { 1: [18, 17, 16, 15, 14, 13, 12, 11], 2: [21, 22, 23, 24, 25, 26, 27, 28], 3: [48, 47, 46, 45, 44, 43, 42, 41], 4: [31, 32, 33, 34, 35, 36, 37, 38] };
+  function dente(tipo, w, h) {
+    // corona disegnata con il colletto in y=0 e il bordo occlusale in y=h
+    var c = w * 0.36, o = w / 2, k = tipo === 'M' ? 3 : tipo === 'P' ? 2 : 0, d = 'M' + (-c) + ',0 L' + c + ',0 C' + (o * 0.95) + ',' + (h * 0.15) + ' ' + o + ',' + (h * 0.55) + ' ' + (o * 0.92) + ',' + (h * 0.88);
+    if (tipo === 'C') d += ' L0,' + (h * 1.08) + ' L' + (-o * 0.92) + ',' + (h * 0.88);
+    else if (!k) d += ' L' + (-o * 0.92) + ',' + (h * 0.95);
+    else { var x0 = o * 0.92, step = 2 * x0 / k; for (var j = 0; j < k; j++) { var xa = x0 - j * step, xb = xa - step; d += ' Q' + ((xa + xb) / 2) + ',' + (h * 1.06) + ' ' + xb + ',' + (h * 0.93); } }
+    return d + ' C' + (-o) + ',' + (h * 0.55) + ' ' + (-o * 0.95) + ',' + (h * 0.15) + ' ' + (-c) + ',0 Z';
+  }
+  function arcata(n, col) {
+    n = Number(n); var W = 628, H = 38, A = 7, sup = n <= 2, q = QUAD[n];
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : 'I'; };
+    var larg = { M: 1.25, P: 0.9, C: 0.88, I: 0.82 };
+    var gx0 = (n === 2 || n === 4) ? W : 0; // posizione nel tratto di due cartelloni
+    var y = function (x) { var X = gx0 + x, t = (X - W) / W; return 6 + A * (1 - t * t) + (sup ? 0 : 0); };
+    var yy = function (x) { return sup ? y(x) : H - 2 - (y(x) - 6); };
+    var U = 29, tot = q.reduce(function (s, f) { return s + larg[tipo(f)] * U; }, 0), gap = (W - 20 - tot) / 8, x = 10 + gap / 2, svg = '';
+    var pts = []; for (var xi = 0; xi <= W; xi += 8) pts.push(xi + ',' + yy(xi).toFixed(2));
+    svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="0.9" stroke-linecap="round"/>';
+    q.forEach(function (f) {
+      var t = tipo(f), w = larg[t] * U, cx = x + w / 2, cy = yy(cx);
+      var dy = (yy(cx + 1) - yy(cx - 1)) / 2, ang = Math.atan(dy) * 180 / Math.PI, h = w * (t === 'M' ? 0.72 : t === 'P' ? 0.95 : t === 'C' ? 1.12 : 1.1);
+      svg += '<g transform="translate(' + cx.toFixed(2) + ',' + cy.toFixed(2) + ') rotate(' + ang.toFixed(2) + ')' + (sup ? '' : ' scale(1,-1)') + '"><path d="' + dente(t, w, h) + '" fill="#fff" stroke="' + col + '" stroke-width="0.8" stroke-linejoin="round"/></g>';
+      svg += '<text x="' + cx.toFixed(2) + '" y="' + (sup ? cy - 2 : cy + 4.6).toFixed(2) + '" text-anchor="middle" font-size="3.6" fill="#8494A3" font-family="Arial,sans-serif">' + f + '</text>';
+      x += w + gap;
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
+  }
+
+  /* versione 2 dei denti (in prova): corone in veduta vestibolare, gengiva con papille */
+  function dente2(tipo, w, h) {
+    var X = function (k) { return (k * w).toFixed(2); }, Y = function (k) { return (k * h).toFixed(2); };
+    if (tipo === 'I') return 'M' + X(-0.36) + ',0 C' + X(-0.46) + ',' + Y(0.3) + ' ' + X(-0.5) + ',' + Y(0.66) + ' ' + X(-0.47) + ',' + Y(0.9) + ' Q' + X(-0.45) + ',' + Y(1) + ' ' + X(-0.33) + ',' + Y(1) +
+      ' L' + X(0.33) + ',' + Y(1) + ' Q' + X(0.45) + ',' + Y(1) + ' ' + X(0.47) + ',' + Y(0.9) + ' C' + X(0.5) + ',' + Y(0.66) + ' ' + X(0.46) + ',' + Y(0.3) + ' ' + X(0.36) + ',0 Z';
+    if (tipo === 'L') return 'M' + X(-0.34) + ',0 C' + X(-0.45) + ',' + Y(0.3) + ' ' + X(-0.5) + ',' + Y(0.62) + ' ' + X(-0.44) + ',' + Y(0.86) + ' Q' + X(-0.38) + ',' + Y(1) + ' ' + X(-0.22) + ',' + Y(1) +
+      ' L' + X(0.2) + ',' + Y(1) + ' Q' + X(0.42) + ',' + Y(1) + ' ' + X(0.46) + ',' + Y(0.8) + ' C' + X(0.5) + ',' + Y(0.6) + ' ' + X(0.45) + ',' + Y(0.3) + ' ' + X(0.34) + ',0 Z';
+    if (tipo === 'C' || tipo === 'P') {
+      var t = tipo === 'C' ? 0.05 : 0.1, sp = tipo === 'C' ? 0.78 : 0.82;
+      return 'M' + X(-0.36) + ',0 C' + X(-0.47) + ',' + Y(0.3) + ' ' + X(-0.5) + ',' + Y(0.58) + ' ' + X(-0.43) + ',' + Y(sp) + ' L' + X(-t) + ',' + Y(0.99) + ' Q0,' + Y(1.03) + ' ' + X(t) + ',' + Y(0.99) +
+        ' L' + X(0.44) + ',' + Y(sp - 0.06) + ' C' + X(0.5) + ',' + Y(0.55) + ' ' + X(0.47) + ',' + Y(0.3) + ' ' + X(0.36) + ',0 Z';
+    }
+    // molare: due cuspidi vestibolari e solco
+    return 'M' + X(-0.4) + ',0 C' + X(-0.5) + ',' + Y(0.25) + ' ' + X(-0.53) + ',' + Y(0.6) + ' ' + X(-0.46) + ',' + Y(0.84) + ' Q' + X(-0.38) + ',' + Y(1.02) + ' ' + X(-0.22) + ',' + Y(1) +
+      ' Q' + X(-0.06) + ',' + Y(1) + ' 0,' + Y(0.955) + ' Q' + X(0.06) + ',' + Y(1) + ' ' + X(0.22) + ',' + Y(1) + ' Q' + X(0.38) + ',' + Y(1.02) + ' ' + X(0.46) + ',' + Y(0.84) +
+      ' C' + X(0.53) + ',' + Y(0.6) + ' ' + X(0.5) + ',' + Y(0.25) + ' ' + X(0.4) + ',0 Z';
+  }
+  function arcata2(n, col, chiaroCol) {
+    n = Number(n); var W = 628, H = 48, A = 8, sup = n <= 2, q = QUAD[n], s = sup ? 1 : -1; // s: verso occlusale
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : u === 2 ? 'L' : 'I'; };
+    var dim = { M: [1.22, 0.78], P: [0.86, 1.0], C: [0.9, 1.18], L: [0.74, 1.05], I: [0.9, 1.16] }; // larghezza, altezza/larghezza
+    var gx0 = (n === 2 || n === 4) ? W : 0;
+    var curva = function (x) { var t = (gx0 + x - W) / W; return A * (1 - t * t); };
+    var yy = function (x) { return sup ? 10 + curva(x) : H - 10 - curva(x); }; // linea del colletto
+    var U = 31, tot = q.reduce(function (a, f) { return a + dim[tipo(f)][0] * U; }, 0), gap = (W - 30 - tot) / 8, x = 15 + gap / 2;
+    var denti = q.map(function (f) { var t = tipo(f), w = dim[t][0] * U, d = { f: f, t: t, w: w, x0: x, cx: x + w / 2, h: w * dim[t][1] }; x += w + gap; return d; });
+    // bordo gengivale: papille tra un dente e l'altro
+    // festoni: sul dente il margine sale a arco (colletto scoperto al centro), tra i denti la gengiva resta piena
+    var P = 4.6, marg = function (xx) { for (var k = 0; k < denti.length; k++) { var d = denti[k], a = d.x0 - 1.2, b = d.x0 + d.w + 1.2; if (xx >= a && xx <= b) return P * (1 - Math.sin(Math.PI * (xx - a) / (b - a))); } return P; };
+    var top = [], bot = [];
+    for (var xi = 0; xi <= W; xi += 2) { top.push(xi + ',' + (yy(xi) - s * 7.5).toFixed(2)); bot.push(xi + ',' + (yy(xi) + s * marg(xi)).toFixed(2)); }
+    var svg = denti.map(function (d) {
+      var cy = yy(d.cx), ang = Math.atan((yy(d.cx + 1) - yy(d.cx - 1)) / 2) * 180 / Math.PI;
+      return '<g transform="translate(' + d.cx.toFixed(2) + ',' + (cy - s * 1.2).toFixed(2) + ') rotate(' + ang.toFixed(2) + ')' + (sup ? '' : ' scale(1,-1)') + '">' +
+        '<path d="' + dente2(d.t, d.w, d.h) + '" fill="#fff" stroke="' + col + '" stroke-width="0.75" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<path d="M' + (-d.w * 0.22).toFixed(2) + ',' + (d.h * 0.3).toFixed(2) + ' Q' + (-d.w * 0.27).toFixed(2) + ',' + (d.h * 0.55).toFixed(2) + ' ' + (-d.w * 0.2).toFixed(2) + ',' + (d.h * 0.74).toFixed(2) + '" fill="none" stroke="' + col + '" stroke-width="0.45" stroke-opacity="0.35" stroke-linecap="round"/></g>';
+    }).join('');
+    svg += '<path d="M' + top.join(' L') + ' L' + bot.reverse().join(' L') + ' Z" fill="' + chiaroCol + '" stroke="' + col + '" stroke-width="0.6" stroke-linejoin="round"/>';
+    svg += denti.map(function (d) { return '<text x="' + d.cx.toFixed(2) + '" y="' + (yy(d.cx) - s * 2.2 + (sup ? 0 : 1.2)).toFixed(2) + '" text-anchor="middle" font-size="3.3" fill="' + col + '" font-family="Arial,sans-serif" font-weight="700">' + d.f + '</text>'; }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
+  }
+
+  /* versione 3 (in prova): denti con volume — smalto sfumato, riflessi, ombre, gengiva rosa */
+  function arcata3(n, col) {
+    n = Number(n); var W = 628, H = 49, A = 7, sup = n <= 2, q = QUAD[n], s = sup ? 1 : -1, id = 'a3n' + n;
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : u === 2 ? 'L' : 'I'; };
+    var dim = { M: [1.22, 0.78], P: [0.86, 1.0], C: [0.9, 1.18], L: [0.74, 1.05], I: [0.9, 1.16] };
+    var gx0 = (n === 2 || n === 4) ? W : 0;
+    var curva = function (x) { var t = (gx0 + x - W) / W; return A * (1 - t * t); };
+    var yy = function (x) { return sup ? 11 + curva(x) : H - 11 - curva(x); };
+    var U = 30, tot = q.reduce(function (a, f) { return a + dim[tipo(f)][0] * U; }, 0), gap = (W - 30 - tot) / 8, x = 15 + gap / 2;
+    var denti = q.map(function (f) { var t = tipo(f), w = dim[t][0] * U, d = { f: f, t: t, w: w, x0: x, cx: x + w / 2, h: w * dim[t][1] }; x += w + gap; return d; });
+    var P = 5, marg = function (xx) { for (var k = 0; k < denti.length; k++) { var d = denti[k], a = d.x0 - 1.4, b = d.x0 + d.w + 1.4; if (xx >= a && xx <= b) return P * (1 - Math.sin(Math.PI * (xx - a) / (b - a))); } return P; };
+    var defs = '<defs>' +
+      // smalto: luce dall'alto a sinistra, bordi più scuri
+      '<radialGradient id="' + id + 'sm" cx="0.38" cy="' + (sup ? 0.42 : 0.58) + '" r="0.75"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.45" stop-color="#F7F2E4"/><stop offset="0.8" stop-color="#E4D9BF"/><stop offset="1" stop-color="#C9BB98"/></radialGradient>' +
+      // bordo incisale più traslucido
+      '<linearGradient id="' + id + 'in" x1="0" y1="' + (sup ? 0 : 1) + '" x2="0" y2="' + (sup ? 1 : 0) + '"><stop offset="0.72" stop-color="#C9D6E0" stop-opacity="0"/><stop offset="1" stop-color="#B9CBD8" stop-opacity="0.55"/></linearGradient>' +
+      // gengiva: rosa con volume
+      '<linearGradient id="' + id + 'gg" x1="0" y1="' + (sup ? 0 : 1) + '" x2="0" y2="' + (sup ? 1 : 0) + '"><stop offset="0" stop-color="#B9606B"/><stop offset="0.55" stop-color="#E08C93"/><stop offset="1" stop-color="#F0B3B6"/></linearGradient>' +
+      '<filter id="' + id + 'om" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="1.1"/><feOffset dx="0.9" dy="' + (sup ? 1.3 : -1.3) + '" result="o"/><feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+      '</defs>';
+    var top = [], bot = [];
+    for (var xi = 0; xi <= W; xi += 2) { top.push(xi + ',' + (yy(xi) - s * 9).toFixed(2)); bot.push(xi + ',' + (yy(xi) + s * marg(xi)).toFixed(2)); }
+    var svg = defs + denti.map(function (d) {
+      var cy = yy(d.cx), ang = Math.atan((yy(d.cx + 1) - yy(d.cx - 1)) / 2) * 180 / Math.PI, path = dente2(d.t, d.w, d.h);
+      return '<g filter="url(#' + id + 'om)" transform="translate(' + d.cx.toFixed(2) + ',' + (cy - s * 1.5).toFixed(2) + ') rotate(' + ang.toFixed(2) + ')' + (sup ? '' : ' scale(1,-1)') + '">' +
+        '<path d="' + path + '" fill="url(#' + id + 'sm)" stroke="#A8977A" stroke-width="0.35" stroke-linejoin="round"/>' +
+        '<path d="' + path + '" fill="url(#' + id + 'in)" stroke="none"/>' +
+        // riflesso dello smalto
+        '<ellipse cx="' + (-d.w * 0.16).toFixed(2) + '" cy="' + (d.h * 0.42).toFixed(2) + '" rx="' + (d.w * 0.09).toFixed(2) + '" ry="' + (d.h * 0.2).toFixed(2) + '" fill="#FFFFFF" opacity="0.85"/>' +
+        '<ellipse cx="' + (d.w * 0.2).toFixed(2) + '" cy="' + (d.h * 0.5).toFixed(2) + '" rx="' + (d.w * 0.05).toFixed(2) + '" ry="' + (d.h * 0.12).toFixed(2) + '" fill="#FFFFFF" opacity="0.4"/>' +
+        // ombra al colletto
+        '<path d="M' + (-d.w * 0.36).toFixed(2) + ',0.6 Q0,' + (d.h * 0.16).toFixed(2) + ' ' + (d.w * 0.36).toFixed(2) + ',0.6" fill="none" stroke="#B9A57E" stroke-width="1.2" stroke-opacity="0.45" stroke-linecap="round"/></g>';
+    }).join('');
+    svg += '<path d="M' + top.join(' L') + ' L' + bot.reverse().join(' L') + ' Z" fill="url(#' + id + 'gg)" stroke="#A9505C" stroke-width="0.35" stroke-linejoin="round"/>';
+    // riflesso lungo la gengiva
+    var luce = []; for (var xj = 4; xj <= W - 4; xj += 3) luce.push(xj + ',' + (yy(xj) - s * 6.2).toFixed(2));
+    svg += '<polyline points="' + luce.join(' ') + '" fill="none" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="1.1" stroke-linecap="round"/>';
+    svg += denti.map(function (d) { return '<text x="' + d.cx.toFixed(2) + '" y="' + (yy(d.cx) - s * 3.4 + (sup ? 0 : 1.2)).toFixed(2) + '" text-anchor="middle" font-size="3.4" fill="#FFFFFF" font-family="Arial,sans-serif" font-weight="700">' + d.f + '</text>'; }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:visible">' + svg + '</svg>';
+  }
+
+  /* decorazioni alternative (in prova), continue sui quattro cartelloni */
+  // A · ortopantomografia stilizzata: 16 denti per arcata distribuiti sui 4 cartelloni
+  function decoOPT(n) {
+    n = Number(n); var W = 628, H = 50, id = 'opt' + n;
+    var ord = { 1: [[18, 17, 16, 15], [48, 47, 46, 45]], 2: [[14, 13, 12, 11], [44, 43, 42, 41]], 3: [[21, 22, 23, 24], [31, 32, 33, 34]], 4: [[25, 26, 27, 28], [35, 36, 37, 38]] }[n];
+    var tipo = function (f) { var u = f % 10; return u >= 6 ? 'M' : u >= 4 ? 'P' : u === 3 ? 'C' : u === 2 ? 'L' : 'I'; };
+    var larg = { M: 1.3, P: 0.95, C: 0.95, L: 0.8, I: 0.95 };
+    var G = 4 * W, piano = function (gx) { var t = (gx - G / 2) / (G / 2); return 25 + 3.5 * t * t; };
+    var x0 = (n - 1) * W, r0 = n === 1 ? 10 : 0, r1 = n === 4 ? 10 : 0;
+    var defs = '<defs><linearGradient id="' + id + 'bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E1820"/><stop offset="0.5" stop-color="#22323F"/><stop offset="1" stop-color="#0E1820"/></linearGradient>' +
+      '<linearGradient id="' + id + 'de" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9D3DA"/><stop offset="0.5" stop-color="#F4F7F9"/><stop offset="1" stop-color="#C9D3DA"/></linearGradient>' +
+      '<radialGradient id="' + id + 'vg" cx="0.5" cy="0.5" r="0.7"><stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.45"/></radialGradient></defs>';
+    var svg = defs + '<path d="M' + r0 + ',0H' + (W - r1) + (r1 ? 'Q' + W + ',0 ' + W + ',' + r1 : '') + 'V' + (H - r1) + (r1 ? 'Q' + W + ',' + H + ' ' + (W - r1) + ',' + H : '') + 'H' + r0 + (r0 ? 'Q0,' + H + ' 0,' + (H - r0) : '') + 'V' + r0 + (r0 ? 'Q0,0 ' + r0 + ',0' : '') + 'Z" fill="url(#' + id + 'bg)"/>';
+    // osso mascellare e mandibolare: velature
+    var curvaSu = [], curvaGiu = [];
+    for (var xi = 0; xi <= W; xi += 4) { var gx = x0 + xi; curvaSu.push(xi + ',' + (piano(gx) - 22).toFixed(2)); curvaGiu.push(xi + ',' + (piano(gx) + 22).toFixed(2)); }
+    svg += '<path d="M0,0 L' + curvaSu.join(' L') + ' L' + W + ',0Z" fill="#fff" fill-opacity="0.05"/>';
+    svg += '<path d="M0,' + H + ' L' + curvaGiu.join(' L') + ' L' + W + ',' + H + 'Z" fill="#fff" fill-opacity="0.05"/>';
+    [0, 1].forEach(function (riga) {
+      var q = ord[riga], sup = riga === 0, U = 30, tot = q.reduce(function (a, f) { return a + larg[tipo(f)] * U; }, 0), gap = (W - tot) / 4, x = gap / 2;
+      q.forEach(function (f) {
+        var t = tipo(f), w = larg[t] * U, cx = x + w / 2, py = piano(x0 + cx), hc = w * (t === 'M' ? 0.62 : 0.8), hr = t === 'M' ? 13 : t === 'C' ? 17 : 15;
+        // dente intero: corona verso il piano occlusale, radici verso l'osso
+        var k = sup ? -1 : 1, yc = py + k * 1.2;
+        var d = 'M' + (cx - w * 0.42) + ',' + yc + ' C' + (cx - w * 0.5) + ',' + (yc + k * hc * 0.5) + ' ' + (cx - w * 0.44) + ',' + (yc + k * hc) + ' ' + (cx - w * 0.33) + ',' + (yc + k * hc) +
+          (t === 'M' ? ' L' + (cx - w * 0.3) + ',' + (yc + k * (hc + hr)) + ' Q' + (cx - w * 0.2) + ',' + (yc + k * (hc + hr + 1.5)) + ' ' + (cx - w * 0.1) + ',' + (yc + k * (hc + hr * 0.92)) + ' L' + (cx - w * 0.02) + ',' + (yc + k * (hc + 2)) +
+            ' L' + (cx + w * 0.02) + ',' + (yc + k * (hc + 2)) + ' L' + (cx + w * 0.1) + ',' + (yc + k * (hc + hr * 0.92)) + ' Q' + (cx + w * 0.2) + ',' + (yc + k * (hc + hr + 1.5)) + ' ' + (cx + w * 0.3) + ',' + (yc + k * (hc + hr))
+           : ' Q' + (cx - w * 0.2) + ',' + (yc + k * (hc + hr * 0.6)) + ' ' + cx + ',' + (yc + k * (hc + hr)) + ' Q' + (cx + w * 0.2) + ',' + (yc + k * (hc + hr * 0.6)) + ' ' + (cx + w * 0.33) + ',' + (yc + k * hc)) +
+          (t === 'M' ? ' L' + (cx + w * 0.33) + ',' + (yc + k * hc) : '') + ' C' + (cx + w * 0.44) + ',' + (yc + k * hc) + ' ' + (cx + w * 0.5) + ',' + (yc + k * hc * 0.5) + ' ' + (cx + w * 0.42) + ',' + yc + ' Z';
+        svg += '<path d="' + d + '" fill="url(#' + id + 'de)" fill-opacity="0.92" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="0.3"/>';
+        // smalto più radiopaco
+        svg += '<path d="M' + (cx - w * 0.42) + ',' + yc + ' C' + (cx - w * 0.5) + ',' + (yc + k * hc * 0.4) + ' ' + (cx - w * 0.46) + ',' + (yc + k * hc * 0.62) + ' ' + (cx - w * 0.36) + ',' + (yc + k * hc * 0.62) + ' L' + (cx + w * 0.36) + ',' + (yc + k * hc * 0.62) + ' C' + (cx + w * 0.46) + ',' + (yc + k * hc * 0.62) + ' ' + (cx + w * 0.5) + ',' + (yc + k * hc * 0.4) + ' ' + (cx + w * 0.42) + ',' + yc + 'Z" fill="#fff" fill-opacity="0.85"/>';
+        // camera pulpare
+        svg += '<path d="M' + (cx - w * 0.14) + ',' + (yc + k * hc * 0.68) + ' Q' + cx + ',' + (yc + k * hc * 0.55) + ' ' + (cx + w * 0.14) + ',' + (yc + k * hc * 0.68) + ' L' + cx + ',' + (yc + k * (hc + hr * 0.8)) + ' Z" fill="#22323F" fill-opacity="0.55"/>';
+        x += w + gap;
+      });
+    });
+    svg += '<rect width="' + W + '" height="' + H + '" fill="url(#' + id + 'vg)" />';
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block">' + svg + '</svg>';
+  }
+  // C · nastro di colore: un'onda che attraversa i 4 cartelloni sfumando dal blu al verde (colori delle aree)
+  function decoNastro(n) {
+    n = Number(n); var W = 700, H = 48, G = 4 * W, x0 = (n - 1) * W, id = 'ns' + n;
+    var COL = ['#1F5FA8', '#6A4FA0', '#B4511A', '#2E7D32'];
+    var stop = COL.map(function (c, k) { return '<stop offset="' + (k / 3).toFixed(3) + '" stop-color="' + c + '"/>'; }).join('');
+    var defs = '<defs><linearGradient id="' + id + 'g" gradientUnits="userSpaceOnUse" x1="' + (-x0 + W * 0.5) + '" y1="0" x2="' + (G - x0 - W * 0.5) + '" y2="0">' + stop + '</linearGradient>' +
+      '<linearGradient id="' + id + 'l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.18"/></linearGradient></defs>';
+    var svg = defs;
+    // tre nastri sovrapposti, con fase e spessore diversi
+    [[0, 11, 0.95, 1], [1.7, 6, 0.6, 0.8], [3.4, 3.5, 0.4, 1.25]].forEach(function (r) {
+      var su = [], giu = [];
+      for (var xi = 0; xi <= W; xi += 3) {
+        var gx = x0 + xi, f = 2 * Math.PI * gx / G * 3 * r[3] + r[0];
+        var c = 24 + 10 * Math.sin(f), sp = r[1] * (0.55 + 0.45 * Math.cos(f * 0.5 + 1));
+        su.push(xi + ',' + (c - sp).toFixed(2)); giu.push(xi + ',' + (c + sp).toFixed(2));
+      }
+      var d = 'M' + su.join(' L') + ' L' + giu.reverse().join(' L') + 'Z';
+      svg += '<path d="' + d + '" fill="url(#' + id + 'g)" fill-opacity="' + r[2] + '"/><path d="' + d + '" fill="url(#' + id + 'l)" fill-opacity="' + r[2] + '"/>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block">' + svg + '</svg>';
+  }
+  // B · nastro di parole: i termini dell'area scorrono su onde continue da un cartellone all'altro
+  function decoParole(n, termini, col) {
+    n = Number(n); var W = 700, H = 50, G = 4 * W, x0 = (n - 1) * W;
+    var parole = termini.map(function (t) { return t.it; });
+    var righe = [{ y: 12, a: 5, f: 1, fs: 6.2, op: 1, peso: 700, serif: false, off: 0 }, { y: 26, a: 5, f: 1, fs: 9, op: 0.9, peso: 600, serif: true, off: 21 }, { y: 40, a: 5, f: 1, fs: 5.6, op: 0.6, peso: 700, serif: false, off: 43 }];
+    var svg = '<defs>';
+    righe.forEach(function (r, k) {
+      var pts = []; for (var xi = -20; xi <= W + 20; xi += 4) { var gx = x0 + xi; pts.push(xi + ',' + (r.y + r.a * Math.sin(2 * Math.PI * r.f * gx / G * 3)).toFixed(2)); }
+      svg += '<path id="np' + n + k + '" d="M' + pts.join(' L') + '"/>';
+    });
+    svg += '</defs>';
+    righe.forEach(function (r, k) {
+      var testo = []; for (var j = 0; j < 30; j++) testo.push(parole[(r.off + j) % parole.length]);
+      svg += '<text font-size="' + r.fs + '" fill="' + col + '" fill-opacity="' + r.op + '" font-weight="' + r.peso + '" style="font-family:' + (r.serif ? '\'Cormorant Garamond\',Georgia,serif;font-style:italic' : 'Archivo,Arial,sans-serif;letter-spacing:0.3px;text-transform:uppercase') + '"><textPath href="#np' + n + k + '" startOffset="-' + (k * 37 + n * 13) + '">' + testo.map(esc).join('  ·  ') + '</textPath></text>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block;overflow:hidden">' + svg + '</svg>';
+  }
+  function qrPoster(testo, mm) {
+    if (typeof qrcode !== 'function') return '';
+    var q = qrcode(0, 'M'); q.addData(testo); q.make();
+    var n = q.getModuleCount(), m = 1, d = '';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m) + '" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#15212B"/></svg>';
+  }
+  function html(area, termini, alunni, opz) {
+    opz = opz || {};
+    var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
+    var nomi = {};
+    var clDi = {};
+    // chi è escluso dallo scritto (fuori) o non ha (ancora) il consenso privacy firmato (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: senza consenso privacy firmato
+    // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
+    var visti = {}, perCl = {}, ordineCl = [];
+    termini.forEach(function (t) {
+      if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1;
+      var c = clDi[t.alunno] || '3E'; if (!perCl[c]) { perCl[c] = []; ordineCl.push(c); }
+      perCl[c].push(esc(nomi[t.alunno] || t.alunno));
+    });
+    var classi = (opz.classi || ordineCl.slice().sort()).filter(function (c) { return perCl[c]; });
+    if (!classi.length) classi = ['3E'];
+    var gruppo = classi.length > 1 ? classi.map(function (c) { return '<b style="font-weight:800">' + c + ':</b> ' + perCl[c].join(' · '); }) : (perCl[classi[0]] || []);
+    var sepAut = classi.length > 1 ? ' &nbsp;&nbsp;|&nbsp;&nbsp; ' : ' · ';
+    var F = "font-family:'Archivo',Arial,sans-serif;";
+
+    var IT = !!opz.soloIt;
+    // solo italiano: due colonne fino a 44 termini, tre colonne oltre (65 per area con 3E + 3F)
+    var nCol = termini.length > 44 ? 3 : 2, TRE = nCol === 3;
+    var meta = Math.ceil(termini.length / nCol);
+    var M = TRE ? { c: 10.5, cf: 4.8, g: 4.5, p: '1mm 3.5mm', t: 8.6, d: 5.8, dl: 1.16, dv: 4.8, mt: 1 } : { c: 13, cf: 5.6, g: 6, p: '1.5mm 5mm', t: 10, d: 6.8, dl: 1.22, dv: 5.6, mt: 1.5 };
+    if (TRE && (opz.arcata || opz.firme)) { M.t = 8.2; M.d = 5.2; M.dl = 1.13; M.mt = 0.8; }
+    function voceIt(t, i) {
+      var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata');
+      return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:' + M.c + 'mm minmax(0,1fr);column-gap:' + M.g + 'mm;align-items:center;padding:' + M.p + ';' +
+        (opz.evidenzia && t.alunno === opz.evidenzia ? 'background:#FFE98A;box-shadow:inset 1.6mm 0 0 #15212B;' : i % 2 ? 'background:' + chiaro + ';' : '') + 'border-bottom:0.4mm solid ' + medio + '">' +
+        '<div style="width:' + M.c + 'mm;height:' + M.c + 'mm;border-radius:50%;background:' + col + ';color:#fff;display:flex;align-items:center;justify-content:center;' + F + 'font-weight:800;font-size:' + M.cf + 'mm">' + (i + 1) + '</div>' +
+        '<div style="min-width:0"><div style="' + F + 'font-weight:800;font-size:' + M.t + 'mm;line-height:1.05;color:#15212B">' + esc(t.it) + '</div>' +
+        (ok ? '<div style="font-size:' + M.d + 'mm;line-height:' + M.dl + ';margin-top:' + M.mt + 'mm">' + esc(t.defIt) +
+            (nomi[t.alunno] ? ' <span style="font-size:' + (M.dv * 0.92).toFixed(2) + 'mm;font-style:italic;color:#5B6976;white-space:nowrap">— ' + esc(nomi[t.alunno]) + '</span>' : '') + '</div>'
+          : '<div style="font-size:' + M.dv + 'mm;line-height:1.25;color:#8494A3;font-style:italic;margin-top:' + M.mt + 'mm">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</div>') +
+        '</div></div>';
+    }
+    var liste = [];
+    for (var k = 0; k < nCol; k++) liste.push(termini.slice(k * meta, (k + 1) * meta));
+    var colonne = IT ? liste.map(function (lista, c) {
+      return '<div style="display:flex;flex-direction:column;min-height:0;min-width:0">' + lista.map(function (t, i) { return voceIt(t, c * meta + i); }).join('') + '</div>';
+    }).join('') : '';
+    var righe = IT ? '' : termini.map(function (t, i) {
+      function def(testo, lingua) {
+        if (testo && (!opz.soloApprovate || (lingua === 'it' ? t.statoIt : t.statoEn) === 'approvata')) {
+          return '<div style="font-size:6.5mm;line-height:1.25;' + (lingua === 'en' ? 'font-style:italic;' : '') + '">' + esc(testo) + '</div>';
+        }
+        return '<div style="font-size:4.6mm;line-height:1.3;color:#8494A3;font-style:italic;border-bottom:0.5mm dashed #B8C3CC;padding-bottom:3mm">' +
+          (lingua === 'it' ? 'Definizione a cura di ' : 'Definition by ') + esc(nomi[t.alunno] || '…') + '</div>';
+      }
+      return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:13mm 160mm minmax(0,1fr) minmax(0,1fr);column-gap:9mm;align-items:center;padding:0 5mm;' +
+        (i % 2 ? 'background:' + chiaro + ';' : '') + 'border-bottom:0.45mm solid ' + medio + '">' +
+        '<div style="width:12mm;height:12mm;border-radius:50%;background:' + col + ';color:#fff;display:flex;align-items:center;justify-content:center;' + F + 'font-weight:800;font-size:5.4mm">' + (i + 1) + '</div>' +
+        '<div><div style="' + F + 'font-weight:800;font-size:9.8mm;line-height:1.04;color:#15212B">' + esc(t.it) + '</div>' +
+        '<div style="' + F + 'font-weight:600;font-style:italic;font-size:7.2mm;line-height:1.12;color:' + col + ';margin-top:1.8mm">' + esc(t.en) + '</div></div>' +
+        '<div>' + def(t.defIt, 'it') + '</div>' +
+        '<div>' + def(t.defEn, 'en') + '</div>' +
+        '</div>';
+    }).join('');
+
+    var lab = 'font-size:4.6mm;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;';
+    return '' +
+      '<div class="poster-foglio" style="width:700mm;height:1000mm;box-sizing:border-box;background:#fff;color:#15212B;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden">' +
+      /* testata */
+      '<div style="background:' + col + ';color:#fff;padding:22mm 36mm 14mm;display:flex;flex-direction:column;gap:8mm">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10mm">' +
+          '<div style="display:flex;align-items:center;gap:7mm"><div style="background:#fff;padding:1.6mm;border-radius:1.5mm;line-height:0">' + logo(30) + '</div>' +
+            '<div style="' + F + 'font-weight:800;font-size:11mm;line-height:1.05">IIS «E. Barsanti» · sede Salvetti</div></div>' +
+          '<div style="text-align:right;' + F + lab + 'line-height:1.7"><div>' + (IT ? esc(TIT()) : esc(TIT()) + ' bilingue · Bilingual ' + (conc() ? '' : 'dental ') + 'glossary') + '</div><div>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. 2026/27</div></div></div>' +
+        '<div style="display:flex;align-items:center;gap:14mm">' +
+          '<div style="' + F + 'font-weight:900;font-size:96mm;line-height:0.8;letter-spacing:-0.04em">0' + area.n + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="' + F + 'font-weight:900;font-size:24mm;line-height:0.98;letter-spacing:-0.02em">' + esc(area.it) + '</div>' +
+            (IT ? '' : '<div style="' + F + 'font-weight:600;font-style:italic;font-size:12mm;line-height:1.1;margin-top:4mm;opacity:0.92">' + esc(area.en) + '</div>') +
+          '</div>' +
+          (opz.icone === 2 ? icona2(Number(area.n), col) : '<svg width="58mm" height="58mm" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONE[area.n] + '</svg>') +
+        '</div>' +
+        '<div style="border-top:0.6mm solid rgba(255,255,255,0.55);padding-top:5mm;display:flex;flex-direction:column;gap:2.5mm;font-size:6mm;line-height:1.3">' +
+          '<div><b>' + (IT ? 'A cura di:' : 'A cura di · Edited by:') + '</b> ' + (gruppo.join(sepAut) || '—') + '</div>' +
+          (conc() ? '<div><b>Docente:</b> ' + esc(conc().docente) + (MAT() ? ' <span style="opacity:.85">(' + esc(MAT()) + ')</span>' : '') + ' · <i>' + CONCESSIONE + '</i></div></div>' : IT ? '<div><b>Docente:</b> Prof. Danilo Cerrato <span style="opacity:.85">(Laboratorio odontotecnico)</span></div></div>'
+            : '<div><b>Docenti · Teachers:</b> Prof. Danilo Cerrato <span style="opacity:.85">(Laboratorio odontotecnico)</span> · Prof.ssa Federica Aliboni <span style="opacity:.85">(Inglese tecnico)</span></div></div>') +
+      '</div>' +
+      /* intestazione tabella */
+      (IT ? '<div style="padding:8mm ' + (TRE ? 24 : 30) + 'mm 0;display:flex;flex-direction:column;flex:1;min-height:0">' +
+        '<div style="' + F + lab + 'color:#3E4C59;padding:0 4mm 3mm;border-bottom:0.9mm solid #15212B">Termine e definizione</div>' +
+        '<div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(' + nCol + ',minmax(0,1fr));column-gap:' + (TRE ? 6 : 10) + 'mm">' + colonne + '</div>' +
+      '</div>' :
+      '<div style="padding:9mm 36mm 0;display:flex;flex-direction:column;flex:1;min-height:0">' +
+        '<div style="display:grid;grid-template-columns:13mm 160mm minmax(0,1fr) minmax(0,1fr);column-gap:9mm;padding:0 5mm 3mm;border-bottom:0.9mm solid #15212B;' + F + lab + 'color:#3E4C59">' +
+          '<span></span><span>Termine · Term</span><span>Definizione · Italiano</span><span>Definition · English</span></div>' +
+        '<div style="flex:1;min-height:0;display:flex;flex-direction:column">' + righe + '</div>' +
+      '</div>') +
+      /* firme a mano degli autori (spazio vuoto con righe) e arcata dentale continua */
+      (IT && opz.firme ? '<div style="margin:5mm 36mm 0;border:0.7mm solid ' + col + ';background:' + chiaro + ';border-radius:3mm;position:relative;padding:5mm 5mm 3mm">' +
+        '<div style="position:absolute;left:6mm;top:-3.6mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;font-size:4.2mm;' + F + 'font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div>' +
+        '<div style="height:24mm"></div></div>' : '') +
+      (IT && opz.arcata ? '<div style="margin:' + (opz.deco === 'nastro' || opz.deco === 'parole' ? '4mm 0 0' : (Number(area.n) >= 3 ? 5 : 2.5) + 'mm 36mm 0') + ';display:flex;justify-content:center">' + (opz.deco === 'opt' ? decoOPT(area.n) : opz.deco === 'nastro' ? decoNastro(area.n) : opz.deco === 'parole' ? decoParole(area.n, termini, col) : opz.denti === 3 ? arcata3(area.n, col) : opz.denti === 2 ? arcata2(area.n, col, chiaro) : arcata(area.n, col)) + '</div>' : '') +
+      /* motto: una parola per cartellone, da leggere sui quattro affiancati */
+      (IT ? (function () {
+        var MOTTO = ['Nomina', 'sunt', 'consequentia', 'rerum'], w = MOTTO[Number(area.n) - 1], ALTO = opz.arcata || opz.firme ? 30 : 46;
+        if (!w) return '';
+        var ultimo = Number(area.n) === 4;
+        return '<div style="margin:' + (opz.arcata ? 0 : 5) + 'mm 36mm 0;height:' + ALTO + 'mm;display:flex;flex-direction:column;align-items:center;justify-content:center' + (opz.arcata ? '' : ';border-top:0.4mm solid ' + medio) + '">' +
+          '<div style="font-family:\'Cormorant Garamond\',Georgia,serif;font-style:italic;font-weight:600;font-size:' + (opz.arcata || opz.firme ? 33 : 36) + 'mm;line-height:1;color:' + col + ';letter-spacing:0.5mm">' + esc(w) + (ultimo ? '.' : '…') + '</div>' +
+          '</div>';
+      })() : '') +
+      /* piede */
+      '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
+        '<span><b>IIS «E. Barsanti» · sede Salvetti · Massa (MS)</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
+        '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
+        (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
+        (conc() ? '<span style="text-align:right">' + (MAT() ? esc(MAT()) + ': ' : '') + '<b>' + esc(conc().docente) + '</b><br><i>' + CONCESSIONE + '</i></span>' : '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>') +
+      '</div>' +
+      '</div>';
+  }
+
+
+  /* versione alfabetica (approvata 12/11/2026): termini A–Z dentro l'area, lettere guida, indice A–Z,
+     testata sfumata con numero gigante, motto latino grande sopra il nastro continuo. Dopo l'inserimento chiamare Poster.adatta(foglio). */
+  function scuro(hex, f) {
+    var h = hex.replace('#', ''), v = [0, 2, 4].map(function (i) { return Math.round(parseInt(h.substr(i, 2), 16) * f); });
+    return 'rgb(' + v.join(',') + ')';
+  }
+  /* nome sul cartellone: nome per esteso e cognome puntato ("Bertelà Linda" → "Linda B.", "Dalle Luche Grace" → "Grace D.L."), come nella pagina pubblica */
+  var PARTICELLE = ['da', 'dal', 'dalla', 'dalle', 'de', 'dei', 'del', 'della', 'delle', 'di', 'la', 'lo', 'li', 'van', 'von', 'mc', 'mac'];
+  var NOMI_PUBBLICI = { 'Giannarelli Rigel Francesca Lina': 'Francesca G.' };
+  function nomePuntato(completo) {
+    var c = String(completo || '').trim(); if (NOMI_PUBBLICI[c]) return NOMI_PUBBLICI[c];
+    var p = c.split(/\s+/).filter(Boolean); if (p.length < 2) return p.join(' ');
+    var n = 1; while (n < p.length - 1 && PARTICELLE.indexOf(p[n - 1].toLowerCase()) >= 0) n++;
+    return p.slice(n).join(' ') + ' ' + p.slice(0, n).map(function (x) { return x.charAt(0).toUpperCase() + '.'; }).join('');
+  }
+  function iniziale(s) { return String(s || '').normalize('NFD').charAt(0).toUpperCase(); }
+  function ordinaAlfa(termini) {
+    return termini.slice().sort(function (x, y) { return String(x.it).localeCompare(String(y.it), 'it', { sensitivity: 'base' }); });
+  }
+  function nastroAlfa(n) {
+    n = Number(n); var W = 700, H = 56, G = 4 * W, x0 = (n - 1) * W, id = 'na' + n;
+    var COL = ['#1F5FA8', '#6B4FA0', '#B4511A', '#2E7D32'];
+    var svg = '<defs><linearGradient id="' + id + 'g" gradientUnits="userSpaceOnUse" x1="' + (-x0 + W * 0.5) + '" y1="0" x2="' + (G - x0 - W * 0.5) + '" y2="0">' +
+      COL.map(function (c, k) { return '<stop offset="' + (k / 3).toFixed(3) + '" stop-color="' + c + '"/>'; }).join('') + '</linearGradient>' +
+      '<linearGradient id="' + id + 'l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.2"/></linearGradient></defs>';
+    [[0, 11, 0.95, 1], [1.7, 6, 0.6, 0.8], [3.4, 3.5, 0.4, 1.25]].forEach(function (r) {
+      var su = [], giu = [];
+      for (var x = 0; x <= W; x += 3) { var gx = x0 + x, f = 2 * Math.PI * gx / G * 3 * r[3] + r[0], c = 30 + 12 * Math.sin(f), sp = r[1] * (0.55 + 0.45 * Math.cos(f * 0.5 + 1)); su.push(x + ',' + (c - sp).toFixed(2)); giu.push(x + ',' + (c + sp).toFixed(2)); }
+      var d = 'M' + su.join(' L') + ' L' + giu.reverse().join(' L') + 'Z';
+      svg += '<path d="' + d + '" fill="url(#' + id + 'g)" fill-opacity="' + r[2] + '"/><path d="' + d + '" fill="url(#' + id + 'l)" fill-opacity="' + r[2] + '"/>';
+    });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="700mm" height="56mm" style="position:absolute;left:0;top:0">' + svg + '</svg>';
+  }
+  function alfa(area, termini, alunni, opz) {
+    opz = opz || {};
+    var col = area.colore, n = Number(area.n), nomi = {}, clDi = {}, NA = opz.nAree || 4;
+    icona2.generica = !!opz.areeMie;
+    // chi è escluso dallo scritto (fuori) o non ha (ancora) il consenso privacy firmato (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: senza consenso privacy firmato
+    var perCl = {}, visti = {};
+    termini.forEach(function (t) { if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
+    var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];
+    var A = "font-family:Archivo,Arial,sans-serif;", S = "font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;";
+    var voci = ordinaAlfa(termini), lettere = {}, corpo = '', ult = '';
+    voci.forEach(function (t) {
+      var l = iniziale(t.it); lettere[l] = 1;
+      if (l !== ult) { corpo += '<div class="pa-let"><b>' + esc(l) + '</b><i></i></div>'; ult = l; }
+      var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata'), mio = opz.evidenzia && t.alunno === opz.evidenzia;
+      var en = opz.en && t.posterEn ? t.posterEn : null;
+      corpo += '<div class="pa-v"' + (mio ? ' style="background:#FFE98A;box-shadow:inset 1.4mm 0 0 #15212B;padding-left:2.6mm;padding-right:1.5mm"' : '') + '><h3>' + esc(t.it) + (en && en.t ? '<span class="pa-en" lang="en">' + esc(en.t) + '</span>' : '') + '</h3>' +
+        (ok ? '<p>' + esc(t.defIt) + (nomi[t.alunno] && !(en && en.d) ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>' +
+            (en && en.d ? '<p class="pa-den" lang="en">' + esc(en.d) + (nomi[t.alunno] ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>' : '')
+          : '<p class="pa-vuota">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</p>') + '</div>';
+    });
+    var AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function (l) { return '<span style="flex:1;text-align:center;' + A + 'font-weight:800;font-size:9mm;line-height:1;color:' + (lettere[l] ? col : '#C9D1D8') + '">' + l + '</span>'; }).join('');
+    // il motto si legge sui quattro cartelloni affiancati: solo con le 4 aree del laboratorio
+    var MOTTO = opz.areeMie || NA !== 4 ? [] : ['Nomina…', 'sunt…', 'consequentia…', 'rerum.'];
+    // attività nuove: motto e numero in alto scelti dal docente per ogni cartellone
+    var MT = opz.areeMie ? String(area.motto || '') : (MOTTO[n - 1] || ''), NUM = area.numero ? String(area.numero) : '0' + n;
+    var fsM = Math.max(16, Math.min(46, Math.floor(1150 / Math.max(1, MT.length))));
+    var css = '<style>' +
+      '.pa-foglio{--k:1}' +
+      // tre colonne vere (non colonne automatiche del browser): le voci le distribuisce adatta(), uguale in ogni browser
+      '.pa-corpo{display:flex;gap:12mm;overflow:hidden}' +
+      '.pa-col{flex:1 1 0;min-width:0;position:relative;height:100%}' +
+      '.pa-col+.pa-col::before{content:"";position:absolute;left:-6.2mm;top:0;bottom:0;width:0.35mm;background:' + tinta(col, 0.25) + '}' +
+      '.pa-col>.pa-let:first-child{margin-top:0}' +
+      '.pa-let{display:flex;align-items:baseline;gap:4mm;margin:calc(3mm*var(--k)) 0 calc(1mm*var(--k))}' +
+      '.pa-let b{' + S + 'font-weight:600;font-size:calc(19mm*var(--k));line-height:0.9;color:' + col + '}' +
+      '.pa-let i{flex:1;height:0.4mm;background:' + tinta(col, 0.35) + '}' +
+      '.pa-v{padding:calc(1.6mm*var(--k)) 0 calc(2.4mm*var(--k))}' +
+      '.pa-v h3{margin:0;' + A + 'font-weight:800;font-size:calc(7.6mm*var(--k));line-height:1.08;color:#15212B}' +
+      '.pa-v p{margin:calc(0.9mm*var(--k)) 0 0;font-size:calc(5.5mm*var(--k));line-height:1.24}' +
+      '.pa-v em{font-size:calc(4.3mm*var(--k));color:#6B7884;white-space:nowrap}' +
+      '.pa-v p.pa-vuota{color:#8494A3;font-style:italic;font-size:calc(4.6mm*var(--k))}' +
+      '.pa-v .pa-en{display:block;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:700;font-style:italic;font-size:calc(5.6mm*var(--k));line-height:1.15;color:' + col + ';margin-top:calc(0.4mm*var(--k))}' +
+      '.pa-v p.pa-den{margin-top:calc(0.6mm*var(--k));font-style:italic;font-size:calc(4.7mm*var(--k));line-height:1.22;color:#3E4C59;border-left:0.6mm solid ' + tinta(col, 0.5) + ';padding-left:calc(2mm*var(--k))}' +
+      '</style>';
+    var lab = A + 'font-weight:800;letter-spacing:0.6mm;text-transform:uppercase;font-size:4.8mm';
+    return '<div class="poster-foglio pa-foglio" style="width:700mm;height:1000mm;position:relative;overflow:hidden;background:#FBFAF7;color:#15212B;font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;box-sizing:border-box">' + css +
+      '<div class="pa-testata" style="position:relative;height:172mm;box-sizing:border-box;background:linear-gradient(135deg,' + col + ' 0%,' + scuro(col, 0.72) + ' 100%);color:#fff;padding:15mm 34mm 0;overflow:hidden">' +
+        '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">' + esc(NUM) + '</div>' +
+        '<div style="position:relative;display:flex;justify-content:space-between;align-items:center">' +
+          '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">IIS «E. Barsanti» · sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
+          '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">' + esc(TIT()) + (opz.en ? (conc() ? ' · Glossary' : ' · Dental technology glossary') : '') + '<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
+        '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:' + (opz.en ? 6 : 12) + 'mm">' + icona2(n, col).replace('width="64mm" height="64mm"', opz.en ? 'width="64mm" height="64mm"' : 'width="74mm" height="74mm"') +
+          '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area 0' + n + ' di 0' + NA) + ' · ' + termini.length + ' termini dalla A alla Z</div>' +
+          '<div style="' + A + 'font-weight:900;font-size:' + (opz.en ? (area.it.length > 30 ? 26 : 33) : (area.it.length > 30 ? 32 : 40)) + 'mm;line-height:0.98;letter-spacing:-0.8mm;margin-top:3mm">' + esc(area.it) + '</div>' + (opz.en && area.en ? '<div lang="en" style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-style:italic;font-weight:700;font-size:9mm;opacity:.9;margin-top:1.5mm">' + esc(area.en) + '</div>' : '') + '</div></div>' +
+        '<div class="pa-aut" style="position:relative;margin-top:' + (opz.en ? 6 : 10) + 'mm;border-top:0.4mm solid rgba(255,255,255,.45);padding-top:5mm;font-size:5.2mm;line-height:1.45">' +
+          '<b style="' + lab + '">A cura di</b> &nbsp;' + classi.map(function (c) { return '<b>' + c + ':</b> ' + (perCl[c] || []).join(' · '); }).join(' &nbsp;|&nbsp; ') +
+          '<br><b style="' + lab + '">Docente</b> &nbsp;' + (conc() ? esc(conc().docente) + (conc().materia ? ' (' + esc(conc().materia) + ')' : '') + ' &nbsp;·&nbsp; <i>' + CONCESSIONE + '</i>' : 'Prof. Danilo Cerrato (Laboratorio odontotecnico)') + '</div></div>' +
+      '<div style="position:absolute;left:34mm;right:34mm;top:179mm;display:flex;gap:1mm;padding:2.5mm 0;border-bottom:0.5mm solid #15212B">' + AZ + '</div>' +
+      '<div class="pa-corpo" style="position:absolute;left:34mm;right:34mm;top:200mm;height:642mm"><div class="pa-col">' + corpo + '</div><div class="pa-col"></div><div class="pa-col"></div></div>' +
+      (opz.firme === false ? '' : '<div style="position:absolute;left:34mm;right:34mm;bottom:128mm;height:22mm;border:0.7mm solid ' + col + ';border-radius:3mm;background:' + tinta(col, 0.07) + '">' +
+        '<div style="position:absolute;left:6mm;top:-3.8mm;background:' + col + ';color:#fff;padding:0.8mm 3mm;border-radius:1.5mm;' + A + 'font-size:4.2mm;font-weight:800;letter-spacing:0.4mm;text-transform:uppercase">Firme degli autori</div></div>') +
+      '<div style="position:absolute;left:0;right:0;bottom:64mm;height:56mm">' + nastroAlfa(n) +
+        '<div style="position:absolute;left:0;right:0;top:4mm;text-align:center;' + S + 'font-weight:600;font-size:' + fsM + 'mm;line-height:1;color:#15212B;-webkit-text-stroke:2.4mm #FBFAF7;paint-order:stroke fill">' + esc(MT) + '</div></div>' +
+      '<div style="position:absolute;left:34mm;right:34mm;bottom:14mm;height:46mm;box-sizing:border-box;border-top:0.6mm solid #15212B;padding-top:5mm;display:flex;align-items:center;gap:9mm;font-size:5mm;line-height:1.35;color:#2C3A47">' +
+        (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
+          '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '').replace(/\?.*$/, '')) + '</div>' : '') +
+        '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
+        '<div style="text-align:right">' + (conc() ? '<i>' + CONCESSIONE + '</i><br>' : '') + 'IIS «E. Barsanti» · sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
+      '</div>';
+  }
+  /* Distribuisce le voci nelle tre colonne e sceglie il carattere più grande con cui stanno tutte; restituisce la scala usata.
+     Non usa le colonne automatiche del browser: misura l'altezza di ogni voce e le sistema una per una, quindi il risultato
+     è lo stesso in Chrome, Safari e Firefox, a schermo e in stampa. Funzione autonoma: viene copiata anche nella finestra di stampa. */
+  function adatta(foglio) {
+    var f = foglio && foglio.classList && foglio.classList.contains('pa-foglio') ? foglio : (foglio && foglio.querySelector('.pa-foglio'));
+    if (!f) return 1;
+    var body = f.querySelector('.pa-corpo'), cols = [].slice.call(body.querySelectorAll('.pa-col')), voci = [].slice.call(body.querySelectorAll('.pa-let,.pa-v'));
+    if (cols.length !== 3) { cols = [0, 1, 2].map(function () { var c = document.createElement('div'); c.className = 'pa-col'; return c; }); body.innerHTML = ''; cols.forEach(function (c) { body.appendChild(c); }); }
+    // con la scala k: tutte le voci in fila nella prima colonna, si misurano e si calcola in quale colonna va ciascuna
+    function piano(k) {
+      f.style.setProperty('--k', k.toFixed(3));
+      voci.forEach(function (v) { cols[0].appendChild(v); });
+      var H = body.getBoundingClientRect().height, tol = H * 0.004;
+      var m = voci.map(function (v) { var r = v.getBoundingClientRect(); return { t: r.top, b: r.bottom, let: v.classList.contains('pa-let') }; });
+      var dove = [], c = 0, inizio = m.length ? m[0].t : 0;
+      for (var i = 0; i < m.length; i++) {
+        var fine = m[i].let && m[i + 1] ? m[i + 1].b : m[i].b; // una lettera non resta mai da sola in fondo alla colonna
+        if (fine - inizio > H - tol && m[i].t > inizio) { c++; inizio = m[i].t; }
+        dove.push(c);
+      }
+      return { dove: dove, sta: c <= 2 && (!m.length || m[m.length - 1].b - inizio <= H - tol) };
+    }
+    function disponi(p) { voci.forEach(function (v, i) { cols[Math.min(p.dove[i], 2)].appendChild(v); }); }
+    function dentro() { var rb = body.getBoundingClientRect(); return cols.every(function (c) { var u = c.lastElementChild; return !u || u.getBoundingClientRect().bottom <= rb.bottom + 0.5; }); }
+    // ricerca del k più grande (a passi di 0,01 tra 0,50 e 1,50) con cui tutto sta in tre colonne
+    var lo = 50, hi = 150, ok = 0;
+    while (lo <= hi) { var mid = (lo + hi) >> 1; if (piano(mid / 100).sta) { ok = mid; lo = mid + 1; } else hi = mid - 1; }
+    var k = (ok || 50) / 100, p = piano(k); disponi(p);
+    // verifica sull'impaginazione vera: se per un arrotondamento qualcosa sporge, si scende ancora
+    while (!dentro() && k > 0.5) { k = Math.round(k * 100 - 1) / 100; p = piano(k); disponi(p); }
+    f.setAttribute('data-pieno', dentro() ? '0' : '1');
+    // nomi degli autori nella testata: se sono tanti si rimpicciolisce il carattere finché tutto sta nella fascia colorata
+    var aut = f.querySelector('.pa-aut'), te = f.querySelector('.pa-testata');
+    if (aut && te) {
+      var mm = f.getBoundingClientRect().width / 700, fs = 5.2;
+      aut.style.fontSize = fs + 'mm';
+      while (fs > 2.6 && aut.getBoundingClientRect().bottom > te.getBoundingClientRect().bottom - 4 * mm) { fs -= 0.1; aut.style.fontSize = fs.toFixed(2) + 'mm'; }
+    }
+    return k;
+  }
+
+  /* targa introduttiva 50x70: aree [{n,it,colore}], s = statistiche del lavoro (o null per la versione senza numeri) */
+  function targa(aree, s, url) {
+    var F = "font-family:Archivo,Arial,sans-serif;", S = "font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;", T = "font-family:'Atkinson Hyperlegible',Arial,sans-serif;";
+    var COL = aree.map(function (a) { return a.colore; }), W = 500, H = 40;
+    var nastro = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + 'mm" height="' + H + 'mm" style="display:block"><defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="0">' + COL.map(function (c, k) { return '<stop offset="' + (k / 3) + '" stop-color="' + c + '"/>'; }).join('') + '</linearGradient>' +
+      '<linearGradient id="tl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.18"/></linearGradient></defs>';
+    [[0, 9, 0.95, 1], [1.7, 5, 0.6, 0.8], [3.4, 3, 0.4, 1.25]].forEach(function (r) {
+      var su = [], giu = [];
+      for (var x = 0; x <= W; x += 2) { var f = 2 * Math.PI * x / W * 1.6 * r[3] + r[0], c = 20 + 8 * Math.sin(f), sp = r[1] * (0.55 + 0.45 * Math.cos(f * 0.5 + 1)); su.push(x + ',' + (c - sp).toFixed(2)); giu.push(x + ',' + (c + sp).toFixed(2)); }
+      var d = 'M' + su.join(' L') + ' L' + giu.reverse().join(' L') + 'Z';
+      nastro += '<path d="' + d + '" fill="url(#tg)" fill-opacity="' + r[2] + '"/><path d="' + d + '" fill="url(#tl)" fill-opacity="' + r[2] + '"/>';
+    });
+    nastro += '</svg>';
+    var ic = function (a) { return icona2(Number(a.n), a.colore).replace('width="64mm" height="64mm"', 'width="44mm" height="44mm"'); };
+    var area = function (a) { return '<div style="display:flex;align-items:center;gap:6mm;background:#F4F6F8;border-radius:5mm;padding:8mm 7mm;border-left:3mm solid ' + a.colore + '">' +
+      '<div style="background:' + a.colore + ';border-radius:50%;padding:2mm;flex:none">' + ic(a) + '</div>' +
+      '<div><div style="' + F + 'font-weight:900;font-size:15mm;line-height:1;color:' + a.colore + '">' + esc(a.numero || ('0' + a.n)) + '</div>' +
+      '<div style="' + F + 'font-weight:800;font-size:8.6mm;line-height:1.1;color:#15212B;margin-top:1.5mm">' + esc(a.it) + '</div>' +
+      '<div style="' + T + 'font-size:5.6mm;color:#5B6976;margin-top:1.5mm">' + (a.tot != null ? a.tot : 65) + ' termini · cartellone ' + a.n + ' di ' + aree.length + '</div></div></div>'; };
+    var racconto, cifre;
+    if (s) {
+      racconto = 'Per <b>' + s.giorniParola + ' giorni</b>, ' + s.periodo + ', <b>' + s.autoriParola + ' studenti</b> delle classi ' + s.classi + ' hanno dato voce al linguaggio del loro mestiere. ' +
+        'Insieme hanno dedicato al glossario <b>' + s.oreTesto + '</b> di lavoro: ' + s.mediaTesto + ' ciascuno, in media. ' +
+        'Hanno inviato <b>' + s.risposte + ' risposte</b>, cercando ogni volta, fra otto definizioni, la sola esatta' + (s.primo != null ? ': ' + s.primo + ' volte su cento l’hanno riconosciuta al primo colpo' : '') + '. ' +
+        'Delle ' + s.totale + ' definizioni, <b>' + s.approvate + '</b> hanno superato il vaglio del docente' + (s.voto ? '; il voto medio delle due classi è <b>' + s.voto + '</b>' : '') + '.';
+      cifre = [[s.oreBreve, 'di lavoro'], [s.mediaBreve, 'a studente'], [String(s.risposte), 'risposte'], [s.voto || '—', 'voto medio']];
+    } else {
+      var NW = ['zero', 'un', 'due', 'tre', 'quattro', 'cinque', 'sei'][aree.length] || aree.length, tot = aree.reduce(function (x, a) { return x + (a.tot != null ? a.tot : 65); }, 0);
+      racconto = 'Ogni termine di questo glossario è stato affidato a uno studente, che tra otto definizioni ha individuato quella corretta; il docente l’ha verificata e approvata. Ne ' + (aree.length === 1 ? 'è nato un cartellone, firmato dai suoi autori.' : 'sono nati ' + NW + ' cartelloni, uno per area, firmati dai loro autori.');
+      cifre = [[String(tot), 'termini'], [String(targa.autori || 26), 'autori'], [String(aree.length), aree.length === 1 ? 'area' : 'aree'], [String(targa.classi || 2), 'classi']];
+    }
+    return '<div style="width:500mm;height:700mm;display:flex;flex-direction:column;color:#15212B;background:#fff;' + T + '">' +
+      '<div style="background:#15212B;color:#fff;padding:13mm 30mm 11mm;display:flex;align-items:center;justify-content:space-between">' +
+        '<div style="display:flex;align-items:center;gap:6mm">' + logo(24) + '<div style="' + F + 'font-weight:800;font-size:9.5mm;line-height:1.1">IIS «E. Barsanti» · sede Salvetti<div style="' + T + 'font-weight:400;font-size:5.6mm;opacity:.85;margin-top:1.5mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
+        '<div style="text-align:right;' + F + 'font-weight:700;font-size:6mm;letter-spacing:0.8mm;text-transform:uppercase;line-height:1.6">a.s. ' + esc(s && s.as || '2026/27') + '<br>Classi ' + esc(s && s.classi || '3E e 3F') + '</div></div>' +
+      '<div style="padding:18mm 30mm 0">' +
+        '<div style="' + F + 'font-weight:900;font-size:58mm;line-height:0.9;letter-spacing:-1.4mm">Glossario</div>' +
+        '<div style="' + S + 'font-weight:600;font-size:' + (conc() && MAT().length > 14 ? Math.max(26, Math.round(52 * 14 / MAT().length)) : 52) + 'mm;line-height:1;margin-top:1mm;color:#2C3A47">' + (conc() ? (MAT() ? 'di ' + esc(MAT().toLowerCase()) : '') : 'odontotecnico') + '</div></div>' +
+      '<div style="margin-top:6mm">' + nastro + '</div>' +
+      '<div style="padding:8mm 30mm 0;' + S + 'font-weight:500;font-size:13mm;line-height:1.32;color:#15212B;font-variant-numeric:lining-nums;font-feature-settings:\'lnum\' 1">' + racconto + '</div>' +
+      '<div style="padding:9mm 30mm 0;display:grid;grid-template-columns:repeat(4,1fr);gap:5mm">' + cifre.map(function (c) {
+        return '<div style="border-top:1.2mm solid #15212B;padding-top:3.5mm"><div style="' + F + 'font-weight:900;font-size:19mm;line-height:1">' + esc(c[0]) + '</div><div style="' + F + 'font-weight:600;font-size:6.2mm;color:#5B6976;margin-top:1.5mm;text-transform:uppercase;letter-spacing:0.5mm">' + esc(c[1]) + '</div></div>'; }).join('') + '</div>' +
+      '<div style="padding:12mm 30mm 0;display:grid;grid-template-columns:1fr 1fr;gap:7mm">' + aree.map(area).join('') + '</div>' +
+      '<div style="flex:1"></div>' +
+      '<div style="padding:0 30mm;display:flex;align-items:center;gap:11mm">' +
+        '<div style="background:#fff;border:1.2mm solid #15212B;border-radius:5mm;padding:3.5mm;flex:none">' + qrPoster(url, 66) + '</div>' +
+        '<div><div style="' + F + 'font-weight:900;font-size:12mm;line-height:1.05">Consulta il glossario<br>dal telefono</div>' +
+        '<div style="font-size:6.6mm;color:#5B6976;margin-top:3mm">Inquadra il codice: trovi tutti i termini, cercabili per argomento.</div>' +
+        '<div style="' + F + 'font-weight:700;font-size:6.2mm;margin-top:2.5mm">' + esc(url.replace(/^https?:\/\//, '')) + '</div></div></div>' +
+      '<div style="padding:10mm 30mm 0;text-align:center;' + S + 'font-weight:600;font-size:25mm;color:#2C3A47">Nomina sunt consequentia rerum.</div>' +
+      '<div style="margin:7mm 30mm 0;border-top:0.6mm solid #15212B;padding:5mm 0 14mm;display:flex;justify-content:space-between;font-size:5.6mm;color:#2C3A47">' +
+        '<span><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
+        (conc() ? '<span style="text-align:right">A cura di <b>' + esc(conc().docente) + '</b>' + (conc().materia ? ' · ' + esc(conc().materia) : '') + '<br><i>' + CONCESSIONE + '</i></span></div></div>' : '<span style="text-align:right">A cura del <b>Prof. Danilo Cerrato</b><br>Laboratorio odontotecnico</span></div></div>');
+  }
+  return { materia: MAT, titolo: TIT, concessione: CONCESSIONE, html: html, alfa: alfa, adatta: adatta, ordinaAlfa: ordinaAlfa, iniziale: iniziale, logo: logo, nomePuntato: nomePuntato, icona: icona2, qr: qrPoster, targa: targa };
+})();
+/* ===== POSTER-END ===== */
+</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  try { $('logo').innerHTML = Poster.logo(9); } catch (e) { /* niente */ }
+  // il codice è nel link: /r/CODICE (oppure ?k=CODICE)
+  var K = (location.pathname.split('/r/')[1] || new URLSearchParams(location.search).get('k') || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+  var MEM = 'riservata_chi', G = null, IO = null, SEL = 0, Q = '';
+  var leggi = function () { try { return JSON.parse(localStorage.getItem(MEM) || 'null'); } catch (e) { return null; } };
+  var salva = function (x) { try { if (x) localStorage.setItem(MEM, JSON.stringify(x)); else localStorage.removeItem(MEM); } catch (e) { /* niente */ } };
+  function api(azione, dati) {
+    return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ azione: azione, k: K }, dati)) })
+      .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server.' }; }); }, function () { return { errore: 'Connessione assente: controlla la rete e riprova.' }; })
+      .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore'); return j.dati; });
+  }
+  function chiuso(msg) {
+    $('esci').hidden = true;
+    $('m').innerHTML = '<div class="card chiuso"><div class="ic" aria-hidden="true">🔒</div><h1>Pagina non disponibile</h1><p class="testo">' + esc(msg || 'Il link non è attivo. Chiedi al docente referente.') + '</p></div>';
+  }
+  /* home: nome e cognome */
+  function home(err) {
+    $('esci').hidden = true;
+    $('m').innerHTML = '<form class="card" id="f"><h1>Benvenuta, benvenuto</h1><p class="testo">Qui trovi tutti i termini del glossario con le definizioni approvate dal docente, sempre aggiornati, e una ricerca. Per entrare scrivi il tuo nome e cognome.</p>' +
+      '<div class="riga2"><div><label class="t" for="nome">Nome</label><input type="text" id="nome" autocomplete="given-name" required></div><div><label class="t" for="cognome">Cognome</label><input type="text" id="cognome" autocomplete="family-name" required></div></div>' +
+      (err ? '<p class="err">' + esc(err) + '</p>' : '') + '<button class="btn" id="vai">Entra</button></form>';
+    $('f').addEventListener('submit', function (e) {
+      e.preventDefault(); var n = $('nome').value.trim(), c = $('cognome').value.trim();
+      if (n.length < 2 || c.length < 2) { home('Scrivi nome e cognome.'); return; }
+      entra(n, c);
+    });
+  }
+  function entra(n, c) {
+    var b = $('vai'); if (b) { b.disabled = true; b.textContent = 'Entro…'; }
+    api('riservataentra', { nome: n, cognome: c }).then(function (d) {
+      salva({ nome: d.nome, cognome: d.cognome }); IO = { nome: d.nome, cognome: d.cognome, accesso: d.accesso }; G = d.glossari; SEL = 0; Q = '';
+      tempoInizia(); glossario();
+    }).catch(function (e) { if (/non disponibile/i.test(e.message)) chiuso(e.message); else home(e.message); });
+  }
+  /* il glossario: attività, ricerca, termini */
+  function norm(s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function evid(t, q) { if (!q) return esc(t); var n = norm(t), out = '', i = 0, j; while ((j = n.indexOf(q, i)) >= 0) { out += esc(t.slice(i, j)) + '<mark>' + esc(t.slice(j, j + q.length)) + '</mark>'; i = j + q.length; } return out + esc(t.slice(i)); }
+  function glossario() {
+    $('esci').hidden = false;
+    if (!G || !G.length) { $('m').innerHTML = '<div class="card"><p class="testo">Non ci sono ancora termini approvati.</p></div>'; return; }
+    $('m').innerHTML = '<div class="cerca"><label for="q" style="position:absolute;left:-9999px">Cerca un termine o una parola</label><input type="search" id="q" placeholder="Cerca un termine o una parola" autocomplete="off" value="' + esc(Q) + '">' +
+      (G.length > 1 ? '<div class="tabs" role="tablist">' + G.map(function (g, i) { return '<button role="tab" data-i="' + i + '" class="' + (i === SEL ? 'on' : '') + '" aria-selected="' + (i === SEL) + '">' + esc(g.classi.join(' e ') || g.nome) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="cnt" id="cnt"></div></div><div id="lista" style="display:flex;flex-direction:column;gap:8px"></div>';
+    $('q').addEventListener('input', function () { Q = this.value; lista(); });
+    document.querySelectorAll('.tabs button').forEach(function (b) { b.onclick = function () { SEL = Number(b.getAttribute('data-i')); glossario(); }; });
+    lista();
+  }
+  function lista() {
+    var g = G[SEL], q = norm(Q.trim()), area = {}; g.aree.forEach(function (a) { area[a.n] = a; });
+    var R = g.termini.filter(function (t) { return !q || norm(t.t + ' ' + t.d).indexOf(q) >= 0; });
+    $('cnt').textContent = (q ? R.length + (R.length === 1 ? ' termine trovato' : ' termini trovati') : g.termini.length + ' termini approvati') + ' · ' + g.nome + (g.as ? ' · a.s. ' + g.as : '');
+    var h = '', l = '';
+    R.forEach(function (t) {
+      var L = t.t.charAt(0).toUpperCase(), a = area[t.a] || { it: '', colore: '#0E7C7B' };
+      if (!q && L !== l) { h += '<div class="lett">' + esc(L) + '</div>'; l = L; }
+      h += '<div class="voce" style="--c:' + esc(a.colore) + '"><b>' + evid(t.t, q) + '</b><span>' + evid(t.d, q) + '</span>' + (a.it ? '<small>' + esc(a.it) + '</small>' : '') + '</div>';
+    });
+    $('lista').innerHTML = h || '<div class="vuoto">Nessun termine per «' + esc(Q) + '»</div>';
+  }
+  /* tempo sulla pagina: solo in primo piano, inviato quando si esce o si cambia scheda */
+  var T0 = null, ACC = 0;
+  function tempoInizia() { T0 = document.visibilityState === 'visible' ? Date.now() : null; ACC = 0; }
+  function invia() {
+    if (T0) { ACC += (Date.now() - T0) / 1000; T0 = null; }
+    var s = Math.round(ACC); if (!IO || s < 2) return; ACC = 0;
+    var corpo = JSON.stringify({ azione: 'riservatatempo', k: K, nome: IO.nome, cognome: IO.cognome, accesso: IO.accesso, sec: s });
+    try { if (navigator.sendBeacon && navigator.sendBeacon('/api', new Blob([corpo], { type: 'application/json' }))) return; } catch (e) { /* niente */ }
+    try { fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: corpo, keepalive: true }); } catch (e) { /* niente */ }
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') invia(); else if (IO) T0 = Date.now(); });
+  window.addEventListener('pagehide', invia);
+  setInterval(function () { if (IO && T0 && Date.now() - T0 > 120000) { invia(); T0 = Date.now(); } }, 30000);
+  $('esci').onclick = function () { invia(); salva(null); IO = null; G = null; home(); };
+  /* avvio: se il link manca chiuso; se il nome è già noto su questo dispositivo, si entra subito (è comunque un nuovo accesso) */
+  if (!K) chiuso(); else { var io = leggi(); if (io && io.nome && io.cognome) { $('m').innerHTML = '<p class="testo">Entro come ' + esc(io.nome + ' ' + io.cognome) + '…</p>'; entra(io.nome, io.cognome); } else home(); }
+})();
+</script>
+</body>
+</html>

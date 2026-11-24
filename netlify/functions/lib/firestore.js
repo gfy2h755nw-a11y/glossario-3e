@@ -69,6 +69,8 @@ function db(spazio) {
     /* pagina per i colleghi: codice del link e visite */
     async leggiPromo() { const s = await f.collection(COL.config).doc('_promo').get(); return s.exists ? s.data() : null; },
     async scriviPromo(dati) { await f.collection(COL.config).doc('_promo').set(dati); },
+    async leggiRiservata() { const s = await f.collection(COL.config).doc('_riservata').get(); return s.exists ? s.data() : null; },
+    async scriviRiservata(dati) { await f.collection(COL.config).doc('_riservata').set(dati); },
     /* versione pubblicata sulla pagina pubblica (termini, definizioni, autori): una per attività */
     async leggiPubblicazione() { const s = await f.collection('pubblicazioni').doc(ns).get(); return s.exists ? s.data() : null; },
     async scriviPubblicazione(dati) { await f.collection('pubblicazioni').doc(ns).set(dati); },
