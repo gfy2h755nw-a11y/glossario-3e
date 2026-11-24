@@ -588,6 +588,6 @@ var Poster = (function () {
         '<span><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
         (conc() ? '<span style="text-align:right">A cura di <b>' + esc(conc().docente) + '</b>' + (conc().materia ? ' · ' + esc(conc().materia) : '') + '<br><i>' + CONCESSIONE + '</i></span></div></div>' : '<span style="text-align:right">A cura del <b>Prof. Danilo Cerrato</b><br>Laboratorio odontotecnico</span></div></div>');
   }
-  return { materia: MAT, titolo: TIT, concessione: CONCESSIONE, html: html, alfa: alfa, adatta: adatta, ordinaAlfa: ordinaAlfa, iniziale: iniziale, logo: logo, icona: icona2, qr: qrPoster, targa: targa };
+  return { materia: MAT, titolo: TIT, concessione: CONCESSIONE, html: html, alfa: alfa, adatta: adatta, ordinaAlfa: ordinaAlfa, iniziale: iniziale, logo: logo, nomePuntato: nomePuntato, icona: icona2, qr: qrPoster, targa: targa };
 })();
 /* ===== POSTER-END ===== */

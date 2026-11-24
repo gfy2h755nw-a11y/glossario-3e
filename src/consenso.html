@@ -91,7 +91,7 @@ details.inf p{font-size:14px;color:var(--ink2);margin:8px 0 0}
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   try { $('logo').innerHTML = Poster.logo(11); } catch (e) { /* logo non disponibile */ }
-  var M = {}, PAD = {};
+  var M = {}, PAD = {}, DAQR = 0;
   function api(azione, dati) {
     return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ azione: azione }, dati)) })
       .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server.' }; }); }, function () { return { errore: 'Connessione assente: controlla la rete e riprova.' }; })
@@ -116,7 +116,8 @@ details.inf p{font-size:14px;color:var(--ink2);margin:8px 0 0}
       api('consensocerca', { codice: c }).then(function (d) { M.cod = c; M.s = d; passo2(); }).catch(function (e) { passo1(e.message, c); });
     };
     $('av1').onclick = go; $('cod').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
-    var q = new URLSearchParams(location.search).get('c'); if (q && !cod && !err) { $('cod').value = q.toUpperCase(); }
+    // dal QR della scheda accessi: codice già inserito, si va avanti da soli
+    var q = new URLSearchParams(location.search).get('c'); if (q && !cod && !err && !DAQR) { DAQR = 1; $('cod').value = q.toUpperCase(); go(); }
   }
 
   /* passo 2: dati, scelta e firma */

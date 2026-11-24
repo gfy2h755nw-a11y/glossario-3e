@@ -52,7 +52,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '24/11/2026 · 2';
+var VERSIONE = '24/11/2026 · 3';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -1087,7 +1087,7 @@ function qrSvg(testo, mm) {
 /* fogli accessi: una pagina A4 per alunno con le date (scritto e quiz), QR + indirizzo + codice dello scritto
    e QR + indirizzo del quiz (stesso codice). Un unico PDF per la classe (o per tutte). */
 function stampaSchede(classe) {
-  var host = location.origin.replace(/^https?:\/\//, ''), logo = Poster.logo(22), ed = (S.d.config && S.d.config.edizione) || {};
+  var host = location.origin.replace(/^https?:\/\//, ''), logo = Poster.logo(17), ed = (S.d.config && S.d.config.edizione) || {};
   var A = S.d.admin || {}, impQ = ((A.impostazioni || {}).quiz) || {};
   var lista = S.d.codiciAlunni.filter(function (a) { return !classe || classe === 'tutte' || (a.classe || '3E') === classe; });
   if (!lista.length) { toast('Nessun alunno in questa classe', true); return; }
@@ -1097,35 +1097,37 @@ function stampaSchede(classe) {
   };
   var blocco = function (n, col, chiaro, scuro, tit, qr, url, cod, nota, riga) {
     return '<div class="bl" style="border-color:' + col + '"><div class="bt" style="background:' + col + '">' + n + ' · ' + tit + '</div><div class="bc">' + qr +
-      '<div class="bi"><div class="lb">Indirizzo</div><div class="url">' + esc(url) + '</div>' + (cod ? '<div class="lb" style="margin-top:2mm">Codice personale</div><div class="cod">' + esc(cod) + '</div>' : '') +
+      '<div class="bi"><div class="url">' + esc(url) + '</div>' + (cod ? '<div class="lb" style="margin-top:1mm">Codice personale</div><div class="cod">' + esc(cod) + '</div>' : '') +
       (nota ? '<div class="nt" style="background:' + chiaro + ';color:' + scuro + '">' + nota + '</div>' : '') + '<p>' + riga + '</p></div></div></div>';
   };
   var pagine = lista.map(function (a) {
     var cl = a.classe || '3E', dt = (A.date || {})[cl] || { partenza: (A.impostazioni || {}).partenza, scadenzaIt: (A.impostazioni || {}).scadenzaIt }, qa = quizDi(a.id);
     var qIni = qa.partenza || (impQ.partenze || {})[cl], qFin = qa.scadenza || (impQ.scadenze || {})[cl];
-    var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice), linkP = location.origin + '/glossario?da=scheda';
+    var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice), linkP = location.origin + '/glossario?da=scheda', linkC = location.origin + '/consenso?c=' + encodeURIComponent(a.codice);
     return '<section class="pg"><header>' + logo + '<div><div class="sc">IIS «E. Barsanti» · sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
       '<div class="tit">I tuoi accessi al glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
       '<div class="gr">Classe ' + esc(cl) + ' · scritto e quiz, da casa, dal telefono o dal PC</div>' +
       '<div class="cal">' + box('Inizio scritto', dt.partenza, '#1F5FA8') + box('Fine scritto', dt.scadenzaIt, '#1F5FA8') + box('Inizio quiz', qIni, '#6B4EA2') + box('Fine quiz', qFin, '#6B4EA2') + '</div>' +
-      blocco('1', '#1F5FA8', '', '', 'Lo scritto', qrSvg(linkS, 33), host, a.codice, '',
+      blocco('1', '#1F5FA8', '', '', 'Lo scritto', qrSvg(linkS, 25), host, a.codice, '',
         'Inquadra il QR: entri direttamente. Per ognuno dei tuoi termini scegli la definizione corretta' + (EN() ? ', prima in italiano e poi in inglese' : '') + '; il docente approva o ti chiede di correggere.') +
-      blocco('2', '#6B4EA2', '#EFEAF7', '#4B3480', 'Il quiz', qrSvg(linkQ, 33), host + '/quiz', a.codice, '<b>Stesso codice dello scritto</b>',
+      blocco('2', '#6B4EA2', '#EFEAF7', '#4B3480', 'Il quiz', qrSvg(linkQ, 25), host + '/quiz', a.codice, '<b>Stesso codice dello scritto</b>',
         'Si apre a fine scritto. Indovina i termini di tutto il glossario: superato il quiz sei ammesso all\'interrogazione, la verifica finale.') +
-      blocco('3', '#2E7D32', '#E6F2E6', '#1E5E22', 'Il ripasso', qrSvg(linkP, 33), host + '/glossario', '', '<b>Senza codice</b>',
+      blocco('3', '#2E7D32', '#E6F2E6', '#1E5E22', 'Il ripasso', qrSvg(linkP, 25), host + '/glossario', '', '<b>Senza codice</b>',
         'Dopo che i quiz saranno terminati per ognuno, potrai esercitarti alla pagina <b>' + esc(host) + '/glossario</b> in vista dell\'interrogazione.') +
+      blocco('4', '#0E7C7B', '#E2F1F0', '#095F5E', 'Consenso privacy', qrSvg(linkC, 25), host + '/consenso', a.codice, '<b>Lo firma un genitore, o tu se maggiorenne</b>',
+        'Serve per scrivere il tuo nome (es. «' + esc(Poster.nomePuntato(a.nome)) + '») sui cartelloni e sulla pagina web del glossario. Inquadra il QR: il codice è già inserito; si compila e si firma sul telefono.') +
       '<div class="warn"><b>Codice e QR sono personali.</b> Non fotografarli e non darli a nessuno: quello che si fa con il tuo codice risulta tuo.</div>' +
       '<footer>' + esc(docenteAtt()) + (Poster.conc() ? ' · ' + Poster.concessione : '') + (EN() ? ' &nbsp;—&nbsp; Prof.ssa Federica Aliboni · Inglese tecnico' : '') + '</footer></section>';
   }).join('');
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#15212B;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-    '.pg{width:210mm;height:297mm;padding:14mm 16mm 12mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
-    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3.5mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:14pt}.pr{font-size:10pt;color:#5B6976;margin-top:1mm}' +
-    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:11.5pt;letter-spacing:.14em;text-transform:uppercase;margin-top:4mm}' +
-    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:27pt;line-height:1.1;margin-top:1mm}.gr{align-self:flex-start;border-left:3mm solid #15212B;padding:1mm 3mm;font-size:11.5pt;margin-top:2mm;background:#F2F5F7}' +
-    '.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:4mm}.cal>div{background:#F2F5F7;border-radius:0 0 2mm 2mm;padding:2.5mm 3mm;display:flex;flex-direction:column}.cal span{font-size:8.5pt;text-transform:uppercase;letter-spacing:.06em;color:#5B6976}.cal b{font-family:Archivo,Arial,sans-serif;font-size:13pt;margin-top:.5mm}.cal small{font-size:9.5pt;color:#5B6976}' +
-    '.bl{border:1.4pt solid;border-radius:3mm;margin-top:4mm;overflow:hidden}.bt{color:#fff;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:13pt;letter-spacing:.06em;text-transform:uppercase;padding:2mm 4mm}' +
-    '.bc{display:flex;gap:5mm;padding:3mm 4mm;align-items:center}.bl:last-of-type{margin-bottom:4mm}.bc svg{flex:none;border:1pt solid #C3CED7;border-radius:2mm}.bi{min-width:0}.lb{font-size:8.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
-    '.url{font-weight:700;font-size:13pt;margin-top:.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:19pt;letter-spacing:.18em}.nt{display:inline-block;font-size:10pt;padding:1mm 2.5mm;border-radius:2mm;margin-top:1mm}.bi p{font-size:10.5pt;margin:2mm 0 0;line-height:1.35}' +
+    '.pg{width:210mm;height:297mm;padding:11mm 15mm 9mm;display:flex;flex-direction:column;page-break-after:always;break-after:page;overflow:hidden}.pg:last-child{page-break-after:auto;break-after:auto}' +
+    'header{display:flex;gap:5mm;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:2.5mm}.sc{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:14pt}.pr{font-size:10pt;color:#5B6976;margin-top:1mm}' +
+    '.tit{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:11.5pt;letter-spacing:.14em;text-transform:uppercase;margin-top:3mm}' +
+    '.nome{font-family:Archivo,Arial,sans-serif;font-weight:900;font-size:24pt;line-height:1.1;margin-top:1mm}.gr{align-self:flex-start;border-left:3mm solid #15212B;padding:1mm 3mm;font-size:11.5pt;margin-top:2mm;background:#F2F5F7}' +
+    '.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;margin-top:3mm}.cal>div{background:#F2F5F7;border-radius:0 0 2mm 2mm;padding:2.5mm 3mm;display:flex;flex-direction:column}.cal span{font-size:8.5pt;text-transform:uppercase;letter-spacing:.06em;color:#5B6976}.cal b{font-family:Archivo,Arial,sans-serif;font-size:13pt;margin-top:.5mm}.cal small{font-size:9.5pt;color:#5B6976}' +
+    '.bl{flex:none;border:1.4pt solid;border-radius:3mm;margin-top:2.6mm;overflow:hidden}.bt{color:#fff;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:12pt;letter-spacing:.06em;text-transform:uppercase;padding:1.5mm 4mm}' +
+    '.bc{display:flex;gap:5mm;padding:2.2mm 4mm;align-items:center}.bl:last-of-type{margin-bottom:3mm}.bc svg{flex:none;border:1pt solid #C3CED7;border-radius:2mm}.bi{min-width:0}.lb{font-size:8.5pt;color:#5B6976;text-transform:uppercase;letter-spacing:.06em}' +
+    '.url{font-weight:700;font-size:13pt;margin-top:.5mm;word-break:break-all}.cod{font-family:"Courier New",monospace;font-weight:700;font-size:17pt;letter-spacing:.18em}.nt{display:inline-block;font-size:10pt;padding:1mm 2.5mm;border-radius:2mm;margin-top:1mm}.bi p{font-size:9.6pt;margin:1.2mm 0 0;line-height:1.28}' +
         '.warn{margin-top:auto;margin-bottom:0;border:1pt solid #E5B9B4;background:#FBEDEB;border-radius:2mm;padding:2.5mm 3.5mm;font-size:10pt}footer{margin-top:3mm;font-size:9pt;color:#5B6976;text-align:right}';
   var w = window.open('', '_blank');
   if (!w) { toast('Consenti le finestre popup per stampare', true); return; }
@@ -1148,3 +1150,4 @@ document.addEventListener('visibilitychange', presenza);
   var c = memo(KEY_COD);
   if (c) { $('app').innerHTML = '<div class="wrap"><div class="card login">Accesso in corso…</div></div>'; entra(c); } else vistaLogin();
 })();
+
