@@ -14,6 +14,7 @@ const OR = require('./lib/orale');
 const STAT = require('./lib/statistiche');
 const PUBB = require('./lib/pubblicazione');
 const SALUTE = require('./lib/salute');
+const CONS = require('./lib/consensi');
 
 const AZIONI = {
   login: (d, p) => logica.login(d, p),
@@ -52,6 +53,9 @@ const AZIONI = {
   quizregole: (d, p) => OR.quizRegole(d, p),
   quizproroga: (d, p) => OR.quizProroga(d, p),
   quizpersonale: (d, p) => OR.quizPersonale(d, p),
+  consensocerca: (d, p) => CONS.cerca(d, p),
+  consensoinvia: (d, p) => CONS.invia(d, p),
+  consensoimmagine: (d, p) => CONS.immagine(d, p),
   quizdimezza: (d, p) => OR.quizDimezza(d, p),
   pianoorale: (d, p) => OR.pianoOrale(d, p),
   oraleprova: (d, p) => OR.oraleProva(d, p),
@@ -192,17 +196,24 @@ async function glossariInCache() {
   cacheGlossari = { t: now, dati: out };
   return out;
 }
-const SOLO_LETTURA = { salute: 1, saluteletti: 1, glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promotempo: 1, promotogli: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
+const SOLO_LETTURA = { consensocerca: 1, consensoimmagine: 1, salute: 1, saluteletti: 1, glossari: 1, statistiche: 1, presenzapubblica: 1, oralecatalogo: 1, promo: 1, promotempo: 1, promotogli: 1, promonumeri: 1, promostato: 1, promocodice: 1, promoaggiorna: 1, banca: 1, bozzawz: 1, salvabozzawz: 1, login: 1, presenza: 1, pubblico: 1, quizinizio: 1, quizrisposta: 1, quizregole: 1, quizdimezza: 1, scegli: 1, oraleprova: 1, revisionecartelloni: 1, attivitaelenco: 1, word: 1, report: 1, backup: 1, traduzioni: 1 };
 async function manutenzioneSeServe(d) {
   const k = d.spazio || 'main', now = Date.now();
   if (!TEST && manutUltima[k] && now - manutUltima[k] < MANUT_MS) return;
   await logica.manutenzione(d);
   manutUltima[k] = now;
 }
+/* consenso privacy negato: il nome non compare né accanto alle definizioni né tra gli autori */
+function senzaNegati(P, cfg) {
+  const neg = new Set(((cfg && cfg.privacy_negati) || []).map((x) => x.nome));
+  if (!neg.size || !P) return P;
+  const classi = {}; Object.keys(P.classi || {}).forEach((c) => { classi[c] = (P.classi[c] || []).filter((n) => !neg.has(n)); });
+  return Object.assign({}, P, { classi, aree: (P.aree || []).map((a) => Object.assign({}, a, { termini: (a.termini || []).map((t) => (neg.has(String(t.autore || '').split(' · ')[0]) ? Object.assign({}, t, { autore: '' }) : t)) })) });
+}
 async function pubblicoInCache(d, p) {
   const k = (d.spazio || 'main') + '|' + (p.ed || ''), c = cachePubblico[k], now = Date.now();
   if (!TEST && c && now - c.t < PUBBLICO_MS) return c.dati;
-  const dati = Object.assign(await ED.pubblico(d, { ed: p.ed }), { spazi: await SP.elencoPubblico(d), att: d.spazio });
+  const dati = Object.assign(senzaNegati(await ED.pubblico(d, { ed: p.ed }), await d.leggiConfig()), { spazi: await SP.elencoPubblico(d), att: d.spazio });
   cachePubblico[k] = { t: now, dati };
   return dati;
 }
@@ -240,7 +251,7 @@ exports.handler = async (event) => {
     // dopo una modifica del docente il prossimo accesso rifà subito il controllo degli esclusi
     if (!SOLO_LETTURA[p.azione]) delete manutUltima[d.spazio || 'main'];
     // attività create, mandate LIVE o tolte: la pagina pubblica le mostra subito
-    if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita' || p.azione === 'concessione' || p.azione === 'pubblicaglossario' || p.azione === 'ritiraglossario') { Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]); cacheGlossari = null; }
+    if (p.azione === 'mandalive' || p.azione === 'nuovaattivita' || p.azione === 'rimuoviattivita' || p.azione === 'concessione' || p.azione === 'pubblicaglossario' || p.azione === 'ritiraglossario' || p.azione === 'consensoinvia') { Object.keys(cachePubblico).forEach((k) => delete cachePubblico[k]); cacheGlossari = null; }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.admin && d.spazio === 'main') { try { await SP.pulisciResidui(d); } catch (e) { console.error('pulizia:', e.message); await segnala(e, 'pulizia', { livello: 'avviso' }); } }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.admin) { try { dati.salute = await SALUTE.riepilogo(db('main')); } catch (e) { console.error('salute:', e.message); } }
     if (p.azione === 'login' && dati && dati.utente && dati.utente.ruolo === 'alunno') dati.att = d.spazio; // link alla pagina pubblica della sua attività

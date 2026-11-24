@@ -333,7 +333,7 @@ function pacchetto(stato, chi) {
     pacchetti: chi.ruolo === 'docente' ? (function () { const P = require('./pacchetti'); return Object.keys(P).map((id) => ({ id, nome: P[id].nome, aree: P[id].aree, termini: Object.fromEntries(Object.keys(P[id].termini).map((n) => [n, P[id].termini[n].length])) })); })() : undefined,
     areeMie: !!(Array.isArray(stato.config.aree) && stato.config.aree.length),
     // esclusi dallo scritto: marcati «fuori», spariscono dai cartelloni (testata e termini)
-    alunni: stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), fuori: valuta(stato, a, now).escluso || undefined })),
+    alunni: stato.alunni.map((a) => ({ id: a.id, nome: a.nome, gruppo: String(a.gruppo), classe: classeDi(a), fuori: valuta(stato, a, now).escluso || undefined, nascosto: (a.consenso && a.consenso.si === false) || undefined })),
     termini: termini.map((t) => vistaTermine(t, chi, imp.lingue))
   };
   delete out.utente._a;
@@ -369,6 +369,8 @@ function pacchetto(stato, chi) {
         // giudizio breve per alunno: quello generato dai dati e, se c'è, quello scritto dal docente
         giudizi: Object.fromEntries(val.map((v) => { const a = stato.alunni.find((x) => x.id === v.id), q = out.quiz.find((x) => x.id === v.id); return [v.id, { auto: require('./giudizi').auto(v, q), mio: (a && a.giudizio) || '' }]; })),
         attivita: stato.attivita && (chi.admin || P.documenti) ? Object.fromEntries(stato.alunni.map((a) => [a.id, Object.assign(ATT.riepilogo(stato.attivita[a.id], now), studioDi(stato, a, now))])) : null,
+        // consensi privacy: ultimo modulo firmato da ogni studente (o dai genitori) dalla pagina /consenso; l'immagine A4 si chiede a parte
+        consensi: Object.fromEntries(stato.alunni.map((a) => [a.id, a.consenso ? Object.assign({}, a.consenso, { storico: (a.consensi_storico || []).length }) : null])),
         dropbox: chi.admin ? stato.dropbox || null : null,
         titolare: chi.admin ? ((stato.config.docenti || []).filter((d) => d.attivita && d.attivita === stato.config._spazio).map((d) => ({ nome: d.nome, codice: d.codice }))[0] || null) : undefined,
         colleghi: chi.admin ? (stato.config.docenti || []).filter((d) => !d.attivita && !(d.admin || (DATI.DOCENTI.find((x) => x.nome === d.nome) || {}).admin)).map((d) => ({ nome: d.nome, codice: d.codice, permessi: permessiDi(d, false) })) : undefined };
@@ -1039,7 +1041,7 @@ function pubblicoDa(stato) {
     }) };
   });
   const conc = stato.config.concessione;
-  return { docente: conc ? conc.docente : 'Prof. Danilo Cerrato', materia: conc ? conc.materia || '' : 'Laboratorio odontotecnico', concessione: conc ? 'Per gentile concessione del Prof. Danilo Cerrato' : '', scuola: 'Istituto Barsanti - sede Salvetti, Massa', anno: imp.edizione.as,
+  return { docente: conc ? conc.docente : 'Prof. Danilo Cerrato', materia: conc ? conc.materia || '' : 'Laboratorio odontotecnico', concessione: conc ? 'Per gentile concessione del Prof. Danilo Cerrato' : '', scuola: 'IIS «E. Barsanti» · sede Salvetti · Massa (MS)', anno: imp.edizione.as,
     edizione: { id: imp.edizione.id, nome: imp.edizione.nome, as: imp.edizione.as }, classi, aree, aggiornato: new Date().toISOString() };
 }
 

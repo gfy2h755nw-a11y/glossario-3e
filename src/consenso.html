@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Consenso privacy · Glossario</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#13222D">
+<style>/*FONTI*/</style>
+<style>
+/* pagina /consenso: modulo di consenso privacy da compilare e firmare sul telefono (24/11/2026) */
+:root{--ink:#13222D;--ink2:#3D4D59;--muto:#5F6E7A;--linea:#D5DDE1;--fondo:#F2F5F4;--carta:#fff;--acc:#0E7C7B;--acc-d:#095F5E;--acc-l:#E2F1F0;--err:#B0304A}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--fondo);color:var(--ink);font:17px/1.45 'Atkinson Hyperlegible',Arial,sans-serif}
+.top{background:var(--ink);color:#fff;padding-top:env(safe-area-inset-top,0px)}
+.top .in{max-width:640px;margin:0 auto;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px}
+.top .lg svg{display:block}
+.top b{display:block;font:700 17px/1.15 Archivo,Arial,sans-serif}
+.top span{display:block;font-size:13.5px;opacity:.85}
+main{max-width:640px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.card{background:var(--carta);border-radius:16px;padding:16px;box-shadow:0 1px 0 var(--linea)}
+h1{font:800 23px/1.2 Archivo,Arial,sans-serif;margin:0}
+.testo{font-size:15px;color:var(--ink2);margin:0}
+label.t{font-weight:700;display:block;margin-bottom:5px}
+input[type=text],input[type=date]{width:100%;font:17px 'Atkinson Hyperlegible',Arial,sans-serif;padding:11px 12px;border:2px solid var(--linea);border-radius:10px;background:#fff;color:var(--ink);min-height:48px}
+input:focus{border-color:var(--acc);outline:none}
+.cod{font:700 24px monospace!important;letter-spacing:.25em;text-transform:uppercase;text-align:center;max-width:260px}
+.btn{min-height:50px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:800 17px Archivo,Arial,sans-serif;padding:12px 20px;cursor:pointer;width:100%}
+.btn.sec{background:#fff;color:var(--acc-d);border:2px solid var(--acc)}
+.btn[disabled]{opacity:.55}
+.stud{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--acc-l);border-radius:14px;padding:12px 14px}
+.stud b{font:800 20px Archivo,Arial,sans-serif}
+.pill{font:700 13px Archivo,Arial,sans-serif;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.pill.mag{background:#E2ECF7;color:#1F5FA8}.pill.min{background:#FCEBD9;color:#9A4A00}.pill.cl{background:#fff;color:var(--acc-d)}
+.opt{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--linea);border-radius:14px;padding:12px 14px;cursor:pointer;background:#fff}
+.opt input{margin-top:4px;width:20px;height:20px;accent-color:var(--acc);flex:none}
+.opt.on{border-color:var(--acc);background:#F1F8F7}
+.opt b{display:block;font-family:Archivo,Arial,sans-serif}
+.opt span{font-size:14px;color:var(--muto)}
+.scelta{display:flex;flex-direction:column;gap:8px}
+.firma{border:2px dashed #9FB0B9;border-radius:12px;background:#fff;position:relative;touch-action:none}
+.firma canvas{display:block;width:100%;height:150px;border-radius:12px}
+.firma .ph{position:absolute;inset:0;display:grid;place-items:center;color:#9AA7B0;font-size:15px;pointer-events:none}
+.firma .ln{position:absolute;left:14px;right:14px;bottom:34px;border-bottom:1px solid #D5DCE1;pointer-events:none}
+.frow{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:14px;color:var(--muto)}
+.frow button{font:700 15px 'Atkinson Hyperlegible',Arial,sans-serif;background:none;border:0;color:var(--acc-d);cursor:pointer;padding:8px 4px;min-height:40px}
+.chk{display:flex;gap:10px;font-size:15px;color:var(--ink2);align-items:flex-start;cursor:pointer}
+.chk input{width:20px;height:20px;margin-top:2px;accent-color:var(--acc);flex:none}
+.err{color:var(--err);font-weight:700;margin:0}
+.riga2{display:flex;gap:10px}.riga2>div{flex:1;min-width:0}
+.ok{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:24px 4px}
+.ok .tick{width:68px;height:68px;border-radius:50%;background:#E3F1E4;color:#2E7D32;display:grid;place-items:center;font-size:36px}
+.info{font-size:14px;color:var(--muto)}
+details.inf summary{cursor:pointer;font-weight:700;color:var(--acc-d)}
+details.inf p{font-size:14px;color:var(--ink2);margin:8px 0 0}
+:focus-visible{outline:3px solid #2A6CC4;outline-offset:2px}
+/* foglio A4 da cui nasce il PDF: disegnato fuori schermo a 794×1123 px (A4 a 96 dpi) */
+#foglio{position:fixed;left:-10000px;top:0;width:794px;height:1123px;background:#fff;color:#17212B;padding:62px 70px;font:13px/1.5 'Atkinson Hyperlegible',Arial,sans-serif;display:flex;flex-direction:column;gap:16px}
+#foglio .it{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1F3A4D;padding-bottom:12px}
+#foglio .it b{display:block;font:800 15px Archivo,Arial,sans-serif;letter-spacing:.02em}
+#foglio .it span{color:#555;font-size:12px}
+#foglio h2{font:800 21px/1.2 Archivo,Arial,sans-serif;text-align:center;margin:6px 0 0}
+#foglio .sub{text-align:center;color:#4A5A66;font-size:12.5px;margin-top:-8px}
+#foglio table{width:100%;border-collapse:collapse}
+#foglio td{border:1px solid #D5DCE1;padding:7px 10px;vertical-align:top}
+#foglio td.k{width:30%;color:#4A5A66;background:#F5F7F8}
+#foglio .dec{border:2px solid #0E7C7B;border-radius:8px;padding:12px 16px;background:#F1F8F7}
+#foglio .dec b.big{font:800 17px Archivo,Arial,sans-serif;color:#0E3B3A}
+#foglio .dec.neg{border-color:#B0304A;background:#FBF0F2}#foglio .dec.neg b.big{color:#8A1F35}
+#foglio .firme{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+#foglio .firme.uno{grid-template-columns:1fr 1fr}
+#foglio .fi{border-bottom:1px solid #777;min-height:92px;display:flex;flex-direction:column;justify-content:flex-end}
+#foglio .fi img{max-height:84px;max-width:100%;object-fit:contain;align-self:flex-start}
+#foglio .fi small{color:#4A5A66;font-size:11.5px;padding-top:3px}
+#foglio .meta{margin-top:auto;border-top:1px solid #D5DCE1;padding-top:8px;color:#5F6E7A;font-size:11px;display:flex;justify-content:space-between;gap:10px}
+#foglio .meta code{font:700 11px monospace;color:#17212B}
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Consenso privacy · Glossario</b><span id="sott">IIS «E. Barsanti» · sede Salvetti · Massa (MS)</span></div></div></header>
+<main id="m"></main>
+<div id="foglio" aria-hidden="true"></div>
+<script src="/vendor/html2canvas-1.4.1.min.js" defer></script>
+<script src="/vendor/jspdf-2.5.1.umd.min.js" defer></script>
+<script>/*POSTER*/</script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  try { $('logo').innerHTML = Poster.logo(11); } catch (e) { /* logo non disponibile */ }
+  var M = {}, PAD = {};
+  function api(azione, dati) {
+    return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ azione: azione }, dati)) })
+      .then(function (r) { return r.json().catch(function () { return { errore: 'Risposta non valida dal server.' }; }); }, function () { return { errore: 'Connessione assente: controlla la rete e riprova.' }; })
+      .then(function (j) { if (!j.ok) throw new Error(j.errore || 'Errore'); return j.dati; });
+  }
+  function oggiIso() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function eta(iso) { var d = new Date(iso + 'T12:00:00'), o = new Date(); if (isNaN(d)) return null; var e = o.getFullYear() - d.getFullYear(), m = o.getMonth() - d.getMonth(); if (m < 0 || (m === 0 && o.getDate() < d.getDate())) e--; return e; }
+  function itData(iso) { var p = String(iso).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso; }
+
+  /* passo 1: codice dello studente */
+  function passo1(err, cod) {
+    M = {};
+    $('m').innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:10px"><h1>Consenso al nome sul glossario</h1>' +
+      '<p class="testo">Con questo modulo si sceglie se scrivere <b>nome e iniziale del cognome</b> dello studente (es. «Mario R.») accanto alle definizioni che ha curato, sui cartelloni esposti a scuola e sulla pagina web pubblica del glossario.</p>' +
+      '<p class="testo">Firma lo <b>studente</b> se è maggiorenne, i <b>genitori</b> se è minorenne.</p></div>' +
+      '<div class="card"><label class="t" for="cod">Codice dello studente</label><input type="text" id="cod" class="cod" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(cod || '') + '" aria-describedby="codH">' +
+      '<p class="info" id="codH" style="margin:6px 0 0">È il codice di 6 caratteri sulla scheda accessi dello studente.</p>' + (err ? '<p class="err" style="margin-top:8px">' + esc(err) + '</p>' : '') + '</div>' +
+      '<button class="btn" id="av1">Continua</button>';
+    var go = function () {
+      var c = $('cod').value.trim().toUpperCase(); if (c.length < 6) { passo1('Il codice ha 6 caratteri.', c); return; }
+      $('av1').disabled = true; $('av1').textContent = 'Controllo…';
+      api('consensocerca', { codice: c }).then(function (d) { M.cod = c; M.s = d; passo2(); }).catch(function (e) { passo1(e.message, c); });
+    };
+    $('av1').onclick = go; $('cod').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    var q = new URLSearchParams(location.search).get('c'); if (q && !cod && !err) { $('cod').value = q.toUpperCase(); }
+  }
+
+  /* passo 2: dati, scelta e firma */
+  function passo2() {
+    var s = M.s;
+    $('sott').textContent = s.scuola;
+    $('m').innerHTML = '<div class="stud"><div><span class="info">Studente</span><br><b>' + esc(s.studente) + '</b></div><span class="pill cl">Classe ' + esc(s.classe) + '</span></div>' +
+      (s.ultimo ? '<p class="info" style="margin:0">Per questo studente è già arrivato un modulo il ' + esc(new Date(s.ultimo.il).toLocaleDateString('it-IT')) + ' (' + (s.ultimo.si ? 'consenso dato' : 'consenso negato') + '). Se ne invii un altro, vale l\'ultimo.</p>' : '') +
+      '<div class="card"><label class="t" for="nomeS">Nome e cognome dello studente</label><input type="text" id="nomeS" autocomplete="off" style="margin-bottom:12px"><label class="t" for="nasc">Data di nascita dello studente</label><input type="date" id="nasc" max="' + oggiIso() + '"><div id="chi" class="testo" style="margin-top:8px"></div></div><div id="resto" style="display:flex;flex-direction:column;gap:12px"></div>' +
+      '<button class="btn sec" id="indietro">Cambia codice</button>';
+    $('indietro').onclick = function () { passo1(); };
+    $('nasc').addEventListener('change', chiFirma); $('nasc').addEventListener('blur', chiFirma);
+  }
+  function areaFirma(id, chi) { return '<div style="margin-top:12px"><span class="t" style="font-weight:700">Firma ' + chi + '</span><div class="firma" style="margin-top:5px"><canvas id="' + id + '" aria-label="Spazio per la firma ' + chi + '"></canvas><div class="ln"></div><div class="ph" id="' + id + 'ph">Firma qui con il dito</div></div><div class="frow"><span>Firma dentro il riquadro</span><button type="button" data-canc="' + id + '">Cancella</button></div></div>'; }
+  function chiFirma() {
+    var v = $('nasc').value; if (!v) return;
+    var e = eta(v);
+    if (e == null || e < 10 || e > 60) { $('chi').innerHTML = '<span class="err">Controlla la data di nascita.</span>'; $('resto').innerHTML = ''; return; }
+    if (M.magg === (e >= 18) && $('resto').innerHTML) return; // stessa situazione: non si cancellano le firme
+    M.magg = e >= 18; M.nascita = v;
+    $('chi').innerHTML = M.magg ? '<span class="pill mag">Maggiorenne</span> Firma lo studente.' : '<span class="pill min">Minorenne</span> Firmano i genitori (o chi esercita la responsabilità genitoriale).';
+    var noi = !M.magg;
+    $('resto').innerHTML =
+      '<div class="card"><div class="scelta" role="radiogroup" aria-label="Consenso">' +
+      '<label class="opt" id="oSi"><input type="radio" name="cons" value="si"><div><b>' + (noi ? 'Acconsentiamo' : 'Acconsento') + '</b><span>Nome e iniziale del cognome sui cartelloni a scuola e sulla pagina web del glossario.</span></div></label>' +
+      '<label class="opt" id="oNo"><input type="radio" name="cons" value="no"><div><b>' + (noi ? 'Non acconsentiamo' : 'Non acconsento') + '</b><span>Le definizioni compaiono senza il nome.</span></div></label></div>' +
+      '<details class="inf" style="margin-top:12px"><summary>Leggi l\'informativa</summary>' +
+      '<p>Il nome compare nella forma «nome e iniziale del cognome», accanto alle definizioni curate dallo studente e nell\'elenco degli autori: sui cartelloni esposti all\'interno della scuola e sulla pagina web pubblica del glossario (glossario-3e.netlify.app/glossario), consultabile da chiunque anche dopo la fine dell\'anno scolastico. Non compare nessun altro dato: niente fotografie, voti o valutazioni.</p>' +
+      '<p>Il consenso è facoltativo e non ha conseguenze sulla valutazione. Si può revocare in qualsiasi momento inviando un nuovo modulo con «Non acconsento» o scrivendo al docente referente o alla segreteria. Una pagina web è consultabile da chiunque: la scuola non può impedire che terzi ne salvino il contenuto mentre è pubblicata.</p>' +
+      '<p>Trattamento ai sensi del Regolamento (UE) 2016/679 e del D.Lgs. 196/2003, sulla base del consenso (art. 6, par. 1, lett. a). Titolare del trattamento: l\'Istituto, nella persona del Dirigente scolastico. Informativa completa sul sito dell\'Istituto.</p></details></div>' +
+      (M.magg
+        ? '<div class="card"><span class="t" style="font-weight:700">Lo studente firma da sé</span>' + areaFirma('f1', 'dello studente') + '</div>'
+        : '<div class="card"><label class="t" for="n1">Genitore 1 · nome e cognome</label><input type="text" id="n1" autocomplete="name">' + areaFirma('f1', 'del genitore 1') + '</div>' +
+          '<div class="card"><label class="t" for="n2">Genitore 2 · nome e cognome <span style="font-weight:400;color:var(--muto)">(se firma)</span></label><input type="text" id="n2">' + areaFirma('f2', 'del genitore 2') +
+          '<label class="chk" style="margin-top:12px"><input type="checkbox" id="unico"><span>Firmo da solo/a: consapevole delle conseguenze di dichiarazioni non veritiere (D.P.R. 445/2000), dichiaro di farlo in accordo con l\'altro genitore (artt. 316, 337-ter e 337-quater c.c.).</span></label></div>') +
+      '<div class="card riga2"><div><label class="t" for="luogo">Luogo</label><input type="text" id="luogo" value="Massa" autocomplete="address-level2"></div><div><label class="t" for="dataf">Data</label><input type="date" id="dataf" value="' + oggiIso() + '"></div></div>' +
+      '<label class="chk"><input type="checkbox" id="letto"><span>Ho letto l\'informativa e i dati inseriti sono veri.</span></label>' +
+      '<p class="err" id="errI" hidden></p><button class="btn" id="invia">Invia il modulo firmato</button>';
+    document.querySelectorAll('input[name=cons]').forEach(function (r) { r.addEventListener('change', function () { $('oSi').classList.toggle('on', $('oSi').querySelector('input').checked); $('oNo').classList.toggle('on', $('oNo').querySelector('input').checked); }); });
+    attivaFirma('f1'); if (!M.magg) attivaFirma('f2');
+    $('invia').onclick = invia;
+  }
+  function attivaFirma(id) {
+    var c = $(id), ctx = c.getContext('2d'), r = Math.max(2, window.devicePixelRatio || 1), w = c.clientWidth, h = c.clientHeight;
+    c.width = w * r; c.height = h * r; ctx.scale(r, r); ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#13226B';
+    var giu = false, last = null; PAD[id] = { tratti: 0, c: c, w: w, h: h };
+    var pos = function (e) { var b = c.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; };
+    c.addEventListener('pointerdown', function (e) { giu = true; last = pos(e); try { c.setPointerCapture(e.pointerId); } catch (x) { /* niente */ } $(id + 'ph').hidden = true; e.preventDefault(); });
+    c.addEventListener('pointermove', function (e) { if (!giu) return; e.preventDefault(); var p = pos(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p; PAD[id].tratti++; });
+    var su = function () { giu = false; }; c.addEventListener('pointerup', su); c.addEventListener('pointercancel', su);
+    document.querySelector('[data-canc="' + id + '"]').onclick = function () { ctx.clearRect(0, 0, w, h); PAD[id].tratti = 0; $(id + 'ph').hidden = false; };
+  }
+  var firmata = function (id) { return PAD[id] && PAD[id].tratti > 6; };
+
+  /* il foglio A4: è l'immagine che arriva al docente e che diventa il PDF */
+  function foglio(f) {
+    var s = M.s, fi = function (img, nome, ruolo) { return '<div class="fi">' + (img ? '<img src="' + img + '" alt="">' : '') + '<small>' + esc(nome) + ' · ' + ruolo + '</small></div>'; };
+    var firme = f.magg ? '<div class="firme uno">' + fi(f.img1, f.n1, 'studente maggiorenne') + '<div></div></div>'
+      : '<div class="firme">' + fi(f.img1, f.n1, 'genitore') + (f.n2 ? fi(f.img2, f.n2, 'genitore') : '<div></div>') + '</div>';
+    return '<div class="it">' + (function () { try { return Poster.logo(14); } catch (e) { return ''; } })() + '<div><b>' + esc(s.scuola.toUpperCase()) + '</b><span>Istituto di Istruzione Superiore · ' + esc(s.materia) + (s.as ? ' · a.s. ' + esc(s.as) : '') + '</span></div></div>' +
+      '<h2>Consenso all\'indicazione del nome</h2><div class="sub">' + esc(s.titolo) + ' · cartelloni esposti a scuola e pagina web pubblica · docente referente ' + esc(s.docente) + '</div>' +
+      '<table><tr><td class="k">Studente</td><td><b>' + esc(f.nomeStud) + '</b> · classe ' + esc(s.classe) + '</td></tr><tr><td class="k">Nato/a il</td><td>' + esc(itData(f.nascita)) + ' · ' + (f.magg ? 'maggiorenne: firma lo studente' : 'minorenne: firmano i genitori') + '</td></tr><tr><td class="k">Come comparirà</td><td><b>' + esc(s.studente) + '</b></td></tr></table>' +
+      '<div class="dec' + (f.si ? '' : ' neg') + '"><b class="big">' + (f.si ? (f.magg ? 'ACCONSENTO' : 'ACCONSENTONO') : (f.magg ? 'NON ACCONSENTO' : 'NON ACCONSENTONO')) + '</b><br>all\'indicazione del nome e dell\'iniziale del cognome dello studente accanto alle definizioni da lui/lei curate e nell\'elenco degli autori, sui cartelloni esposti all\'interno della scuola e sulla pagina web pubblica del glossario (glossario-3e.netlify.app/glossario), consultabile da chiunque anche dopo la fine dell\'anno scolastico, fino a eventuale revoca.</div>' +
+      '<div>Il consenso è facoltativo, non ha conseguenze sulla valutazione e si può revocare in qualsiasi momento inviando un nuovo modulo o scrivendo al docente referente o alla segreteria. Oltre al nome e all\'iniziale del cognome non compare alcun altro dato personale. Trattamento ai sensi del Reg. (UE) 2016/679 e del D.Lgs. 196/2003, sulla base del consenso (art. 6, par. 1, lett. a); titolare l\'Istituto, nella persona del Dirigente scolastico; informativa completa sul sito dell\'Istituto.</div>' +
+      '<div><b>Luogo e data:</b> ' + esc(f.luogo) + ', ' + esc(itData(f.data)) + '</div>' + firme +
+      (f.unico ? '<div style="color:#4A5A66;font-size:12px">Firma di un solo genitore, che dichiara di agire in accordo con l\'altro (artt. 316, 337-ter e 337-quater c.c.), consapevole delle conseguenze di dichiarazioni non veritiere (D.P.R. 445/2000).</div>' : '') +
+      '<div class="meta"><span>Modulo compilato e firmato sul telefono il ' + esc(f.quando) + ' · firma elettronica semplice</span><span>ricevuta <code>' + esc(f.ver) + '</code></span></div>';
+  }
+  function invia() {
+    var err = function (t) { var e = $('errI'); e.textContent = t; e.hidden = false; e.scrollIntoView({ block: 'center' }); };
+    var cons = document.querySelector('input[name=cons]:checked');
+    if (!cons) return err('Scegli se dare o negare il consenso.');
+    var nomeS = $('nomeS').value.trim().replace(/\s+/g, ' ');
+    if (nomeS.split(' ').length < 2) return err('Scrivi nome e cognome dello studente (in alto).');
+    var n1 = M.magg ? nomeS : $('n1').value.trim().replace(/\s+/g, ' '), n2 = $('n2') ? $('n2').value.trim().replace(/\s+/g, ' ') : '';
+    if (n1.split(' ').length < 2) return err('Scrivi nome e cognome del genitore 1.');
+    if (!firmata('f1')) return err(M.magg ? 'Manca la firma dello studente.' : 'Manca la firma del genitore 1.');
+    var due = false;
+    if (!M.magg) {
+      if (n2 && !firmata('f2')) return err('Manca la firma del genitore 2, oppure cancella il suo nome.');
+      if (!n2 && firmata('f2')) return err('Scrivi nome e cognome del genitore 2, oppure cancella la sua firma.');
+      due = !!(n2 && firmata('f2'));
+      if (!due && !$('unico').checked) return err('Serve la firma di entrambi i genitori, oppure spunta la dichiarazione di firma unica.');
+    }
+    var luogo = $('luogo').value.trim(), data = $('dataf').value;
+    if (luogo.length < 2) return err('Scrivi il luogo in cui firmi.');
+    if (!data) return err('Indica la data della firma.');
+    if (!$('letto').checked) return err('Conferma di aver letto l\'informativa.');
+    if (!window.html2canvas) return err('Il modulo non è ancora pronto: attendi un attimo e riprova.');
+    $('errI').hidden = true;
+    var b = $('invia'); b.disabled = true; b.textContent = 'Preparo il modulo…';
+    var d = new Date();
+    var f = { si: cons.value === 'si', magg: M.magg, n1: n1, n2: due ? n2 : '', unico: !M.magg && !due, luogo: luogo, data: data, nascita: M.nascita,
+      img1: $('f1').toDataURL('image/png'), img2: due ? $('f2').toDataURL('image/png') : '', nomeStud: nomeS,
+      quando: d.toLocaleDateString('it-IT') + ' alle ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) };
+    var AL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', q = function () { var o = ''; for (var i = 0; i < 4; i++) o += AL.charAt(Math.floor(Math.random() * AL.length)); return o; };
+    f.ver = 'CP-' + q() + '-' + q();
+    $('foglio').innerHTML = foglio(f);
+    var fatto = function () { b.disabled = false; b.textContent = 'Invia il modulo firmato'; };
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () {
+      return html2canvas($('foglio'), { scale: 1.5, backgroundColor: '#ffffff', logging: false, windowWidth: 900 });
+    }).then(function (cv) {
+      var img = cv.toDataURL('image/jpeg', 0.8);
+      if (img.length > 800000) img = cv.toDataURL('image/jpeg', 0.6);
+      b.textContent = 'Invio…';
+      return api('consensoinvia', { codice: M.cod, ver: f.ver, nomeS: nomeS, nascita: f.nascita, si: f.si, n1: f.n1, n2: f.n2, unico: f.unico, luogo: f.luogo, data: f.data, letto: true, img: img }).then(function (r) { M.img = img; M.r = r; finito(f, r); });
+    }).catch(function (e) { fatto(); err(e.message || 'Invio non riuscito: riprova.'); });
+  }
+  function pdf() {
+    var J = window.jspdf && window.jspdf.jsPDF; if (!J) return null;
+    var doc = new J({ unit: 'mm', format: 'a4' }); doc.addImage(M.img, 'JPEG', 0, 0, 210, 297);
+    return doc.output('blob');
+  }
+  function finito(f, r) {
+    $('m').innerHTML = '<div class="card ok"><div class="tick">✓</div><h1>Modulo inviato</h1>' +
+      '<p class="testo">Il modulo firmato per <b>' + esc(r.studente) + '</b> è arrivato al docente: ' + (r.si ? 'consenso dato' : 'consenso negato') + '. Codice di ricevuta <b>' + esc(r.ver) + '</b>.</p>' +
+      '<p class="testo">Per cambiare idea basta inviare un nuovo modulo: vale l\'ultimo.</p>' +
+      '<button class="btn" id="copia">Salva una copia in PDF</button><button class="btn sec" id="altro">Compila per un altro studente</button></div>';
+    $('altro').onclick = function () { passo1(); window.scrollTo(0, 0); };
+    $('copia').onclick = function () {
+      var bl = pdf(); if (!bl) return;
+      var nome = 'Consenso_' + String(r.studente).replace(/[^A-Za-z0-9]+/g, '_') + '.pdf';
+      try { var fl = new File([bl], nome, { type: 'application/pdf' }); if (navigator.canShare && navigator.canShare({ files: [fl] })) { navigator.share({ files: [fl], title: nome }).catch(function () {}); return; } } catch (e) { /* niente */ }
+      var a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = nome; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    };
+    window.scrollTo(0, 0);
+  }
+  passo1();
+})();
+</script>
+</body>
+</html>

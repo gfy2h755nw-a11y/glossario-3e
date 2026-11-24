@@ -18,7 +18,7 @@ function firestore() {
   return fs;
 }
 
-const COL0 = { config: 'config', alunni: 'alunni', termini: 'termini', attivita: 'attivita', segreti: 'segreti', archivio: 'archivio', parti: 'archivio_parti' };
+const COL0 = { config: 'config', alunni: 'alunni', termini: 'termini', attivita: 'attivita', segreti: 'segreti', archivio: 'archivio', parti: 'archivio_parti', consensi: 'consensi' };
 const PARTE = 300000; // caratteri per documento: anche con caratteri a 3 byte resta sotto il limite Firestore di 1 MiB
 const docs = (snap) => snap.docs.map((d) => Object.assign({ id: d.id }, d.data())).sort((a, b) => a.id.localeCompare(b.id));
 
@@ -47,7 +47,7 @@ function db(spazio) {
   const ns = spazio && spazio !== 'main' ? String(spazio) : 'main';
   if (ns !== 'main' && (!ID_SPAZIO.test(ns) || ns === REGISTRO)) throw Object.assign(new Error('Attività non valida.'), { utente: true });
   const f = firestore();
-  const COL = ns === 'main' ? COL0 : Object.assign({}, COL0, { alunni: COL0.alunni + '__' + ns, termini: COL0.termini + '__' + ns, attivita: COL0.attivita + '__' + ns });
+  const COL = ns === 'main' ? COL0 : Object.assign({}, COL0, { alunni: COL0.alunni + '__' + ns, termini: COL0.termini + '__' + ns, attivita: COL0.attivita + '__' + ns, consensi: COL0.consensi + '__' + ns });
   const cfgRef = f.collection(COL.config).doc(ns), mainRef = f.collection(COL.config).doc('main');
   const principale = ns === 'main';
   const leggiMain = () => (principale ? Promise.resolve(null) : mainRef.get());
@@ -106,6 +106,9 @@ function db(spazio) {
     },
     /* configurazione dell'attività principale così com'è (senza toccare il catalogo attivo) */
     async configPrincipale() { const c = await mainRef.get(); return c.exists ? c.data() : null; },
+    /* consensi privacy: un documento per modulo firmato, con l'immagine A4 */
+    async scriviConsenso(id, dati) { await f.collection(COL.consensi).doc(String(id)).set(dati); },
+    async leggiConsenso(id) { const s = await f.collection(COL.consensi).doc(String(id)).get(); return s.exists ? s.data() : null; },
     async scriviAlunno(id, mod) { await f.collection(COL.alunni).doc(String(id)).set(mod, { merge: true }); },
     /* il quiz si sostituisce per intero: con la fusione i termini «persi» resterebbero nella mappa */
     async sostituisciQuiz(id, quiz) { await f.collection(COL.alunni).doc(String(id)).update({ quiz }); },

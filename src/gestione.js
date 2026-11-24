@@ -1080,3 +1080,82 @@ function scaricaArgo() {
   document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   toast('File per Excel scaricato');
 }
+
+/* ---------- consensi privacy (24/11/2026): moduli firmati sul telefono dalla pagina /consenso ----------
+   tre stati per studente: consenso dato, consenso negato, modulo non arrivato. Il PDF è l'immagine A4 firmata. */
+var CONSIMG = {};
+function consensoDi(id) { return ((S.d.admin || {}).consensi || {})[id] || null; }
+function urlConsenso() { return location.origin + '/consenso'; }
+function statoConsenso(c) { return !c ? 'manca' : c.si ? 'si' : 'no'; }
+function segnoConsenso(c, piccolo) {
+  var st = statoConsenso(c), t = { si: ['✓', 'consenso dato'], no: ['✕', 'consenso negato'], manca: ['–', 'modulo non arrivato'] }[st];
+  return '<i class="cmk ' + st + (piccolo ? ' pic' : '') + '" role="img" aria-label="' + t[1] + '" title="' + t[1] + '">' + t[0] + '</i>';
+}
+function quandoConsenso(iso) { var d = new Date(iso); return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
+function paginaConsensi() {
+  var R = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }).slice().sort(function (x, y) { return (x.classe || '').localeCompare(y.classe || '') || x.nome.localeCompare(y.nome, 'it'); });
+  var n = { si: 0, no: 0, manca: 0 }; R.forEach(function (r) { n[statoConsenso(consensoDi(r.id))]++; });
+  return '<section class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start"><div style="min-width:0"><h2 style="margin:0;font-size:22px">Consensi privacy</h2>' +
+    '<p class="muted" style="margin:4px 0 0;max-width:70ch">Nome e iniziale del cognome (es. «Mario R.») sui cartelloni e sulla pagina web del glossario. Il modulo si compila e si firma sul telefono da <b>' + esc(urlConsenso().replace(/^https?:\/\//, '')) + '</b>, con il codice dello studente: firma lo studente se maggiorenne, i genitori se minorenne. Vale l\'ultimo modulo inviato.</p></div>' +
+    '<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sec" onclick="copiaLinkConsenso(this)">Copia il link</button><button class="btn sec" onclick="stampaStrisciaConsenso()">Striscia con il QR</button>' + (n.si + n.no ? '<button class="btn" onclick="tuttiPdfConsensi(this)">Tutti i moduli in un PDF</button>' : '') + '</div></div>' +
+    '<div class="ccnt"><div class="si"><b>' + n.si + '</b>consenso dato</div><div class="no"><b>' + n.no + '</b>consenso negato</div><div class="manca"><b>' + n.manca + '</b>modulo non arrivato</div></div>' +
+    '<div style="overflow-x:auto"><table class="tbl" id="consTab"><thead><tr><th>Studente</th><th>Classe</th><th style="text-align:center">Modulo</th><th>Firmato da</th><th>Arrivato</th><th>PDF</th></tr></thead><tbody>' +
+    R.map(function (r) {
+      var c = consensoDi(r.id);
+      return '<tr data-cid="' + r.id + '"><td>' + esc(r.nome) + '</td><td>' + esc(etich(r)) + '</td><td style="text-align:center">' + segnoConsenso(c) + '</td>' +
+        '<td class="muted" style="font-size:14px">' + (c ? esc(c.firm) + ' · ' + (c.chi === 'studente' ? 'studente' : 'genitori') + (c.unico ? ' (firma unica)' : '') : '—') + '</td>' +
+        '<td class="muted" style="font-size:14px;white-space:nowrap">' + (c ? esc(quandoConsenso(c.il)) + (c.storico ? '<br><span style="font-size:12px">' + c.storico + (c.storico === 1 ? ' modulo precedente' : ' moduli precedenti') + '</span>' : '') : 'in attesa') + '</td>' +
+        '<td>' + (c ? '<button class="btn sec" style="padding:6px 12px;min-height:0" onclick="apriPdfConsenso(\'' + r.id + '\',this)">Apri PDF</button>' : '<span class="muted" style="font-size:14px">nessun file</span>') + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<p class="muted" style="margin:0;font-size:13px"><b>Consenso negato:</b> il nome viene tolto in automatico dai cartelloni e dalla pagina web, anche da quella già pubblicata; le sue definizioni restano. Il PDF di ogni studente va anche nel report, subito dopo la sua pagina, con un riepilogo finale. Gli studenti non vedono questa sezione.</p></section>';
+}
+function immagineConsenso(id) {
+  var c = consensoDi(id); if (!c) return Promise.resolve(null);
+  var k = id + '|' + c.doc; if (CONSIMG[k]) return Promise.resolve(CONSIMG[k]);
+  return api('consensoimmagine', { alunno: id }).then(function (x) { CONSIMG[k] = x.img; return x.img; });
+}
+function pdfDaImmagini(imgs) {
+  return caricaScript('/vendor/jspdf-2.5.1.umd.min.js').then(function () {
+    var J = window.jspdf.jsPDF, doc = new J({ unit: 'mm', format: 'a4', compress: true });
+    imgs.forEach(function (im, i) { if (i) doc.addPage('a4'); doc.addImage(im, 'JPEG', 0, 0, 210, 297); });
+    return doc.output('blob');
+  });
+}
+function nomeFileConsenso(nome) { return 'Consenso_' + String(nome).replace(/[^A-Za-zÀ-ÿ0-9]+/g, '_').replace(/^_|_$/g, '') + '.pdf'; }
+function apriPdfConsenso(id, btn) {
+  var t = btn && btn.textContent; if (btn) { btn.disabled = true; btn.textContent = 'Apro…'; }
+  var fine = function () { if (btn) { btn.disabled = false; btn.textContent = t; } };
+  immagineConsenso(id).then(function (img) { return pdfDaImmagini([img]); }).then(function (b) { fine(); visoreFile(nomeFileConsenso(nomeAlunno(id)), b); }).catch(function (e) { fine(); toast(errMsg(e), true); });
+}
+function tuttiPdfConsensi(btn) {
+  var R = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id) && consensoDi(r.id); }).sort(function (x, y) { return (x.classe || '').localeCompare(y.classe || '') || x.nome.localeCompare(y.nome, 'it'); });
+  var t = btn.textContent; btn.disabled = true; btn.textContent = 'Preparo il PDF…';
+  caricaImmaginiConsensi(R.map(function (r) { return r.id; })).then(function (IMG) { return pdfDaImmagini(R.map(function (r) { return IMG[r.id]; }).filter(Boolean)); })
+    .then(function (b) { btn.disabled = false; btn.textContent = t; visoreFile('Consensi_privacy' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? '_' + S.filtro.classe : '') + '.pdf', b); })
+    .catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
+}
+/* immagini A4 dei moduli di più studenti (4 richieste alla volta): per il report e per il PDF unico */
+function caricaImmaginiConsensi(ids) {
+  var out = {}, coda = ids.filter(function (id) { return consensoDi(id); }).slice();
+  var lavora = function () { var id = coda.shift(); if (!id) return Promise.resolve(); return immagineConsenso(id).then(function (im) { out[id] = im; }, function () { /* modulo non leggibile: si salta */ }).then(lavora); };
+  return Promise.all([lavora(), lavora(), lavora(), lavora()]).then(function () { return out; });
+}
+function copiaLinkConsenso(btn) {
+  var t = 'Modulo di consenso privacy del glossario (da compilare e firmare sul telefono, serve il codice dello studente): ' + urlConsenso();
+  var ok = function () { btn.textContent = 'Copiato ✓'; setTimeout(function () { btn.textContent = 'Copia il link'; }, 2500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, function () { prompt('Copia il link', t); }); else prompt('Copia il link', t);
+}
+function stampaStrisciaConsenso() {
+  var w = window.open('', '_blank'); if (!w) { toast('Consenti le finestre per stampare.', true); return; }
+  var u = urlConsenso(), as = ((S.d.config || {}).edizione || {}).as || '', cl = CLASSI().join(' e ');
+  var h = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Consenso privacy · QR</title><style>' + cssFonti(location.origin) +
+    '@page{size:A4;margin:0}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#13222D}.pg{width:210mm;height:297mm;padding:22mm 20mm;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8mm;box-sizing:border-box}' +
+    '.sc{display:flex;align-items:center;gap:4mm;font:700 11pt Archivo,Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#4A5A66}h1{font:800 30pt/1.1 Archivo,Arial,sans-serif;margin:0;color:#0E3B3A}p{margin:0;font-size:14pt;max-width:150mm;line-height:1.4}' +
+    '.qr{border:1.2mm solid #0E7C7B;border-radius:5mm;padding:5mm;background:#fff}.u{font:700 16pt monospace;color:#0E3B3A}.f{margin-top:auto;font-size:10.5pt;color:#5F6E7A}</style></head><body><section class="pg">' +
+    '<div class="sc">' + Poster.logo(12) + '<span>IIS «E. Barsanti» · sede Salvetti · Massa (MS)</span></div><h1>Consenso privacy<br>' + esc(Poster.titolo()) + '</h1>' +
+    '<p>Inquadra il QR con il telefono, inserisci il <b>codice dello studente</b> (è sulla sua scheda accessi) e firma il modulo con il dito.</p>' +
+    '<div class="qr">' + qrSvg(u, 95) + '</div><div class="u">' + esc(u.replace(/^https?:\/\//, '')) + '</div>' +
+    '<p>Firma lo studente se è maggiorenne, un genitore se è minorenne. Bastano due minuti.</p>' +
+    '<div class="f">' + esc(((S.d.config || {}).concessione || {}).docente || 'Prof. Danilo Cerrato') + ', referente dell\'attività · ' + (CLASSI().length > 1 ? 'classi ' : 'classe ') + esc(cl) + (as ? ' · a.s. ' + esc(as) : '') + '</div></section></body></html>';
+  w.document.write(h); w.document.close(); setTimeout(function () { try { w.focus(); w.print(); } catch (e) { /* niente */ } }, 500);
+}

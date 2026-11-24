@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Glossari · IIS Barsanti, Massa</title>
+<title>Glossari · IIS E. Barsanti, Massa</title>
 <link rel="manifest" href="/glossari.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-glossari.png">
@@ -233,7 +233,7 @@ footer .motto{font:500 italic 1.6rem var(--serif);color:var(--ink);margin-bottom
   <div class="wrap barra">
     <span class="lg" id="logo"></span>
     <a class="tutti" id="aTutti" href="/glossario" hidden><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg><span>Tutti i glossari</span></a>
-    <div class="tt" id="tt"><b class="tit-gl" id="tTit">Glossari</b><span id="sottotit">Istituto Barsanti - sede Salvetti</span></div>
+    <div class="tt" id="tt"><b class="tit-gl" id="tTit">Glossari</b><span id="sottotit">IIS «E. Barsanti» · sede Salvetti</span></div>
     <button class="bic" id="bInst" hidden aria-label="Installa l'app sul telefono" title="Installa l'app"><svg class="i" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 8v6"/><path d="m9.5 11.5 2.5 2.5 2.5-2.5"/></svg></button>
     <button class="bic" id="bAa" aria-pressed="false" aria-label="Testo più grande" title="Testo più grande"><svg class="i" viewBox="0 0 24 24"><path d="M3 18 8 6l5 12"/><path d="M4.8 14h6.4"/><path d="M14 18l3.5-8 3.5 8"/><path d="M15.2 15.5h4.6"/></svg></button>
   </div>
@@ -254,7 +254,7 @@ footer .motto{font:500 italic 1.6rem var(--serif);color:var(--ink);margin-bottom
       <h1 class="tit-gl">Glossario odontotecnico</h1>
       <p class="lead">Scritto dalle classi <b id="clh"></b> · <span class="cura-pre">a cura del </span><b class="cura-doc">prof. Danilo Cerrato</b></p>
       <p class="conc-riga" hidden></p>
-      <p class="ist">IIS «L. Barsanti» · sede Salvetti · Massa</p>
+      <p class="ist">IIS «E. Barsanti» · sede Salvetti · Massa (MS)</p>
       <div id="hCerca">
         <form class="hcerca" id="hForm" role="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><label for="hq" class="vh">Cerca nel glossario</label><input id="hq" type="search" placeholder="Cerca tra termini e definizioni…" autocomplete="off" enterkeyhint="search"><button type="submit">Cerca</button></form>
         <div class="prova-c" id="hSugg"></div>
@@ -294,7 +294,7 @@ footer .motto{font:500 italic 1.6rem var(--serif);color:var(--ink);margin-bottom
     <div class="motto">Nomina sunt consequentia rerum</div>
     <div id="piedeGl" hidden>Glossario realizzato dalle classi <span id="clf">3E e 3F</span> · <span class="cura-pre">a cura del </span><span class="cura-doc">prof. Danilo Cerrato</span><div class="conc-riga" hidden></div></div>
     <div id="piedeTutti">I glossari delle nostre classi · Risorsa didattica curata dal prof. Danilo Cerrato</div>
-    <div>Istituto di Istruzione Superiore «L. Barsanti» · sede Salvetti · Massa<span class="mat-gl"> · Laboratorio odontotecnico</span></div>
+    <div>Istituto di Istruzione Superiore «E. Barsanti» · sede Salvetti · Massa (MS)<span class="mat-gl"> · Laboratorio odontotecnico</span></div>
   </footer>
 </main>
 <div id="instFoglio" hidden></div>
@@ -413,7 +413,7 @@ function intestazione() {
   document.getElementById('clh').textContent = elencoClassi(cl);
   document.getElementById('clf').textContent = elencoClassi(cl);
   document.querySelectorAll('.tit-gl').forEach(function (e) { e.textContent = tit; });
-  document.title = tit + ' · IIS Barsanti, Massa';
+  document.title = tit + ' · IIS E. Barsanti, Massa';
   // attività di un collega: nome del docente, la sua materia e dicitura di concessione
   if (G.concessione) {
     document.querySelectorAll('.cura-doc').forEach(function (e) { e.textContent = G.docente; });
@@ -757,7 +757,7 @@ try { document.getElementById('logo').innerHTML = Poster.logo(11); } catch (e) {
 disegnaInst();
 if (TUTTI) {
   document.getElementById('vTutti').hidden = false;
-  document.getElementById('tTit').textContent = 'Istituto Barsanti - sede Salvetti';
+  document.getElementById('tTit').textContent = 'IIS «E. Barsanti» · sede Salvetti';
   document.getElementById('sottotit').textContent = 'I glossari delle nostre classi · Risorsa didattica curata dal prof. Danilo Cerrato';
   carica({ azione: 'glossari' }, 'gl-c-glossari').then(function (d) { GL = d; disegnaTutti(); altezze(); })
     .catch(function () { document.getElementById('gls').innerHTML = '<p class="nulla">I glossari non sono raggiungibili in questo momento. Riprova tra poco.</p>'; });

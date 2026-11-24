@@ -33,7 +33,7 @@ var SEZIONI = [
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
   { id: 'votis', t: 'Voti', gr: 'La prova', ico: 'voti', fase: 4, pag: ['voti'] },
-  { id: 'studenti', t: 'Studenti', gr: 'Classe', ico: 'situazione', pag: ['situazione', 'gestione', 'codici'] },
+  { id: 'studenti', t: 'Studenti', gr: 'Classe', ico: 'situazione', pag: ['situazione', 'gestione', 'codici', 'consensi'] },
   { id: 'cart', t: 'Cartelloni', gr: 'Classe', ico: 'cartelloni', pag: ['cartelloni', 'revcart'] },
   { id: 'doc', t: 'Documenti', gr: 'Classe', ico: 'documenti', pag: ['documenti'] },
   { id: 'imp', t: 'Impostazioni', gr: 'Gestione', ico: 'impostazioni', pag: ['impostazioni'] },
@@ -42,7 +42,7 @@ var SEZIONI = [
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
-var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
+var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR', consensi: 'Consensi privacy',
   cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', promo: 'Colleghi e numeri', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
@@ -66,6 +66,7 @@ function PAGINE() {
     { id: 'orale', gr: 'Studenti', t: 'Interrogazioni', vis: !!A && (PUO('voti') || adm) },
     { id: 'voti', gr: 'Studenti', t: 'Voti e tabellone', vis: !!A && (PUO('voti') || PUO('studenti') || PUO('documenti')) },
     { id: 'codici', gr: 'Studenti', t: 'Codici e schede QR', vis: !!S.d.codiciAlunni && !ro },
+    { id: 'consensi', gr: 'Studenti', t: 'Consensi privacy', vis: !!(A && A.consensi) && PUO('studenti') },
     { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
     { id: 'revcart', gr: 'Materiali', t: 'Revisione cartelloni', vis: !!A && PUO('documenti') && !ro, bd: S.rc && Object.keys(S.rc.cambiate).length ? Object.keys(S.rc.cambiate).length : 0 },
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
@@ -334,6 +335,7 @@ var PAGINA = {
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
   },
+  consensi: function () { return paginaConsensi(); },
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },

@@ -14,7 +14,7 @@ var Poster = (function () {
   /* logo della scuola ridisegnato in vettoriale (nitido a qualsiasi formato di stampa) */
   function logo(mm) {
     var T = 'font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff';
-    return '<svg width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 100 100" role="img" aria-label="Logo Istituto Barsanti">' +
+    return '<svg width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 100 100" role="img" aria-label="Logo IIS E. Barsanti">' +
       '<rect width="100" height="100" fill="#EA3628"/>' +
       '<text x="15" y="15.5" textLength="66" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">BARSANTI</text>' +
       '<text x="15" y="98" textLength="65" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">SALVETTI</text>' +
@@ -277,8 +277,8 @@ var Poster = (function () {
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
     var nomi = {};
     var clDi = {};
-    // chi è escluso dallo scritto (fuori) non compare sul cartellone: né nella testata né accanto ai termini
-    (alunni || []).forEach(function (a) { if (a.fuori) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
+    // chi è escluso dallo scritto (fuori) o ha negato il consenso privacy (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: consenso privacy negato
     // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
     var visti = {}, perCl = {}, ordineCl = [];
     termini.forEach(function (t) {
@@ -339,7 +339,7 @@ var Poster = (function () {
       '<div style="background:' + col + ';color:#fff;padding:22mm 36mm 14mm;display:flex;flex-direction:column;gap:8mm">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:10mm">' +
           '<div style="display:flex;align-items:center;gap:7mm"><div style="background:#fff;padding:1.6mm;border-radius:1.5mm;line-height:0">' + logo(30) + '</div>' +
-            '<div style="' + F + 'font-weight:800;font-size:11mm;line-height:1.05">Istituto Barsanti - sede Salvetti</div></div>' +
+            '<div style="' + F + 'font-weight:800;font-size:11mm;line-height:1.05">IIS «E. Barsanti» · sede Salvetti</div></div>' +
           '<div style="text-align:right;' + F + lab + 'line-height:1.7"><div>' + (IT ? esc(TIT()) : esc(TIT()) + ' bilingue · Bilingual ' + (conc() ? '' : 'dental ') + 'glossary') + '</div><div>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. 2026/27</div></div></div>' +
         '<div style="display:flex;align-items:center;gap:14mm">' +
           '<div style="' + F + 'font-weight:900;font-size:96mm;line-height:0.8;letter-spacing:-0.04em">0' + area.n + '</div>' +
@@ -380,7 +380,7 @@ var Poster = (function () {
       })() : '') +
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
-        '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
+        '<span><b>IIS «E. Barsanti» · sede Salvetti · Massa (MS)</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
         '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
         (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
         (conc() ? '<span style="text-align:right">' + (MAT() ? esc(MAT()) + ': ' : '') + '<b>' + esc(conc().docente) + '</b><br><i>' + CONCESSIONE + '</i></span>' : '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>') +
@@ -426,8 +426,8 @@ var Poster = (function () {
     opz = opz || {};
     var col = area.colore, n = Number(area.n), nomi = {}, clDi = {}, NA = opz.nAree || 4;
     icona2.generica = !!opz.areeMie;
-    // chi è escluso dallo scritto (fuori) non compare sul cartellone: né nella testata né accanto ai termini
-    (alunni || []).forEach(function (a) { if (a.fuori) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
+    // chi è escluso dallo scritto (fuori) o ha negato il consenso privacy (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: consenso privacy negato
     var perCl = {}, visti = {};
     termini.forEach(function (t) { if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
     var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];
@@ -472,7 +472,7 @@ var Poster = (function () {
       '<div class="pa-testata" style="position:relative;height:172mm;box-sizing:border-box;background:linear-gradient(135deg,' + col + ' 0%,' + scuro(col, 0.72) + ' 100%);color:#fff;padding:15mm 34mm 0;overflow:hidden">' +
         '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">' + esc(NUM) + '</div>' +
         '<div style="position:relative;display:flex;justify-content:space-between;align-items:center">' +
-          '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
+          '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">IIS «E. Barsanti» · sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
           '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">' + esc(TIT()) + (opz.en ? (conc() ? ' · Glossary' : ' · Dental technology glossary') : '') + '<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
         '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:' + (opz.en ? 6 : 12) + 'mm">' + icona2(n, col).replace('width="64mm" height="64mm"', opz.en ? 'width="64mm" height="64mm"' : 'width="74mm" height="74mm"') +
           '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area 0' + n + ' di 0' + NA) + ' · ' + termini.length + ' termini dalla A alla Z</div>' +
@@ -490,7 +490,7 @@ var Poster = (function () {
         (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
           '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '').replace(/\?.*$/, '')) + '</div>' : '') +
         '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
-        '<div style="text-align:right">' + (conc() ? '<i>' + CONCESSIONE + '</i><br>' : '') + 'Istituto Barsanti - sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
+        '<div style="text-align:right">' + (conc() ? '<i>' + CONCESSIONE + '</i><br>' : '') + 'IIS «E. Barsanti» · sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
       '</div>';
   }
   /* Distribuisce le voci nelle tre colonne e sceglie il carattere più grande con cui stanno tutte; restituisce la scala usata.
@@ -567,7 +567,7 @@ var Poster = (function () {
     }
     return '<div style="width:500mm;height:700mm;display:flex;flex-direction:column;color:#15212B;background:#fff;' + T + '">' +
       '<div style="background:#15212B;color:#fff;padding:13mm 30mm 11mm;display:flex;align-items:center;justify-content:space-between">' +
-        '<div style="display:flex;align-items:center;gap:6mm">' + logo(24) + '<div style="' + F + 'font-weight:800;font-size:9.5mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="' + T + 'font-weight:400;font-size:5.6mm;opacity:.85;margin-top:1.5mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
+        '<div style="display:flex;align-items:center;gap:6mm">' + logo(24) + '<div style="' + F + 'font-weight:800;font-size:9.5mm;line-height:1.1">IIS «E. Barsanti» · sede Salvetti<div style="' + T + 'font-weight:400;font-size:5.6mm;opacity:.85;margin-top:1.5mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
         '<div style="text-align:right;' + F + 'font-weight:700;font-size:6mm;letter-spacing:0.8mm;text-transform:uppercase;line-height:1.6">a.s. ' + esc(s && s.as || '2026/27') + '<br>Classi ' + esc(s && s.classi || '3E e 3F') + '</div></div>' +
       '<div style="padding:18mm 30mm 0">' +
         '<div style="' + F + 'font-weight:900;font-size:58mm;line-height:0.9;letter-spacing:-1.4mm">Glossario</div>' +

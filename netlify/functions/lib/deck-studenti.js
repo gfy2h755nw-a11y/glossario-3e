@@ -99,7 +99,7 @@ async function creaDeckStudenti(classe, imp, now, stato) {
     title: 'Contenuto', background: { color: C.background1 },
     objects: [
       { placeholder: { options: { name: 'title', type: 'title', x: 0.6, y: 0.4, w: 12.1, h: 0.8, fontSize: 34, bold: true, color: C.text1, valign: 'middle', align: 'left', margin: 0 }, text: '' } },
-      { text: { text: INT.titolo(CFG) + ' · Classe ' + CL + ' · Istituto Barsanti - sede Salvetti', options: { x: 0.6, y: 7.0, w: 9, h: 0.3, fontSize: 10, color: HEX.muted, margin: 0 } } }
+      { text: { text: INT.titolo(CFG) + ' · Classe ' + CL + ' · IIS «E. Barsanti» · sede Salvetti', options: { x: 0.6, y: 7.0, w: 9, h: 0.3, fontSize: 10, color: HEX.muted, margin: 0 } } }
     ],
     slideNumber: { x: 12.2, y: 7.0, w: 0.5, h: 0.3, fontSize: 10, color: HEX.muted, align: 'right' }
   });

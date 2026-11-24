@@ -70,6 +70,10 @@ print('public/glossario.html', len(con))
 qz = r('src/quiz.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
 open(os.path.join(B, 'public/quiz.html'), 'w', encoding='utf-8').write(qz)
 print('public/quiz.html', len(qz))
+# pagina del consenso privacy (/consenso): modulo da compilare e firmare sul telefono
+cs = r('src/consenso.html').replace('/*POSTER*/', r('src/poster.js')).replace('/*FONTI*/', FONT_CSS)
+open(os.path.join(B, 'public/consenso.html'), 'w', encoding='utf-8').write(cs)
+print('public/consenso.html', len(cs))
 # pagina di presentazione per i colleghi (/scopri?c=CODICE): si entra con nome e cognome, la visita va nella sezione «Promo App»
 PROMO_JS = '''var PROMO = { entra: function (c, nome, cognome) {
   return fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ azione: 'promo', c: c, nome: nome, cognome: cognome }) })

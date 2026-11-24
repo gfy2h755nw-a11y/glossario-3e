@@ -29,7 +29,7 @@ function impostaAree(config) {
 }
 let CLS = 'Classe 3E';
 let TITOLO = 'Glossario odontotecnico';
-const FOOT = (en) => TITOLO + (en ? ' bilingue' : '') + ' · ' + CLS + ' · Istituto Barsanti - sede Salvetti';
+const FOOT = (en) => TITOLO + (en ? ' bilingue' : '') + ' · ' + CLS + ' · IIS «E. Barsanti» · sede Salvetti';
 
 /* ---------- utilità ---------- */
 const parti = (ms) => { const p = {}; new Intl.DateTimeFormat('it-IT', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(ms)).forEach((x) => { p[x.type] = x.value; }); return p; };
@@ -134,7 +134,7 @@ async function creaPresentazione(stato, attivita, now) {
   const INT = require('./intestazione'), CFG = stato.config, CONC = INT.conc(CFG);
   TITOLO = INT.titolo(CFG);
   pres.author = INT.docente(CFG);
-  pres.company = 'Istituto Barsanti - sede Salvetti';
+  pres.company = 'IIS «E. Barsanti» · sede Salvetti';
 
   const logo = (x, y, s) => [
     { rect: { x, y, w: s, h: s, fill: { color: K.red } } },
@@ -173,7 +173,7 @@ async function creaPresentazione(stato, attivita, now) {
   s.addText([
     { text: 'Report dell\'attività · ' + CLS + ' · a.s. ' + logica.impostazioni(stato.config).edizione.as, options: { bold: true, color: 'FFFFFF', breakLine: true } },
     { text: CONC ? INT.firma(CFG) : EN ? 'Prof. Danilo Cerrato (Laboratorio odontotecnico) · Prof.ssa Federica Aliboni (Inglese tecnico)' : 'Prof. Danilo Cerrato · Laboratorio odontotecnico', options: { breakLine: true } },
-    { text: 'Istituto Barsanti - sede Salvetti · aggiornato a ' + dataLunga(now), options: { fontSize: 13 } }
+    { text: 'IIS «E. Barsanti» · sede Salvetti · aggiornato a ' + dataLunga(now), options: { fontSize: 13 } }
   ], { placeholder: 'body' });
   s.addNotes('Report generato automaticamente dall\'app del glossario: i numeri sono quelli del momento in cui è stato creato.');
 

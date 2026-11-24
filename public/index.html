@@ -570,6 +570,12 @@ html.visore-aperto,html.visore-aperto body{overflow:hidden}
 .dapp .regsez li::marker{color:var(--c)}
 .dapp .regsez li.sub{list-style:circle;margin-left:18px}
 .dapp .regsez b{color:var(--ink)}
+
+/* consensi privacy */
+.ccnt{display:flex;gap:10px;flex-wrap:wrap}.ccnt div{border-radius:12px;padding:10px 16px;min-width:130px;font-size:14px}.ccnt b{display:block;font:600 26px/1.05 var(--serif,Georgia)}
+.ccnt .si{background:#E3F1E4;color:#1E5E22}.ccnt .no{background:#F8E1E6;color:#8A1F35}.ccnt .manca{background:#EEF1F3;color:#5F6E7A}
+.cmk{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;font-style:normal;font-weight:700}.cmk.pic{width:20px;height:20px;border-radius:6px;font-size:12px}
+.cmk.si{background:#2E7D32;color:#fff}.cmk.no{background:#B0304A;color:#fff}.cmk.manca{border:2px solid #D3DCE3;color:#8A95A0}
 </style>
 </head>
 <body>
@@ -2892,7 +2898,7 @@ var Poster = (function () {
   /* logo della scuola ridisegnato in vettoriale (nitido a qualsiasi formato di stampa) */
   function logo(mm) {
     var T = 'font-family:Archivo,Arial,sans-serif;font-weight:700;fill:#fff';
-    return '<svg width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 100 100" role="img" aria-label="Logo Istituto Barsanti">' +
+    return '<svg width="' + mm + 'mm" height="' + mm + 'mm" viewBox="0 0 100 100" role="img" aria-label="Logo IIS E. Barsanti">' +
       '<rect width="100" height="100" fill="#EA3628"/>' +
       '<text x="15" y="15.5" textLength="66" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">BARSANTI</text>' +
       '<text x="15" y="98" textLength="65" lengthAdjust="spacingAndGlyphs" style="' + T + ';font-size:17px">SALVETTI</text>' +
@@ -3155,8 +3161,8 @@ var Poster = (function () {
     var col = area.colore, chiaro = tinta(col, 0.07), medio = tinta(col, 0.18);
     var nomi = {};
     var clDi = {};
-    // chi è escluso dallo scritto (fuori) non compare sul cartellone: né nella testata né accanto ai termini
-    (alunni || []).forEach(function (a) { if (a.fuori) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
+    // chi è escluso dallo scritto (fuori) o ha negato il consenso privacy (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: consenso privacy negato
     // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
     var visti = {}, perCl = {}, ordineCl = [];
     termini.forEach(function (t) {
@@ -3217,7 +3223,7 @@ var Poster = (function () {
       '<div style="background:' + col + ';color:#fff;padding:22mm 36mm 14mm;display:flex;flex-direction:column;gap:8mm">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:10mm">' +
           '<div style="display:flex;align-items:center;gap:7mm"><div style="background:#fff;padding:1.6mm;border-radius:1.5mm;line-height:0">' + logo(30) + '</div>' +
-            '<div style="' + F + 'font-weight:800;font-size:11mm;line-height:1.05">Istituto Barsanti - sede Salvetti</div></div>' +
+            '<div style="' + F + 'font-weight:800;font-size:11mm;line-height:1.05">IIS «E. Barsanti» · sede Salvetti</div></div>' +
           '<div style="text-align:right;' + F + lab + 'line-height:1.7"><div>' + (IT ? esc(TIT()) : esc(TIT()) + ' bilingue · Bilingual ' + (conc() ? '' : 'dental ') + 'glossary') + '</div><div>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. 2026/27</div></div></div>' +
         '<div style="display:flex;align-items:center;gap:14mm">' +
           '<div style="' + F + 'font-weight:900;font-size:96mm;line-height:0.8;letter-spacing:-0.04em">0' + area.n + '</div>' +
@@ -3258,7 +3264,7 @@ var Poster = (function () {
       })() : '') +
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
-        '<span><b>Istituto Barsanti - sede Salvetti, Massa</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
+        '<span><b>IIS «E. Barsanti» · sede Salvetti · Massa (MS)</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
         '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
         (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
         (conc() ? '<span style="text-align:right">' + (MAT() ? esc(MAT()) + ': ' : '') + '<b>' + esc(conc().docente) + '</b><br><i>' + CONCESSIONE + '</i></span>' : '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>') +
@@ -3304,8 +3310,8 @@ var Poster = (function () {
     opz = opz || {};
     var col = area.colore, n = Number(area.n), nomi = {}, clDi = {}, NA = opz.nAree || 4;
     icona2.generica = !!opz.areeMie;
-    // chi è escluso dallo scritto (fuori) non compare sul cartellone: né nella testata né accanto ai termini
-    (alunni || []).forEach(function (a) { if (a.fuori) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; });
+    // chi è escluso dallo scritto (fuori) o ha negato il consenso privacy (nascosto) non compare sul cartellone: né nella testata né accanto ai termini (i termini restano)
+    (alunni || []).forEach(function (a) { if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); clDi[a.id] = a.classe || '3E'; }); // nascosto: consenso privacy negato
     var perCl = {}, visti = {};
     termini.forEach(function (t) { if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
     var classi = Object.keys(perCl).sort(); if (!classi.length) classi = ['3E'];
@@ -3350,7 +3356,7 @@ var Poster = (function () {
       '<div class="pa-testata" style="position:relative;height:172mm;box-sizing:border-box;background:linear-gradient(135deg,' + col + ' 0%,' + scuro(col, 0.72) + ' 100%);color:#fff;padding:15mm 34mm 0;overflow:hidden">' +
         '<div style="position:absolute;right:-12mm;bottom:-74mm;' + A + 'font-weight:900;font-size:340mm;line-height:1;color:#fff;opacity:.12;letter-spacing:-18mm">' + esc(NUM) + '</div>' +
         '<div style="position:relative;display:flex;justify-content:space-between;align-items:center">' +
-          '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
+          '<div style="display:flex;align-items:center;gap:5mm">' + logo(20) + '<div style="' + A + 'font-weight:800;font-size:8.4mm;line-height:1.1">IIS «E. Barsanti» · sede Salvetti<div style="font-family:\'Atkinson Hyperlegible\',Arial,sans-serif;font-weight:400;font-size:5.2mm;opacity:.85;margin-top:1mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
           '<div style="text-align:right;' + A + 'font-weight:700;font-size:5.4mm;letter-spacing:0.9mm;text-transform:uppercase;line-height:1.6">' + esc(TIT()) + (opz.en ? (conc() ? ' · Glossary' : ' · Dental technology glossary') : '') + '<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · a.s. ' + esc(opz.as || '2026/27') + '</div></div>' +
         '<div style="position:relative;display:flex;align-items:center;gap:14mm;margin-top:' + (opz.en ? 6 : 12) + 'mm">' + icona2(n, col).replace('width="64mm" height="64mm"', opz.en ? 'width="64mm" height="64mm"' : 'width="74mm" height="74mm"') +
           '<div><div style="' + A + 'font-weight:700;font-size:7mm;letter-spacing:1.6mm;text-transform:uppercase;opacity:.85">' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area 0' + n + ' di 0' + NA) + ' · ' + termini.length + ' termini dalla A alla Z</div>' +
@@ -3368,7 +3374,7 @@ var Poster = (function () {
         (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
           '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '').replace(/\?.*$/, '')) + '</div>' : '') +
         '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
-        '<div style="text-align:right">' + (conc() ? '<i>' + CONCESSIONE + '</i><br>' : '') + 'Istituto Barsanti - sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
+        '<div style="text-align:right">' + (conc() ? '<i>' + CONCESSIONE + '</i><br>' : '') + 'IIS «E. Barsanti» · sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
       '</div>';
   }
   /* Distribuisce le voci nelle tre colonne e sceglie il carattere più grande con cui stanno tutte; restituisce la scala usata.
@@ -3445,7 +3451,7 @@ var Poster = (function () {
     }
     return '<div style="width:500mm;height:700mm;display:flex;flex-direction:column;color:#15212B;background:#fff;' + T + '">' +
       '<div style="background:#15212B;color:#fff;padding:13mm 30mm 11mm;display:flex;align-items:center;justify-content:space-between">' +
-        '<div style="display:flex;align-items:center;gap:6mm">' + logo(24) + '<div style="' + F + 'font-weight:800;font-size:9.5mm;line-height:1.1">Istituto Barsanti - sede Salvetti<div style="' + T + 'font-weight:400;font-size:5.6mm;opacity:.85;margin-top:1.5mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
+        '<div style="display:flex;align-items:center;gap:6mm">' + logo(24) + '<div style="' + F + 'font-weight:800;font-size:9.5mm;line-height:1.1">IIS «E. Barsanti» · sede Salvetti<div style="' + T + 'font-weight:400;font-size:5.6mm;opacity:.85;margin-top:1.5mm">Massa' + (MAT() ? ' · ' + esc(MAT()) : '') + '</div></div></div>' +
         '<div style="text-align:right;' + F + 'font-weight:700;font-size:6mm;letter-spacing:0.8mm;text-transform:uppercase;line-height:1.6">a.s. ' + esc(s && s.as || '2026/27') + '<br>Classi ' + esc(s && s.classi || '3E e 3F') + '</div></div>' +
       '<div style="padding:18mm 30mm 0">' +
         '<div style="' + F + 'font-weight:900;font-size:58mm;line-height:0.9;letter-spacing:-1.4mm">Glossario</div>' +
@@ -3526,7 +3532,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '23/11/2026 · 8';
+var VERSIONE = '24/11/2026 · 1';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -3556,7 +3562,7 @@ function giorniA(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if (!m) r
 /* ---------- accesso ---------- */
 function vistaLogin(msg) {
   $('app').innerHTML = '<div class="wrap"><form class="card login stack" id="flogin">' +
-    '<div><div class="muted disp" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">Istituto Barsanti - sede Salvetti</div>' +
+    '<div><div class="muted disp" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">IIS «E. Barsanti» · sede Salvetti</div>' +
     '<h1>Glossario odontotecnico</h1></div>' +
     '<p class="muted" style="margin:0">Laboratorio odontotecnico · prof. Danilo Cerrato</p>' +
     (msg ? '<div class="note err">' + esc(msg) + '</div>' : '') +
@@ -4169,11 +4175,20 @@ function riammetti(id, val, btn) {
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 function sceltaRiammissione(testo, scelte) { finestra('Riammissione', testo, scelte); }
+/* report: la finestra si apre subito (al clic), poi si caricano le immagini dei moduli di consenso e si scrive il report */
 function reportPdf() {
+  var w = window.open('', '_blank');
+  if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
+  var ids = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }).map(function (r) { return r.id; });
+  var n = ids.filter(function (id) { return consensoDi(id); }).length;
+  if (n) toast('Preparo il report con ' + n + (n === 1 ? ' modulo firmato…' : ' moduli firmati…'));
+  (n ? caricaImmaginiConsensi(ids) : Promise.resolve({})).then(function (IMG) { reportPdfScrivi(w, IMG); }).catch(function () { reportPdfScrivi(w, {}); });
+}
+function reportPdfScrivi(w, IMG) {
   var A = S.d.admin, voti = {}; A.voti.forEach(function (v) { voti[v.id] = v; });
   var oggi = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
   var imp = A.impostazioni, att = A.attivita || {};
-  var PAN = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); });
+  var PAN = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }), CONS = A.consensi || null;
   var classi = CLASSI().filter(function (c) { return PAN.some(function (r) { return (r.classe || '3E') === c; }); });
   var titoloCl = classi.length > 1 ? 'Classi ' + classi.join(' e ') : 'Classe ' + (classi[0] || '3E');
   var COL = { '3E': '#1F5FA8', '3F': '#B4511A' }, ALTRI = ['#1F5FA8', '#B4511A', '#2E7D32', '#6B4FA0', '#0E7C7B', '#9A4A00'];
@@ -4263,7 +4278,7 @@ function reportPdf() {
   }).join('') + '</tbody></table>' : '';
 
   function testata(sotto) {
-    return '<header><div class="lg0">' + logo(17) + '<div><b>Istituto Barsanti - sede Salvetti</b><span>Massa' + (Poster.materia() ? ' · ' + esc(Poster.materia()) : '') + ' · a.s. ' + esc((S.d.config.edizione || {}).as || '2026/27') + '</span></div></div>' +
+    return '<header><div class="lg0">' + logo(17) + '<div><b>IIS «E. Barsanti» · sede Salvetti</b><span>Massa' + (Poster.materia() ? ' · ' + esc(Poster.materia()) : '') + ' · a.s. ' + esc((S.d.config.edizione || {}).as || '2026/27') + '</span></div></div>' +
       '<div class="dx"><b>' + esc(Poster.titolo()) + '</b><span>' + esc(sotto) + '</span></div></header>';
   }
   var npag = 0, totPag = 2 + PAN.length;
@@ -4284,11 +4299,11 @@ function reportPdf() {
     return '<tr class="sez"><td colspan="10"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + c + ' · ' + rr.length + ' alunni · tempo totale in app ' + durata(tempo(rr)) + '</td></tr>' + rr.map(function (r) {
       var v = voti[r.id] || {}, p = primo(termDi(r.id)), x = att[r.id] || {};
       return '<tr><td>' + esc(r.nome) + (v.ereditati ? ' <span class="tag">erede di ' + esc(donatori(r.id).map(cognome).join(', ') || '—') + '</span>' : '') + (v.escluso ? ' <span class="tag no">escluso</span>' : '') + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c">' + r.inviate + '</td><td class="c">' + (p.n ? p.ok + '/' + p.n : '—') + '</td><td class="c">' + r.errate + '</td><td class="c">' + r.approvate + '/' + r.termini + '</td><td class="c">' + (x.accessi || 0) + '</td><td class="c"><b>' + (x.ultimo ? durata(x.minuti) : '—') + '</b>' + '</td>' +
-        '<td class="vb">' + barraVoto(v.voto, c) + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.manuale != null ? '<span class="m"> man.</span>' : '') + '</td></tr>';
+        '<td class="vb">' + barraVoto(v.voto, c) + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.manuale != null ? '<span class="m"> man.</span>' : '') + '</td>' + (CONS ? '<td class="c">' + ({ si: '<span class="ok">✓</span>', no: '<span class="no">✕</span>', manca: '<span class="m">–</span>' })[statoConsenso(CONS[r.id])] + '</td>' : '') + '</tr>';
     }).join('');
   }).join('');
-  var pag2 = '<section class="pg">' + testata(titoloCl) + '<h1>Tabellone degli alunni</h1><p class="sub">Esatte al 1°: scelte giuste al primo invio sui termini in cui l\'alunno ha risposto. Tempo in app: tempo totale con l\'app aperta, sommando tutti gli accessi.</p>' +
-    '<table class="tab comp"><thead><tr><th>Alunno</th><th class="c">Classe</th><th class="c">Risposte</th><th class="c">Esatte al 1°</th><th class="c">Errate</th><th class="c">Approvate</th><th class="c">Accessi</th><th class="c">Tempo in app</th><th style="width:15%">Voto (scala 0–10)</th><th class="c">Voto</th></tr></thead><tbody>' + righeTab + '</tbody></table>' +
+  var pag2 = '<section class="pg">' + testata(titoloCl) + '<h1>Tabellone degli alunni</h1><p class="sub">Esatte al 1°: scelte giuste al primo invio sui termini in cui l\'alunno ha risposto. Tempo in app: tempo totale con l\'app aperta, sommando tutti gli accessi.' + (CONS ? ' Consenso nome: modulo privacy firmato (✓ dato, ✕ negato, – non arrivato) · <b>' + PAN.filter(function (r) { return CONS[r.id] && CONS[r.id].si; }).length + ' su ' + PAN.length + '</b> con il consenso.' : '') + '</p>' +
+    '<table class="tab comp"><thead><tr><th>Alunno</th><th class="c">Classe</th><th class="c">Risposte</th><th class="c">Esatte al 1°</th><th class="c">Errate</th><th class="c">Approvate</th><th class="c">Accessi</th><th class="c">Tempo in app</th><th style="width:15%">Voto (scala 0–10)</th><th class="c">Voto</th>' + (CONS ? '<th class="c">Consenso nome</th>' : '') + '</tr></thead><tbody>' + righeTab + '</tbody></table>' +
     piede() + '</section>';
 
   /* --- quiz, interrogazione orale e voto finale --- */
@@ -4388,11 +4403,23 @@ function reportPdf() {
       '<table class="tab' + (lungo ? ' fitto' : '') + '"><thead><tr><th class="c" style="width:5%">N.</th><th style="width:24%">Termine</th><th class="c" style="width:10%">Tentativi</th><th class="c" style="width:8%">Punti</th><th>Definizione scelta</th><th class="c" style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table>' +
       '<p style="margin:2mm 0 0;font-size:8.5pt">Punti persi: <b>' + punti(r.errate) + '</b> (' + r.errate + ' risposte errate × ' + fv(PEN) + ') · si parte da ' + fv(v.votoMax || imp.votoMax) + ', voto minimo ' + fv(imp.votoMin) + '.</p>' +
       '<p class="m" style="margin-top:1mm">Tempo totale in app ' + (x.ultimo ? durata(x.minuti) : '—') + (x.minutiPubblica ? ' (di cui ' + durata(x.minutiPubblica) + ' di ripasso sulla pagina pubblica)' : '') + ' · primo accesso ' + esc(quando(x.primo)) + ' · ultimo accesso ' + esc(quando(x.ultimo)) + ' · giorni attivi ' + (x.giorni || 0) + '</p></div>' +
-      piede() + '</section>';
+      piede() + '</section>' +
+      // modulo di consenso privacy firmato: subito dopo la pagina dello studente, così com'è arrivato
+      (IMG[r.id] ? '<section class="pg cons"><img src="' + IMG[r.id] + '" alt="Modulo di consenso di ' + esc(r.nome) + '"></section>' : '');
   }).join('');
+  /* riepilogo dei consensi privacy */
+  var CNS = (A.consensi || {}), nC = { si: 0, no: 0, manca: 0 }; PAN.forEach(function (r) { nC[statoConsenso(CNS[r.id])]++; });
+  var pagCons = '<section class="pg">' + testata(titoloCl) + '<h1>Consensi privacy</h1><p class="sub">Nome e iniziale del cognome sui cartelloni a scuola e sulla pagina web del glossario. Moduli compilati e firmati sul telefono (firma elettronica semplice): lo studente se maggiorenne, i genitori se minorenne. Vale l\'ultimo modulo inviato; ogni modulo è nel report dopo la pagina dello studente.</p>' +
+    '<p style="margin:0 0 3mm"><b>' + nC.si + '</b> consenso dato · <b>' + nC.no + '</b> consenso negato · <b>' + nC.manca + '</b> modulo non arrivato</p>' +
+    '<table class="tab"><thead><tr><th>Alunno</th><th class="c">Classe</th><th class="c">Modulo</th><th>Firmato da</th><th>Luogo e data</th><th class="c">Ricevuta</th></tr></thead><tbody>' +
+    PAN.slice().sort(function (x, y) { return (x.classe || '').localeCompare(y.classe || '') || x.nome.localeCompare(y.nome, 'it'); }).map(function (r) {
+      var c = CNS[r.id], st = statoConsenso(c);
+      return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c"><b class="' + (st === 'si' ? 'ok' : st === 'no' ? 'no' : 'm') + '">' + (st === 'si' ? '✓ dato' : st === 'no' ? '✕ negato' : '– manca') + '</b></td><td>' + (c ? esc(c.firm) + ' (' + (c.chi === 'studente' ? 'studente' : 'genitori') + ')' : '') + '</td><td>' + (c ? esc(c.luogo) + ', ' + esc(String(c.data).split('-').reverse().join('/')) : '') + '</td><td class="c m">' + (c ? esc(c.ver) : '') + '</td></tr>';
+    }).join('') + '</tbody></table>' + piede() + '</section>';
 
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#15212B;font-size:9pt;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '.pg{width:210mm;min-height:297mm;padding:11mm 12mm 16mm;position:relative;break-after:page;page-break-after:always}.pg:last-of-type{break-after:auto}' +
+    '.pg.cons{padding:0;height:297mm;overflow:hidden}.pg.cons img{display:block;width:210mm;height:297mm}' +
     '.pg.al{height:297mm;min-height:0;overflow:hidden}.pg.al .in{transform-origin:0 0}' +
     '.tab.ora th{font-size:7pt;padding:1.2mm 1.2mm;line-height:1.15}.tab.ora td{padding:1mm 1.2mm;font-size:7.6pt;vertical-align:middle;white-space:normal;line-height:1.25;overflow-wrap:anywhere}.tab.ora{table-layout:fixed}' +
     'header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3mm;margin-bottom:5mm}.lg0{display:flex;align-items:center;gap:3mm}.lg0 b,.dx b{display:block;font-size:10.5pt}.lg0 span,.dx span{display:block;font-size:8pt;color:#5B6976}.dx{text-align:right}' +
@@ -4412,14 +4439,12 @@ function reportPdf() {
     '.sb{display:flex;gap:2px;height:5mm}.sb i{border-radius:1mm}.st{font-size:7.5pt;font-weight:700;border-radius:1mm;padding:.3mm 1.5mm;white-space:nowrap}.sapprovata{background:#E3F1E4;color:#1B6E20}.sinviata{background:#E2ECF7;color:#1F5FA8}.scorreggere{background:#FCEBD9;color:#9A4A00}.sv{color:#5B6976}' +
     '.box{background:#EEF2F5;padding:2.5mm 3.5mm;border-radius:2mm;margin-bottom:3mm;font-size:8.5pt;line-height:1.35}.box.no{background:#F8E1E6;color:#7A1F31;font-weight:400}' +
     '@media screen{body{background:#C9D2DA}.pg{background:#fff;margin:6mm auto;box-shadow:0 1mm 4mm rgba(0,0,0,.2)}}';
-  var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario ' + esc(titoloCl) + '</title><style>' + css + '</style></head><body>' + pag1 + pag2 + pag3 + stud +
+  var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario ' + esc(titoloCl) + '</title><style>' + css + '</style></head><body>' + pag1 + pag2 + pag3 + stud + pagCons +
     // ogni scheda alunno occupa esattamente un foglio A4: il contenuto viene ingrandito o rimpicciolito (in proporzione, larghezza compresa) fino a riempire la pagina
     '<scr' + 'ipt>function adattaSchede(){[].forEach.call(document.querySelectorAll(".pg.al"),function(s){var q=s.querySelector(".in");if(!q)return;var cs=getComputedStyle(s),av=s.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),z=1;' +
     'q.style.transform="none";for(var i=0;i<8;i++){q.style.width=(100/z)+"%";var h=q.offsetHeight,n=Math.max(.5,Math.min(1.35,av/h*z>0?av/h:1));if(Math.abs(n-z)<.004){z=Math.min(z,n);break}z=n}' +
     'q.style.width=(100/z)+"%";while(q.offsetHeight*z>av&&z>.5){z-=.005;q.style.width=(100/z)+"%"}q.style.transform="scale("+z+")";s.setAttribute("data-z",z.toFixed(3))});document.body.setAttribute("data-pronto","1")}' +
     'window.onload=function(){adattaSchede();setTimeout(function(){window.print()},400)}</scr' + 'ipt></body></html>';
-  var w = window.open('', '_blank');
-  if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
   w.document.write(html); w.document.close();
 }
 function risultati() {
@@ -4559,7 +4584,7 @@ function stampaSchede(classe) {
     var cl = a.classe || '3E', dt = (A.date || {})[cl] || { partenza: (A.impostazioni || {}).partenza, scadenzaIt: (A.impostazioni || {}).scadenzaIt }, qa = quizDi(a.id);
     var qIni = qa.partenza || (impQ.partenze || {})[cl], qFin = qa.scadenza || (impQ.scadenze || {})[cl];
     var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice), linkP = location.origin + '/glossario?da=scheda';
-    return '<section class="pg"><header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
+    return '<section class="pg"><header>' + logo + '<div><div class="sc">IIS «E. Barsanti» · sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
       '<div class="tit">I tuoi accessi al glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
       '<div class="gr">Classe ' + esc(cl) + ' · scritto e quiz, da casa, dal telefono o dal PC</div>' +
       '<div class="cal">' + box('Inizio scritto', dt.partenza, '#1F5FA8') + box('Fine scritto', dt.scadenzaIt, '#1F5FA8') + box('Inizio quiz', qIni, '#6B4EA2') + box('Fine quiz', qFin, '#6B4EA2') + '</div>' +
@@ -4821,7 +4846,7 @@ function introHtml() {
     '<div class="ibox">' + imgDante() + '<div class="itx">' +
     '<p class="im" lang="la"><span style="animation-delay:2.4s"><b class="cap">N</b>omina</span><span style="animation-delay:2.85s">sunt</span><span style="animation-delay:3.3s">consequentia</span><span style="animation-delay:3.75s">rerum</span></p>' +
     '<div class="ir"></div><p class="it">I nomi sono conseguenza delle cose.</p><p class="is">Dante Alighieri · Vita Nuova, XIII</p></div></div>' +
-    '<div class="ipiede">Glossario odontotecnico · IIS «L. Barsanti» · Massa</div></div>';
+    '<div class="ipiede">Glossario odontotecnico · IIS «E. Barsanti» · sede Salvetti · Massa (MS)</div></div>';
 }
 var _introT = null, _introDopo = null;
 function mostraIntro(dopo) {
@@ -5929,6 +5954,85 @@ function scaricaArgo() {
   toast('File per Excel scaricato');
 }
 
+/* ---------- consensi privacy (24/11/2026): moduli firmati sul telefono dalla pagina /consenso ----------
+   tre stati per studente: consenso dato, consenso negato, modulo non arrivato. Il PDF è l'immagine A4 firmata. */
+var CONSIMG = {};
+function consensoDi(id) { return ((S.d.admin || {}).consensi || {})[id] || null; }
+function urlConsenso() { return location.origin + '/consenso'; }
+function statoConsenso(c) { return !c ? 'manca' : c.si ? 'si' : 'no'; }
+function segnoConsenso(c, piccolo) {
+  var st = statoConsenso(c), t = { si: ['✓', 'consenso dato'], no: ['✕', 'consenso negato'], manca: ['–', 'modulo non arrivato'] }[st];
+  return '<i class="cmk ' + st + (piccolo ? ' pic' : '') + '" role="img" aria-label="' + t[1] + '" title="' + t[1] + '">' + t[0] + '</i>';
+}
+function quandoConsenso(iso) { var d = new Date(iso); return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
+function paginaConsensi() {
+  var R = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }).slice().sort(function (x, y) { return (x.classe || '').localeCompare(y.classe || '') || x.nome.localeCompare(y.nome, 'it'); });
+  var n = { si: 0, no: 0, manca: 0 }; R.forEach(function (r) { n[statoConsenso(consensoDi(r.id))]++; });
+  return '<section class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start"><div style="min-width:0"><h2 style="margin:0;font-size:22px">Consensi privacy</h2>' +
+    '<p class="muted" style="margin:4px 0 0;max-width:70ch">Nome e iniziale del cognome (es. «Mario R.») sui cartelloni e sulla pagina web del glossario. Il modulo si compila e si firma sul telefono da <b>' + esc(urlConsenso().replace(/^https?:\/\//, '')) + '</b>, con il codice dello studente: firma lo studente se maggiorenne, i genitori se minorenne. Vale l\'ultimo modulo inviato.</p></div>' +
+    '<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sec" onclick="copiaLinkConsenso(this)">Copia il link</button><button class="btn sec" onclick="stampaStrisciaConsenso()">Striscia con il QR</button>' + (n.si + n.no ? '<button class="btn" onclick="tuttiPdfConsensi(this)">Tutti i moduli in un PDF</button>' : '') + '</div></div>' +
+    '<div class="ccnt"><div class="si"><b>' + n.si + '</b>consenso dato</div><div class="no"><b>' + n.no + '</b>consenso negato</div><div class="manca"><b>' + n.manca + '</b>modulo non arrivato</div></div>' +
+    '<div style="overflow-x:auto"><table class="tbl" id="consTab"><thead><tr><th>Studente</th><th>Classe</th><th style="text-align:center">Modulo</th><th>Firmato da</th><th>Arrivato</th><th>PDF</th></tr></thead><tbody>' +
+    R.map(function (r) {
+      var c = consensoDi(r.id);
+      return '<tr data-cid="' + r.id + '"><td>' + esc(r.nome) + '</td><td>' + esc(etich(r)) + '</td><td style="text-align:center">' + segnoConsenso(c) + '</td>' +
+        '<td class="muted" style="font-size:14px">' + (c ? esc(c.firm) + ' · ' + (c.chi === 'studente' ? 'studente' : 'genitori') + (c.unico ? ' (firma unica)' : '') : '—') + '</td>' +
+        '<td class="muted" style="font-size:14px;white-space:nowrap">' + (c ? esc(quandoConsenso(c.il)) + (c.storico ? '<br><span style="font-size:12px">' + c.storico + (c.storico === 1 ? ' modulo precedente' : ' moduli precedenti') + '</span>' : '') : 'in attesa') + '</td>' +
+        '<td>' + (c ? '<button class="btn sec" style="padding:6px 12px;min-height:0" onclick="apriPdfConsenso(\'' + r.id + '\',this)">Apri PDF</button>' : '<span class="muted" style="font-size:14px">nessun file</span>') + '</td></tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<p class="muted" style="margin:0;font-size:13px"><b>Consenso negato:</b> il nome viene tolto in automatico dai cartelloni e dalla pagina web, anche da quella già pubblicata; le sue definizioni restano. Il PDF di ogni studente va anche nel report, subito dopo la sua pagina, con un riepilogo finale. Gli studenti non vedono questa sezione.</p></section>';
+}
+function immagineConsenso(id) {
+  var c = consensoDi(id); if (!c) return Promise.resolve(null);
+  var k = id + '|' + c.doc; if (CONSIMG[k]) return Promise.resolve(CONSIMG[k]);
+  return api('consensoimmagine', { alunno: id }).then(function (x) { CONSIMG[k] = x.img; return x.img; });
+}
+function pdfDaImmagini(imgs) {
+  return caricaScript('/vendor/jspdf-2.5.1.umd.min.js').then(function () {
+    var J = window.jspdf.jsPDF, doc = new J({ unit: 'mm', format: 'a4', compress: true });
+    imgs.forEach(function (im, i) { if (i) doc.addPage('a4'); doc.addImage(im, 'JPEG', 0, 0, 210, 297); });
+    return doc.output('blob');
+  });
+}
+function nomeFileConsenso(nome) { return 'Consenso_' + String(nome).replace(/[^A-Za-zÀ-ÿ0-9]+/g, '_').replace(/^_|_$/g, '') + '.pdf'; }
+function apriPdfConsenso(id, btn) {
+  var t = btn && btn.textContent; if (btn) { btn.disabled = true; btn.textContent = 'Apro…'; }
+  var fine = function () { if (btn) { btn.disabled = false; btn.textContent = t; } };
+  immagineConsenso(id).then(function (img) { return pdfDaImmagini([img]); }).then(function (b) { fine(); visoreFile(nomeFileConsenso(nomeAlunno(id)), b); }).catch(function (e) { fine(); toast(errMsg(e), true); });
+}
+function tuttiPdfConsensi(btn) {
+  var R = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id) && consensoDi(r.id); }).sort(function (x, y) { return (x.classe || '').localeCompare(y.classe || '') || x.nome.localeCompare(y.nome, 'it'); });
+  var t = btn.textContent; btn.disabled = true; btn.textContent = 'Preparo il PDF…';
+  caricaImmaginiConsensi(R.map(function (r) { return r.id; })).then(function (IMG) { return pdfDaImmagini(R.map(function (r) { return IMG[r.id]; }).filter(Boolean)); })
+    .then(function (b) { btn.disabled = false; btn.textContent = t; visoreFile('Consensi_privacy' + (S.filtro.classe && S.filtro.classe !== 'tutte' ? '_' + S.filtro.classe : '') + '.pdf', b); })
+    .catch(function (e) { btn.disabled = false; btn.textContent = t; toast(errMsg(e), true); });
+}
+/* immagini A4 dei moduli di più studenti (4 richieste alla volta): per il report e per il PDF unico */
+function caricaImmaginiConsensi(ids) {
+  var out = {}, coda = ids.filter(function (id) { return consensoDi(id); }).slice();
+  var lavora = function () { var id = coda.shift(); if (!id) return Promise.resolve(); return immagineConsenso(id).then(function (im) { out[id] = im; }, function () { /* modulo non leggibile: si salta */ }).then(lavora); };
+  return Promise.all([lavora(), lavora(), lavora(), lavora()]).then(function () { return out; });
+}
+function copiaLinkConsenso(btn) {
+  var t = 'Modulo di consenso privacy del glossario (da compilare e firmare sul telefono, serve il codice dello studente): ' + urlConsenso();
+  var ok = function () { btn.textContent = 'Copiato ✓'; setTimeout(function () { btn.textContent = 'Copia il link'; }, 2500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, function () { prompt('Copia il link', t); }); else prompt('Copia il link', t);
+}
+function stampaStrisciaConsenso() {
+  var w = window.open('', '_blank'); if (!w) { toast('Consenti le finestre per stampare.', true); return; }
+  var u = urlConsenso(), as = ((S.d.config || {}).edizione || {}).as || '', cl = CLASSI().join(' e ');
+  var h = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Consenso privacy · QR</title><style>' + cssFonti(location.origin) +
+    '@page{size:A4;margin:0}body{margin:0;font-family:"Atkinson Hyperlegible",Arial,sans-serif;color:#13222D}.pg{width:210mm;height:297mm;padding:22mm 20mm;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8mm;box-sizing:border-box}' +
+    '.sc{display:flex;align-items:center;gap:4mm;font:700 11pt Archivo,Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#4A5A66}h1{font:800 30pt/1.1 Archivo,Arial,sans-serif;margin:0;color:#0E3B3A}p{margin:0;font-size:14pt;max-width:150mm;line-height:1.4}' +
+    '.qr{border:1.2mm solid #0E7C7B;border-radius:5mm;padding:5mm;background:#fff}.u{font:700 16pt monospace;color:#0E3B3A}.f{margin-top:auto;font-size:10.5pt;color:#5F6E7A}</style></head><body><section class="pg">' +
+    '<div class="sc">' + Poster.logo(12) + '<span>IIS «E. Barsanti» · sede Salvetti · Massa (MS)</span></div><h1>Consenso privacy<br>' + esc(Poster.titolo()) + '</h1>' +
+    '<p>Inquadra il QR con il telefono, inserisci il <b>codice dello studente</b> (è sulla sua scheda accessi) e firma il modulo con il dito.</p>' +
+    '<div class="qr">' + qrSvg(u, 95) + '</div><div class="u">' + esc(u.replace(/^https?:\/\//, '')) + '</div>' +
+    '<p>Firma lo studente se è maggiorenne, un genitore se è minorenne. Bastano due minuti.</p>' +
+    '<div class="f">' + esc(((S.d.config || {}).concessione || {}).docente || 'Prof. Danilo Cerrato') + ', referente dell\'attività · ' + (CLASSI().length > 1 ? 'classi ' : 'classe ') + esc(cl) + (as ? ' · a.s. ' + esc(as) : '') + '</div></section></body></html>';
+  w.document.write(h); w.document.close(); setTimeout(function () { try { w.focus(); w.print(); } catch (e) { /* niente */ } }, 500);
+}
+
 /* ---------- area docenti: barra dei comandi a sinistra, una pagina alla volta al centro ---------- */
 var ICO = {
   // icone dell'area docenti (restyling 21/11/2026): tratto 2, angoli arrotondati, griglia 24
@@ -5964,7 +6068,7 @@ var SEZIONI = [
   { id: 'quizs', t: 'Quiz', gr: 'La prova', ico: 'quiz', fase: 2, pag: ['quiz'] },
   { id: 'orales', t: 'Orale', gr: 'La prova', ico: 'orale', fase: 3, pag: ['orale'] },
   { id: 'votis', t: 'Voti', gr: 'La prova', ico: 'voti', fase: 4, pag: ['voti'] },
-  { id: 'studenti', t: 'Studenti', gr: 'Classe', ico: 'situazione', pag: ['situazione', 'gestione', 'codici'] },
+  { id: 'studenti', t: 'Studenti', gr: 'Classe', ico: 'situazione', pag: ['situazione', 'gestione', 'codici', 'consensi'] },
   { id: 'cart', t: 'Cartelloni', gr: 'Classe', ico: 'cartelloni', pag: ['cartelloni', 'revcart'] },
   { id: 'doc', t: 'Documenti', gr: 'Classe', ico: 'documenti', pag: ['documenti'] },
   { id: 'imp', t: 'Impostazioni', gr: 'Gestione', ico: 'impostazioni', pag: ['impostazioni'] },
@@ -5973,7 +6077,7 @@ var SEZIONI = [
   { id: 'arch', t: 'Archivio e backup', gr: 'Gestione', ico: 'edizioni', pag: ['edizioni', 'registro'] }
 ];
 /* etichette brevi delle pagine dentro la loro sezione (le schede in cima) */
-var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR',
+var SCHEDA = { cruscotto: 'Quadro generale', sollecito: 'Da sollecitare', statpub: 'Statistiche pagina pubblica', situazione: 'Situazione e avanzamento', gestione: 'Proroghe e passaggi', codici: 'Codici e schede QR', consensi: 'Consensi privacy',
   cartelloni: 'Anteprima e stampa', revcart: 'Revisione', banca: 'Banca termini', promo: 'Colleghi e numeri', edizioni: 'Edizioni e attività', registro: 'Registro e backup' };
 function sezioneDi(id) { return SEZIONI.filter(function (z) { return z.pag.indexOf(id) >= 0; })[0] || SEZIONI[0]; }
 /* sezioni visibili a chi è entrato, ognuna con le sue pagine visibili */
@@ -5997,6 +6101,7 @@ function PAGINE() {
     { id: 'orale', gr: 'Studenti', t: 'Interrogazioni', vis: !!A && (PUO('voti') || adm) },
     { id: 'voti', gr: 'Studenti', t: 'Voti e tabellone', vis: !!A && (PUO('voti') || PUO('studenti') || PUO('documenti')) },
     { id: 'codici', gr: 'Studenti', t: 'Codici e schede QR', vis: !!S.d.codiciAlunni && !ro },
+    { id: 'consensi', gr: 'Studenti', t: 'Consensi privacy', vis: !!(A && A.consensi) && PUO('studenti') },
     { id: 'cartelloni', gr: 'Materiali', t: 'Cartelloni 70×100', vis: true },
     { id: 'revcart', gr: 'Materiali', t: 'Revisione cartelloni', vis: !!A && PUO('documenti') && !ro, bd: S.rc && Object.keys(S.rc.cambiate).length ? Object.keys(S.rc.cambiate).length : 0 },
     { id: 'documenti', gr: 'Materiali', t: 'Report, Word e slide', vis: !!A && PUO('documenti') },
@@ -6265,6 +6370,7 @@ var PAGINA = {
       S.d.codiciAlunni.filter(function (a) { return inClasse(a.id); }).map(function (a) { return '<tr><td>' + esc(a.nome) + '</td><td>' + esc(etich(a)) + '</td><td style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.15em">' + esc(a.codice) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
   },
+  consensi: function () { return paginaConsensi(); },
   revcart: function () { return paginaRevCart(); },
   banca: function () { return paginaBanca(); },
   promo: function () { return paginaPromo(); },
@@ -7724,7 +7830,7 @@ function stampaRegole() {
     'ul{margin:0;padding-left:5mm}li{margin:1.2mm 0}li.sub{list-style:circle;margin-left:5mm}footer{color:#8E969E;font-size:8.5pt;margin-top:8mm;border-top:.3mm solid #ddd;padding-top:2mm}</style></head><body>' +
     '<h1>Regole dell\'attività</h1><div class="sub">' + esc(R.attivita) + ' · a.s. ' + esc(R.as) + ' · aggiornate al ' + esc(new Date(R.aggiornato).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) + '</div>' +
     R.sezioni.map(function (s, i) { return '<section style="--c:' + s.colore + '"><h2>' + (i + 1) + '. ' + esc(s.titolo) + '</h2><ul>' + s.punti.map(function (p) { return '<li' + (/^• /.test(p) ? ' class="sub"' : '') + '>' + p.replace(/^• /, '') + '</li>'; }).join('') + '</ul></section>'; }).join('') +
-    '<footer>IIS «L. Barsanti» · sede Salvetti · Massa · documento generato dall\'app del glossario, con le impostazioni in vigore</footer></body></html>';
+    '<footer>IIS «E. Barsanti» · sede Salvetti · Massa (MS) · documento generato dall\'app del glossario, con le impostazioni in vigore</footer></body></html>';
   w.document.write(h); w.document.close(); setTimeout(function () { try { w.focus(); w.print(); } catch (e) { /* niente */ } }, 400);
 }
 

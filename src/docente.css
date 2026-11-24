@@ -249,3 +249,9 @@
 .dapp .regsez li::marker{color:var(--c)}
 .dapp .regsez li.sub{list-style:circle;margin-left:18px}
 .dapp .regsez b{color:var(--ink)}
+
+/* consensi privacy */
+.ccnt{display:flex;gap:10px;flex-wrap:wrap}.ccnt div{border-radius:12px;padding:10px 16px;min-width:130px;font-size:14px}.ccnt b{display:block;font:600 26px/1.05 var(--serif,Georgia)}
+.ccnt .si{background:#E3F1E4;color:#1E5E22}.ccnt .no{background:#F8E1E6;color:#8A1F35}.ccnt .manca{background:#EEF1F3;color:#5F6E7A}
+.cmk{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;font-style:normal;font-weight:700}.cmk.pic{width:20px;height:20px;border-radius:6px;font-size:12px}
+.cmk.si{background:#2E7D32;color:#fff}.cmk.no{background:#B0304A;color:#fff}.cmk.manca{border:2px solid #D3DCE3;color:#8A95A0}

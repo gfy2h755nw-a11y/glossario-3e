@@ -241,7 +241,7 @@ function creaReport(stato, attivita, now) {
   const fine = new Promise((ok) => doc.on('end', () => ok(Buffer.concat(pezzi))));
   // attività di un collega: il suo nome e la dicitura di concessione
   const conc = stato.config.concessione;
-  const sotto = 'Istituto Barsanti - sede Salvetti · a.s. ' + imp.edizione.as + ' · ' + (conc ? conc.docente + ' · Per gentile concessione del Prof. Danilo Cerrato' : 'Prof. Danilo Cerrato') + (EN ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato ' + generato;
+  const sotto = 'IIS «E. Barsanti» · sede Salvetti · a.s. ' + imp.edizione.as + ' · ' + (conc ? conc.docente + ' · Per gentile concessione del Prof. Danilo Cerrato' : 'Prof. Danilo Cerrato') + (EN ? ' · Prof.ssa Federica Aliboni' : '') + ' · generato ' + generato;
 
   /* --- pagina 1: sintesi --- */
   let y = testata(doc, require('./intestazione').titolo(stato.config) + (EN ? ' bilingue' : '') + ' · Report · ' + CLS, sotto);

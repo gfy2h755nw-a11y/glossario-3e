@@ -36,7 +36,7 @@ async function creaWord(stato, now) {
 
   const corpo = [
     new D.Paragraph({ heading: D.HeadingLevel.TITLE, children: [t(TIT + ' · definizioni approvate', { bold: true, size: 36, color: INK })] }),
-    new D.Paragraph({ spacing: { after: 80 }, children: [t('Istituto Barsanti - sede Salvetti, Massa' + (MAT ? ' · ' + MAT : '') + ' · a.s. ' + imp.edizione.as + (INT.conc(CFG) ? ' · ' + INT.docente(CFG) + ' · ' + INT.CONCESSIONE : ''), { size: 20, color: MUTO })] }),
+    new D.Paragraph({ spacing: { after: 80 }, children: [t('IIS «E. Barsanti» · sede Salvetti · Massa (MS)' + (MAT ? ' · ' + MAT : '') + ' · a.s. ' + imp.edizione.as + (INT.conc(CFG) ? ' · ' + INT.docente(CFG) + ' · ' + INT.CONCESSIONE : ''), { size: 20, color: MUTO })] }),
     new D.Paragraph({ spacing: { after: 240 }, children: [t('Classi ' + classi.join(' e ') + ' · aggiornato al ' + dataIt(now) + ' · definizioni approvate: ' + approvate + ' su ' + tutti.length, { size: 20, color: MUTO })] })
   ];
 

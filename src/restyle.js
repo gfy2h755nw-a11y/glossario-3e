@@ -81,6 +81,6 @@ function stampaRegole() {
     'ul{margin:0;padding-left:5mm}li{margin:1.2mm 0}li.sub{list-style:circle;margin-left:5mm}footer{color:#8E969E;font-size:8.5pt;margin-top:8mm;border-top:.3mm solid #ddd;padding-top:2mm}</style></head><body>' +
     '<h1>Regole dell\'attività</h1><div class="sub">' + esc(R.attivita) + ' · a.s. ' + esc(R.as) + ' · aggiornate al ' + esc(new Date(R.aggiornato).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) + '</div>' +
     R.sezioni.map(function (s, i) { return '<section style="--c:' + s.colore + '"><h2>' + (i + 1) + '. ' + esc(s.titolo) + '</h2><ul>' + s.punti.map(function (p) { return '<li' + (/^• /.test(p) ? ' class="sub"' : '') + '>' + p.replace(/^• /, '') + '</li>'; }).join('') + '</ul></section>'; }).join('') +
-    '<footer>IIS «L. Barsanti» · sede Salvetti · Massa · documento generato dall\'app del glossario, con le impostazioni in vigore</footer></body></html>';
+    '<footer>IIS «E. Barsanti» · sede Salvetti · Massa (MS) · documento generato dall\'app del glossario, con le impostazioni in vigore</footer></body></html>';
   w.document.write(h); w.document.close(); setTimeout(function () { try { w.focus(); w.print(); } catch (e) { /* niente */ } }, 400);
 }

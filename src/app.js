@@ -52,7 +52,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '23/11/2026 · 8';
+var VERSIONE = '24/11/2026 · 1';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -82,7 +82,7 @@ function giorniA(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if (!m) r
 /* ---------- accesso ---------- */
 function vistaLogin(msg) {
   $('app').innerHTML = '<div class="wrap"><form class="card login stack" id="flogin">' +
-    '<div><div class="muted disp" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">Istituto Barsanti - sede Salvetti</div>' +
+    '<div><div class="muted disp" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">IIS «E. Barsanti» · sede Salvetti</div>' +
     '<h1>Glossario odontotecnico</h1></div>' +
     '<p class="muted" style="margin:0">Laboratorio odontotecnico · prof. Danilo Cerrato</p>' +
     (msg ? '<div class="note err">' + esc(msg) + '</div>' : '') +
@@ -695,11 +695,20 @@ function riammetti(id, val, btn) {
   }).catch(function (e) { btn.disabled = false; toast(errMsg(e), true); });
 }
 function sceltaRiammissione(testo, scelte) { finestra('Riammissione', testo, scelte); }
+/* report: la finestra si apre subito (al clic), poi si caricano le immagini dei moduli di consenso e si scrive il report */
 function reportPdf() {
+  var w = window.open('', '_blank');
+  if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
+  var ids = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }).map(function (r) { return r.id; });
+  var n = ids.filter(function (id) { return consensoDi(id); }).length;
+  if (n) toast('Preparo il report con ' + n + (n === 1 ? ' modulo firmato…' : ' moduli firmati…'));
+  (n ? caricaImmaginiConsensi(ids) : Promise.resolve({})).then(function (IMG) { reportPdfScrivi(w, IMG); }).catch(function () { reportPdfScrivi(w, {}); });
+}
+function reportPdfScrivi(w, IMG) {
   var A = S.d.admin, voti = {}; A.voti.forEach(function (v) { voti[v.id] = v; });
   var oggi = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
   var imp = A.impostazioni, att = A.attivita || {};
-  var PAN = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); });
+  var PAN = (S.d.panoramica || []).filter(function (r) { return inClasse(r.id); }), CONS = A.consensi || null;
   var classi = CLASSI().filter(function (c) { return PAN.some(function (r) { return (r.classe || '3E') === c; }); });
   var titoloCl = classi.length > 1 ? 'Classi ' + classi.join(' e ') : 'Classe ' + (classi[0] || '3E');
   var COL = { '3E': '#1F5FA8', '3F': '#B4511A' }, ALTRI = ['#1F5FA8', '#B4511A', '#2E7D32', '#6B4FA0', '#0E7C7B', '#9A4A00'];
@@ -789,7 +798,7 @@ function reportPdf() {
   }).join('') + '</tbody></table>' : '';
 
   function testata(sotto) {
-    return '<header><div class="lg0">' + logo(17) + '<div><b>Istituto Barsanti - sede Salvetti</b><span>Massa' + (Poster.materia() ? ' · ' + esc(Poster.materia()) : '') + ' · a.s. ' + esc((S.d.config.edizione || {}).as || '2026/27') + '</span></div></div>' +
+    return '<header><div class="lg0">' + logo(17) + '<div><b>IIS «E. Barsanti» · sede Salvetti</b><span>Massa' + (Poster.materia() ? ' · ' + esc(Poster.materia()) : '') + ' · a.s. ' + esc((S.d.config.edizione || {}).as || '2026/27') + '</span></div></div>' +
       '<div class="dx"><b>' + esc(Poster.titolo()) + '</b><span>' + esc(sotto) + '</span></div></header>';
   }
   var npag = 0, totPag = 2 + PAN.length;
@@ -810,11 +819,11 @@ function reportPdf() {
     return '<tr class="sez"><td colspan="10"><i class="dot" style="background:' + colCl(c) + '"></i>Classe ' + c + ' · ' + rr.length + ' alunni · tempo totale in app ' + durata(tempo(rr)) + '</td></tr>' + rr.map(function (r) {
       var v = voti[r.id] || {}, p = primo(termDi(r.id)), x = att[r.id] || {};
       return '<tr><td>' + esc(r.nome) + (v.ereditati ? ' <span class="tag">erede di ' + esc(donatori(r.id).map(cognome).join(', ') || '—') + '</span>' : '') + (v.escluso ? ' <span class="tag no">escluso</span>' : '') + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c">' + r.inviate + '</td><td class="c">' + (p.n ? p.ok + '/' + p.n : '—') + '</td><td class="c">' + r.errate + '</td><td class="c">' + r.approvate + '/' + r.termini + '</td><td class="c">' + (x.accessi || 0) + '</td><td class="c"><b>' + (x.ultimo ? durata(x.minuti) : '—') + '</b>' + '</td>' +
-        '<td class="vb">' + barraVoto(v.voto, c) + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.manuale != null ? '<span class="m"> man.</span>' : '') + '</td></tr>';
+        '<td class="vb">' + barraVoto(v.voto, c) + '</td><td class="c"><b>' + fv(v.voto) + '</b>' + (v.manuale != null ? '<span class="m"> man.</span>' : '') + '</td>' + (CONS ? '<td class="c">' + ({ si: '<span class="ok">✓</span>', no: '<span class="no">✕</span>', manca: '<span class="m">–</span>' })[statoConsenso(CONS[r.id])] + '</td>' : '') + '</tr>';
     }).join('');
   }).join('');
-  var pag2 = '<section class="pg">' + testata(titoloCl) + '<h1>Tabellone degli alunni</h1><p class="sub">Esatte al 1°: scelte giuste al primo invio sui termini in cui l\'alunno ha risposto. Tempo in app: tempo totale con l\'app aperta, sommando tutti gli accessi.</p>' +
-    '<table class="tab comp"><thead><tr><th>Alunno</th><th class="c">Classe</th><th class="c">Risposte</th><th class="c">Esatte al 1°</th><th class="c">Errate</th><th class="c">Approvate</th><th class="c">Accessi</th><th class="c">Tempo in app</th><th style="width:15%">Voto (scala 0–10)</th><th class="c">Voto</th></tr></thead><tbody>' + righeTab + '</tbody></table>' +
+  var pag2 = '<section class="pg">' + testata(titoloCl) + '<h1>Tabellone degli alunni</h1><p class="sub">Esatte al 1°: scelte giuste al primo invio sui termini in cui l\'alunno ha risposto. Tempo in app: tempo totale con l\'app aperta, sommando tutti gli accessi.' + (CONS ? ' Consenso nome: modulo privacy firmato (✓ dato, ✕ negato, – non arrivato) · <b>' + PAN.filter(function (r) { return CONS[r.id] && CONS[r.id].si; }).length + ' su ' + PAN.length + '</b> con il consenso.' : '') + '</p>' +
+    '<table class="tab comp"><thead><tr><th>Alunno</th><th class="c">Classe</th><th class="c">Risposte</th><th class="c">Esatte al 1°</th><th class="c">Errate</th><th class="c">Approvate</th><th class="c">Accessi</th><th class="c">Tempo in app</th><th style="width:15%">Voto (scala 0–10)</th><th class="c">Voto</th>' + (CONS ? '<th class="c">Consenso nome</th>' : '') + '</tr></thead><tbody>' + righeTab + '</tbody></table>' +
     piede() + '</section>';
 
   /* --- quiz, interrogazione orale e voto finale --- */
@@ -914,11 +923,23 @@ function reportPdf() {
       '<table class="tab' + (lungo ? ' fitto' : '') + '"><thead><tr><th class="c" style="width:5%">N.</th><th style="width:24%">Termine</th><th class="c" style="width:10%">Tentativi</th><th class="c" style="width:8%">Punti</th><th>Definizione scelta</th><th class="c" style="width:13%">Stato</th></tr></thead><tbody>' + righe + '</tbody></table>' +
       '<p style="margin:2mm 0 0;font-size:8.5pt">Punti persi: <b>' + punti(r.errate) + '</b> (' + r.errate + ' risposte errate × ' + fv(PEN) + ') · si parte da ' + fv(v.votoMax || imp.votoMax) + ', voto minimo ' + fv(imp.votoMin) + '.</p>' +
       '<p class="m" style="margin-top:1mm">Tempo totale in app ' + (x.ultimo ? durata(x.minuti) : '—') + (x.minutiPubblica ? ' (di cui ' + durata(x.minutiPubblica) + ' di ripasso sulla pagina pubblica)' : '') + ' · primo accesso ' + esc(quando(x.primo)) + ' · ultimo accesso ' + esc(quando(x.ultimo)) + ' · giorni attivi ' + (x.giorni || 0) + '</p></div>' +
-      piede() + '</section>';
+      piede() + '</section>' +
+      // modulo di consenso privacy firmato: subito dopo la pagina dello studente, così com'è arrivato
+      (IMG[r.id] ? '<section class="pg cons"><img src="' + IMG[r.id] + '" alt="Modulo di consenso di ' + esc(r.nome) + '"></section>' : '');
   }).join('');
+  /* riepilogo dei consensi privacy */
+  var CNS = (A.consensi || {}), nC = { si: 0, no: 0, manca: 0 }; PAN.forEach(function (r) { nC[statoConsenso(CNS[r.id])]++; });
+  var pagCons = '<section class="pg">' + testata(titoloCl) + '<h1>Consensi privacy</h1><p class="sub">Nome e iniziale del cognome sui cartelloni a scuola e sulla pagina web del glossario. Moduli compilati e firmati sul telefono (firma elettronica semplice): lo studente se maggiorenne, i genitori se minorenne. Vale l\'ultimo modulo inviato; ogni modulo è nel report dopo la pagina dello studente.</p>' +
+    '<p style="margin:0 0 3mm"><b>' + nC.si + '</b> consenso dato · <b>' + nC.no + '</b> consenso negato · <b>' + nC.manca + '</b> modulo non arrivato</p>' +
+    '<table class="tab"><thead><tr><th>Alunno</th><th class="c">Classe</th><th class="c">Modulo</th><th>Firmato da</th><th>Luogo e data</th><th class="c">Ricevuta</th></tr></thead><tbody>' +
+    PAN.slice().sort(function (x, y) { return (x.classe || '').localeCompare(y.classe || '') || x.nome.localeCompare(y.nome, 'it'); }).map(function (r) {
+      var c = CNS[r.id], st = statoConsenso(c);
+      return '<tr><td>' + esc(r.nome) + '</td><td class="c">' + esc(etich(r)) + '</td><td class="c"><b class="' + (st === 'si' ? 'ok' : st === 'no' ? 'no' : 'm') + '">' + (st === 'si' ? '✓ dato' : st === 'no' ? '✕ negato' : '– manca') + '</b></td><td>' + (c ? esc(c.firm) + ' (' + (c.chi === 'studente' ? 'studente' : 'genitori') + ')' : '') + '</td><td>' + (c ? esc(c.luogo) + ', ' + esc(String(c.data).split('-').reverse().join('/')) : '') + '</td><td class="c m">' + (c ? esc(c.ver) : '') + '</td></tr>';
+    }).join('') + '</tbody></table>' + piede() + '</section>';
 
   var css = '@page{size:A4;margin:0}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#15212B;font-size:9pt;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '.pg{width:210mm;min-height:297mm;padding:11mm 12mm 16mm;position:relative;break-after:page;page-break-after:always}.pg:last-of-type{break-after:auto}' +
+    '.pg.cons{padding:0;height:297mm;overflow:hidden}.pg.cons img{display:block;width:210mm;height:297mm}' +
     '.pg.al{height:297mm;min-height:0;overflow:hidden}.pg.al .in{transform-origin:0 0}' +
     '.tab.ora th{font-size:7pt;padding:1.2mm 1.2mm;line-height:1.15}.tab.ora td{padding:1mm 1.2mm;font-size:7.6pt;vertical-align:middle;white-space:normal;line-height:1.25;overflow-wrap:anywhere}.tab.ora{table-layout:fixed}' +
     'header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.2pt solid #15212B;padding-bottom:3mm;margin-bottom:5mm}.lg0{display:flex;align-items:center;gap:3mm}.lg0 b,.dx b{display:block;font-size:10.5pt}.lg0 span,.dx span{display:block;font-size:8pt;color:#5B6976}.dx{text-align:right}' +
@@ -938,14 +959,12 @@ function reportPdf() {
     '.sb{display:flex;gap:2px;height:5mm}.sb i{border-radius:1mm}.st{font-size:7.5pt;font-weight:700;border-radius:1mm;padding:.3mm 1.5mm;white-space:nowrap}.sapprovata{background:#E3F1E4;color:#1B6E20}.sinviata{background:#E2ECF7;color:#1F5FA8}.scorreggere{background:#FCEBD9;color:#9A4A00}.sv{color:#5B6976}' +
     '.box{background:#EEF2F5;padding:2.5mm 3.5mm;border-radius:2mm;margin-bottom:3mm;font-size:8.5pt;line-height:1.35}.box.no{background:#F8E1E6;color:#7A1F31;font-weight:400}' +
     '@media screen{body{background:#C9D2DA}.pg{background:#fff;margin:6mm auto;box-shadow:0 1mm 4mm rgba(0,0,0,.2)}}';
-  var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario ' + esc(titoloCl) + '</title><style>' + css + '</style></head><body>' + pag1 + pag2 + pag3 + stud +
+  var html = '<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Report Glossario ' + esc(titoloCl) + '</title><style>' + css + '</style></head><body>' + pag1 + pag2 + pag3 + stud + pagCons +
     // ogni scheda alunno occupa esattamente un foglio A4: il contenuto viene ingrandito o rimpicciolito (in proporzione, larghezza compresa) fino a riempire la pagina
     '<scr' + 'ipt>function adattaSchede(){[].forEach.call(document.querySelectorAll(".pg.al"),function(s){var q=s.querySelector(".in");if(!q)return;var cs=getComputedStyle(s),av=s.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),z=1;' +
     'q.style.transform="none";for(var i=0;i<8;i++){q.style.width=(100/z)+"%";var h=q.offsetHeight,n=Math.max(.5,Math.min(1.35,av/h*z>0?av/h:1));if(Math.abs(n-z)<.004){z=Math.min(z,n);break}z=n}' +
     'q.style.width=(100/z)+"%";while(q.offsetHeight*z>av&&z>.5){z-=.005;q.style.width=(100/z)+"%"}q.style.transform="scale("+z+")";s.setAttribute("data-z",z.toFixed(3))});document.body.setAttribute("data-pronto","1")}' +
     'window.onload=function(){adattaSchede();setTimeout(function(){window.print()},400)}</scr' + 'ipt></body></html>';
-  var w = window.open('', '_blank');
-  if (!w) { toast('Consenti le finestre popup per creare il PDF', true); return; }
   w.document.write(html); w.document.close();
 }
 function risultati() {
@@ -1085,7 +1104,7 @@ function stampaSchede(classe) {
     var cl = a.classe || '3E', dt = (A.date || {})[cl] || { partenza: (A.impostazioni || {}).partenza, scadenzaIt: (A.impostazioni || {}).scadenzaIt }, qa = quizDi(a.id);
     var qIni = qa.partenza || (impQ.partenze || {})[cl], qFin = qa.scadenza || (impQ.scadenze || {})[cl];
     var linkS = location.origin + '/?c=' + encodeURIComponent(a.codice), linkQ = location.origin + '/quiz?c=' + encodeURIComponent(a.codice), linkP = location.origin + '/glossario?da=scheda';
-    return '<section class="pg"><header>' + logo + '<div><div class="sc">Istituto Barsanti - sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
+    return '<section class="pg"><header>' + logo + '<div><div class="sc">IIS «E. Barsanti» · sede Salvetti</div><div class="pr">' + esc(Poster.titolo()) + (EN() ? ' bilingue' : '') + ' · Classe ' + esc(cl) + (ed.as ? ' · a.s. ' + esc(ed.as) : '') + '</div></div></header>' +
       '<div class="tit">I tuoi accessi al glossario</div><div class="nome">' + esc(a.nome) + '</div>' +
       '<div class="gr">Classe ' + esc(cl) + ' · scritto e quiz, da casa, dal telefono o dal PC</div>' +
       '<div class="cal">' + box('Inizio scritto', dt.partenza, '#1F5FA8') + box('Fine scritto', dt.scadenzaIt, '#1F5FA8') + box('Inizio quiz', qIni, '#6B4EA2') + box('Fine quiz', qFin, '#6B4EA2') + '</div>' +

@@ -66,7 +66,7 @@ h2.qz-h{font:800 18px Archivo,Arial,sans-serif;margin:18px 0 4px}
 </style>
 </head>
 <body>
-<header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Quiz del glossario</b><span class="sott" id="qzSott">Istituto Barsanti · Laboratorio odontotecnico</span></div><div id="hdr"></div></div></header>
+<header class="top"><div class="in"><div class="lg" id="logo"></div><div><b>Quiz del glossario</b><span class="sott" id="qzSott">IIS «E. Barsanti» · Laboratorio odontotecnico</span></div><div id="hdr"></div></div></header>
 <main class="qz" id="qz" aria-live="off"></main>
 <script>
 /* salute dell'app: un errore di questa pagina arriva al prof. Cerrato (pochi per visita, senza dati personali) */
@@ -145,7 +145,7 @@ var Quiz = (function () {
       else try { localStorage.setItem(KEY, cod); } catch (e) { /* niente memoria */ }
       tok = d.tok;
       // attività di un collega: la sua materia e la dicitura di concessione
-      if (d.conc) { var so = document.getElementById('qzSott'); if (so) so.textContent = 'Istituto Barsanti' + (d.conc.materia ? ' · ' + d.conc.materia : '') + ' · Per gentile concessione del Prof. Danilo Cerrato'; }
+      if (d.conc) { var so = document.getElementById('qzSott'); if (so) so.textContent = 'IIS «E. Barsanti»' + (d.conc.materia ? ' · ' + d.conc.materia : '') + ' · Per gentile concessione del Prof. Danilo Cerrato'; }
       st = d.stato; ses = d.sessione; tot = d.totale; nome = d.nome; finePrec = 0; domanda(d.domanda);
     }).catch(function (e) { accesso(e.message); });
   }

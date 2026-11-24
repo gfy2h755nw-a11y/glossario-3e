@@ -41,7 +41,7 @@ function introHtml() {
     '<div class="ibox">' + imgDante() + '<div class="itx">' +
     '<p class="im" lang="la"><span style="animation-delay:2.4s"><b class="cap">N</b>omina</span><span style="animation-delay:2.85s">sunt</span><span style="animation-delay:3.3s">consequentia</span><span style="animation-delay:3.75s">rerum</span></p>' +
     '<div class="ir"></div><p class="it">I nomi sono conseguenza delle cose.</p><p class="is">Dante Alighieri · Vita Nuova, XIII</p></div></div>' +
-    '<div class="ipiede">Glossario odontotecnico · IIS «L. Barsanti» · Massa</div></div>';
+    '<div class="ipiede">Glossario odontotecnico · IIS «E. Barsanti» · sede Salvetti · Massa (MS)</div></div>';
 }
 var _introT = null, _introDopo = null;
 function mostraIntro(dopo) {
