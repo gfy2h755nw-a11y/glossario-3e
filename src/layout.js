@@ -28,7 +28,7 @@ function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (IC
    che restano tutte raggiungibili come schede in cima alla pagina. gr = gruppo nella barra. */
 var SEZIONI = [
   { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
-  { id: 'stats', t: 'Statistiche pagina pubblica', gr: '', ico: 'statistiche', pag: ['statpub'] },
+  { id: 'stats', t: 'Pagina pubblica e statistiche', gr: '', ico: 'statistiche', pag: ['statpub'] },
   { id: 'regs', t: 'Regole dell\'attività', gr: '', ico: 'regole', pag: ['regole'] },
   { id: 'ris', t: 'Glossario riservato', gr: '', ico: 'riservata', pag: ['riservata'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
@@ -277,6 +277,7 @@ var PAGINA = {
         (k[3] != null ? '<div class="bar" style="margin-top:8px"><span style="width:' + Math.round(k[3] * 100) + '%;background:' + k[4] + '"></span></div>' : '') + '</' + tag + '>';
     }).join('') + '</section>';
     if (og.dafare) h += '<h2 class="dsez">Da fare</h2><div class="dgrid2' + (S.d.pubblicazione && LOC() ? '' : ' uno') + '">' + og.dafare + bloccoPubblica() + '</div>';
+    else if (bloccoPubblica()) h += '<h2 class="dsez">Pagina pubblica</h2>' + bloccoPubblica(); // anche senza nulla «da fare» il comando per pubblicare resta qui
     h += bloccoStatCruscotto();
     h += bloccoSalute();
     h += bloccoAnello();

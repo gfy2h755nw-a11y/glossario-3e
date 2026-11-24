@@ -3529,7 +3529,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '24/11/2026 · 6';
+var VERSIONE = '24/11/2026 · 7';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
@@ -6063,7 +6063,7 @@ function svgIco(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (IC
    che restano tutte raggiungibili come schede in cima alla pagina. gr = gruppo nella barra. */
 var SEZIONI = [
   { id: 'oggi', t: 'Oggi', gr: '', ico: 'cruscotto', pag: ['cruscotto', 'sollecito'] },
-  { id: 'stats', t: 'Statistiche pagina pubblica', gr: '', ico: 'statistiche', pag: ['statpub'] },
+  { id: 'stats', t: 'Pagina pubblica e statistiche', gr: '', ico: 'statistiche', pag: ['statpub'] },
   { id: 'regs', t: 'Regole dell\'attività', gr: '', ico: 'regole', pag: ['regole'] },
   { id: 'ris', t: 'Glossario riservato', gr: '', ico: 'riservata', pag: ['riservata'] },
   { id: 'scritto', t: 'Scritto', gr: 'La prova', ico: 'revisione', fase: 1, pag: ['revisione'] },
@@ -6312,6 +6312,7 @@ var PAGINA = {
         (k[3] != null ? '<div class="bar" style="margin-top:8px"><span style="width:' + Math.round(k[3] * 100) + '%;background:' + k[4] + '"></span></div>' : '') + '</' + tag + '>';
     }).join('') + '</section>';
     if (og.dafare) h += '<h2 class="dsez">Da fare</h2><div class="dgrid2' + (S.d.pubblicazione && LOC() ? '' : ' uno') + '">' + og.dafare + bloccoPubblica() + '</div>';
+    else if (bloccoPubblica()) h += '<h2 class="dsez">Pagina pubblica</h2>' + bloccoPubblica(); // anche senza nulla «da fare» il comando per pubblicare resta qui
     h += bloccoStatCruscotto();
     h += bloccoSalute();
     h += bloccoAnello();
@@ -7718,7 +7719,8 @@ function avviaStatCruscotto() {
 }
 /* pagina «Statistiche pagina pubblica» */
 function paginaStatPub() {
-  return '<section class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px"><div><h2 style="margin:0;font-size:22px">Statistiche pagina pubblica</h2><p class="muted" style="margin:4px 0 0" id="stAgg">Home dei glossari e glossari pubblici</p></div>' +
+  // il comando per pubblicare il glossario sta anche qui, sopra le statistiche
+  return bloccoPubblica() + '<section class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px"><div><h2 style="margin:0;font-size:22px">Statistiche pagina pubblica</h2><p class="muted" style="margin:4px 0 0" id="stAgg">Home dei glossari e glossari pubblici</p></div>' +
     '<div class="stchip" role="group" aria-label="Periodo">' + [[7, '7 giorni'], [30, '30 giorni'], ['anno', 'Anno scolastico']].map(function (x) { return '<button data-p="' + x[0] + '" aria-pressed="' + (String(STP.periodo) === String(x[0])) + '" onclick="STP.periodo=this.getAttribute(\'data-p\');STP.periodo=STP.periodo===\'anno\'?\'anno\':Number(STP.periodo);vistaDocente()">' + x[1] + '</button>'; }).join('') + '</div></div>' +
     '<div id="stKpi"><p class="muted" style="margin:0">Caricamento…</p></div></section><div id="stCorpo" class="stack"></div>';
 }

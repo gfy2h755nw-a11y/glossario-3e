@@ -98,7 +98,8 @@ function avviaStatCruscotto() {
 }
 /* pagina «Statistiche pagina pubblica» */
 function paginaStatPub() {
-  return '<section class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px"><div><h2 style="margin:0;font-size:22px">Statistiche pagina pubblica</h2><p class="muted" style="margin:4px 0 0" id="stAgg">Home dei glossari e glossari pubblici</p></div>' +
+  // il comando per pubblicare il glossario sta anche qui, sopra le statistiche
+  return bloccoPubblica() + '<section class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:10px"><div><h2 style="margin:0;font-size:22px">Statistiche pagina pubblica</h2><p class="muted" style="margin:4px 0 0" id="stAgg">Home dei glossari e glossari pubblici</p></div>' +
     '<div class="stchip" role="group" aria-label="Periodo">' + [[7, '7 giorni'], [30, '30 giorni'], ['anno', 'Anno scolastico']].map(function (x) { return '<button data-p="' + x[0] + '" aria-pressed="' + (String(STP.periodo) === String(x[0])) + '" onclick="STP.periodo=this.getAttribute(\'data-p\');STP.periodo=STP.periodo===\'anno\'?\'anno\':Number(STP.periodo);vistaDocente()">' + x[1] + '</button>'; }).join('') + '</div></div>' +
     '<div id="stKpi"><p class="muted" style="margin:0">Caricamento…</p></div></section><div id="stCorpo" class="stack"></div>';
 }
