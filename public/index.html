@@ -7549,7 +7549,7 @@ function disegnaPromo() {
     '<div class="stack" style="gap:8px"><div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0;font-size:18px">Numeri sulla pagina</h3>' +
       '<button class="btn sec" onclick="aggiornaNumeriPromo(this)">Aggiorna ora</button></div>' +
       (kpi ? '<div class="prk">' + kpi.map(function (k) { return '<div><b>' + esc(String(k[0])) + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
-        '<p class="muted" style="margin:0;font-size:14px">Dati reali di tutte le attività in corso, aggiornati al ' + esc(dataOra(N.aggiornato)) + '. Si aggiornano da soli al massimo una volta l\'ora, quando qualcuno apre la pagina.</p>'
+        '<p class="muted" style="margin:0;font-size:14px">Dati reali di tutte le attività in corso, aggiornati al ' + esc(dataOra(N.aggiornato)) + '. Si aggiornano da soli ogni minuto, come nell\'app.</p>'
         : '<p class="muted" style="margin:0">I numeri si calcolano alla prima apertura della pagina, oppure con «Aggiorna ora».</p>') + '</div>' +
     '<div class="stack" style="gap:8px"><h3 style="margin:0;font-size:18px">Chi ha aperto la pagina</h3>' +
       (V.length ? '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Collega</th><th>Prima visita</th><th>Ultima visita</th><th class="c">Volte</th><th class="c">Tempo sulla pagina</th><th class="c">In media</th><th></th></tr></thead><tbody>' +

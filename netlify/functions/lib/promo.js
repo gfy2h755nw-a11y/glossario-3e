@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const L = require('./logica');
 const { soloCerrato } = require('./banca');
 const MAX_VISITE = 500;
-const VALIDI_MS = 60 * 60 * 1000; // numeri ricalcolati al massimo una volta l'ora (ogni calcolo legge tutti i dati)
+const VALIDI_MS = 60 * 1000; // numeri ricalcolati al massimo una volta al minuto (ogni calcolo legge tutti i dati)
 
 /* numeri reali di tutte le attività in corso (esclusa quella in preparazione): solo totali, nessun nome */
 async function calcolaNumeri() {
@@ -83,7 +83,7 @@ async function stato(db, { codice }) {
   await soloCerrato(db, codice);
   let P = await leggi(db);
   if (!P.codice) { P = Object.assign({}, P, { codice: nuovoCodice(), creato: new Date().toISOString(), visite: P.visite || [] }); await db.scriviPromo(P); }
-  return { codice: P.codice, creato: P.creato, visite: P.visite || [], numeri: P.numeri || null };
+  return { codice: P.codice, creato: P.creato, visite: P.visite || [], numeri: await numeri(db, P) };
 }
 /* «Aggiorna ora» dalla sezione Promo App */
 async function aggiornaNumeri(db, { codice }) { await soloCerrato(db, codice); return { numeri: await numeri(db, null, true) }; }

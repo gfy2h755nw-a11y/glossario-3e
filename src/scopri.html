@@ -396,11 +396,16 @@ footer{padding:28px 0 calc(28px + env(safe-area-inset-bottom,0px));color:var(--m
     if (!n) return;
     var ore = Math.round((n.minuti || 0) / 60);
     var v = [['nClassi', n.classi], ['nAlunni', n.alunni], ['nTermini', n.termini], ['nPerc', n.perc, '%'], ['nTempo', n.minuti < 60 ? n.minuti : ore, n.minuti < 60 ? ' min' : ' h']];
-    v.forEach(function (x) { var el = $(x[0]); el.setAttribute('data-n', x[1] || 0); el.setAttribute('data-s', x[2] || ''); if (el.parentNode.classList.contains('in') || !io) conta(el); });
+    v.forEach(function (x) { var el = $(x[0]), gia = el.hasAttribute('data-n'), prima = el.getAttribute('data-n') + '|' + el.getAttribute('data-s'); el.setAttribute('data-n', x[1] || 0); el.setAttribute('data-s', x[2] || '');
+      if (gia && (el.parentNode.classList.contains('in') || !io)) { if (prima !== el.getAttribute('data-n') + '|' + el.getAttribute('data-s')) el.textContent = Number(x[1] || 0).toLocaleString('it-IT') + (x[2] || ''); }
+      else if (el.parentNode.classList.contains('in') || !io) conta(el); });
     var d = new Date(n.aggiornato);
     $('nAgg').textContent = 'Dati reali dell\'app, aggiornati al ' + d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' }) + ', ore ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' }) + '.';
   };
   if (codice) PROMO.numeri(codice).then(mostraNumeri).catch(function () { $('nAgg').textContent = ''; });
+  // numeri sempre allineati all'app: si ricaricano ogni minuto con la pagina in primo piano, e subito quando ci si torna
+  var ricarica = function () { if (codice && document.visibilityState === 'visible') PROMO.numeri(codice).then(mostraNumeri).catch(function () {}); };
+  if (codice) { setInterval(ricarica, 60000); document.addEventListener('visibilitychange', ricarica); }
   // tempo sulla pagina: solo in primo piano, inviato ogni minuto e quando si lascia la pagina
   var chi = null, dal = 0, spedisci = function () { if (chi && dal) { var s = Math.round((Date.now() - dal) / 1000); dal = document.visibilityState === 'visible' ? Date.now() : 0; if (s > 0) PROMO.tempo(codice, chi, s); } };
   var avviaTempo = function (g) { chi = g; dal = document.visibilityState === 'visible' ? Date.now() : 0; };
