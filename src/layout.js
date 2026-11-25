@@ -120,9 +120,17 @@ function barraLaterale(pag, pagine) {
     return '<option value="' + esc(x.id) + '"' + (x.id === (S.d.att || 'main') ? ' selected' : '') + '>' + esc(x.nome) + ' · ' + esc((x.classi || []).join(', ')) + (x.bozza ? ' · in preparazione' : '') + '</option>';
   }).join('') + '</select></label>';
   if (!RO() && ADM()) h += '<button class="snuovaatt" onclick="apriWizard(\'attivita\')">+ Nuova attività</button>';
-  if (cl.length > 1) h += '<div class="seg" role="group" aria-label="Filtra per classe">' + ['tutte'].concat(cl).map(function (c) {
-    return '<button class="' + (f === c ? 'on' : '') + '" aria-pressed="' + (f === c) + '" data-classe="' + esc(c) + '" onclick="filtroClasse(\'' + esc(c) + '\')">' + (c === 'tutte' ? 'Tutte' : esc(c)) + '</button>';
-  }).join('') + '</div>';
+  // le classi di tutte le attività: quelle di un'altra attività la aprono direttamente (es. 4E)
+  var qui = S.d.att || 'main', voci = [];
+  if (!RO() && sp.length > 1) sp.forEach(function (x) { (x.id === qui ? cl : (x.classi || [])).forEach(function (c) { voci.push({ c: c, id: x.id, nome: x.nome }); }); });
+  else cl.forEach(function (c) { voci.push({ c: c, id: qui }); });
+  if (voci.length > 1) h += '<div class="seg' + (voci.length > 3 ? ' segm' : '') + '" role="group" aria-label="Classi">' +
+    '<button class="' + (f === 'tutte' && cl.length > 1 ? 'on' : '') + '" aria-pressed="' + (f === 'tutte' && cl.length > 1) + '" data-classe="tutte" onclick="' + (cl.length === 1 && qui !== 'main' ? 'cambiaAttivita(\'main\')' : 'filtroClasse(\'tutte\')') + '"' + (sp.length > 1 ? ' title="Tutte le classi di questa attività"' : '') + '>Tutte</button>' +
+    voci.map(function (v, i) {
+      var sep = i > 0 && voci[i - 1].id !== v.id, on = v.id === qui && (f === v.c || cl.length === 1); // attività di una sola classe: è quella
+      return '<button class="' + (on ? 'on' : '') + (v.id !== qui ? ' altra' : '') + (sep ? ' sep' : '') + '" aria-pressed="' + on + '" data-classe="' + esc(v.c) + '" data-att="' + esc(v.id) + '"' + (v.id !== qui ? ' title="Apri ' + esc(v.nome) + '"' : '') +
+        ' onclick="' + (v.id === qui ? 'filtroClasse(\'' + esc(v.c) + '\')' : 'cambiaAttivita(\'' + esc(v.id) + '\',\'' + esc(v.c) + '\')') + '">' + esc(v.c) + '</button>';
+    }).join('') + '</div>';
   h += '</div><nav class="snav">';
   var gr = null, sezAtt = sezioneDi(pag).id;
   sezioniVisibili(pagine).forEach(function (x) {

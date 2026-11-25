@@ -114,12 +114,13 @@ function entra(codice, riprova) {
     memo(KEY_COD, null); S.codice = null; vistaLogin(errMsg(e));
   });
 }
-function cambiaAttivita(id) {
+function cambiaAttivita(id, classe) {
   var prec = S.att;
   S.att = id && id !== 'main' ? id : null;
   api('login').then(function (d) {
     memo(chiaveAtt(), S.att); S.d = d; S.sel = {}; S.or = null; S.poster = null; S.datePerClasse = null;
     S.filtro = { area: 'tutte', stato: 'inviata', lingua: 'it', classe: 'tutte' };
+    if (classe && CLASSI().length > 1 && CLASSI().indexOf(classe) >= 0) S.filtro.classe = classe; // scelta dal selettore delle classi
     vistaDocente(); window.scrollTo(0, 0); toast('Attività: ' + nomeAttivita());
   }).catch(function (e) { S.att = prec; toast(errMsg(e), true); vistaDocente(); });
 }
