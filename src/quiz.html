@@ -149,7 +149,10 @@ var Quiz = (function () {
       st = d.stato; ses = d.sessione; tot = d.totale; nome = d.nome; finePrec = 0; domanda(d.domanda);
     }).catch(function (e) { accesso(e.message); });
   }
-  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+    var b = document.getElementById('qzTi'); if (b && b.style.transition && b.style.transition !== 'none') { var w = getComputedStyle(b).width; b.style.transition = 'none'; b.style.width = w; }
+  }
   function domanda(d, tieniTempo) {
     dom = d; attesa = false;
     var senza = !d.secondi;
@@ -160,16 +163,27 @@ var Quiz = (function () {
       (d.lettere || ['A', 'B']).map(function (l) { return '<button class="qz-op" data-l="' + l + '" onclick="Quiz.rispondi(\'' + l + '\')"><b>' + l + '</b>' + esc(d[l]) + '</button>'; }).join('') +
       (d.dimezza ? '<button class="qz-btn" id="qzDim" style="background:#fff;color:#15212B;border:2px solid #15212B;margin-top:4px" onclick="Quiz.dimezza()">Dimezza opzioni</button>' : '') +
       '<div id="qzEs" aria-live="polite"></div></div>';
-    if (!tieniTempo) scad = Date.now() + d.secondi * 1000;
     stop();
     if (senza) { if (!tieniTempo) window.scrollTo(0, 0); return; }
-    timer = setInterval(function () {
-      var r = scad - Date.now(), b = document.getElementById('qzTi'); if (!b) return stop();
-      b.style.width = Math.max(0, r / (d.secondi * 10)) + '%'; document.getElementById('qzT').className = 'qz-tempo' + (r < 8000 ? ' poco' : '');
+    if (!tieniTempo) window.scrollTo(0, 0);
+    // il tempo parte quando la domanda è davvero sullo schermo; la barra la fa scorrere il browser (fluida anche
+    // mentre si scorrono le definizioni o il telefono è occupato), il conto dei secondi si aggiorna qui
+    var tot = d.secondi * 1000, b = document.getElementById('qzTi');
+    var tick = function () {
+      var r = scad - Date.now(); if (!document.getElementById('qzTi')) return stop();
+      document.getElementById('qzT').className = 'qz-tempo' + (r < 8000 ? ' poco' : '');
       document.getElementById('qzSec').textContent = Math.max(0, Math.ceil(r / 1000)) + ' secondi';
       if (r <= 0) rispondi('');
-    }, 200);
-    if (!tieniTempo) window.scrollTo(0, 0);
+    };
+    var parti = function () {
+      if (dom !== d || !document.getElementById('qzTi')) return;
+      if (!tieniTempo || !scad) scad = Date.now() + tot;
+      var r = Math.max(0, scad - Date.now());
+      b.style.transition = 'none'; b.style.width = (r / tot * 100) + '%'; void b.offsetWidth;
+      b.style.transition = 'width ' + r + 'ms linear'; b.style.width = '0%';
+      tick(); timer = setInterval(tick, 200);
+    };
+    if (tieniTempo) parti(); else requestAnimationFrame(function () { requestAnimationFrame(parti); });
   }
   // «Dimezza opzioni»: restano due definizioni (la giusta e una sbagliata); il tempo non riparte
   function dimezza() {

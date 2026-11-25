@@ -1201,18 +1201,27 @@ function poniDomanda(el, d, testa, fine) {
   var scad = Date.now() + 60000, fatto = false;
   var chiudi = function (i) {
     if (fatto) return; fatto = true; fermaGioco();
+    var bi = document.getElementById('gTi'); if (bi) { var o = getComputedStyle(bi).strokeDashoffset; bi.style.transition = 'none'; bi.style.strokeDashoffset = o; }
     var giusta = i != null && d.opz[i] === d.t.def;
     el.querySelectorAll('.gop').forEach(function (b, k) { b.disabled = true; if (d.opz[k] === d.t.def) b.classList.add('ok'); else if (k === i) b.classList.add('no'); });
     document.getElementById('gEs').innerHTML = '<p style="margin:0;font:800 18px Archivo,Arial,sans-serif;color:' + (giusta ? 'var(--ok)' : 'var(--no)') + '">' + (giusta ? 'Giusto!' : i == null ? 'Tempo scaduto.' : 'Sbagliato.') + '</p>';
     fine(giusta);
   };
   el.querySelectorAll('.gop').forEach(function (b) { b.onclick = function () { chiudi(Number(b.getAttribute('data-i'))); }; });
-  TIMER = setInterval(function () {
-    var r = scad - Date.now(), bi = document.getElementById('gTi'); if (!bi) return fermaGioco();
-    bi.setAttribute('stroke-dashoffset', (CIRC * (1 - Math.max(0, r) / 60000)).toFixed(1)); document.getElementById('gT').className = 'timer' + (r < 10000 ? ' poco' : '');
+  // il minuto parte quando la domanda è sullo schermo; il cerchio lo fa scorrere il browser (fluido anche mentre si scorre)
+  var tick = function () {
+    var r = scad - Date.now(); if (!document.getElementById('gTi')) return fermaGioco();
+    document.getElementById('gT').className = 'timer' + (r < 10000 ? ' poco' : '');
     var s = Math.max(0, Math.ceil(r / 1000)); document.getElementById('gNum').textContent = s; document.getElementById('gSec').textContent = s + ' secondi';
     if (r <= 0) chiudi(null);
-  }, 200);
+  };
+  var bi = document.getElementById('gTi');
+  requestAnimationFrame(function () { requestAnimationFrame(function () {
+    if (fatto || document.getElementById('gTi') !== bi) return;
+    scad = Date.now() + 60000;
+    bi.style.transition = 'stroke-dashoffset 60s linear'; bi.style.strokeDashoffset = CIRC.toFixed(1);
+    tick(); TIMER = setInterval(tick, 200);
+  }); });
 }
 function pochi(el) { el.innerHTML = '<div class="gbox"><h2>Ancora un po\' di pazienza</h2><p style="margin:0">Il gioco si attiva quando nel glossario ci sono almeno 4 definizioni approvate.</p></div>'; }
 var fv = function (n) { return String(Math.round(n * 100) / 100).replace('.', ','); };
