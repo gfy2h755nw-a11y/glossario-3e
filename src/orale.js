@@ -41,7 +41,8 @@ function paginaQuiz() {
   righe.forEach(function (r) {
     var q = quizDi(r.id), aperto = S.qzAperto === r.id, pc = Math.min(100, Math.round(q.indovinati / q.soglia * 100));
     var dsp = (q.subentri ? ' <span class="chip s-correggere" title="Il quiz è stato aperto su un altro dispositivo mentre la sessione precedente era ancora attiva">Sessione presa da un altro dispositivo · ' + q.subentri + (q.subentri === 1 ? ' volta' : ' volte') + '</span>' : '') +
-      (q.dispositivi > 1 ? ' <span class="chip s-inviata">' + q.dispositivi + ' dispositivi</span>' : '');
+      (q.dispositivi > 1 ? ' <span class="chip s-inviata">' + q.dispositivi + ' dispositivi</span>' : '') +
+      (q.abbandoni ? ' <span class="chip s-correggere" title="Domande lasciate a metà (pagina chiusa, ricaricata o «Termina»): contate come non date, con la penalità">Domande abbandonate · ' + q.abbandoni + '</span>' : '');
     h += '<tr data-quiz="' + r.id + '"><td>' + linkScheda(r) + (r.escluso ? ' <span class="chip s-correggere">Escluso</span>' : '') + dsp + '</td><td class="n">' + esc(etich(r)) + '</td><td class="n">' + q.sessioni + '</td><td class="n" style="font-weight:400">' + (q.sessioni ? tempoMs(q.ms) : '—') + '</td>' + '<td class="n">' + fineQuizHtml(q) + '</td>' +
       '<td class="n" style="font-weight:400">' + q.risposte + '</td><td class="n">' + q.corrette + (q.risposte ? ' <span class="muted" style="font-weight:400;font-size:13px">' + Math.round(q.corrette / q.risposte * 100) + '%</span>' : '') + '</td>' +
       '<td class="n">' + (q.errori || 0) + '</td><td class="n" style="font-weight:400">' + (q.persi || 0) + '</td>' +
@@ -274,7 +275,7 @@ function bloccoQuizImp() {
   var q = (S.d.admin.impostazioni && S.d.admin.impostazioni.quiz) || { scadenze: {} }, tot = S.d.termini.length;
   return '<section class="card stack" id="quizImp"><h2 style="margin:0;font-size:22px">Quiz: seconda parte della prova</h2>' +
     '<p class="muted" style="margin:0">Per ogni classe fissi <b>apertura</b> e <b>scadenza</b>: il quiz si apre all\'ora di apertura (se la lasci vuota, si apre subito) e si chiude alla scadenza. Senza scadenza resta chiuso. ' +
-    'Chi indovina tutti i termini richiesti entro la scadenza è ammesso all\'interrogazione; gli altri restano senza voto. A ogni errore l\'alunno torna indietro di ' + RG().quiz.passo + ' termini e la risposta giusta non viene mostrata.</p>' +
+    'Chi indovina tutti i termini richiesti entro la scadenza è ammesso all\'interrogazione; gli altri restano senza voto. A ogni errore (anche una domanda lasciata a metà chiudendo la pagina) l\'alunno torna indietro di ' + RG().quiz.passo + ' termini e la risposta giusta non viene mostrata.</p>' +
     '<div class="grid4"><div><label for="qzSoglia">Termini da indovinare (su ' + tot + ')</label><input id="qzSoglia" type="number" min="10" max="' + tot + '" step="1" value="' + (q.soglia || tot) + '"></div>' +
     '<div><label for="qzSec">Secondi per rispondere</label><input id="qzSec" type="number" inputmode="numeric" min="10" max="300" step="1" value="' + RG().quiz.secondi + '"><span class="muted" style="font-size:13px">meno tempo = più difficile copiare (con 20-25 secondi non si fa in tempo a chiedere a un\'IA)</span></div>' +
     '</div><div class="grid4">' +

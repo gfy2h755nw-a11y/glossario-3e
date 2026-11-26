@@ -8,7 +8,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#15212B">
-<style>@font-face{font-family:'Archivo';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/archivo-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/archivo-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:800;font-display:swap;src:url(/fonts/archivo-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:900;font-display:swap;src:url(/fonts/archivo-latin-900-normal.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(/fonts/cormorant-garamond-latin-500-italic.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/cormorant-garamond-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-italic.woff2) format('woff2')}</style>
+<style>@font-face{font-family:'Archivo';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/archivo-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/archivo-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/archivo-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:800;font-display:swap;src:url(/fonts/archivo-latin-800-normal.woff2) format('woff2')}@font-face{font-family:'Archivo';font-style:normal;font-weight:900;font-display:swap;src:url(/fonts/archivo-latin-900-normal.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(/fonts/cormorant-garamond-latin-500-italic.woff2) format('woff2')}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:600;font-display:swap;src:url(/fonts/cormorant-garamond-latin-600-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:400;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-400-italic.woff2) format('woff2')}@font-face{font-family:'Atkinson Hyperlegible';font-style:italic;font-weight:700;font-display:swap;src:url(/fonts/atkinson-hyperlegible-latin-700-italic.woff2) format('woff2')}.qz-avviso{background:#FFF4E5;border:1px solid #F0C48A;color:#7A4B00;border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:15px;line-height:1.4}
+</style>
 <style>
 /* testo del quiz non selezionabile né copiabile (resta scrivibile il campo del codice) */
 body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -704,7 +705,7 @@ var Quiz = (function () {
   function regole(r) {
     return '<li>Compare un termine con <b>' + (r.opzioni === 4 ? 'quattro' : r.opzioni) + ' definizioni</b>: scegli quella giusta ' + (r.senzaTempo ? '<b>senza limite di tempo</b>' : 'entro <b>' + r.secondi + ' secondi</b>') + '. Ogni risposta giusta è un termine indovinato.</li>' +
       (r.dimezza ? '<li>Puoi premere <b>«Dimezza opzioni»</b>: restano due definizioni, una delle quali è quella giusta.</li>' : '') +
-      '<li><b>Se sbagli</b> (o lasci scadere il tempo) la risposta giusta non viene mostrata' + (r.passo ? ' e <b>torni indietro di ' + r.passo + (r.passo === 1 ? ' termine' : ' termini') + '</b>' : '') + ': per andare avanti devi studiare le definizioni.</li>' +
+      '<li><b>Se sbagli</b> (o lasci scadere il tempo, o esci a metà domanda chiudendo o ricaricando la pagina) la risposta giusta non viene mostrata' + (r.passo ? ' e <b>torni indietro di ' + r.passo + (r.passo === 1 ? ' termine' : ' termini') + '</b>' : '') + ': per andare avanti devi studiare le definizioni.</li>' +
       '<li>I progressi restano salvati: puoi fermarti e riprendere quando vuoi, entro la scadenza.</li>' +
       '<li>Il quiz è superato quando hai indovinato tutti i termini richiesti: solo allora sei <b>ammesso all\'interrogazione</b>.</li>';
   }
@@ -741,7 +742,9 @@ var Quiz = (function () {
       tok = d.tok;
       // attività di un collega: la sua materia e la dicitura di concessione
       if (d.conc) { var so = document.getElementById('qzSott'); if (so) so.textContent = 'IIS «E. Barsanti»' + (d.conc.materia ? ' · ' + d.conc.materia : '') + ' · Per gentile concessione del Prof. Danilo Cerrato'; }
-      st = d.stato; ses = d.sessione; tot = d.totale; nome = d.nome; finePrec = 0; domanda(d.domanda);
+      st = d.stato; ses = d.sessione; tot = d.totale; nome = d.nome; finePrec = 0;
+      if (d.abbandono) Quiz._avviso = '<b>La domanda lasciata a metà conta come non data.</b> ' + (d.abbandono.persi ? 'Torni indietro di ' + d.abbandono.persi + (d.abbandono.persi === 1 ? ' termine' : ' termini') + ': ora sei a ' + d.abbandono.indovinati + ' su ' + st.soglia + '.' : '');
+      domanda(d.domanda);
     }).catch(function (e) { accesso(e.message); });
   }
   function stop() {
@@ -759,6 +762,9 @@ var Quiz = (function () {
       (d.dimezza ? '<button class="qz-btn" id="qzDim" style="background:#fff;color:#15212B;border:2px solid #15212B;margin-top:4px" onclick="Quiz.dimezza()">Dimezza opzioni</button>' : '') +
       '<div id="qzEs" aria-live="polite"></div></div>';
     stop();
+    // la domanda è sullo schermo: da qui uscire senza rispondere conta come risposta non data
+    if (!tieniTempo && d.id) requestAnimationFrame(function () { if (dom === d) chiama({ azione: 'quizvista', codice: cod, tok: tok, id: d.id }).catch(function () {}); });
+    if (Quiz._avviso) { var av = document.createElement('div'); av.className = 'qz-avviso'; av.innerHTML = Quiz._avviso; box().insertBefore(av, box().children[1] || null); Quiz._avviso = ''; }
     if (senza) { if (!tieniTempo) window.scrollTo(0, 0); return; }
     if (!tieniTempo) window.scrollTo(0, 0);
     // il tempo parte quando la domanda è davvero sullo schermo; la barra la fa scorrere il browser (fluida anche
@@ -809,9 +815,16 @@ var Quiz = (function () {
   }
   function chiudi() {
     stop();
+    if (dom && !attesa && document.querySelector('.qz-op:not([disabled])')) {
+      attesa = true; [].forEach.call(document.querySelectorAll('.qz-op'), function (b) { b.disabled = true; });
+      chiama({ azione: 'quizrisposta', codice: cod, scelta: '', pausa: Quiz._pausa || 0, tok: tok }).then(function (d) {
+        Quiz._pausa = 0; st = d.stato; ses = d.sessione; ses._termina = d.esito; attesa = false; chiudi();
+      }).catch(function (e) { accesso(e.message); });
+      return;
+    }
     if (dom && ses && ses.r) {
       dom = null;
-      box().innerHTML = testa() + '<div class="qz-card"><div class="qz-term" style="font-size:24px">Sessione terminata</div><p>Hai risposto a <b>' + ses.r + '</b> domande: <b>' + ses.c + '</b> corrette e <b>' + (ses.e || 0) + '</b> ' + ((ses.e || 0) === 1 ? 'errore' : 'errori') + ' (' + (ses.p || 0) + ' termini persi), in <b>' + tempo(ses.ms) + '</b>.</p>' +
+      var tx = ses._termina; box().innerHTML = testa() + '<div class="qz-card"><div class="qz-term" style="font-size:24px">Sessione terminata</div>' + (tx ? '<p class="qz-avviso"><b>La domanda in corso conta come non data</b>' + (tx.persi ? ': ' + (tx.persi === 1 ? '1 termine perso.' : tx.persi + ' termini persi.') : '.') + '</p>' : '') + '<p>Hai risposto a <b>' + ses.r + '</b> domande: <b>' + ses.c + '</b> corrette e <b>' + (ses.e || 0) + '</b> ' + ((ses.e || 0) === 1 ? 'errore' : 'errori') + ' (' + (ses.p || 0) + ' termini persi), in <b>' + tempo(ses.ms) + '</b>.</p>' +
         '<p>Sei a <b>' + st.indovinati + '</b> termini indovinati su ' + st.soglia + (st.superata ? ': <b>quiz superato</b>, sei ammesso all\'interrogazione.' : '. Te ne mancano <b>' + Math.max(0, st.soglia - st.indovinati) + '</b>. I progressi restano salvati' + (st.scadenza ? ': hai tempo fino a ' + esc(quandoIt(st.scadenza)) + '.' : '.')) + '</p>' +
         '<div class="qz-riga"><button class="qz-btn" onclick="Quiz.riprendi()">Riprendi il quiz</button></div></div>';
       ses = null; window.scrollTo(0, 0); return;

@@ -382,7 +382,7 @@ function creaReport(stato, attivita, now) {
         doc.font('Helvetica-Bold').fontSize(11).fillColor(SCURO).text('Quiz: andamento e sessioni', 36, yy); yy = doc.y + 4;
         const medio = q.risposte ? Math.round(q.ms / q.risposte / 100) / 10 : 0, scad = ses.reduce((a, b) => a + (b.s || 0), 0);
         const ind = [['Risposte corrette', q.risposte ? Math.round(q.corrette / q.risposte * 100) + ' %' : '-'], ['Tempo medio per risposta', medio ? String(medio).replace('.', ',') + ' s ' + (x.a.bes && x.a.bes.secondi === 0 ? '(senza limite)' : 'su ' + ((x.a.bes && x.a.bes.secondi) || REG.di(stato.config).quiz.secondi)) : '-'],
-          ['Tempi scaduti', String(scad)], ['Massimo raggiunto', q.massimo + ' / ' + q.soglia], ['Dispositivi usati', String(q.dispositivi || (ses.length ? 1 : 0))], ['Cambi di dispositivo', String(q.subentri || 0)],
+          [q.abbandoni ? 'Tempi scaduti · abbandoni' : 'Tempi scaduti', String(scad) + (q.abbandoni ? ' · ' + q.abbandoni : '')], ['Massimo raggiunto', q.massimo + ' / ' + q.soglia], ['Dispositivi usati', String(q.dispositivi || (ses.length ? 1 : 0))], ['Cambi di dispositivo', String(q.subentri || 0)],
           ['Tempo fino al termine', tqm(q.msFine) + (q.superata ? '' : q.stato === 'scaduto' ? ' (scaduto)' : ' (in corso)')], ['Giorni per superarlo', q.superata ? q.giorniSup + (q.giorniSup === 1 ? ' giorno' : ' giorni') : '-']];
         const w6 = Wp / 4;
         ind.forEach((b, i) => {

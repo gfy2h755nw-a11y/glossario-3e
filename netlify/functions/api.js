@@ -57,6 +57,7 @@ const AZIONI = {
   consensoinvia: (d, p) => CONS.invia(d, p),
   consensoimmagine: (d, p) => CONS.immagine(d, p),
   quizdimezza: (d, p) => OR.quizDimezza(d, p),
+  quizvista: (d, p) => OR.quizVista(d, p),
   pianoorale: (d, p) => OR.pianoOrale(d, p),
   oraleprova: (d, p) => OR.oraleProva(d, p),
   oralepesca: (d, p) => OR.oralePesca(d, p),

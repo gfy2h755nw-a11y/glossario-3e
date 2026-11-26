@@ -1013,7 +1013,7 @@ function schedaStudente(id) {
         riga('Stato', chipQuiz(q), q.scadenza ? 'scadenza ' + esc(oraIt(q.scadenza)) : '') +
         riga('Termini indovinati', q.indovinati + ' / ' + q.soglia, q.sessioni ? q.sessioni + (q.sessioni === 1 ? ' sessione' : ' sessioni') + ' · ' + tempoMs(q.ms) : 'nessuna sessione') +
         (q.superata ? riga('Fino al superamento', tempoMs(q.msFine), q.giorniSup + (q.giorniSup === 1 ? ' giorno' : ' giorni')) : '') +
-        (q.dispositivi > 1 || q.subentri ? riga('Segnali', (q.dispositivi || 0) + ' dispositivi', (q.subentri || 0) + ' cambi a quiz aperto') : '') + '</section>' +
+        (q.dispositivi > 1 || q.subentri || q.abbandoni ? riga('Segnali', (q.dispositivi || 0) + ' dispositivi', (q.subentri || 0) + ' cambi a quiz aperto' + (q.abbandoni ? ' · ' + q.abbandoni + ' domande abbandonate' : '')) : '') + '</section>' +
       '<section><h4 class="sk-h f3">3 · Orale</h4>' +
         (o ? riga('Voto orale', fv(o.voto) + (o.manuale ? ' (tuo)' : ''), fv(o.punti) + ' punti su ' + ((o.termini && o.termini.length) || RG().orale.domande) + ' · ' + esc(dataBreve(o.data))) :
           riga('Interrogazione', q.superata ? (q.piano ? esc(giornoIt(q.piano.data)) + (q.piano.ora ? ', ' + q.piano.ora + 'ª ora' : '') : 'da programmare') : 'non ancora ammesso', '')) + '</section>' +

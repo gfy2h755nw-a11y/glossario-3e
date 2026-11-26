@@ -102,7 +102,7 @@ function controllaAccesso(q, cfg) {
 function riepilogoQuiz(q, cfg) {
   const s = (q && q.sessioni) || [], c = cfg || { soglia: QUIZ.soglia, scadenza: null, aperto: false, scaduto: false };
   const ind = Object.keys((q && q.ok) || {}).length, sup = (q && q.superata) || null;
-  const r = { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, dispositivi: ((q && q.disp) || []).length, subentri: (q && q.subentri) || 0, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null, partenza: c.partenza || null, bes: c.bes ? { secondi: c.bes.secondi != null ? c.bes.secondi : null, dimezza: c.bes.dimezza !== false, etichetta: c.bes.etichetta !== false } : null, sogliaPersonale: c.sogliaPersonale != null ? c.sogliaPersonale : null, sogliaClasse: c.sogliaClasse != null ? c.sogliaClasse : null, passoPersonale: c.passoPersonale != null ? c.passoPersonale : null, passo: c.passo != null ? c.passo : null,
+  const r = { indovinati: ind, soglia: c.soglia, superata: sup, sessioni: s.length, dispositivi: ((q && q.disp) || []).length, subentri: (q && q.subentri) || 0, abbandoni: (q && q.abb) || 0, scadenza: c.scadenza || null, proroga: c.proroga || null, scadenzaClasse: c.scadenzaClasse || null, partenza: c.partenza || null, bes: c.bes ? { secondi: c.bes.secondi != null ? c.bes.secondi : null, dimezza: c.bes.dimezza !== false, etichetta: c.bes.etichetta !== false } : null, sogliaPersonale: c.sogliaPersonale != null ? c.sogliaPersonale : null, sogliaClasse: c.sogliaClasse != null ? c.sogliaClasse : null, passoPersonale: c.passoPersonale != null ? c.passoPersonale : null, passo: c.passo != null ? c.passo : null,
     // stato rispetto all'ammissione all'orale
     stato: sup ? 'superato' : !c.aperto ? 'chiuso' : c.scaduto ? 'scaduto' : s.length ? 'in corso' : 'non iniziato',
     prima: s.length ? s[0].i : null, ultima: s.length ? (s[s.length - 1].f || s[s.length - 1].i) : null,
@@ -150,13 +150,38 @@ function nuovaDomanda(cat, q, stessa, nOpz) {
 function vistaDomanda(cat, cur, n, cfg) {
   const ar = CAT.aree().find((x) => String(x.n) === String(cur.a)) || {};
   const d = { n, area: cur.a, nomeArea: ar.it || '', colore: ar.colore || '', termine: cat[cur.a][cur.k][0], secondi: cfg && cfg.senzaTempo ? 0 : (cfg && cfg.secondi) || QUIZ.secondi, lettere: cur.o.map((k, i) => LETTERE[i]),
-    dimezza: !!(cfg && cfg.dimezza && cur.o.length > 2 && !cur.dim), dimezzata: !!cur.dim };
+    dimezza: !!(cfg && cfg.dimezza && cur.o.length > 2 && !cur.dim), dimezzata: !!cur.dim, id: cur.t };
   cur.o.forEach((k, i) => { d[LETTERE[i]] = cat[cur.a][k][1]; });
   return d;
 }
 /* Una sola sessione per codice: ogni avvio crea un gettone; le risposte con un gettone vecchio (quiz aperto nel frattempo
    su un altro dispositivo) vengono rifiutate. Si registrano i dispositivi usati e le sessioni prese da un altro dispositivo
    mentre la precedente era ancora attiva (segnale per il docente). */
+const vistaDi = (a, config) => (a._prova ? ((config && config.provaVista) || {})[a._prova] : a.quiz_vista) || null;
+function abbandonata(q, cfg, vista) {
+  const cur = q.corrente, v = cur && (cur.v || (vista && Number(vista.t) === cur.t ? Number(vista.v) : 0));
+  if (!cur || !v || !q.sessioni.length) return null;
+  const s = q.sessioni[q.sessioni.length - 1], lim = cfg.senzaTempo ? 600000 : (cfg.secondi + QUIZ.tolleranza) * 1000;
+  s.r = (s.r || 0) + 1; s.e = (s.e || 0) + 1; s.ab = (s.ab || 0) + 1; s.ms = (s.ms || 0) + Math.min(Math.max(0, Date.now() - v), lim);
+  let persi = 0;
+  if (!q.superata) {
+    const ultimi = Object.keys(q.ok).sort((x, y) => (q.ok[y] || 0) - (q.ok[x] || 0)).slice(0, cfg.passo);
+    ultimi.forEach((k) => { delete q.ok[k]; }); persi = ultimi.length; s.p = (s.p || 0) + persi;
+  }
+  q.abb = (q.abb || 0) + 1; q.corrente = null;
+  return { persi, indovinati: Object.keys(q.ok).length };
+}
+/* la domanda è comparsa sullo schermo dello studente: da qui, se esce senza rispondere, conta come non data */
+// (in un campo a parte: se arriva insieme alla risposta non la può sovrascrivere)
+async function quizVista(db, { codice, tok, id, prova, bes }) {
+  const { a, config } = await contestoQuiz(db, codice, prova, bes);
+  const q = a.quiz;
+  if (!q || !q.corrente || (q.sess && q.sess.tok && tok !== q.sess.tok) || q.corrente.t !== Number(id)) return { ok: true };
+  const gia = vistaDi(a, config); if (gia && Number(gia.t) === q.corrente.t) return { ok: true };
+  const v = { t: q.corrente.t, v: Date.now() };
+  if (a._prova) await db.scriviConfig({ provaVista: { [a._prova]: v } }); else await db.scriviAlunno(a.id, { quiz_vista: v });
+  return { ok: true };
+}
 const SUBENTRO_MS = 10 * 60000;
 async function quizInizio(db, { codice, disp, prova, bes, daCapo }) {
   const { a, cat, cfg, config } = await contestoQuiz(db, codice, prova, bes);
@@ -169,13 +194,16 @@ async function quizInizio(db, { codice, disp, prova, bes, daCapo }) {
   const ora = new Date().toISOString();
   const d = String(disp || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 40) || 'sconosciuto';
   if (q.disp.indexOf(d) < 0 && q.disp.length < 20) q.disp.push(d);
+  // domanda lasciata a metà (comparsa sullo schermo e mai risposta: pagina chiusa o ricaricata, rete staccata, telefono spento):
+  // conta come non data, con la stessa penalità del tempo scaduto. Per tutti, sempre.
+  const abbandono = abbandonata(q, cfg, vistaDi(a, config));
   const prec = v.sess, ultima = q.sessioni.length ? Date.parse(q.sessioni[q.sessioni.length - 1].f || q.sessioni[q.sessioni.length - 1].i) : 0;
   if (prec && prec.disp && prec.disp !== d && Date.now() - ultima < SUBENTRO_MS) q.subentri++;
   q.sess = { tok: require('crypto').randomBytes(12).toString('hex'), disp: d, i: ora };
   q.sessioni.push({ i: ora, f: ora, ms: 0, r: 0, c: 0, e: 0, s: 0, n: 0, p: 0 });
   q.corrente = nuovaDomanda(cat, q, true, cfg.opzioni);
   await salvaQuiz(db, a, q);
-  return { conc: config.concessione || null, tok: q.sess.tok, nome: L.nomePubblico(a.nome), stato: perStudente(riepilogoQuiz(q, cfg)), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
+  return { abbandono, conc: config.concessione || null, tok: q.sess.tok, nome: L.nomePubblico(a.nome), stato: perStudente(riepilogoQuiz(q, cfg)), sessione: { r: 0, c: 0, e: 0, n: 0, p: 0, ms: 0 }, totale: cfg.totale, passo: cfg.passo, secondi: cfg.secondi, opzioni: cfg.opzioni, domanda: vistaDomanda(cat, q.corrente, 1, cfg) };
 }
 async function quizRisposta(db, { codice, scelta, pausa, tok, prova, bes }) {
   const { a, cat, cfg } = await contestoQuiz(db, codice, prova, bes);
@@ -455,6 +483,7 @@ async function quizDimezza(db, { codice, tok, prova, bes }) {
   if (q && q.sess && q.sess.tok && tok !== q.sess.tok) L.errore('Sessione chiusa: il quiz è stato aperto con il tuo codice su un altro telefono o computer. Se sei tu, premi «Inizia» per continuare qui.');
   if (!q || !q.corrente || !cat[q.corrente.a] || !q.sessioni || !q.sessioni.length) L.errore('Sessione scaduta: ricomincia il quiz.');
   const cur = q.corrente;
+  if (!cur.v) cur.v = Date.now();
   if (!cur.dim && cur.o.length > 2) {
     const altri = cur.o.filter((k) => k !== cur.k), tieni = altri[caso(altri.length)];
     // le due rimaste restano nell'ordine in cui erano
@@ -493,4 +522,4 @@ async function quizPersonale(db, { codice, alunno: id, soglia, passo, bes, secon
   return { alunno: a.id, soglia: s, passo: p, bes: mod.bes, etichetta: eti, superata: !!(mod.quiz && mod.quiz.superata) };
 }
 
-module.exports = { oraleCatalogo, oraleImposta, oraleScegliUno, quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, oraleProva, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };
+module.exports = { quizVista, oraleCatalogo, oraleImposta, oraleScegliUno, quizRegole, quizProroga, quizPersonale, quizDimezza, pianoOrale, oraleProva, QUIZ, ORALE, cfgQuiz, quizInizio, quizRisposta, tabelloneQuiz, riepilogoQuiz, votoOrale, oralePesca, oraleCambia, oraleSalva, oraleAnnulla };

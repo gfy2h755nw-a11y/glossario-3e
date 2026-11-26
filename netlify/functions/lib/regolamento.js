@@ -63,7 +63,7 @@ function genera(stato) {
     cal.map((x) => 'Classe <b>' + x.classe + '</b>: ' + (x.quizA ? 'aperto ' + (x.quizDa === 'da subito' ? 'da subito' : 'dal ' + x.quizDa) + ' al <b>' + x.quizA + '</b>' : '<b>date da fissare</b> (finché non c\'è la scadenza il quiz resta chiuso)') + '.').join('<br>'),
     'Si fa da casa, nella pagina del quiz, con lo stesso codice personale dello scritto, anche in più volte: <b>i progressi restano</b> tra un accesso e l\'altro.',
     'A ogni domanda compare un termine con <b>' + R.quiz.opzioni + ' definizioni</b>; lo studente ha <b>' + R.quiz.secondi + ' secondi</b> per scegliere quella giusta.',
-    'Risposta giusta: il termine è indovinato. Risposta sbagliata o tempo scaduto: <b>la risposta giusta non viene mostrata</b> e lo studente <b>torna indietro di ' + R.quiz.passo + ' termini</b> (perde gli ultimi indovinati).',
+    'Risposta giusta: il termine è indovinato. Risposta sbagliata, tempo scaduto o domanda lasciata a metà (pagina chiusa o ricaricata, «Termina», rete staccata): <b>la risposta giusta non viene mostrata</b> e lo studente <b>torna indietro di ' + R.quiz.passo + ' termini</b> (perde gli ultimi indovinati).',
     'Il quiz è superato quando i termini indovinati arrivano a <b>' + qp.sogliaClasse + (qp.sogliaClasse === tot ? ' (tutti i termini del glossario)' : ' su ' + tot) + '</b>.',
     'Solo chi supera il quiz è <b>ammesso all\'interrogazione</b>. Chi non lo supera entro la scadenza resta <b>senza interrogazione e senza voto</b>; le sue definizioni restano comunque sui cartelloni.',
     'Il docente può concedere una <b>proroga individuale</b> del quiz. Dopo averlo superato, lo studente vede solo i complimenti e poi la data dell\'interrogazione: non può più rifare il quiz.'
