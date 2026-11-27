@@ -1032,7 +1032,9 @@ function pubblicoDa(stato) {
   const now = Date.now(), fuori = new Set(stato.alunni.filter((a) => valuta(stato, a, now).escluso).map((a) => a.id));
   const nomi = {}; stato.alunni.forEach((a) => { if (!fuori.has(a.id)) nomi[a.id] = nomePubblico(a.nome); });
   const classi = {};
-  imp.classi.forEach((c) => { classi[c] = stato.alunni.filter((a) => classeDi(a) === c && !fuori.has(a.id)).sort((x, y) => x.nome.localeCompare(y.nome, 'it')).map((a) => nomePubblico(a.nome)); });
+  // elenco degli studenti per classe: solo chi ha almeno una definizione approvata (il modulo privacy lo controlla senzaNegati)
+  const conApprovate = new Set(stato.termini.filter((t) => t.stato_it === 'approvata' && t.scelta_it != null).map((t) => t.alunno_id));
+  imp.classi.forEach((c) => { classi[c] = stato.alunni.filter((a) => classeDi(a) === c && !fuori.has(a.id) && conApprovate.has(a.id)).sort((x, y) => x.nome.localeCompare(y.nome, 'it')).map((a) => nomePubblico(a.nome)); });
   const aree = CAT.areeDi(stato.config).map((a) => {
     const ts = stato.termini.filter((t) => String(t.area) === String(a.n)).sort((x, y) => Number(String(x.id).slice(2)) - Number(String(y.id).slice(2)));
     return { n: a.n, it: a.it, colore: a.colore, numero: a.numero || (stato.config.numeriCartelloni || {})[a.n] || undefined, termini: ts.map((t) => {

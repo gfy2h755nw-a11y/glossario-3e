@@ -3179,7 +3179,7 @@ var Poster = (function () {
     // autori: chi ha davvero i termini di quest'area (dopo eventuali riassegnazioni), divisi per classe
     var visti = {}, perCl = {}, ordineCl = [];
     termini.forEach(function (t) {
-      if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1;
+      if (!firma(t, nomi) || visti[t.alunno]) return; visti[t.alunno] = 1;
       var c = clDi[t.alunno] || '3E'; if (!perCl[c]) { perCl[c] = []; ordineCl.push(c); }
       perCl[c].push(esc(nomi[t.alunno] || t.alunno));
     });
@@ -3203,8 +3203,8 @@ var Poster = (function () {
         '<div style="width:' + M.c + 'mm;height:' + M.c + 'mm;border-radius:50%;background:' + col + ';color:#fff;display:flex;align-items:center;justify-content:center;' + F + 'font-weight:800;font-size:' + M.cf + 'mm">' + (i + 1) + '</div>' +
         '<div style="min-width:0"><div style="' + F + 'font-weight:800;font-size:' + M.t + 'mm;line-height:1.05;color:#15212B">' + esc(t.it) + '</div>' +
         (ok ? '<div style="font-size:' + M.d + 'mm;line-height:' + M.dl + ';margin-top:' + M.mt + 'mm">' + esc(t.defIt) +
-            (nomi[t.alunno] ? ' <span style="font-size:' + (M.dv * 0.92).toFixed(2) + 'mm;font-style:italic;color:#5B6976;white-space:nowrap">— ' + esc(nomi[t.alunno]) + '</span>' : '') + '</div>'
-          : '<div style="font-size:' + M.dv + 'mm;line-height:1.25;color:#8494A3;font-style:italic;margin-top:' + M.mt + 'mm">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</div>') +
+            (firma(t, nomi) ? ' <span style="font-size:' + (M.dv * 0.92).toFixed(2) + 'mm;font-style:italic;color:#5B6976;white-space:nowrap">— ' + esc(firma(t, nomi)) + '</span>' : '') + '</div>'
+          : '<div style="font-size:' + M.dv + 'mm;line-height:1.25;color:#8494A3;font-style:italic;margin-top:' + M.mt + 'mm">Definizione in arrivo</div>') +
         '</div></div>';
     }
     var liste = [];
@@ -3218,7 +3218,7 @@ var Poster = (function () {
           return '<div style="font-size:6.5mm;line-height:1.25;' + (lingua === 'en' ? 'font-style:italic;' : '') + '">' + esc(testo) + '</div>';
         }
         return '<div style="font-size:4.6mm;line-height:1.3;color:#8494A3;font-style:italic;border-bottom:0.5mm dashed #B8C3CC;padding-bottom:3mm">' +
-          (lingua === 'it' ? 'Definizione a cura di ' : 'Definition by ') + esc(nomi[t.alunno] || '…') + '</div>';
+          (lingua === 'it' ? 'Definizione in arrivo' : 'Definition coming soon') + '</div>';
       }
       return '<div style="flex:1;min-height:0;display:grid;grid-template-columns:13mm 160mm minmax(0,1fr) minmax(0,1fr);column-gap:9mm;align-items:center;padding:0 5mm;' +
         (i % 2 ? 'background:' + chiaro + ';' : '') + 'border-bottom:0.45mm solid ' + medio + '">' +
@@ -3279,8 +3279,7 @@ var Poster = (function () {
       /* piede */
       '<div style="margin:0 36mm;padding:6mm 0 20mm;border-top:0.9mm solid #15212B;display:flex;justify-content:space-between;gap:10mm;font-size:4.8mm;line-height:1.35;color:#2C3A47">' +
         '<span><b>IIS «E. Barsanti» · sede Salvetti · Massa (MS)</b><br>Classe ' + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · Area ' + area.n + ' di 4</span>' +
-        '<span style="flex:1;text-align:center;align-self:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</span>' +
-        (IT && opz.qr ? '<span style="display:flex;align-items:center;gap:3mm">' + qrPoster(opz.qr, 24) + '<span style="font-size:4.2mm;line-height:1.3"><b>Consulta il glossario</b><br>dal telefono</span></span>' : '') +
+        '<span style="flex:1"></span>' + // niente metodologia né QR sui cartelloni (27/11/2026)
         (conc() ? '<span style="text-align:right">' + (MAT() ? esc(MAT()) + ': ' : '') + '<b>' + esc(conc().docente) + '</b><br><i>' + CONCESSIONE + '</i></span>' : '<span style="text-align:right">Laboratorio odontotecnico: <b>Prof. Danilo Cerrato</b>' + (IT ? '' : '<br>Inglese tecnico: <b>Prof.ssa Federica Aliboni</b>') + '</span>') +
       '</div>' +
       '</div>';
@@ -3296,6 +3295,9 @@ var Poster = (function () {
   /* nome sul cartellone: nome per esteso e cognome puntato ("Bertelà Linda" → "Linda B.", "Dalle Luche Grace" → "Grace D.L."), come nella pagina pubblica */
   var PARTICELLE = ['da', 'dal', 'dalla', 'dalle', 'de', 'dei', 'del', 'della', 'delle', 'di', 'la', 'lo', 'li', 'van', 'von', 'mc', 'mac'];
   var NOMI_PUBBLICI = { 'Giannarelli Rigel Francesca Lina': 'Francesca G.' };
+  /* il nome compare solo con entrambe le condizioni: modulo privacy firmato (nomi[] contiene solo chi l'ha firmato e non è escluso)
+     e definizione approvata dal docente. Gli esclusi non compaiono mai. */
+  function firma(t, nomi) { return t && t.alunno && t.statoIt === 'approvata' && nomi[t.alunno] ? nomi[t.alunno] : ''; }
   function nomePuntato(completo) {
     var c = String(completo || '').trim(); if (NOMI_PUBBLICI[c]) return NOMI_PUBBLICI[c];
     var p = c.split(/\s+/).filter(Boolean); if (p.length < 2) return p.join(' ');
@@ -3328,7 +3330,7 @@ var Poster = (function () {
     // la classe vale per tutti (anche per chi non mostra il nome): le classi del cartellone non dipendono dai consensi
     (alunni || []).forEach(function (a) { clDi[a.id] = a.classe || '3E'; if (a.fuori || a.nascosto) return; nomi[a.id] = nomePuntato(a.nome); }); // nascosto: senza consenso privacy firmato
     var perCl = {}, visti = {};
-    termini.forEach(function (t) { if (!t.alunno || !nomi[t.alunno] || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
+    termini.forEach(function (t) { if (!firma(t, nomi) || visti[t.alunno]) return; visti[t.alunno] = 1; var c = clDi[t.alunno] || '3E'; (perCl[c] = perCl[c] || []).push(esc(nomi[t.alunno] || t.alunno)); });
     var classi = classiDi(termini, alunni, clDi);
     var A = "font-family:Archivo,Arial,sans-serif;", S = "font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;";
     var voci = ordinaAlfa(termini), lettere = {}, corpo = '', ult = '';
@@ -3338,9 +3340,9 @@ var Poster = (function () {
       var ok = t.defIt && (!opz.soloApprovate || t.statoIt === 'approvata'), mio = opz.evidenzia && t.alunno === opz.evidenzia;
       var en = opz.en && t.posterEn ? t.posterEn : null;
       corpo += '<div class="pa-v"' + (mio ? ' style="background:#FFE98A;box-shadow:inset 1.4mm 0 0 #15212B;padding-left:2.6mm;padding-right:1.5mm"' : '') + '><h3>' + esc(t.it) + (en && en.t ? '<span class="pa-en" lang="en">' + esc(en.t) + '</span>' : '') + '</h3>' +
-        (ok ? '<p>' + esc(t.defIt) + (nomi[t.alunno] && !(en && en.d) ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>' +
-            (en && en.d ? '<p class="pa-den" lang="en">' + esc(en.d) + (nomi[t.alunno] ? ' <em>— ' + esc(nomi[t.alunno]) + '</em>' : '') + '</p>' : '')
-          : '<p class="pa-vuota">Definizione a cura di ' + esc(nomi[t.alunno] || '…') + '</p>') + '</div>';
+        (ok ? '<p>' + esc(t.defIt) + (firma(t, nomi) && !(en && en.d) ? ' <em>— ' + esc(firma(t, nomi)) + '</em>' : '') + '</p>' +
+            (en && en.d ? '<p class="pa-den" lang="en">' + esc(en.d) + (firma(t, nomi) ? ' <em>— ' + esc(firma(t, nomi)) + '</em>' : '') + '</p>' : '')
+          : '<p class="pa-vuota">Definizione in arrivo</p>') + '</div>';
     });
     var AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function (l) { return '<span style="flex:1;text-align:center;' + A + 'font-weight:800;font-size:9mm;line-height:1;color:' + (lettere[l] ? col : '#C9D1D8') + '">' + l + '</span>'; }).join('');
     // il motto si legge sui quattro cartelloni affiancati: solo con le 4 aree del laboratorio
@@ -3386,9 +3388,7 @@ var Poster = (function () {
       '<div style="position:absolute;left:0;right:0;bottom:64mm;height:56mm">' + nastroAlfa(n) +
         '<div style="position:absolute;left:0;right:0;top:4mm;text-align:center;' + S + 'font-weight:600;font-size:' + fsM + 'mm;line-height:1;color:#15212B;-webkit-text-stroke:2.4mm #FBFAF7;paint-order:stroke fill">' + esc(MT) + '</div></div>' +
       '<div style="position:absolute;left:34mm;right:34mm;bottom:14mm;height:46mm;box-sizing:border-box;border-top:0.6mm solid #15212B;padding-top:5mm;display:flex;align-items:center;gap:9mm;font-size:5mm;line-height:1.35;color:#2C3A47">' +
-        (opz.qr ? '<div style="border:0.8mm solid #15212B;border-radius:3mm;padding:2mm;background:#fff;line-height:0">' + qrPoster(opz.qr, 34) + '</div>' +
-          '<div><b style="' + A + 'font-size:6.4mm;color:#15212B">Consulta il glossario dal telefono</b><br>' + esc(String(opz.qr).replace(/^https?:\/\//, '').replace(/\?.*$/, '')) + '</div>' : '') +
-        '<div style="flex:1;text-align:center"><b>Metodologia:</b> compito di realtà in modalità digitale con feedback immediato,<br>autoverifica con quiz e interrogazione orale; valutazione formativa e sommativa.</div>' +
+        '<div style="flex:1"></div>' + // niente metodologia né QR sui cartelloni (27/11/2026)
         '<div style="text-align:right">' + (conc() ? '<i>' + CONCESSIONE + '</i><br>' : '') + 'IIS «E. Barsanti» · sede Salvetti<br>' + (classi.length > 1 ? 'Classi ' : 'Classe ') + (classi.length > 1 ? classi.slice(0, -1).join(', ') + ' e ' + classi[classi.length - 1] : classi.join('')) + ' · ' + (area.numero ? 'Area ' + esc(NUM) + ' · cartellone ' + n + ' di ' + NA : 'Area ' + n + ' di ' + NA) + '</div></div>' +
       '</div>';
   }
@@ -3547,7 +3547,7 @@ function caratteriPronti(doc) {
   doc = doc || document; if (!doc.fonts || !doc.fonts.load) return Promise.resolve();
   return Promise.race([Promise.all(FONTI.map(function (f) { return doc.fonts.load(f[2] + ' ' + f[1] + " 20px '" + f[0] + "'").catch(function () { return 0; }); })), new Promise(function (r) { setTimeout(r, 6000); })]);
 }
-var VERSIONE = '26/11/2026 · 1';
+var VERSIONE = '27/11/2026 · 1';
 /* classi: 3E e 3F */
 // prof. Cerrato e facoltà dei colleghi
 function ADM() { return !!(S.d && S.d.utente && S.d.utente.admin); }
